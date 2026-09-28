@@ -45,6 +45,7 @@ python3 -m pip install --requirement scripts/skills/requirements.txt
 The virtual environment stays inside ignored `.tmp/`. `pnpm lint` and `pnpm format:check` use Ruff; `pnpm test:skills` uses Pillow. Installing JavaScript packages alone does not install these tools.
 
 - **PostgreSQL 17 for Foundation:** use a disposable local instance. The foundation job in [check.yml](../.github/workflows/check.yml) is the source of truth for the `*_TEST_DATABASE_URL` variables, exact database names, and creation command. Create each named database and export its URL before running `pnpm check`. Test setup resets schemas, so never use a live or shared store database.
+- **PostgreSQL client for Foundation:** put `psql` on `PATH` for the signup-removal SQL regression, or set `PSQL_BIN` to a local executable or wrapper. Verify `psql --version` (or the configured executable) before running `pnpm check`. The Foundation workflow verifies the client and installs Ubuntu's `postgresql-client` package only when it is missing.
 - **Docker Engine for provider-default privileges:** if your checkout includes `scripts/database/template-privileges.test.mjs`, that regression starts its own disposable Supabase Postgres container. Docker must be running and reachable by the current user. CI sets `SUPABASE_PRIVILEGES_TEST=true` on its database step; enable it locally before either `pnpm check` or `pnpm check:all`:
 
 ```sh
