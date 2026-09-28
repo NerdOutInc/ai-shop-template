@@ -82,7 +82,7 @@ See [the skill catalog](.agents/skills/store-template-readiness/references/skill
 
 ## Development and release
 
-`pnpm check` runs baseline checks. `pnpm check:all` adds Storybook, builds and isolated browser/database suites. `pnpm check:template` scans repository files for local paths, private setup files and private keys. Read [AGENTS.md](AGENTS.md) for required validation and review boundaries.
+`pnpm check` runs baseline checks. `pnpm check:all` adds Storybook, builds and isolated browser/database suites. Every PR runs both through the [CI workflow](docs/ci.md); configure its **Required checks** status as a branch rule before merging. `pnpm check:template` scans repository files for local paths, private setup files and private keys. Read [AGENTS.md](AGENTS.md) for required validation and review boundaries.
 
 A generated repository is independent of this template; GitHub does not automatically apply future template updates. Review upstream changes before porting them. Template maintainers enable GitHub's **Template repository** setting on this repository; a downstream store usually leaves that setting off.
 
