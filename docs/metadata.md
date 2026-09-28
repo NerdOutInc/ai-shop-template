@@ -14,7 +14,9 @@ Without the fix, immediate homepage navigation to About or Returns leaves the se
 
 Run those specs against a fresh production build and the isolated catalog fixture. Check pristine-build navigation separately before starting the regeneration suite, which deliberately replaces cached artifacts. Do not add an idle wait before the first click: it can hide the original failure.
 
-Every Next upgrade must update the exact `pnpm.patchedDependencies` key and patch filename as well as the dependency and lockfile. pnpm deliberately rejects an unused version-pinned patch with `ERR_PNPM_UNUSED_PATCH`; a Dependabot update, including its grouped dependency PR, therefore needs this manual step. Rebase the patch against the new package, run `pnpm install --frozen-lockfile`, rebuild, and run the browser coverage. Reproduce without the patch before deciding to remove it. Do not silence unused-patch errors or drop the patch merely to make an upgrade install.
+The `next@~16.3.6` patch selector supports patch releases in the 16.3 line; the patch filename records its original base and need not change for each compatible release. Next has a separate Dependabot group. If a future version falls outside the range or the patch no longer applies, pnpm rejects it with `ERR_PNPM_UNUSED_PATCH` or `ERR_PNPM_PATCH_FAILED`. A lockfile-generation failure can prevent an update PR from being created, so inspect Dependabot's update-job errors instead of assuming a green unrelated dependency PR covers Next. Follow the [dependency maintenance runbook](dependency-maintenance.md) for upgrade commands and security checks.
+
+Every actual Next upgrade still needs a frozen install, fresh build, and the browser coverage above. The offline patch-upgrade regression proves pnpm applies the patch; it cannot prove future Next internals still honor it. Reproduce without the patch before deciding to remove it. Do not silence unused-patch errors or drop failing hunks merely to make an upgrade install.
 
 ## Limits and remaining edges
 
