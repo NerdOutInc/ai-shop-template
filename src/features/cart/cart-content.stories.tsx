@@ -77,6 +77,9 @@ export const Empty: Story = {
   beforeEach: () => window.localStorage.removeItem("your-store-cart-v1"),
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("link", { name: "Find your shirt" })).toBeVisible()
+    await expect(
+      canvas.getByText("Your cart is empty. Explore the collection to find a shirt that suits you.")
+    ).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "Checkout" })).not.toBeInTheDocument()
   },
 }

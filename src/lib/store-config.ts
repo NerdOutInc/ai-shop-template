@@ -10,6 +10,7 @@ export const storeConfig = storeConfigSchema.parse({
   locale: "en-US",
   timeZone: "UTC",
   features: { designOfTheWeek: false, dropSignup: false, about: false },
+  privacy: { retainedDropSubscribers: false },
   weeklyFeature: { weekday: 1, hour: 9, minute: 0 },
   supportEmail: "support@example.com",
   logo: { src: "/images/store-mark.svg", width: 48, height: 48 },

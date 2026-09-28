@@ -12,9 +12,7 @@ export const configuredStoreConfig = storeConfigSchema.parse({
   },
   policies: {
     published: true,
-    shippingText: [
-      "Fixture policy: standard shipping is $4.95 for the first item and $2.40 for each additional item. Delivery times are estimates.",
-    ],
+    shippingText: ["Fixture care notes: wash with similar colors and follow the garment care label."],
     returnsText: ["Fixture policy: contact support about a damaged or incorrect item."],
     privacyText: ["Fixture policy: order details are used to fulfill and support your purchase."],
   },
