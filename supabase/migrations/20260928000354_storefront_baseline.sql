@@ -17,6 +17,13 @@ CREATE SCHEMA private;
 
 CREATE SCHEMA IF NOT EXISTS public;
 
+-- Supabase installations can auto-grant ALL on public tables and sequences.
+-- Future objects created by the migration role must opt in to browser access.
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+    REVOKE ALL ON TABLES FROM PUBLIC, anon, authenticated;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+    REVOKE ALL ON SEQUENCES FROM PUBLIC, anon, authenticated;
+
 CREATE TABLE commerce.catalog_refreshes (
     shop_id text NOT NULL,
     kind text NOT NULL,
@@ -1270,6 +1277,11 @@ CREATE POLICY store_runtime_update ON public.library_designs FOR UPDATE TO store
 CREATE POLICY store_runtime_update ON public.library_favorites FOR UPDATE TO store_app_runtime USING (true) WITH CHECK (true);
 
 CREATE POLICY store_runtime_update ON public.library_product_bindings FOR UPDATE TO store_app_runtime USING (true) WITH CHECK (true);
+
+-- Defaults and previous grants are additive: narrow GRANTs below do not replace
+-- inherited ALL privileges. RLS does not protect TRUNCATE or sequence mutation.
+REVOKE ALL ON ALL TABLES IN SCHEMA public, private, commerce FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON ALL SEQUENCES IN SCHEMA public, private, commerce FROM PUBLIC, anon, authenticated;
 
 GRANT USAGE ON SCHEMA commerce TO store_app_runtime;
 
