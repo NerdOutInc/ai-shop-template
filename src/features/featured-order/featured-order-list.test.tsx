@@ -9,11 +9,11 @@ import { FeaturedOrderList } from "./featured-order-list"
 
 const { refresh, cadence } = vi.hoisted(() => ({
   refresh: vi.fn(),
-  cadence: { weekday: 1, hour: 9, minute: 0, timeZone: "UTC" },
+  cadence: { weekday: 5, hour: 17, minute: 30, timeZone: "America/Chicago" },
 }))
 vi.mock("@/features/publishing/dotw-cadence", () => ({ DOTW_CADENCE: cadence }))
 beforeEach(() => {
-  Object.assign(cadence, { weekday: 1, hour: 9, minute: 0, timeZone: "UTC" })
+  Object.assign(cadence, { weekday: 5, hour: 17, minute: 30, timeZone: "America/Chicago" })
 })
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }))
 afterEach(() => {
@@ -547,8 +547,8 @@ describe("FeaturedOrderList", () => {
         now={now}
       />
     )
-    expect(screen.getByText("Hidden since Sep 20, 2026")).toBeInTheDocument()
-    expect(screen.getByText(/^Reveals Sep 25, 2026, 9:00\sAM$/)).toBeInTheDocument()
+    expect(screen.getByText("Hidden since Sep 19, 2026")).toBeInTheDocument()
+    expect(screen.getByText(/^Reveals Sep 25, 2026, 4:00\sAM$/)).toBeInTheDocument()
   })
 })
 
@@ -701,9 +701,9 @@ describe("New badge", () => {
   })
 })
 
-const slots = [21, 28, 5, 12, 19, 26].map((day, index) => ({
-  value: `2026-${index < 2 ? "09" : "10"}-${String(day).padStart(2, "0")}T09:00:00.000Z`,
-  label: `${index < 2 ? "September" : "October"} ${day}, 2026`,
+const slots = [25, 2, 9, 16, 23, 30].map((day, index) => ({
+  value: `2026-${index === 0 ? "09" : "10"}-${String(day).padStart(2, "0")}T22:30:00.000Z`,
+  label: `${index === 0 ? "September" : "October"} ${day}, 2026`,
 }))
 const hiddenTee: FeaturedOrderProduct = {
   id: "waiting",
@@ -777,7 +777,7 @@ describe("product scheduling from the shop lineup", () => {
         products={scheduleProducts}
         now={now}
         schedule={{
-          entries: [{ id: "current", productId: "everyday-type", liveAt: "2026-09-14T09:00:00.000Z" }],
+          entries: [{ id: "current", productId: "everyday-type", liveAt: "2026-09-18T22:30:00.000Z" }],
           slots,
         }}
       />
@@ -979,7 +979,7 @@ describe("product scheduling from the shop lineup", () => {
       "href",
       "/shop/waiting"
     )
-    const futureWeek = within(screen.getByRole("region", { name: /Week of Monday, September 28/ }))
+    const futureWeek = within(screen.getByRole("region", { name: "Week of Friday, October 2" }))
     expect(futureWeek.getAllByRole("listitem")).toHaveLength(1)
     expect(futureWeek.getByText("Already in the shop")).toBeVisible()
     expect(hiddenOrder()).toEqual([])

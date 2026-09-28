@@ -68,8 +68,10 @@ test("explains the same US shipping rate on the public shipping page", async ({ 
   await page.goto("/shipping")
   await expect(page.getByRole("heading", { name: "Shipping & care", exact: true })).toBeVisible()
   await expect(page.getByRole("main")).toContainText(
-    "Fixture policy: standard shipping is $4.95 for the first item and $2.40 for each additional item."
+    "Shipping is $4.95 for the first shirt, plus $2.40 for each additional shirt."
   )
+  await expect(page.getByRole("main")).toContainText("4–15 business days")
+  await expect(page.getByRole("main")).toContainText("They do not change checkout charges")
 })
 
 test("checks out directly by keyboard and preserves the bag and request identity on a retry", async ({
@@ -124,9 +126,17 @@ test("checks out directly by keyboard and preserves the bag and request identity
   await expect(page.getByRole("heading", { name: "The good stuff (1)" })).toBeVisible()
 })
 
-test("consumes paid snapshot additions once and preserves later items", async ({ page }) => {
+test("keeps polling a pending confirmation, consumes paid additions once, and preserves later items", async ({
+  page,
+}) => {
+  let polls = 0
   await page.route("**/api/checkout/status?*", (route) =>
-    route.fulfill({ json: { paymentStatus: "paid", fulfillmentStatus: "simulated" } })
+    route.fulfill({
+      json:
+        ++polls === 1
+          ? { paymentStatus: "pending", fulfillmentStatus: "pending", purchase: null }
+          : { paymentStatus: "paid", fulfillmentStatus: "simulated", purchase: null },
+    })
   )
   await page.goto("/cart")
   await page.evaluate(
@@ -144,7 +154,12 @@ test("consumes paid snapshot additions once and preserves later items", async ({
     { cartKey, item }
   )
   await page.goto("/checkout/success?session_id=cs_test_browsercart")
-  await expect(page.getByRole("heading", { name: "Your order is confirmed." })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Checking your payment." })).toBeVisible()
+  await expect(page.getByText("We couldn’t refresh your order status.", { exact: false })).toHaveCount(0)
+  expect(await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!), cartKey)).toMatchObject({
+    entries: [expect.objectContaining({ entryId: "purchased" }), expect.objectContaining({ entryId: "added-later" })],
+  })
+  await expect(page.getByRole("heading", { name: "Your order is confirmed." })).toBeVisible({ timeout: 10_000 })
   await expect(page.getByText(/No real order was sent for printing/)).toBeVisible()
   await page.reload()
   await expect(page.getByRole("heading", { name: "Your order is confirmed." })).toBeVisible()

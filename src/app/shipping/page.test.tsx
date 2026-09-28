@@ -36,7 +36,10 @@ it.each([
   }
 )
 
-it("does not expose draft zero rates, estimates, or structured shipping data before confirmation", () => {
+it("keeps approved care notes without referring to absent shipping rates before confirmation", () => {
+  storeConfig.policies.shippingText = ["Wash with similar colors."]
+  expect(storeConfig.configured).toBe(true)
+  expect(storeConfig.policies.published).toBe(true)
   storeConfig.commerce.shippingConfirmed = false
   storeConfig.commerce.firstItemShippingCents = 0
   const html = renderToStaticMarkup(<ShippingPage />)
@@ -44,4 +47,7 @@ it("does not expose draft zero rates, estimates, or structured shipping data bef
   expect(html).not.toContain("$0.00")
   expect(html).not.toContain("ShippingService")
   expect(html).not.toContain("4–15")
+  expect(html).toContain("Wash with similar colors.")
+  expect(html).not.toContain("estimates above")
+  expect(html).not.toContain("They do not change checkout charges")
 })

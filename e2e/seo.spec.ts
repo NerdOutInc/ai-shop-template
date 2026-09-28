@@ -115,7 +115,11 @@ test("serves variant offers in the initial HTML with matching deep-linked produc
 test("shows the configured shipping copy at a narrow viewport", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 740 })
   await page.goto("/shipping")
-  await expect(page.getByRole("main")).toContainText("Fixture policy: standard shipping")
+  await expect(page.getByRole("main")).toContainText(
+    "Shipping is $4.95 for the first shirt, plus $2.40 for each additional shirt."
+  )
+  await expect(page.getByRole("main")).toContainText("4–15 business days")
+  await expect(page.getByRole("main")).toContainText("They do not change checkout charges")
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
 })
 
@@ -194,8 +198,10 @@ test("resolves offer policy references to the published shipping and return poli
 
   await page.goto("/shipping")
   await expect(page.getByRole("main")).toContainText(
-    "Fixture policy: standard shipping is $4.95 for the first item and $2.40 for each additional item."
+    "Shipping is $4.95 for the first shirt, plus $2.40 for each additional shirt."
   )
+  await expect(page.getByRole("main")).toContainText("4–15 business days")
+  await expect(page.getByRole("main")).toContainText("They do not change checkout charges")
   expect(new URL(store.hasMerchantReturnPolicy.merchantReturnLink).pathname).toBe(new URL(returnPolicyId).pathname)
 })
 

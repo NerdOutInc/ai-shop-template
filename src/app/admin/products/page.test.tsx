@@ -211,11 +211,11 @@ describe("admin products page", () => {
     mocks.readAdminProductSchedule.mockResolvedValue({
       status: "ready",
       now,
-      entries: [{ id: "queued-crop", productId: "crop", liveAt: "2026-09-21T09:00:00.000Z" }],
+      entries: [{ id: "queued-crop", productId: "crop", liveAt: "2026-09-25T22:30:00.000Z" }],
     })
     render(await AdminProductsPage())
     expect(screen.getAllByRole("region", { name: /^Week of / })).toHaveLength(6)
-    expect(screen.getByRole("region", { name: /Week of Monday, September 21/ })).toHaveTextContent("Crop Life")
+    expect(screen.getByRole("region", { name: /Week of Friday, September 25/ })).toHaveTextContent("Crop Life")
     const hiddenList = within(screen.getByRole("list", { name: "Hidden products" }))
     expect(hiddenList.getByRole("link", { name: /Preview product.*Crop Life/ })).toHaveAttribute(
       "href",

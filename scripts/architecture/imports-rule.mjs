@@ -25,6 +25,7 @@ export function createImportsRule(root, resolver) {
         outside:
           "Source code may not import project tooling or files outside src/; tests and stories may use test/ support.",
         source: "Use @/ or a relative path for application source imports.",
+        merchantConfig: "Browser tests must import test/store-config, not the merchant configuration.",
       },
     },
     create(context) {
@@ -36,6 +37,8 @@ export function createImportsRule(root, resolver) {
         if (!result.found || !result.path) return // import-x/no-unresolved reports unresolved modules.
         const target = relativePath(root, result.path)
         if (target.includes("/node_modules/") || target.startsWith("node_modules/")) return
+        if (filename.startsWith("e2e/") && target === "src/lib/store-config.ts")
+          context.report({ node, messageId: "merchantConfig" })
         const fromArea = area(filename)
         const toArea = area(target)
         if (!isDevelopmentFile(filename) && isDevelopmentFile(target))

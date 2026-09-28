@@ -13,20 +13,29 @@ import { productionFingerprintVersion } from "@/lib/printify/production-fingerpr
 
 import { catalogProductSchema } from "./catalog-product-schema"
 import { normalizeCatalogProduct } from "./normalize-catalog-product"
+import { PublishedSnapshotRejectedError } from "./published-snapshot-rejected-error"
 
 export async function readStorefrontProduct(productId: string): Promise<Record<string, unknown> | null> {
   const { DATABASE_URL: databaseUrl, PRINTIFY_SHOP_ID: shopId } = env
   if (!databaseUrl || !shopId) throw new Error("Published catalog is not configured")
   const read = unstable_cache(
     async (id: string) => {
+      let revealable: Awaited<ReturnType<typeof readRevealableProduct>>
       try {
-        const revealable = await readRevealableProduct(id)
+        revealable = await readRevealableProduct(id)
+      } catch {
+        // A failed read says nothing about snapshot validity and must still fail the sitemap.
+        throw new Error("Published product unavailable")
+      }
+      try {
         if (!revealable) return null
         const { snapshot: raw, revealAt, addedToShopAt } = revealable
-        const snapshot = catalogProductSchema.parse(raw)
-        if (snapshot.id !== id || String(snapshot.shop_id) !== shopId) throw new Error("Published product mismatch")
+        const parsed = catalogProductSchema.safeParse(raw)
+        if (!parsed.success) throw new PublishedSnapshotRejectedError()
+        const snapshot = parsed.data
+        if (snapshot.id !== id || String(snapshot.shop_id) !== shopId) throw new PublishedSnapshotRejectedError()
         const production = parsePrintifyProduct(raw, { productId: id, shopId })
-        if (!production) throw new Error("Invalid published production settings")
+        if (!production) throw new PublishedSnapshotRejectedError()
         const fingerprints = new Map(production.variants.map((variant) => [variant.id, variant.fingerprint]))
         const product = normalizeCatalogProduct(snapshot)
         // Keep display-only projections small. Checkout reads the full snapshot directly from storage.
@@ -54,7 +63,8 @@ export async function readStorefrontProduct(productId: string): Promise<Record<s
             ...(image.viewKey ? { view_key: image.viewKey } : {}),
           })),
         }
-      } catch {
+      } catch (error) {
+        if (error instanceof PublishedSnapshotRejectedError) throw error
         // Cache refresh errors are logged by Next; never retain SQL errors or connection credentials.
         throw new Error("Published product unavailable")
       }

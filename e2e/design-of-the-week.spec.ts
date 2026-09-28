@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright"
 import { expect, test } from "@playwright/test"
 
-import { storeConfig } from "@/lib/store-config"
+import { storeConfig } from "../test/store-config"
 import { beginKeyboardNavigation } from "../test/begin-keyboard-navigation"
 import { catalogProducts } from "./catalog-products"
 import { designOfTheWeekDrop } from "./design-of-the-week-drop"
@@ -30,7 +30,7 @@ test("shows only the individually scheduled products, and four more without repe
   await page.goto("/#design-of-the-week")
   const section = page.locator(".home-intro + #design-of-the-week")
   await expect(section).toHaveCount(1)
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Your next favorite starts here.")
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(storeConfig.home.headline)
   await expect(section.getByRole("heading", { level: 2, name: "This week’s picks." })).toBeVisible()
 
   const drop = page.getByRole("list", { name: "Design of the Week products" })

@@ -1,3 +1,5 @@
+import { localCalendarDate } from "@/lib/local-calendar-date"
+
 /** The calendar advertised at checkout: weekdays excluding observed US federal holidays. */
 export function getShippingSchedule(paidAt: string, handlingDays: number, now: Date, timeZone: string) {
   if (
@@ -8,15 +10,8 @@ export function getShippingSchedule(paidAt: string, handlingDays: number, now: D
     !Number.isFinite(Date.parse(paidAt))
   )
     throw new Error("Invalid shipping window")
-  const localDate = (value: Date) =>
-    new Intl.DateTimeFormat("en-CA", {
-      timeZone,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(value)
-  const paidDate = localDate(new Date(paidAt))
-  const today = localDate(now)
+  const paidDate = localCalendarDate(new Date(paidAt), timeZone)
+  const today = localCalendarDate(now, timeZone)
   const day = new Date(`${paidDate}T12:00:00Z`)
   let count = 0
   let businessDaysElapsed = 0
