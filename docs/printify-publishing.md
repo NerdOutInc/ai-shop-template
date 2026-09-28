@@ -33,7 +33,7 @@ The template ships no active cron schedule. After reviewing the hosting plan and
 5. Register a webhook for the exact topic `product:publish:started` using `POST /v1/shops/{shop_id}/webhooks.json`, with `url` set to the deployed `/api/webhooks/printify` endpoint and `secret` set to `PRINTIFY_WEBHOOK_SECRET`. Registration credentials need `webhooks.write`; use `webhooks.read` to inspect and read back the subscription. These management scopes are not needed just to receive events.
 6. Enable `PRINTIFY_PUBLISHING_ENABLED=true` and verify the receiving endpoint and scheduled worker in that deployment. Apply and initialize [background catalog observations](catalog-background-refresh.md) as part of rollout. Coordinate registration and enablement so legitimate events are not sent to a disabled deployment. Use separate subscriptions, secrets, and database data for preview testing; a preview must not compete with production for one shop's publishing callbacks.
 
-Keep both publishing credentials and the cron secret out of Git, terminal output, screenshots, browser bundles, and `NEXT_PUBLIC_` variables. Updating an environment value requires restarting or redeploying the application that reads it. `NEXT_PUBLIC_SITE_URL` is embedded at build time, including its use in server callbacks: build the production deployment with `https://example.com`, rebuild when that value changes, and verify the reported external handle. A runtime-only override does not change an already-built canonical URL. Production setup and publication require their own authorized rollout.
+Keep both publishing credentials and the cron secret out of Git, terminal output, screenshots, browser bundles, and `NEXT_PUBLIC_` variables. Updating an environment value requires restarting or redeploying the application that reads it. `NEXT_PUBLIC_SITE_URL` is embedded at build time, including its use in server callbacks: build the production deployment with the store's actual canonical HTTPS origin, rebuild when that value changes, and verify the reported external handle. A runtime-only override does not change an already-built canonical URL. Production setup and publication require their own authorized rollout.
 
 ## Per-minute recovery rollout
 
@@ -160,10 +160,10 @@ Malformed recognized print settings still emit `PRODUCT_SCHEMA_DRIFT`; added res
 
 Run the unit tests for the signature adapter, webhook route, worker trigger, processor, and database store, followed by the repository checks. These use fixtures or an isolated database and do not establish live Printify delivery.
 
-The enabled HTTP/browser suite uses a production Next.js build, its real webhook and worker routes, and a separate local Postgres database. Create an empty disposable `store_publishing_e2e` database, then run:
+The enabled HTTP/browser suite uses a production Next.js build, its real webhook and worker routes, and a separate local Postgres database. Install the [local test prerequisites](ci.md#local-test-prerequisites), create an empty disposable `store_publishing_e2e` database, then rebuild the fixture from the current source before each run:
 
 ```sh
-NEXT_PUBLIC_SITE_URL=https://example.com pnpm build
+pnpm test:e2e:prepare
 PUBLISHING_E2E_DATABASE_URL=postgresql://postgres:local-commerce-test@localhost:55479/store_publishing_e2e pnpm test:e2e:publishing
 ```
 
