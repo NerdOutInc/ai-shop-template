@@ -26,7 +26,14 @@ test.beforeEach(async ({ page, browserName, baseURL }) => {
   }
   const manifest = z
     .object({ preview: z.object({ previewModeId: z.string().min(1) }) })
-    .parse(JSON.parse(await readFile(new URL("../.next/prerender-manifest.json", import.meta.url), "utf8")))
+    .parse(
+      JSON.parse(
+        await readFile(
+          new URL("../.tmp/unconfigured-storefront-e2e/.next/prerender-manifest.json", import.meta.url),
+          "utf8"
+        )
+      )
+    )
 
   // Home renders the weekly catalog dynamically. Regenerate the static pages instead,
   // including About as an initial document so its hoisted metadata must hydrate before navigation.
