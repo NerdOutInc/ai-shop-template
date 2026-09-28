@@ -405,11 +405,13 @@ export const ScheduleTogether: Story = {
     const add = week.getByRole("button", { name: "Add the first product" })
     await userEvent.click(add)
     const dialog = within(await page.findByRole("dialog", { name: "Add products to this week" }))
-    await expect(
-      dialog.getByText(
-        `Hidden products appear in the shop on ${formatWeeklyCadence()}. Removing a product from a future week leaves its shop visibility unchanged. Products stay for sale after their featured week ends.`
-      )
-    ).toBeVisible()
+    await waitFor(() =>
+      expect(
+        dialog.getByText(
+          `Hidden products appear in the shop on ${formatWeeklyCadence()}. Removing a product from a future week leaves its shop visibility unchanged. Products stay for sale after their featured week ends.`
+        )
+      ).toBeVisible()
+    )
     await userEvent.click(dialog.getByRole("checkbox", { name: /Everyday Type/ }))
     await userEvent.click(dialog.getByRole("checkbox", { name: /Waiting for the Weekend/ }))
     await userEvent.click(dialog.getByRole("button", { name: "Add 2 products" }))
