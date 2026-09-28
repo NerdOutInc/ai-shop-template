@@ -84,6 +84,8 @@ jobs:
         run: pnpm test:unit
       - name: Test fresh template database and runtime permissions
         run: pnpm test:database
+      - name: Test generated brand assets
+        run: pnpm test:branding
       - name: Test architecture rules
         run: pnpm test:architecture
       - name: Test publishing notifications
