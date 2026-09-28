@@ -20,6 +20,8 @@ Canonical engine commit + one brand configuration commit
 
 Two brands may use the same engine release while retaining separate build outputs, secrets, databases, domains, storage, callbacks, schedules and release dates. The server process still serves one store. There is no shared tenant database, hostname-to-secret router, Stripe Connect marketplace or private-artwork export in this proposal.
 
+Use a separate Printify merchant account and shop per brand for credential and rate-budget isolation. Several shops under one account remain one trust/quota boundary even with separate tokens. An existing shared account needs an explicit risk decision, not a silent account migration. The [operations guide](store-operations-costs.md) separates this boundary from shared Vercel/Supabase billing and includes the mandatory worker schedules in the budget.
+
 ## Contract to prove before extracting more code
 
 | Input/boundary            | Proposed behavior                                                                                                                   | Required failure control                                                                                                                                                   |

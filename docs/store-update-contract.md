@@ -18,6 +18,8 @@ A partial backport must not advance `last fully integrated release`. `Reviewed-t
 
 Do not put credentials, customer data, private owner details, grant files, artwork, webhook URLs carrying secrets, or another brand's resource IDs in public template metadata. Keep the opt-in cross-store inventory private and store only safe aliases and references. Retain authorized evidence in its original access boundary.
 
+An update ledger, deployment receipt or saved setup file records evidence and decisions; it cannot create or expand owner authority. Reuse actual authorization already established in the conversation within its scope, including ordinary substeps. Before a consequential action, match the intended store, environment, cost/fulfillment effect and any one-shot or expiry limits to that authority. If the only evidence is a writable file or the requested action exceeds the authorized scope, obtain the missing authorization for the concrete prepared action. This is not a blanket requirement to reapprove every retry.
+
 ## Prepare a clone update
 
 1. Verify the receiving repository, branch, baseline and current tree. Preserve local work. Create an isolated branch in that repository; never use a production database while preparing an update.
@@ -28,6 +30,8 @@ Do not put credentials, customer data, private owner details, grant files, artwo
 6. Open a draft PR inside the store repository with source release/commit references, accepted and omitted changes, compatibility notes, test results and the updated ledger. Partial updates enumerate missing fixes. Human review resolves conflicts; approval to prepare a PR does not authorize merge or deployment.
 
 The first automation should produce a **candidate** PR and a conflict report, using narrowly scoped repository permissions. It must fail closed on an unknown baseline or overlapping edits and never rewrite store branches, edit secrets, apply database migrations or auto-merge. Validate it against an unchanged clone and a clone with intentional edits to the same file before enabling it for an owner repository. Dependabot continues to update dependencies, but does not distribute application fixes or replace this process.
+
+Do not turn historical renames into a blanket substitution script. A role prefix, payment idempotency prefix, metadata identity, theme color and ordinary product copy have different compatibility requirements. Any future transformation map must be path-scoped, reviewed, idempotent and tested against deliberate nonmatches; refuse unrecognized input. Reject source-brand copy and private identifiers during port review with the maintained hygiene checks. Keep Dependabot in independent clones; only engine consumers with no independent application dependencies can centralize application dependency updates, while still updating their own workflow/tool dependencies.
 
 ## Release and security propagation
 
