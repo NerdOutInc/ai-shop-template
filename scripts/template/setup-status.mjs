@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { parseCheckoutCapacityLimits } from "../../src/features/checkout/parse-checkout-capacity-limits.ts"
 import { envSchema } from "../../src/lib/env-schema.ts"
 import { postgresConnectionConfig } from "../../src/lib/postgres-connection-config.server.ts"
 
@@ -118,6 +119,18 @@ export function setupStatus(
     invalid.length
       ? `Correct ${invalid.join(", ")} using .env.example and the runtime schema; values are intentionally hidden.`
       : "Use the runtime environment schema."
+  )
+  add(
+    "Checkout capacity overrides",
+    matches("CHECKOUT_CAPACITY_LIMITS", (value) => {
+      try {
+        parseCheckoutCapacityLimits(value)
+        return true
+      } catch {
+        return false
+      }
+    }),
+    "Use valid CHECKOUT_CAPACITY_LIMITS JSON with documented budget names and ranges, or omit it for defaults."
   )
   add(
     "Brand and contact details",

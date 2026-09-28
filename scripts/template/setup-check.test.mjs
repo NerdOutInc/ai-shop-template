@@ -116,6 +116,11 @@ test("strict CLI wiring distinguishes unreadable exports from missing and invali
     mkdirSync(path.join(cwd, "src"))
     mkdirSync(path.join(cwd, "scripts"))
     cpSync(path.join(repository, "src/lib"), path.join(cwd, "src/lib"), { recursive: true })
+    mkdirSync(path.join(cwd, "src/features/checkout"), { recursive: true })
+    cpSync(
+      path.join(repository, "src/features/checkout/parse-checkout-capacity-limits.ts"),
+      path.join(cwd, "src/features/checkout/parse-checkout-capacity-limits.ts")
+    )
     cpSync(path.join(repository, "scripts/template"), path.join(cwd, "scripts/template"), { recursive: true })
     symlinkSync(path.join(repository, "node_modules"), path.join(cwd, "node_modules"), "dir")
     writeFileSync(path.join(cwd, "package.json"), '{"type":"module"}')
