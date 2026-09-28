@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "sourceAlias": "original-store",
+  "provenanceRecord": "docs/template-provenance.json",
+  "templateAssessmentCommit": "d498dd3fb8b0e1c84b980b9cf35a42007ec7e04f",
+  "coverage": {
+    "afterSourceCommit": "b32ab30dd7c74f3d17cb88b9dbf4111224cafe54",
+    "reviewedThroughSourceCommit": "779bc8e80e3cdb03edef80be8da3d38cfb3fc41b",
+    "firstParentCommitCount": 2,
+    "reviewedAt": "2026-09-28",
+    "boundary": "The provenance record covers extraction and the accepted follow-up through afterSourceCommit. This ledger individually reviews only the subsequent range; it does not claim a per-commit audit of earlier history or later source changes."
+  },
+  "dispositions": [
+    {
+      "sourceCommit": "786b2a04101b89b500bee99a7b5bf739a18f39b9",
+      "parentCommit": "b32ab30dd7c74f3d17cb88b9dbf4111224cafe54",
+      "disposition": "skipped",
+      "classification": "store-specific-fixture-choice",
+      "paths": [
+        "e2e/product-garment.spec.ts",
+        "src/features/catalog/product-details.stories.tsx",
+        "src/features/catalog/product-details.test.tsx"
+      ],
+      "reason": "Changes only a crop-top label in that store's test/story expectations. No production behavior changes; fixture wording is not a reusable engine fix.",
+      "evidence": "Reviewed the complete parent-to-commit diff: three fixture/test files, four additions and four deletions.",
+      "templateCommit": null,
+      "followUp": null
+    },
+    {
+      "sourceCommit": "779bc8e80e3cdb03edef80be8da3d38cfb3fc41b",
+      "parentCommit": "786b2a04101b89b500bee99a7b5bf739a18f39b9",
+      "disposition": "skipped",
+      "classification": "store-specific-copy",
+      "paths": ["src/app/shop/page.tsx"],
+      "reason": "Changes the source store's shop description only. Preserve neutral template wording and each downstream brand's own content.",
+      "evidence": "Reviewed the complete parent-to-commit diff: one presentation string, one addition and one deletion.",
+      "templateCommit": null,
+      "followUp": null
+    }
+  ],
+  "outboundPorts": [],
+  "outboundStatus": "No template-to-operating-store port was authorized or performed by this change. Create a private receiving-store port receipt for each proposed fix under the update contract."
+}
