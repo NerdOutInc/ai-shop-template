@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
+import type { CSSProperties } from "react"
 import { expect, userEvent, within } from "storybook/test"
 
 import { storeConfig } from "@/lib/store-config"
@@ -287,6 +288,57 @@ export const CategoryFilters: Story = {
     await expect(canvas.getByRole("checkbox", { name: "Black" })).not.toBeChecked()
     await expect(canvas.getAllByRole("article")).toHaveLength(3)
     await expect(sort).toHaveValue("newest")
+  },
+}
+
+export const DarkAccentCategories: Story = {
+  args: CategoryFilters.args,
+  decorators: [
+    (Story) => (
+      <div
+        style={
+          {
+            "--accent": "#1e3a8a",
+            "--accent-foreground": "#ffffff",
+            "--primary": "#25364d",
+            "--primary-foreground": "#fde68a",
+          } as CSSProperties
+        }
+      >
+        <Story />
+      </div>
+    ),
+  ],
+  play: async ({ canvas, canvasElement }) => {
+    const tee = canvas.getByRole("button", { name: "T-shirts" })
+    // Synthetic mouse events do not activate CSS :hover; CI uses the real browser pointer.
+    const browser = "__vitest_browser__" in globalThis ? await import("vitest/browser") : null
+    const interaction = browser?.userEvent ?? userEvent
+    canvasElement.tabIndex = -1
+    canvasElement.focus()
+    await interaction.tab()
+    await expect(tee).toHaveFocus()
+    await expect(getComputedStyle(tee).outlineStyle).not.toBe("none")
+    await expect(tee).toHaveAttribute("aria-pressed", "false")
+
+    if (browser) {
+      await browser.userEvent.hover(tee)
+      await expect(tee.matches(":hover")).toBe(true)
+      await expect(getComputedStyle(tee).backgroundColor).toBe("rgb(30, 58, 138)")
+      await expect(getComputedStyle(tee).color).toBe("rgb(255, 255, 255)")
+    }
+
+    await interaction.keyboard("{Enter}")
+    await expect(tee).toHaveAttribute("aria-pressed", "true")
+    await expect(getComputedStyle(tee).color).toBe("rgb(253, 230, 138)")
+    if (browser) await expect(tee.matches(":hover")).toBe(true)
+
+    await interaction.keyboard(" ")
+    await expect(tee).toHaveAttribute("aria-pressed", "false")
+    if (browser) {
+      await expect(getComputedStyle(tee).color).toBe("rgb(255, 255, 255)")
+      await browser.userEvent.unhover(tee)
+    }
   },
 }
 

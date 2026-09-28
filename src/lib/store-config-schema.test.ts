@@ -213,13 +213,20 @@ describe("storeConfigSchema", () => {
     ).toBe(false)
   })
 
-  it.each([{ id: "your-store" }, { supportEmail: "support@example.com" }])(
-    "allows unfinished placeholder %j only while unconfigured",
-    (placeholder) => {
-      expect(storeConfigSchema.safeParse({ ...storeConfig, ...placeholder, configured: false }).success).toBe(true)
-      expect(storeConfigSchema.safeParse({ ...storeConfig, ...placeholder, configured: true }).success).toBe(false)
-    }
-  )
+  it("accepts a completed brand when configured", () => {
+    expect(storeConfigSchema.safeParse({ ...storeConfig, configured: true }).success).toBe(true)
+  })
+
+  it.each([
+    { id: "your-store" },
+    { name: "Your Store" },
+    { shortName: "Your Store" },
+    { commerce: { ...storeConfig.commerce, identity: "your-store" } },
+    { supportEmail: "support@example.com" },
+  ])("allows unfinished placeholder %j only while unconfigured", (placeholder) => {
+    expect(storeConfigSchema.safeParse({ ...storeConfig, ...placeholder, configured: false }).success).toBe(true)
+    expect(storeConfigSchema.safeParse({ ...storeConfig, ...placeholder, configured: true }).success).toBe(false)
+  })
 
   it.each(["shippingText", "returnsText", "privacyText"] as const)(
     "requires owner-approved %s before publishing policies",

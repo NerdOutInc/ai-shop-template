@@ -169,7 +169,7 @@ button:disabled {
   content: "";
   position: absolute;
   height: 2px;
-  background: var(--accent);
+  background: var(--primary-foreground);
   bottom: 4px;
   left: 0;
   right: 0;
