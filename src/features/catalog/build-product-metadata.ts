@@ -46,7 +46,7 @@ export function buildProductMetadata(product: CatalogProduct): Metadata {
       images,
       siteName: storeConfig.name,
       type: "website",
-      locale: "en_US",
+      locale: storeConfig.locale.replace("-", "_"),
     },
     twitter: { card: "summary_large_image", title: socialTitle, description, images },
   }

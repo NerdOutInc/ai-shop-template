@@ -88,6 +88,8 @@ test("keeps a recognized Meta source through isolated ingress without retaining 
 }) => {
   await page.goto("/checkout/meta?products=private-selection&cart_origin=instagram&utm_campaign=private-campaign")
   await expect(page).toHaveURL(/\/checkout\/meta$/)
+  // Ingress cleans history before reloading; wait for the destination document before reading its storage.
+  await expect(page.getByRole("heading", { name: "Review your selection.", exact: true })).toBeVisible()
   await expect.poll(() => page.evaluate((key) => sessionStorage.getItem(key), key)).not.toBeNull()
   const attribution = await page.evaluate((key) => JSON.parse(sessionStorage.getItem(key)!), key)
   expect(attribution).toMatchObject({

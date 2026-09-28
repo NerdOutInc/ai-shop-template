@@ -86,6 +86,8 @@ jobs:
         env:
           SUPABASE_PRIVILEGES_TEST: "true"
         run: pnpm test:database
+      - name: Test generated brand assets
+        run: pnpm test:branding
       - name: Test architecture rules
         run: pnpm test:architecture
       - name: Test dependency patch upgrades

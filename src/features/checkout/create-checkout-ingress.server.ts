@@ -22,8 +22,8 @@ function escapeHtml(value: string) {
 export function createCheckoutIngress(request: NextRequest) {
   const brandName = escapeHtml(storeConfig.name)
   const locale = escapeHtml(storeConfig.locale)
-  // storeConfig validates every theme color as a six-digit hex value before CSS interpolation.
-  const { theme } = storeConfig
+  // The schema restricts theme colors and font stacks before interpolation into nonce-protected CSS.
+  const { theme, fonts } = storeConfig
   const url = request.nextUrl
   const selector = randomBytes(16).toString("hex")
   const nonce = randomBytes(24).toString("base64")
@@ -93,10 +93,10 @@ export function createCheckoutIngress(request: NextRequest) {
   const title = data.kind === "success" ? "Reopening your checkout." : "Getting your selection ready."
   const style = `
     * { box-sizing: border-box; }
-    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: ${theme.background}; color: ${theme.foreground}; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: ${theme.background}; color: ${theme.foreground}; font-family: ${fonts.body}; }
     main { width: 100%; max-width: 40rem; padding: clamp(24px, 6vw, 64px); border: 1px solid ${theme.border}; border-radius: 24px; background: ${theme.secondary}; }
-    .brand { margin: 0; font-weight: 800; font-size: 18px; }
-    h1 { margin: 28px 0 16px; font-size: clamp(32px, 8vw, 48px); font-weight: 800; line-height: 1.08; letter-spacing: -.04em; }
+    .brand { font-family: ${fonts.label}; margin: 0; font-weight: 800; font-size: 18px; }
+    h1 { font-family: ${fonts.heading}; margin: 28px 0 16px; font-size: clamp(32px, 8vw, 48px); font-weight: 800; line-height: 1.08; letter-spacing: -.04em; }
     p { font-size: 16px; line-height: 1.6; }
     a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; margin-top: 20px; padding: 12px 18px; border: 2px solid ${theme.primary}; border-radius: 999px; background: ${theme.primary}; color: ${theme.primaryForeground}; font-size: 14px; font-weight: 700; line-height: 1.4; text-align: center; text-underline-offset: 3px; }
     a:hover { background: ${theme.accent}; border-color: ${theme.accent}; color: ${theme.accentForeground}; }
