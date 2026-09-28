@@ -113,7 +113,7 @@ describe("order attribution across a shopping visit", () => {
 
   it("recovers only a known Meta platform after ingress cleans the selection URL", async () => {
     window.history.replaceState(
-      { kagCheckoutRecovery: { visit: { source: "social", metaSource: "instagram", createdAt: now - 1000 } } },
+      { storeCheckoutRecovery: { visit: { source: "social", metaSource: "instagram", createdAt: now - 1000 } } },
       "",
       "/checkout/meta"
     )
@@ -129,7 +129,7 @@ describe("order attribution across a shopping visit", () => {
 
   it("keeps a paid Meta handoff paid after its campaign parameters are removed", async () => {
     window.history.replaceState(
-      { kagCheckoutRecovery: { visit: { source: "paid", metaSource: "instagram", createdAt: now - 1000 } } },
+      { storeCheckoutRecovery: { visit: { source: "paid", metaSource: "instagram", createdAt: now - 1000 } } },
       "",
       "/checkout/meta"
     )
@@ -147,7 +147,7 @@ describe("order attribution across a shopping visit", () => {
     { source: "social", metaSource: "instagram", createdAt: now - 24 * 60 * 60 * 1000 },
     { source: "email", metaSource: "instagram", createdAt: now },
   ])("ignores malformed or expired recovery metadata: %j", async (visit) => {
-    window.history.replaceState({ kagCheckoutRecovery: { visit } }, "", "/checkout/meta")
+    window.history.replaceState({ storeCheckoutRecovery: { visit } }, "", "/checkout/meta")
     expect(await attribution()).toBeUndefined()
   })
 })

@@ -37,7 +37,7 @@ export function getStoreVisitSource(): VisitSource {
   try {
     // A clean checkout return can recover its coarse source even when tab storage is blocked.
     // The history entry carries no raw referrer, campaign, or checkout capability.
-    const recovered = readVisit(window.history.state?.kagCheckoutRecovery?.visit, now)
+    const recovered = readVisit(window.history.state?.storeCheckoutRecovery?.visit, now)
     if (recovered) {
       currentVisit = recovered
       try {

@@ -77,7 +77,7 @@ export function createCheckoutIngress(request: NextRequest) {
         .then(response => {
           if (finished) return;
           if (!response.ok) throw new Error();
-          history.replaceState({...history.state,kagCheckoutRecovery:{kind,selector,visit}}, "", ${JSON.stringify(url.pathname)});
+          history.replaceState({...history.state,storeCheckoutRecovery:{kind,selector,visit}}, "", ${JSON.stringify(url.pathname)});
           location.reload();
           finished = true;
           clearTimeout(timeout);

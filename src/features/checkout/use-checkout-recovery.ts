@@ -13,7 +13,7 @@ function subscribe(listener: () => void) {
 
 function getReference() {
   try {
-    return JSON.stringify(window.history.state?.kagCheckoutRecovery ?? null)
+    return JSON.stringify(window.history.state?.storeCheckoutRecovery ?? null)
   } catch {
     return "null"
   }
