@@ -60,24 +60,60 @@ test("any nonempty CI marker requires database coverage", () => {
   }
 })
 
-test("CI exits before later setup when one database variable is missing", () => {
-  const variables = findDatabaseVariables("src", /\.test\.tsx?$/)
-  const environment = Object.fromEntries(variables.map((name) => [name, "postgresql://unused.invalid/test"]))
-  environment.CI = "true"
-  delete environment.ADMIN_TEST_DATABASE_URL
-  const result = spawnSync(
-    process.execPath,
-    [
-      "--import",
-      "tsx",
-      "--input-type=module",
-      "-e",
-      `import { assertTestDatabases } from "./test/assert-test-databases.ts"; assertTestDatabases("unit", ${JSON.stringify(environment)}); console.log("later setup ran")`,
-    ],
-    { cwd: root, encoding: "utf8", timeout: 10_000 }
+function entrypointEnvironment() {
+  const environment = Object.fromEntries(
+    Object.entries(process.env).filter(([name]) => !name.endsWith("DATABASE_URL") && name !== "NODE_TEST_CONTEXT")
   )
-  assert.equal(result.error, undefined)
-  assert.equal(result.status, 1)
-  assert.match(result.stderr, /Missing unit database configuration: ADMIN_TEST_DATABASE_URL\./)
-  assert.doesNotMatch(result.stdout, /later setup ran/)
-})
+  return { ...environment, CI: "true", FORCE_COLOR: "0", TEST_DATABASE_ENTRYPOINT_PROBE: "true" }
+}
+
+// The baseline runner discovers this file too. If its guard regresses, run the other
+// tests once and let the parent probe reject that output instead of spawning forever.
+const skipNestedProbe = process.env.TEST_DATABASE_ENTRYPOINT_PROBE === "true"
+
+test(
+  "the baseline runner stops before tests when CI database configuration is missing",
+  { skip: skipNestedProbe },
+  () => {
+    const result = spawnSync(process.execPath, ["--import", "tsx", "scripts/database/run-tests.mjs"], {
+      cwd: root,
+      env: entrypointEnvironment(),
+      encoding: "utf8",
+      timeout: 30_000,
+    })
+    assert.equal(result.error, undefined)
+    assert.equal(result.status, 1, result.stdout + result.stderr)
+    assert.match(result.stderr, /Missing baseline database configuration: TEMPLATE_TEST_DATABASE_URL\./)
+    assert.equal(result.stdout, "", "The baseline test runner must not execute or report any tests")
+  }
+)
+
+test(
+  "the Vitest unit entrypoint stops before tests when one CI database URL is missing",
+  { skip: skipNestedProbe },
+  () => {
+    const environment = entrypointEnvironment()
+    for (const name of findDatabaseVariables("src", /\.test\.tsx?$/)) {
+      environment[name] = "postgresql://unused.invalid/test"
+    }
+    delete environment.ADMIN_TEST_DATABASE_URL
+    const result = spawnSync(
+      process.execPath,
+      [
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--project",
+        "unit",
+        "src/lib/is-private-app-path.test.ts",
+        "--reporter=json",
+      ],
+      { cwd: root, env: environment, encoding: "utf8", timeout: 30_000 }
+    )
+    assert.equal(result.error, undefined)
+    assert.equal(result.status, 1, result.stdout + result.stderr)
+    assert.match(result.stderr, /Missing unit database configuration: ADMIN_TEST_DATABASE_URL\./)
+    const report = JSON.parse(result.stdout)
+    assert.equal(report.numTotalTests, 0)
+    assert.deepEqual(report.testResults, [])
+  }
+)

@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright"
 import { expect, test } from "@playwright/test"
 
+import { storeConfig } from "../test/store-config"
 import { beginKeyboardNavigation } from "../test/begin-keyboard-navigation"
 
 test("shows the branded landing page without accessibility violations or horizontal overflow", async ({
@@ -13,9 +14,7 @@ test("shows the branded landing page without accessibility violations or horizon
   const response = await page.goto("/")
 
   expect(response?.status()).toBe(200)
-  await expect(
-    page.getByRole("heading", { name: "Your next favorite starts here.", exact: true, level: 1 })
-  ).toBeVisible()
+  await expect(page.getByRole("heading", { name: storeConfig.home.headline, exact: true, level: 1 })).toBeVisible()
   const shopLink = page.getByRole("link", { name: "Shop", exact: true })
   await expect(shopLink).toBeVisible()
   await expect(shopLink).toHaveAttribute("href", "/shop")
@@ -60,9 +59,7 @@ test("returns a real 404 and offers keyboard navigation home", async ({ page, br
   ).toBe(true)
   await page.keyboard.press("Enter")
   await expect(page).toHaveURL("/")
-  await expect(
-    page.getByRole("heading", { name: "Your next favorite starts here.", exact: true, level: 1 })
-  ).toBeVisible()
+  await expect(page.getByRole("heading", { name: storeConfig.home.headline, exact: true, level: 1 })).toBeVisible()
 })
 
 test("provides a lightweight health endpoint", async ({ request }) => {
