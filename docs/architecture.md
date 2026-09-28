@@ -16,7 +16,7 @@ Paths below are relative to the repository root. They describe where code belong
 | `src/hooks/`              | Hooks with demonstrated use across features                             |
 | `src/lib/`                | Shared utilities and infrastructure                                     |
 | `public/`                 | Assets deliberately served by the website                               |
-| `assets/print/`           | Artwork masters, derivatives, and production references                 |
+| `assets/print/`           | README-only pointer to private artwork and production storage           |
 | `scripts/artwork/`        | Existing Python artwork tools                                           |
 | `test/`                   | Shared test setup, fixtures, and support; never production dependencies |
 | `e2e/`                    | Browser journeys and their support                                      |

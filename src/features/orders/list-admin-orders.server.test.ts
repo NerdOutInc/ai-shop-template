@@ -44,7 +44,7 @@ describe("admin orders access and unavailable storage", () => {
 
   it("reports storage failures without logging customer data or a database URL", async () => {
     const warning = vi.spyOn(console, "warn").mockImplementation(() => {})
-    query.mockRejectedValue(new Error("postgres://secret:password@private-host customer@example.test"))
+    query.mockRejectedValue(new Error("postgres://secret:password@private-host.test customer@example.test"))
     expect(await listAdminOrders(adminOrderFilters)).toEqual({ status: "unavailable" })
     expect(warning).toHaveBeenCalledExactlyOnceWith("Admin orders unavailable", { reason: "storage" })
   })

@@ -1,13 +1,14 @@
 import { act, renderHook, waitFor } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
+import { checkoutRecoveryHistoryKey } from "./checkout-recovery-history-key"
 import { useCheckoutRecovery } from "./use-checkout-recovery"
 
 const selector = "a".repeat(32)
 const sessionId = "cs_live_original1234567890"
 
 beforeEach(() => {
-  window.history.replaceState({ storeCheckoutRecovery: { kind: "success", selector } }, "", "/checkout/success")
+  window.history.replaceState({ [checkoutRecoveryHistoryKey]: { kind: "success", selector } }, "", "/checkout/success")
 })
 
 afterEach(() => vi.unstubAllGlobals())
@@ -32,7 +33,7 @@ describe("checkout recovery in the current history entry", () => {
   it.each([null, { kind: "meta", selector }, { kind: "success", selector: "invalid" }])(
     "treats an absent, wrong-kind, or malformed history reference as permanently gone: %j",
     (reference) => {
-      window.history.replaceState({ storeCheckoutRecovery: reference }, "", "/checkout/success")
+      window.history.replaceState({ [checkoutRecoveryHistoryKey]: reference }, "", "/checkout/success")
       const fetcher = vi.fn()
       vi.stubGlobal("fetch", fetcher)
       const { result } = renderHook(() => useCheckoutRecovery("success"))
@@ -83,7 +84,7 @@ describe("checkout recovery in the current history entry", () => {
     const { result } = renderHook(() => useCheckoutRecovery("success"))
     act(() => {
       window.history.replaceState(
-        { storeCheckoutRecovery: { kind: "success", selector: "b".repeat(32) } },
+        { [checkoutRecoveryHistoryKey]: { kind: "success", selector: "b".repeat(32) } },
         "",
         "/checkout/success"
       )
