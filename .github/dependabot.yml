@@ -6,6 +6,11 @@ updates:
       interval: weekly
       day: monday
     groups:
+      next:
+        patterns:
+          - next
+          - "@next/*"
+          - eslint-config-next
       storybook:
         patterns:
           - storybook
@@ -19,6 +24,9 @@ updates:
         patterns:
           - "*"
         exclude-patterns:
+          - next
+          - "@next/*"
+          - eslint-config-next
           - storybook
           - "@storybook/*"
           - eslint-plugin-storybook

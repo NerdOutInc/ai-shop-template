@@ -85,6 +85,8 @@ jobs:
         run: pnpm test:database
       - name: Test architecture rules
         run: pnpm test:architecture
+      - name: Test dependency patch upgrades
+        run: pnpm test:dependencies
       - name: Test publishing notifications
         run: pnpm test:monitor
       - name: Test store skill scripts
