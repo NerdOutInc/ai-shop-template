@@ -69,7 +69,7 @@ export const Populated: Story = {
     await userEvent.click(canvas.getByRole("button", { name: /Decrease quantity/ }))
     await expect(canvas.getByRole("heading", { name: "The good stuff (1)" })).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: /Remove We just hang together/ }))
-    await expect(canvas.getByRole("heading", { name: "A little room for adventure." })).toBeVisible()
+    await expect(canvas.getByRole("heading", { name: "Ready for your next favorite." })).toBeVisible()
   },
 }
 
