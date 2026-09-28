@@ -78,6 +78,8 @@ jobs:
       - name: Test unit behavior
         run: pnpm test:unit
       - name: Test fresh template database and runtime permissions
+        env:
+          SUPABASE_PRIVILEGES_TEST: true
         run: pnpm test:database
       - name: Test architecture rules
         run: pnpm test:architecture
