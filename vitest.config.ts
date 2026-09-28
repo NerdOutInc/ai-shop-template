@@ -22,6 +22,7 @@ export default defineConfig({
         test: {
           name: "unit",
           environment: "jsdom",
+          globalSetup: ["./test/require-unit-test-databases.ts"],
           setupFiles: ["./test/setup.ts"],
           include: ["src/**/*.test.{ts,tsx}"],
           clearMocks: true,

@@ -8,7 +8,7 @@ import { adminTestConfig } from "./admin/admin-test-config"
 
 import { storeConfig } from "../test/store-config"
 import { configuredStoreConfig } from "../test/configured-store-config"
-import { storeConfigSchema } from "@/lib/store-config-schema"
+import { createStoreConfigSource } from "./create-store-config-source"
 
 // Build fixed configured and unconfigured shops in isolated directories. Merchant
 // source stays untouched; the application has no switch that bypasses setup.
@@ -47,11 +47,9 @@ for (const fixture of fixtures) {
   await symlink(path.join(root, "node_modules"), path.join(destination, "node_modules"), "dir")
   // Emit only validated public config data. No production module imports test code,
   // and the merchant source is never patched in place.
-  await writeFile(
-    path.join(destination, "src/lib/store-config.ts"),
-    `import { storeConfigSchema } from "./store-config-schema"\nexport const storeConfig = storeConfigSchema.parse(${JSON.stringify(storeConfigSchema.parse(fixture.config), null, 2)})\n`
-  )
-  const child = spawn("pnpm", ["exec", "next", "build", "--webpack"], {
+  const configFile = path.join(destination, "src/lib/store-config.ts")
+  await writeFile(configFile, createStoreConfigSource(await readFile(configFile, "utf8"), fixture.config))
+  const child = spawn("pnpm", ["exec", "next", "build"], {
     cwd: destination,
     stdio: "inherit",
     env: {
