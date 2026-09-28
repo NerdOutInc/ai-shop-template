@@ -34,6 +34,9 @@ describe("storeConfigSchema", () => {
       change: { fonts: { ...storeConfig.fonts, heading: "url(https://font.example)" } },
       path: ["fonts", "heading"],
     },
+    { field: "offset time zone", change: { timeZone: "-05:00" }, path: ["timeZone"] },
+    { field: "abbreviated time zone", change: { timeZone: "CST" }, path: ["timeZone"] },
+    { field: "reversed offset time zone", change: { timeZone: "Etc/GMT+5" }, path: ["timeZone"] },
     { field: "time zone", change: { timeZone: "Not/A_Zone" }, path: ["timeZone"] },
     {
       field: "weekly weekday",

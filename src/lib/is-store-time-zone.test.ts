@@ -9,8 +9,7 @@ describe("store time zone validation", () => {
     "Asia/Kolkata",
     "US/Central",
     "Etc/UTC",
-    "Etc/GMT+5",
-    "Etc/GMT-9",
+    "Etc/GMT",
   ])("accepts the unambiguous named zone %s", (timeZone) => {
     expect(isStoreTimeZone(timeZone)).toBe(true)
   })
@@ -29,7 +28,10 @@ describe("store time zone validation", () => {
     }
   )
 
-  it.each(["", "America/Not_A_Zone", "UTC/Invalid", "/", "UTC+5"])("rejects the invalid zone %j", (timeZone) => {
-    expect(isStoreTimeZone(timeZone)).toBe(false)
-  })
+  it.each(["", "America/Not_A_Zone", "UTC/Invalid", "/", "UTC+5", "Etc/GMT+5", "Etc/GMT-9"])(
+    "rejects the invalid zone %j",
+    (timeZone) => {
+      expect(isStoreTimeZone(timeZone)).toBe(false)
+    }
+  )
 })
