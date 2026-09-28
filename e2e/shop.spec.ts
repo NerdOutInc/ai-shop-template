@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright"
 import { expect, test } from "@playwright/test"
 
+import { storeConfig } from "../test/store-config"
 import { beginKeyboardNavigation } from "../test/begin-keyboard-navigation"
 
 test("shows a useful first-collection placeholder without credentials, accessibility violations, or overflow", async ({
@@ -73,7 +74,5 @@ test("provides keyboard navigation from home to the shop and back with visible f
   ).toBe(true)
   await page.keyboard.press("Enter")
   await expect(page).toHaveURL("/")
-  await expect(
-    page.getByRole("heading", { name: "Your next favorite starts here.", exact: true, level: 1 })
-  ).toBeVisible()
+  await expect(page.getByRole("heading", { name: storeConfig.home.headline, exact: true, level: 1 })).toBeVisible()
 })
