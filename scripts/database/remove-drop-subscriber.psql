@@ -1,0 +1,25 @@
+\set ON_ERROR_STOP on
+\set ECHO none
+\set QUIET on
+\unset requested_email
+\prompt 'Subscriber address to remove: ' requested_email
+
+begin;
+update commerce.drop_subscribers
+set unsubscribed_at = coalesce(unsubscribed_at, now()), updated_at = now()
+where email = lower(btrim(:'requested_email'));
+
+-- Verify under the update's row lock; report success only after commit succeeds.
+select count(*) = 1 and bool_and(unsubscribed_at is not null) as removal_verified
+from commerce.drop_subscribers
+where email = lower(btrim(:'requested_email'))
+\gset
+commit;
+
+\if :removal_verified
+  \echo Removal verified. Apply external-list suppression before completing the support request.
+\else
+  \echo No matching subscriber. No address was added.
+\endif
+\unset requested_email
+\unset removal_verified

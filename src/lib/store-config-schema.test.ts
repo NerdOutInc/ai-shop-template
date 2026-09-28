@@ -13,10 +13,16 @@ describe("storeConfigSchema", () => {
       configured: false,
       commerce: { shippingConfirmed: false },
       policies: { published: false },
+      privacy: { retainedDropSubscribers: false },
     })
   })
 
   it.each([
+    {
+      field: "retained subscriber disclosure",
+      change: { privacy: { retainedDropSubscribers: "false" } },
+      path: ["privacy", "retainedDropSubscribers"],
+    },
     { field: "id", change: { id: "Brand With Spaces" }, path: ["id"] },
     { field: "name", change: { name: "   " }, path: ["name"] },
     { field: "launcher name", change: { shortName: "A much longer launcher label" }, path: ["shortName"] },

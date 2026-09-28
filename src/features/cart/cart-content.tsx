@@ -37,8 +37,7 @@ export function CartContent({ cancelled = false }: { cancelled?: boolean }) {
         />
         <h2 className="display-heading mt-7 text-4xl">Ready for your next favorite.</h2>
         <p className="mx-auto mt-5 max-w-sm leading-7 text-foreground/75">
-          Your cart is empty. Your next favorite is waiting.
-          <br className="hidden sm:block" /> Let’s find your next favorite shirt.
+          Your cart is empty. Explore the collection to find a shirt that suits you.
         </p>
         <Link href="/shop" className="button button-accent mt-8">
           Find your shirt

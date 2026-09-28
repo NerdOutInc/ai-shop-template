@@ -1,4 +1,12 @@
+import "server-only"
+
+import { env } from "@/lib/env"
+import { storeConfig } from "@/lib/store-config"
+
 export function StoreDataDisclosures() {
+  const hasDropSubscribers =
+    storeConfig.configured &&
+    ((storeConfig.features.dropSignup && storeConfig.policies.published) || storeConfig.privacy.retainedDropSubscribers)
   return (
     <>
       <h2>Orders and support</h2>
@@ -9,6 +17,18 @@ export function StoreDataDisclosures() {
         details go to Printify for printing and shipping. The store does not receive your full card number. Information
         you send to support is used to handle your request.
       </p>
+      <p>
+        When hosting and database services are connected, Vercel processes website requests, including network
+        information such as IP addresses, and Supabase stores order and delivery records
+        {hasDropSubscribers ? ", along with design-drop signup addresses, signup IPs, and consent records" : ""}.
+      </p>
+      {env.ORDER_ALERTS_ENABLED === "true" && (
+        <p>
+          When order alerts run, Resend processes emails to the store owner containing customer names and email
+          addresses, order items and totals, payment and fulfillment status, and order and payment references. These
+          alerts help the owner follow up on orders that need attention; they are not marketing emails to customers.
+        </p>
+      )}
       <h2>Browser storage and checkout recovery</h2>
       <p>
         This site uses browser local storage for your cart and checkout progress. Checkout recovery uses cookies that

@@ -12,6 +12,7 @@ export const storeConfig = storeConfigSchema.parse({
   timeZone: "America/Chicago",
   weeklyFeature: { weekday: 5, hour: 17, minute: 30 },
   features: { designOfTheWeek: true, dropSignup: true, about: true },
+  privacy: { retainedDropSubscribers: false },
   supportEmail: "support@fixture.example",
   logo: { src: "/images/store-mark.svg", width: 48, height: 48, showName: true },
   fonts: {
