@@ -160,14 +160,14 @@ Malformed recognized print settings still emit `PRODUCT_SCHEMA_DRIFT`; added res
 
 Run the unit tests for the signature adapter, webhook route, worker trigger, processor, and database store, followed by the repository checks. These use fixtures or an isolated database and do not establish live Printify delivery.
 
-The enabled HTTP/browser suite uses a production Next.js build, its real webhook and worker routes, and a separate local Postgres database. Create an empty disposable `store_publishing_e2e` database, then run:
+The enabled HTTP/browser suite uses a production Next.js build, its real webhook and worker routes, and a separate local Postgres database. Install the [local test prerequisites](ci.md#local-test-prerequisites), create an empty disposable `store_publishing_e2e` database, then rebuild the fixture from the current source before each run:
 
 ```sh
-NEXT_PUBLIC_SITE_URL=https://example.com pnpm build
+pnpm test:e2e:prepare
 PUBLISHING_E2E_DATABASE_URL=postgresql://postgres:local-commerce-test@localhost:55479/store_publishing_e2e pnpm test:e2e:publishing
 ```
 
-The suite rejects remote hosts, other database names, and connection-string overrides. It replaces only this disposable database's `commerce` schema. Its loopback provider stub accepts synthetic credentials, records every callback, and blocks external fetches; it never registers a webhook or changes a Printify product. Tests cover signed create, invalid signature, duplicate delivery without an extra revision or callback, saved-draft isolation, selective images/Primary selection, published-price shipping quotes, unpublish/404/checkout rejection, and authenticated worker recovery without another webhook. Recovery advances the local retry timestamp instead of sleeping through production backoff. Desktop and 390px runs retain Primary-selection screenshots in the HTML report. The manual Integration workflow creates the required isolated environments and runs these suites; missing required configuration fails rather than becoming live-provider evidence. `pnpm check:all` includes it.
+The suite rejects remote hosts, other database names, and connection-string overrides. It replaces only this disposable database's `commerce` schema. Its loopback provider stub accepts synthetic credentials, records every callback, and blocks external fetches; it never registers a webhook or changes a Printify product. Tests cover signed create, invalid signature, duplicate delivery without an extra revision or callback, saved-draft isolation, selective images/Primary selection, published-price shipping quotes, unpublish/404/checkout rejection, and authenticated worker recovery without another webhook. Recovery advances the local retry timestamp instead of sleeping through production backoff. Desktop and 390px runs retain Primary-selection screenshots in the HTML report. The [required PR integration jobs](ci.md) create the isolated environments and run these suites, with a manual dispatch available for diagnosis; missing required configuration fails rather than becoming live-provider evidence. `pnpm check:all` includes it.
 
 For the separate integration check, use a designated test product and verify all of the following:
 
