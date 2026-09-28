@@ -35,6 +35,8 @@ The template ships no active cron schedule. Use the [supported Pro/Enterprise ho
 
 Keep both publishing credentials and the cron secret out of Git, terminal output, screenshots, browser bundles, and `NEXT_PUBLIC_` variables. Updating an environment value requires restarting or redeploying the application that reads it. `NEXT_PUBLIC_SITE_URL` is embedded at build time, including its use in server callbacks: build the production deployment with this store’s permanent canonical HTTPS origin (the same value as `NEXT_PUBLIC_SITE_URL`), rebuild when that value changes, and verify the reported external handle. A runtime-only override does not change an already-built canonical URL. Production setup and publication require their own authorized rollout.
 
+The dedicated publishing token separates operation permissions, not provider accounts or shops. Follow [Printify token rotation and shared rate limits](store-setup.md#printify-and-the-first-product): personal access tokens expire after one year, and additional tokens do not add API capacity. Record expiry/rotation evidence without retaining token values.
+
 ## Per-minute recovery rollout
 
 The example recovery cadence is **every minute**. [Example schedules](../scripts/vercel-crons.example.json) include a publishing GET trigger plus separate stock/popularity and optional order-alert jobs. The default [Vercel configuration](../vercel.json) contains no cron jobs. Review current plan support and costs, merge the needed entries, then deploy; a preview deployment does not run production schedules.

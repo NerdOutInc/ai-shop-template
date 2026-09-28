@@ -50,7 +50,7 @@ export const storeConfigSchema = z
     locale: z.literal("en-US", {
       error: "The storefront currently supports en-US. Translation and regional formatting require implementation.",
     }),
-    timeZone: text.refine(isStoreTimeZone, "Use an IANA time zone such as America/New_York or UTC"),
+    timeZone: text.refine(isStoreTimeZone, "Use UTC or an IANA region/city time zone such as America/New_York"),
     features: z.object({
       designOfTheWeek: z.boolean(),
       dropSignup: z.boolean(),

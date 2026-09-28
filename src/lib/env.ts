@@ -7,7 +7,6 @@ export const env = createEnv({
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
     VERCEL: process.env.VERCEL,
-    CHECKOUT_RATE_LIMIT_SECRET: process.env.CHECKOUT_RATE_LIMIT_SECRET,
     VERCEL_URL: process.env.VERCEL_URL,
     VERCEL_ENV: process.env.VERCEL_ENV,
     PRINTIFY_API_TOKEN: process.env.PRINTIFY_API_TOKEN,
@@ -16,6 +15,7 @@ export const env = createEnv({
     PRINTIFY_SHOP_ID: process.env.PRINTIFY_SHOP_ID,
     DATABASE_URL: process.env.DATABASE_URL,
     DATABASE_SSL_CA: process.env.DATABASE_SSL_CA,
+    CHECKOUT_RATE_LIMIT_SECRET: process.env.CHECKOUT_RATE_LIMIT_SECRET,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
     STRIPE_TAX_ENABLED: process.env.STRIPE_TAX_ENABLED,
