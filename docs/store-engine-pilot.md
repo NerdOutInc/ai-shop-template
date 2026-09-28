@@ -59,7 +59,7 @@ Use synthetic fixture brands with deliberately different names, colors, policy t
 
 The go/no-go test is practical: can a developer change engine behavior once, produce correct builds for both brands, and roll out independently with no per-brand application-code patches? Track patch count, maintainer time, build/test duration and recovery results for the exercise. If a small configuration seam cannot express the real brand differences, keep clone updates and document the exceptions. Do not call a central repository plus a growing pile of brand conditionals a successful engine.
 
-## Existing stores, including Knot a Gang
+## Existing operating stores
 
 This work does not migrate an operating store. That store's source has different Git and migration histories; importing its data or running the template baseline is unsupported by the current setup workflow. A later, explicitly authorized adoption starts with a read-only inventory of its deployed commit, database schema/history, identity, customization, routes, callbacks, workers, Auth/passkeys, grants, provider resources and pending work.
 
