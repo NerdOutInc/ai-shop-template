@@ -1,0 +1,4 @@
+interface:
+  display_name: "Stripe Checkout setup"
+  short_description: "Configure Checkout and verify signed payment events"
+  default_prompt: "Use $store-stripe-checkout to connect this storefront to Stripe sandbox Checkout and verify its signed webhook and simulated fulfillment."

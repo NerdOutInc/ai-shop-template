@@ -1,0 +1,4 @@
+interface:
+  display_name: "Printify product creation"
+  short_description: "Prepare artwork and save verified Printify drafts"
+  default_prompt: "Use $store-printify-product to add this approved transparent design to the intended Printify shop and verify its saved draft."

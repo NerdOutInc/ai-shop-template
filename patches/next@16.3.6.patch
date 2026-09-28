@@ -1,0 +1,106 @@
+diff --git a/dist/build/templates/app-page-runtime.js b/dist/build/templates/app-page-runtime.js
+index f1ab03f292340fe08b563990110ac0835d3415fb..2b48cd8667173dc3e339eda4a1841e2c6b65e355 100644
+--- a/dist/build/templates/app-page-runtime.js
++++ b/dist/build/templates/app-page-runtime.js
+@@ -332,11 +332,10 @@ function createAppPageEntrypoint({ tree, page, pathname, require: __next_app_req
+         // generated, so we will always either return a static response or a 404.
+         const rawSegmentPrefetchHeader = req.headers[_approuterheaders.NEXT_ROUTER_SEGMENT_PREFETCH_HEADER];
+         const segmentPrefetchHeader = (0, _requestmeta.getRequestMeta)(req, 'segmentPrefetchRSCRequest') ?? (isPrefetchRSCRequest ? typeof rawSegmentPrefetchHeader === 'string' ? rawSegmentPrefetchHeader : Array.isArray(rawSegmentPrefetchHeader) ? rawSegmentPrefetchHeader[0] : undefined : undefined);
+-        // TODO: investigate existing bug with shouldServeStreamingMetadata always
+-        // being true for a revalidate due to modifying the base-server this.renderOpts
+-        // when fixing this to correct logic it causes hydration issue since we set
+-        // serveStreamingMetadata to true during export
+-        const serveStreamingMetadata = !userAgent ? true : (0, _streamingmetadata.shouldServeStreamingMetadata)(userAgent, nextConfig.htmlLimitedBots);
++        // Match the non-PPR export opt-out during headerless ISR regeneration too.
++        // Otherwise regeneration restores the streaming boundary and stale head tags.
++        // Keep the existing PPR behavior, whose export still uses streaming metadata.
++        const serveStreamingMetadata = !userAgent ? isRoutePPREnabled || nextConfig.htmlLimitedBots !== '.*' : (0, _streamingmetadata.shouldServeStreamingMetadata)(userAgent, nextConfig.htmlLimitedBots);
+         // PPR shells are generated for streaming metadata. Requests that require
+         // blocking metadata must bypass the shell so the prerender and dynamic
+         // render use the same metadata tree.
+diff --git a/dist/esm/build/templates/app-page-runtime.js b/dist/esm/build/templates/app-page-runtime.js
+index 1970588724b6e4880f27a8be60ca32ae6437bc28..d688e63f4199f8cfa05a444a3cc24494f21f6c7d 100644
+--- a/dist/esm/build/templates/app-page-runtime.js
++++ b/dist/esm/build/templates/app-page-runtime.js
+@@ -347,11 +347,10 @@ export function createAppPageEntrypoint({ tree, page, pathname, require: __next_
+         // generated, so we will always either return a static response or a 404.
+         const rawSegmentPrefetchHeader = req.headers[NEXT_ROUTER_SEGMENT_PREFETCH_HEADER];
+         const segmentPrefetchHeader = getRequestMeta(req, 'segmentPrefetchRSCRequest') ?? (isPrefetchRSCRequest ? typeof rawSegmentPrefetchHeader === 'string' ? rawSegmentPrefetchHeader : Array.isArray(rawSegmentPrefetchHeader) ? rawSegmentPrefetchHeader[0] : undefined : undefined);
+-        // TODO: investigate existing bug with shouldServeStreamingMetadata always
+-        // being true for a revalidate due to modifying the base-server this.renderOpts
+-        // when fixing this to correct logic it causes hydration issue since we set
+-        // serveStreamingMetadata to true during export
+-        const serveStreamingMetadata = !userAgent ? true : shouldServeStreamingMetadata(userAgent, nextConfig.htmlLimitedBots);
++        // Match the non-PPR export opt-out during headerless ISR regeneration too.
++        // Otherwise regeneration restores the streaming boundary and stale head tags.
++        // Keep the existing PPR behavior, whose export still uses streaming metadata.
++        const serveStreamingMetadata = !userAgent ? isRoutePPREnabled || nextConfig.htmlLimitedBots !== '.*' : shouldServeStreamingMetadata(userAgent, nextConfig.htmlLimitedBots);
+         // PPR shells are generated for streaming metadata. Requests that require
+         // blocking metadata must bypass the shell so the prerender and dynamic
+         // render use the same metadata tree.
+diff --git a/dist/esm/export/index.js b/dist/esm/export/index.js
+index 6c35f4f47f704caea869a4f89721e0fc71f7f458..f6607785e2b86f198b73a66d5886a21561ef6bc7 100644
+--- a/dist/esm/export/index.js
++++ b/dist/esm/export/index.js
+@@ -346,7 +346,7 @@ async function exportAppImpl(dir, options, span, staticWorker) {
+         staticPageGenerationTimeout: nextConfig.staticPageGenerationTimeout,
+         nextFontManifest: require(join(distDir, 'server', `${NEXT_FONT_MANIFEST}.json`)),
+         images: nextConfig.images,
+-        htmlLimitedBots: nextConfig.htmlLimitedBots.source,
++        htmlLimitedBots: nextConfig.htmlLimitedBots,
+         experimental: {
+             clientTraceMetadata: nextConfig.experimental.clientTraceMetadata,
+             expireTime: nextConfig.expireTime,
+diff --git a/dist/esm/export/worker.js b/dist/esm/export/worker.js
+index 1f497e91e70f73ea1cd8a7e00f958a6f2879d212..5cb521f408028eb4149fceee6dfdc975cef0e7c3 100644
+--- a/dist/esm/export/worker.js
++++ b/dist/esm/export/worker.js
+@@ -164,11 +164,10 @@ async function exportPageImpl(input, fileWriter) {
+         disableOptimizedLoading,
+         locale,
+         supportsDynamicResponse: false,
+-        // During the export phase in next build, we always enable the streaming metadata since if there's
+-        // any dynamic access in metadata we can determine it in the build phase.
+-        // If it's static, then it won't affect anything.
+-        // If it's dynamic, then it can be handled when request hits the route.
+-        serveStreamingMetadata: true,
++        // Honor the explicit all-user-agent streaming opt-out during prerendering too.
++        // Otherwise fast navigation can abandon the initial metadata Suspense boundary
++        // before hydration claims its hoisted head nodes, leaving stale tags behind.
++        serveStreamingMetadata: isRoutePPREnabled || commonRenderOpts.htmlLimitedBots !== '.*',
+         allowEmptyStaticShell,
+         runInstantValidation,
+         isFallbackUpgradeable,
+diff --git a/dist/export/index.js b/dist/export/index.js
+index a19941bec99b5c5673834872eaf8a95deb584a34..3ece390a0b764fa4b7cc68ececdaddb82e5d29c6 100644
+--- a/dist/export/index.js
++++ b/dist/export/index.js
+@@ -414,7 +414,7 @@ async function exportAppImpl(dir, options, span, staticWorker) {
+         staticPageGenerationTimeout: nextConfig.staticPageGenerationTimeout,
+         nextFontManifest: require((0, _path.join)(distDir, 'server', `${_constants1.NEXT_FONT_MANIFEST}.json`)),
+         images: nextConfig.images,
+-        htmlLimitedBots: nextConfig.htmlLimitedBots.source,
++        htmlLimitedBots: nextConfig.htmlLimitedBots,
+         experimental: {
+             clientTraceMetadata: nextConfig.experimental.clientTraceMetadata,
+             expireTime: nextConfig.expireTime,
+diff --git a/dist/export/worker.js b/dist/export/worker.js
+index 9c9f72134cceb748174d399b3e6288baa49f9115..ceb044894bd244d40118814a8831a1fd7713f5ea 100644
+--- a/dist/export/worker.js
++++ b/dist/export/worker.js
+@@ -179,11 +179,10 @@ async function exportPageImpl(input, fileWriter) {
+         disableOptimizedLoading,
+         locale,
+         supportsDynamicResponse: false,
+-        // During the export phase in next build, we always enable the streaming metadata since if there's
+-        // any dynamic access in metadata we can determine it in the build phase.
+-        // If it's static, then it won't affect anything.
+-        // If it's dynamic, then it can be handled when request hits the route.
+-        serveStreamingMetadata: true,
++        // Honor the explicit all-user-agent streaming opt-out during prerendering too.
++        // Otherwise fast navigation can abandon the initial metadata Suspense boundary
++        // before hydration claims its hoisted head nodes, leaving stale tags behind.
++        serveStreamingMetadata: isRoutePPREnabled || commonRenderOpts.htmlLimitedBots !== '.*',
+         allowEmptyStaticShell,
+         runInstantValidation,
+         isFallbackUpgradeable,

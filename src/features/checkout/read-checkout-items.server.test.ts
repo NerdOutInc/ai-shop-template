@@ -1,0 +1,218 @@
+import { randomUUID } from "node:crypto"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+
+import { readPublishedProduct } from "@/features/publishing/read-published-product.server"
+
+import { PrintifyClient } from "./printify-client.server"
+
+import { hostedCheckoutRequestSchema } from "./hosted-checkout-request"
+import { readCheckoutItems } from "./read-checkout-items.server"
+
+vi.mock("server-only", () => ({}))
+const publishingConfig = vi.hoisted(() => ({ PRINTIFY_PUBLISHING_ENABLED: true }))
+vi.mock("@/features/publishing/read-published-product.server", () => ({ readPublishedProduct: vi.fn() }))
+vi.mock("@/lib/env", () => ({ env: publishingConfig }))
+
+beforeEach(() => {
+  publishingConfig.PRINTIFY_PUBLISHING_ENABLED = true
+  vi.mocked(readPublishedProduct).mockReset()
+})
+
+describe("readCheckoutItems", () => {
+  const fixture = () => {
+    const data = {
+      productId: "111111000000000000000002",
+      printify: new PrintifyClient({ apiToken: "test-secret-not-real", shopId: "1234" }),
+    }
+    const request = {
+      items: [{ productId: data.productId, variantId: 101, quantity: 2, expectedUnitAmount: 3000 }],
+      requestId: randomUUID(),
+      expectedShippingAmount: 735,
+    }
+    const product = {
+      id: data.productId,
+      shop_id: 1234,
+      title: "Toast",
+      blueprint_id: 1317,
+      print_provider_id: 99,
+      images: [{ src: "https://images.printify.com/forest-front.jpg", variant_ids: [101], is_default: true }],
+      print_areas: [
+        {
+          variant_ids: [101],
+          placeholders: [
+            {
+              position: "front",
+              images: [{ id: "private-art", imageId: "response-a", x: 0.5, y: 0.4, scale: 1, angle: 0 }],
+            },
+          ],
+        },
+      ],
+      variants: [{ id: 101, price: 3000, is_enabled: true, is_available: true, options: [1] }],
+      options: [{ name: "Size", values: [{ id: 1, title: "M" }] }],
+    }
+    vi.mocked(readPublishedProduct).mockImplementation(async (id) => (id === product.id ? product : null))
+    return { ...data, request, product }
+  }
+
+  it("reads approved variants and live availability without quoting an address", async () => {
+    const data = fixture()
+    const request = vi.spyOn(data.printify, "request").mockResolvedValue(data.product)
+    expect(await readCheckoutItems(data.printify, data.request)).toMatchObject([
+      { quantity: 2, unitAmount: 3000, imageUrl: "https://images.printify.com/forest-front.jpg" },
+    ])
+    expect(request).toHaveBeenCalledTimes(1)
+  })
+
+  it.each(["price", "disabled", "unavailable", "other-shop", "other-product"])(
+    "blocks a %s response before shipping or payment",
+    async (change) => {
+      const data = fixture()
+      if (change === "price") data.product.variants[0]!.price = 3200
+      if (change === "disabled") data.product.variants[0]!.is_enabled = false
+      if (change === "unavailable") data.product.variants[0]!.is_available = false
+      if (change === "other-shop") data.product.shop_id = 9876
+      if (change === "other-product") data.product.id = "different-product"
+      const request = vi.spyOn(data.printify, "request").mockResolvedValue(data.product)
+      await expect(readCheckoutItems(data.printify, data.request)).rejects.toThrow()
+      expect(request).toHaveBeenCalledTimes(["other-shop", "other-product"].includes(change) ? 0 : 1)
+    }
+  )
+
+  it("rejects a disabled store before provider reads or payment", async () => {
+    const data = fixture()
+    publishingConfig.PRINTIFY_PUBLISHING_ENABLED = false
+    const request = vi.spyOn(data.printify, "request")
+    await expect(readCheckoutItems(data.printify, data.request)).rejects.toMatchObject({ code: "NOT_CONFIGURED" })
+    expect(request).not.toHaveBeenCalled()
+  })
+
+  it("rejects unpublished products before contacting Printify", async () => {
+    const data = fixture()
+    data.request.items[0]!.productId = "000000000000000000000000"
+    const request = vi.spyOn(data.printify, "request")
+    await expect(readCheckoutItems(data.printify, data.request)).rejects.toMatchObject({ code: "PRODUCT_UNAVAILABLE" })
+    expect(request).not.toHaveBeenCalled()
+  })
+
+  it("uses published membership and listing values while keeping draft listing edits private", async () => {
+    publishingConfig.PRINTIFY_PUBLISHING_ENABLED = true
+    const data = fixture()
+    data.product.id = "new-published-product"
+    data.request.items[0]!.productId = data.product.id
+    data.product.variants[0]!.is_available = false
+    vi.mocked(readPublishedProduct).mockResolvedValue(structuredClone(data.product))
+    data.product.title = "Unpublished rename"
+    data.product.images[0]!.src = "https://images.printify.com/unpublished-photo.jpg"
+    data.product.variants[0]!.price = 0
+    data.product.variants[0]!.is_available = true
+    data.product.options[0]!.values[0]!.title = "Unpublished size label"
+    data.product.print_areas[0]!.placeholders[0]!.images[0]!.imageId = "response-b"
+    vi.spyOn(data.printify, "request").mockResolvedValueOnce(data.product)
+    const quote = await readCheckoutItems(data.printify, data.request)
+    expect(quote).toMatchObject([
+      {
+        title: "Toast",
+        variantLabel: "M",
+        unitAmount: 3000,
+        imageUrl: "https://images.printify.com/forest-front.jpg",
+      },
+    ])
+    expect(readPublishedProduct).toHaveBeenCalledExactlyOnceWith("new-published-product")
+  })
+
+  it("does not fill a missing published photo with an unpublished draft photo", async () => {
+    publishingConfig.PRINTIFY_PUBLISHING_ENABLED = true
+    const data = fixture()
+    vi.mocked(readPublishedProduct).mockResolvedValue({ ...data.product, images: [] })
+    vi.spyOn(data.printify, "request").mockResolvedValueOnce(data.product)
+
+    const quote = await readCheckoutItems(data.printify, data.request)
+
+    expect(quote[0]).not.toHaveProperty("imageUrl")
+  })
+
+  it.each([
+    { country: "Honduras", canvas: false },
+    { country: "Nicaragua", canvas: true },
+    { country: null, canvas: null },
+    { country: 123, canvas: "unused" },
+    { country: { origin: "Nicaragua" }, canvas: [] },
+  ])("reads a published snapshot despite unrelated provider fields: %j", async (fields) => {
+    publishingConfig.PRINTIFY_PUBLISHING_ENABLED = true
+    const data = fixture()
+    const published = structuredClone(data.product)
+    vi.mocked(readPublishedProduct).mockResolvedValue(published)
+    Object.assign(data.product.print_areas[0]!, fields)
+    const request = vi.spyOn(data.printify, "request").mockResolvedValueOnce(data.product)
+
+    expect(await readCheckoutItems(data.printify, data.request)).toMatchObject([
+      { title: "Toast", variantLabel: "M", unitAmount: 3000, quantity: 2 },
+    ])
+    expect(request).toHaveBeenCalledTimes(1)
+    expect(published.print_areas[0]).not.toHaveProperty("country")
+    expect(published.print_areas[0]).not.toHaveProperty("canvas")
+  })
+
+  it("still blocks changed placement alongside ignored provider fields before quoting shipping", async () => {
+    publishingConfig.PRINTIFY_PUBLISHING_ENABLED = true
+    const data = fixture()
+    vi.mocked(readPublishedProduct).mockResolvedValue(structuredClone(data.product))
+    Object.assign(data.product.print_areas[0]!, { country: "Honduras", canvas: false })
+    data.product.print_areas[0]!.placeholders[0]!.images[0]!.x = 0.6
+    const request = vi.spyOn(data.printify, "request").mockResolvedValue(data.product)
+
+    await expect(readCheckoutItems(data.printify, data.request)).rejects.toMatchObject({ code: "PRODUCT_CHANGED" })
+    expect(request).toHaveBeenCalledTimes(1)
+  })
+
+  it("keeps an unchanged published size available after a sibling color is added to the draft", async () => {
+    publishingConfig.PRINTIFY_PUBLISHING_ENABLED = true
+    const data = fixture()
+    vi.mocked(readPublishedProduct).mockResolvedValue(structuredClone(data.product))
+    data.product.variants.push({ ...data.product.variants[0]!, id: 102, options: [2] })
+    data.product.print_areas[0]!.variant_ids.unshift(102)
+    const request = vi.spyOn(data.printify, "request").mockResolvedValueOnce(data.product)
+    expect(await readCheckoutItems(data.printify, data.request)).toMatchObject([{ unitAmount: 3000, quantity: 2 }])
+    expect(request).toHaveBeenCalledTimes(1)
+  })
+
+  it.each(["published-disabled", "published-price", "live-disabled", "live-stock", "live-artwork", "live-provider"])(
+    "blocks %s changes before quoting shipping",
+    async (change) => {
+      publishingConfig.PRINTIFY_PUBLISHING_ENABLED = true
+      const data = fixture()
+      const published = structuredClone(data.product)
+      if (change === "published-disabled") published.variants[0]!.is_enabled = false
+      if (change === "published-price") published.variants[0]!.price = 3200
+      if (change === "live-stock") data.product.variants[0]!.is_available = false
+      if (change === "live-disabled") data.product.variants[0]!.is_enabled = false
+      if (change === "live-artwork") data.product.print_areas[0]!.placeholders[0]!.images[0]!.id = "different-art"
+      if (change === "live-provider") data.product.print_provider_id = 11
+      vi.mocked(readPublishedProduct).mockResolvedValue(published)
+      const request = vi.spyOn(data.printify, "request").mockResolvedValue(data.product)
+      await expect(readCheckoutItems(data.printify, data.request)).rejects.toMatchObject({
+        code:
+          change === "published-price"
+            ? "PRICE_CHANGED"
+            : change === "live-artwork" || change === "live-provider"
+              ? "PRODUCT_CHANGED"
+              : "PRODUCT_UNAVAILABLE",
+      })
+      expect(request).toHaveBeenCalledTimes(["other-shop", "other-product"].includes(change) ? 0 : 1)
+    }
+  )
+
+  it.each([0, -1, 1.5, 11, 999])("rejects invalid quantity %s", (quantity) => {
+    const data = fixture()
+    data.request.items[0]!.quantity = quantity
+    expect(hostedCheckoutRequestSchema.safeParse(data.request).success).toBe(false)
+  })
+
+  it("rejects client-added price and address fields", () => {
+    const { request } = fixture()
+    expect(hostedCheckoutRequestSchema.safeParse({ ...request, total: 1 }).success).toBe(false)
+    expect(hostedCheckoutRequestSchema.safeParse({ ...request, shippingAddress: { country: "CA" } }).success).toBe(
+      false
+    )
+  })
+})

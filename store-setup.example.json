@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "description": "Copy to ignored .store-setup.local.json. Non-secret progress only; credentials and private owner details do not belong here.",
+  "brand": {
+    "name": null,
+    "audience": null,
+    "domain": null,
+    "designDirection": null,
+    "approvedAssets": [],
+    "supportContactConfigured": false
+  },
+  "decisions": {
+    "productModel": null,
+    "pricingRule": null,
+    "shippingPolicy": null,
+    "deliveryPolicy": null,
+    "delegatedChoices": [],
+    "draftsByDefault": true,
+    "timeZone": null,
+    "weeklyFeature": null
+  },
+  "authorization": {
+    "scope": [],
+    "liveActions": [],
+    "costLimit": null
+  },
+  "providers": {
+    "github": {
+      "status": "not-started",
+      "publicResourceId": null,
+      "environment": null,
+      "evidence": []
+    },
+    "vercel": {
+      "status": "not-started",
+      "publicResourceId": null,
+      "environment": null,
+      "evidence": []
+    },
+    "supabase": {
+      "status": "not-started",
+      "publicResourceId": null,
+      "environment": null,
+      "evidence": []
+    },
+    "publicBlob": {
+      "status": "not-started",
+      "publicResourceId": null,
+      "environment": null,
+      "evidence": []
+    },
+    "privateBlob": {
+      "status": "not-started",
+      "publicResourceId": null,
+      "environment": null,
+      "evidence": []
+    },
+    "smtp": {
+      "status": "not-started",
+      "publicResourceId": null,
+      "environment": null,
+      "evidence": []
+    },
+    "printify": {
+      "status": "not-started",
+      "publicResourceId": null,
+      "environment": null,
+      "evidence": []
+    },
+    "stripe": {
+      "status": "not-started",
+      "publicResourceId": null,
+      "environment": null,
+      "evidence": []
+    },
+    "merchantFeeds": {
+      "status": "not-started",
+      "publicResourceId": null,
+      "environment": null,
+      "evidence": []
+    },
+    "marketing": {
+      "status": "not-started",
+      "publicResourceId": null,
+      "environment": null,
+      "evidence": []
+    },
+    "orderAlerts": {
+      "status": "not-started",
+      "publicResourceId": null,
+      "environment": null,
+      "evidence": []
+    }
+  },
+  "verification": {
+    "localChecks": [],
+    "sandboxCheckout": null,
+    "liveOrder": null,
+    "physicalSample": null
+  },
+  "resume": {
+    "phase": "intake",
+    "nextAction": "Read the setup skill and ask the first concise brand questions.",
+    "needsOwner": [],
+    "updatedAt": null
+  }
+}

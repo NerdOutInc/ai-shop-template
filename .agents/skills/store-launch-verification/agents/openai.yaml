@@ -1,0 +1,4 @@
+interface:
+  display_name: "Store launch verification"
+  short_description: "Verify environment, checkout, catalog, and launch"
+  default_prompt: "Use $store-launch-verification to audit this store and report source, preview, production, and provider readiness separately."

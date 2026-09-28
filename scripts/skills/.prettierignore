@@ -1,0 +1,1 @@
+# Override the repository's .agents exclusion only for explicit store-* file arguments.

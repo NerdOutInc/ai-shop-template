@@ -1,0 +1,18 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/internal/printify-publishing",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/internal/catalog-sync/stock",
+      "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/internal/catalog-sync/popularity",
+      "schedule": "0 */6 * * *"
+    },
+    { "path": "/api/internal/order-alerts", "schedule": "0 * * * *" }
+  ]
+}

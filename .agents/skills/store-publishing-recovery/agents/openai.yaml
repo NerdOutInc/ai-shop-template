@@ -1,0 +1,4 @@
+interface:
+  display_name: "Printify publishing operations"
+  short_description: "Connect publishing and reconcile catalog failures"
+  default_prompt: "Use $store-publishing-recovery to inspect the intended publishing job and reconcile provider, snapshot, callback, and storefront state."

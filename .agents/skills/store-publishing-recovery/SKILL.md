@@ -1,0 +1,84 @@
+---
+name: store-publishing-recovery
+description: Configure and verify Printify publishing and Blob product images, backfill published mockups, or diagnose stuck Publishing states, publication failures, catalog drift, and monitoring alerts without duplicating callbacks or changing paid fulfillment.
+---
+
+# Operate Printify publishing
+
+Printify Publish sends this store a request; the store persists a published snapshot and acknowledges the result. A saved Printify draft, a public listing, and a paid fulfillment order are distinct records. A publishing lock is a clue, not a button to mash.
+
+Read [publishing setup and operations](../../../docs/printify-publishing.md), [catalog behavior](../../../docs/printify-catalog.md), and the relevant current source before acting. Brand IDs, inventory counts, deployed state, hosting plans, schedules, and alert recipients in examples must be resolved for the target store. Treat setup, publication, incident diagnosis, and paid fulfillment as separate scopes; carry forward actions already authorized in the session.
+
+For storage setup or image failures, read [Blob image operations](references/product-images.md) and [artwork-preview operations](../../../docs/artwork-previews.md). Image publication copies selected garment mockups and, with the private library enabled, requires a public transparent derivative from exact approved artwork evidence. Verify each saved publication and exact product binding.
+
+## Identify the environment and active mode
+
+The [confirmed template contract](../store-template-readiness/references/store-defaults.md) makes Printify Publish the release action for product content, store-owned Blob images and default ordering, without per-product repository edits. It does not put a product in the shop: a publish arrives hidden, and storefront membership and Google feed data follow when the owner shows it or a scheduled reveal arrives, so a published product missing from the shop is the reveal gate working rather than a publishing failure. A Show the admin disables or refuses for missing garment setup (409 `GARMENT_INCOMPLETE`) is the same story, and so is a tee a drop reports as `skipped`: the owner finishes the garment under Products, **Garment models**, then shows it; nothing about the publication needs recovery ([the garment catalog](../../../docs/printify-catalog.md#the-garment-catalog)). Check which parts the current checkout implements before claiming completion. A publish request does not authorize a new store's first go-live or a purchase test.
+
+Confirm the shop, exact site origin, deployment environment, database, publishing feature flag, and target product/event. With publishing enabled, published snapshots govern membership and listing revisions. Fresh stores use normal publication.
+
+Use these source boundaries to investigate the relevant stage:
+
+| Stage                                | Current implementation                                                                                                                                                                                                                                |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Signed intake and durable enqueue    | [Webhook route](../../../src/app/api/webhooks/printify/route.ts), [event adapter](../../../src/features/publishing/read-publishing-event.server.ts)                                                                                                   |
+| Bounded worker and callback recovery | [Worker route](../../../src/app/api/internal/printify-publishing/route.ts), [processor](../../../src/features/publishing/process-publishing-jobs.server.ts), [provider client](../../../src/features/publishing/printify-publishing-client.server.ts) |
+| Snapshots, revisions, jobs, locks    | [Postgres store](../../../src/features/publishing/postgres-publishing-store.server.ts), [publishing migration](../../../supabase/migrations/20260928000354_storefront_baseline.sql)                                                                   |
+| Health and incident notifications    | [Health reader](../../../src/features/publishing/read-publishing-health.server.ts), [monitor workflow](../../../.github/workflows/publishing-monitor.yml)                                                                                             |
+
+Keep raw events, product production data, credentials, and customer data private. Reports should contain target IDs, fixed failure codes, aggregate counts, timestamps, and evidence links.
+
+## Configure or verify the connection
+
+- Use the existing private database with a direct/session-pooler connection and verified TLS. A transaction pooler cannot preserve the session advisory locks. Follow [database setup](../../../docs/store-setup.md); do not substitute a fresh database for an existing store's durable history.
+- Verify the fresh database baseline, this environment's public Blob store and SDK authentication, and the exact `NEXT_PUBLIC_PRODUCT_IMAGE_BLOB_HOST` in both build and runtime configuration. Rebuild when the host changes. Use the image-operations reference for these prerequisites and bounded backfill; keep preview storage/data separate from production.
+- Keep catalog/checkout credentials separate from `PRINTIFY_PUBLISHING_API_TOKEN` (`products.read`, `products.write`). Webhook management uses separate `webhooks.read`/`webhooks.write` access; runtime receiving does not need those management scopes.
+- Use a distinct `PRINTIFY_WEBHOOK_SECRET` for each shop/environment. Some signed delete payloads omit `shop_id`, making the subscription secret part of shop identity. Keep `CRON_SECRET` and `PRINTIFY_MONITOR_SECRET` separate from that secret and each other.
+- Build with the target canonical `NEXT_PUBLIC_SITE_URL`; callback URLs can be embedded during the build. Redeploy/restart the appropriate environment after relevant settings change, then verify the actual external product URL.
+- Inspect existing subscriptions before registering `product:publish:started` at the deployed `/api/webhooks/printify`. The [registration script](../../../scripts/printify/register-publishing-webhook.ts) defaults to inspection and proposal; its `--apply` mode mutates the subscription. An existing matching subscription does not prove secret equality: verify a signed delivery. Stop on a conflicting subscription or uncertain create result and reconcile before another attempt.
+- Coordinate webhook registration, feature enablement, migrations, and the worker. A preview must not compete with production for the same shop's callback. Separate test subscriptions, secrets, and data. Verify the target hosting plan supports the configured cadence; merge reviewed [example schedules](../../../scripts/vercel-crons.example.json) into [Vercel configuration](../../../vercel.json), which starts with none. Configured schedules run in production, not preview.
+
+Intake returns success after durable enqueue, then requests optional prompt processing. The recurring authenticated worker remains necessary when that prompt is interrupted. A deployed route or HTTP 200 with `reason: "disabled"` does not establish active recovery. Verify actual job completion after a worker invocation. Consult current [Printify webhook documentation](https://developers.printify.com/#webhooks) and [Vercel cron behavior](https://vercel.com/docs/cron-jobs/manage-cron-jobs) when configuring delivery.
+
+## Diagnose stuck Publishing
+
+Start read-only. Compare Printify webhook delivery history, the stored job, the last published snapshot/revision, fresh source product state, and worker execution history. The [reconciliation script](../../../scripts/printify/reconcile-publishing.ts) has no apply mode and rejects incomplete scans rather than reporting them as complete.
+
+Read `state`, `outcome`, `attempts`, `next_attempt_at`, and `failure_code`:
+
+| State/evidence                     | Next investigation                                                           |
+| ---------------------------------- | ---------------------------------------------------------------------------- |
+| `pending`                          | Check eligible time, backoff, credentials, and worker execution.             |
+| `callback`                         | The local result is persisted; inspect acknowledgment and provider readback. |
+| `complete`                         | Check `outcome`; a completed failed publication is still a failure.          |
+| `superseded`                       | Follow the newer event; do not replay the older state.                       |
+| `attention`                        | Reconcile the precise failure before proposing a mutation.                   |
+| Source locked with no received job | Investigate subscription/delivery; the worker cannot invent a missed event.  |
+
+Do not reset a job, republish, rewrite a snapshot, or send a success/failure callback solely to release a lock. The processor records callback intent before sending. A lost response can mean Printify applied the callback; blindly repeating it can acknowledge another attempt. Inspect the current code's retry classification: transport timeouts/resets and server failures can be uncertain, while bounded connection-setup/429 retries follow different rules.
+
+Recovery must establish the expected external product ID, canonical URL, visibility, and source compatibility. A timestamp or fingerprint detects content changes but does not prove publication-attempt identity. If provider state cannot establish the result, retain attention status and report the exact unresolved evidence. Restore delivery and prepare a specific authorized publication/recovery action; do not fabricate missing history.
+
+For `ARTWORK_NOT_RESOLVED`, inspect the selected private revision, ready transparent print asset, immutable upload identity, and registration/source evidence through the app's draft/reconciliation workflow. A provider thumbnail cannot prove a larger original. The resolver can reuse another product's verified saved preview only within the same shop and for the same unchanged upload identity and dimensions, with its pinned revision, source hash, and saved fingerprint validated. Unsupported layouts and ambiguous evidence remain blocked. Correct the provenance before retrying an authorized image publication; do not directly create a replacement product, force success, or add a static repository mapping. For a snapshot already published without artwork, use the [bounded artwork backfill](../../../docs/artwork-previews.md#repair-missing-previews-on-saved-publications). Raw SQL is exceptional operator recovery, not a step the owner should need for each product.
+
+Preserve these invariants during fixes:
+
+- Duplicate events must not produce another revision or callback. Intake acknowledgment follows persistence; workers retain per-product exclusion.
+- Publishing and acknowledgment are separate phases. A committed snapshot must not become a failed publication merely because its success callback timed out.
+- Selective publication changes only selected fields. Hide/Show changes visibility while retaining the last published snapshot; Show must not import draft edits. Signed deletion removes the local listing even when provider reads fail, while retaining history and orders.
+- Image publication activates only after every selected mockup and the required artwork derivative are ready. With the private library enabled, unresolved artwork fails with `ARTWORK_NOT_RESOLVED`, retains any previous published snapshot, and sends Printify an actionable `publishing_failed` acknowledgment. Library-disabled publishing retains its existing behavior; the template provides no static product artwork. Receipts resume interrupted uploads; images deselected and Hide/Show retain existing images. The pinned `storefront_artwork` revision/fingerprint/public URL must match the approved production source; never substitute mutable latest art. Confirmed callbacks update matching published/removed badges; unresolved bindings still need reconciliation. A missing Blob host prevents publishing services from starting: existing jobs stay pending and new webhook requests fail before enqueue. `IMAGE_STORAGE_CONFIGURATION`, `IMAGE_STORAGE_CONFLICT`, and `IMAGE_SOURCE_CHANGED` end in `attention` without a failure callback; fixing configuration does not requeue them. Reconcile the event and provider state before recovery. Other image errors follow the processor's retry/failure classification.
+- Published titles/prices/selection stay separate from saved drafts. Checkout and fulfillment still recheck stock, enabled status, and production compatibility uncached.
+- `PRODUCT_SCHEMA_DRIFT` requires examining recognized fields in the [shared product parser](../../../src/lib/printify/parse-printify-product.ts). Do not remove production checks or rewrite fingerprints to force success. Response-only metadata and actual production identity have different roles; verify every current persisted job before changing its identity contract.
+- Publishing recovery does not enable paid fulfillment, create an order, or reset a payment claim.
+
+## Verify completion and monitor it
+
+Distinguish the worker from the read-only health monitor. A successful monitor workflow means its check/incident handling ran; inspect the actual health result. An idle healthy check does not prove cron delivery or detect every missed webhook. Review overdue work relative to `next_attempt_at`, source locks, latest failed outcomes, and active-product compatibility. Resolve the target repository, production URL, schedule, and alert recipient for a new brand instead of retaining inherited values.
+
+For code changes, run the repository checks and focused route, adapter, processor, and database tests. The publishing HTTP/browser suite uses a guarded disposable local database and provider stubs; use the current documented setup rather than pointing it at a provider database. Fixture success does not establish live subscription delivery.
+
+For an authorized integration check, use a designated product and verify signed delivery → one durable job → intended snapshot → acknowledgment → fresh Printify status and storefront result. Check duplicate delivery, draft isolation, selective update, visibility/removal, and worker recovery in the isolated suite; exercise real-provider cases only within the authorized scope. Verify invalid signatures/bearers cannot write. Do not manufacture a production failure or place an order to test alerts.
+
+Report the target environment/product, exact result, job state/outcome, snapshot revision, provider acknowledgment evidence, storefront URL, hosted image URLs, feed membership/data, default ordering, worker/health result, and any pending or unavailable verification. Verify the target store's Blob integration and source registration; do not send the owner to edit the repository per product. Report a missing automated step as an implementation gap. Publication is complete only when the relevant saved, provider, and store surfaces agree, including the final standalone artwork slide: verify its raw derivative and optimized image load, then select it and a garment color in the real browser. Use the public gallery for visible products and the admin product preview for hidden ones without changing visibility to test. Draft-only work records provenance and the pending publication check; it never publishes for verification. Google fetching/review is a separate external state; do not require a new manual feed build or call approval confirmed from local feed inclusion.
+
+For approved private-library artwork, the public preview is reduced below the print master's dimensions, including small source files. `IMAGE_DERIVATION_TIMEOUT` is an encode-budget attention state: inspect source size and the remaining worker budget before an explicit recovery run. Repeating the same insufficient budget does not verify publication. Preserve the pinned revision and production fingerprint; never upload the private master as a workaround.

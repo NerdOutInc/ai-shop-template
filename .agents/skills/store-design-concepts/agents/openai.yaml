@@ -1,0 +1,4 @@
+interface:
+  display_name: "Store design concepts"
+  short_description: "Explore private collections and create favorite drafts"
+  default_prompt: "Use $store-design-concepts to explore my shirt idea in our private app library, or create drafts from my exact saved favorite revisions. Resolve only the inputs needed for the requested step."

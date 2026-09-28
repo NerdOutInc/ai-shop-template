@@ -1,0 +1,4 @@
+interface:
+  display_name: "Set up a store"
+  short_description: "Configure a fresh store through an agent-led interview"
+  default_prompt: "Use $store-setup to interview me, customize this store and configure its providers. Prepare browser forms and ask me to enter credentials or handle computer permissions when needed. Resume verified work from the local setup state."

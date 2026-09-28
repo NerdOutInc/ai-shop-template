@@ -1,0 +1,41 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      storybook:
+        patterns:
+          - storybook
+          - "@storybook/*"
+          - eslint-plugin-storybook
+      vitest:
+        patterns:
+          - vitest
+          - "@vitest/*"
+      dependencies:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - storybook
+          - "@storybook/*"
+          - eslint-plugin-storybook
+          - vitest
+          - "@vitest/*"
+    ignore:
+      - dependency-name: vitest
+        update-types: [version-update:semver-major]
+      - dependency-name: "@vitest/*"
+        update-types: [version-update:semver-major]
+    open-pull-requests-limit: 5
+  - package-ecosystem: github-actions
+    directory: /
+    groups:
+      actions:
+        patterns:
+          - "*"
+    schedule:
+      interval: weekly
+      day: monday

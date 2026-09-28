@@ -1,0 +1,4 @@
+interface:
+  display_name: "Store design recovery"
+  short_description: "Recover artwork and uncertain product drafts"
+  default_prompt: "Use $store-design-recovery to recover this design workflow while preserving exact artwork revisions and preventing duplicate product creation."

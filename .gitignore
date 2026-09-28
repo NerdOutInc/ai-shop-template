@@ -1,0 +1,25 @@
+node_modules/
+.next/
+out/
+storybook-static/
+coverage/
+playwright-report/
+test-results/
+output/
+.vercel/
+.env*
+!.env.example
+*.tsbuildinfo
+.DS_Store
+.tmp/
+supabase/.temp/
+.turbo/
+.playwright-cli/
+__pycache__/
+.vercel
+
+# Owner-downloaded short-lived agent credentials
+design-agent-*.token
+
+# Private agent setup progress (never store credentials in this file).
+.store-setup.local.json

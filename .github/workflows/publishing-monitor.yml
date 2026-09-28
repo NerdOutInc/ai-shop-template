@@ -1,0 +1,43 @@
+name: Publishing monitor
+
+on:
+  schedule:
+    - cron: "3,33 * * * *"
+  workflow_dispatch:
+    inputs:
+      test_notification:
+        description: Send and close a clearly labeled test notification
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: publishing-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    name: Check production publishing and notify
+    if: vars.PUBLISHING_MONITOR_ENABLED == 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts/printify/run-publishing-monitor.mjs
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version: "24"
+      - name: Check health and maintain a single incident
+        env:
+          PRINTIFY_MONITOR_URL: ${{ vars.PRINTIFY_MONITOR_URL }}
+          PRINTIFY_MONITOR_ASSIGNEE: ${{ vars.PRINTIFY_MONITOR_ASSIGNEE }}
+          PRINTIFY_MONITOR_SECRET: ${{ secrets.PRINTIFY_MONITOR_SECRET }}
+          GITHUB_TOKEN: ${{ github.token }}
+          PRINTIFY_MONITOR_TEST_NOTIFICATION: ${{ inputs.test_notification == true && 'true' || 'false' }}
+        run: node scripts/printify/run-publishing-monitor.mjs

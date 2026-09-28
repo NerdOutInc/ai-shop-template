@@ -1,0 +1,4 @@
+interface:
+  display_name: "Google Merchant setup"
+  short_description: "Connect and verify the store catalog in Google"
+  default_prompt: "Use $store-google-merchant to inspect the current account, connect this store feed, and verify ownership, imports, images, and approval status."

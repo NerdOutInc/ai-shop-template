@@ -1,0 +1,139 @@
+name: Integration checks
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Foundation checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: local-commerce-test
+          POSTGRES_DB: store_commerce_test
+        ports:
+          - 55479:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d store_commerce_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      CI: true
+      NEXT_TELEMETRY_DISABLED: 1
+      NEXT_PUBLIC_PRODUCT_IMAGE_BLOB_HOST: publishinge2e.public.blob.vercel-storage.com
+      STORYBOOK_DISABLE_TELEMETRY: 1
+      TEMPLATE_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_template_test
+      CHECKOUT_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_commerce_test
+      ADMIN_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_admin_test
+      AGENT_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_agent_test
+      DRAFTS_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_drafts_test
+      GARMENTS_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_garments_test
+      LIBRARY_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_library_test
+      CATALOG_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_catalog_test
+      CATALOG_E2E_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_catalog_e2e
+      PUBLISHING_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_publishing_test
+      PUBLISHING_E2E_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_publishing_e2e
+      SIGNUP_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_signup_test
+      SHIPPING_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_shipping_test
+      ORDERS_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_orders_test
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: pnpm/action-setup@v6.1.0
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version: "24"
+          cache: pnpm
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.12.13"
+          cache: pip
+          cache-dependency-path: scripts/skills/requirements.txt
+      - name: Check migration references
+        run: pnpm check:migrations
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install store skill dependencies
+        run: python3 -m pip install --disable-pip-version-check --requirement scripts/skills/requirements.txt
+      - name: Create isolated test databases
+        run: node --input-type=module -e 'import { Pool } from "pg"; const pool = new Pool({connectionString:process.env.CHECKOUT_TEST_DATABASE_URL}); for (const database of ["store_template_test", "store_catalog_test", "store_catalog_e2e", "store_publishing_test", "store_publishing_e2e", "store_admin_test", "store_library_test", "store_agent_test", "store_drafts_test", "store_garments_test", "store_signup_test", "store_orders_test", "store_shipping_test"]) await pool.query(`create database ${database}`); await pool.end();'
+      - name: Check repository structure
+        run: pnpm check:structure
+      - name: Lint
+        run: pnpm lint
+      - name: Check TypeScript
+        run: pnpm typecheck
+      - name: Check formatting
+        run: pnpm format:check
+      - name: Test unit behavior
+        run: pnpm test:unit
+      - name: Test fresh template database and runtime permissions
+        run: pnpm test:database
+      - name: Test architecture rules
+        run: pnpm test:architecture
+      - name: Test publishing notifications
+        run: pnpm test:monitor
+      - name: Test store skill scripts
+        run: pnpm test:skills
+      - name: Test template setup and hygiene
+        run: pnpm test:template
+      - name: Test reusable artwork tools
+        run: pnpm test:artwork
+      - name: Test design-agent CLI
+        run: pnpm test:design-agent
+      - name: Install test browsers
+        run: |
+          # Playwright downloads pinned browsers; the unused Chrome feed can break apt during mirror updates.
+          sudo rm -f /etc/apt/sources.list.d/google-chrome*.list /etc/apt/sources.list.d/google-chrome*.sources
+          pnpm exec playwright install --with-deps chromium webkit
+      - name: Test component stories
+        run: pnpm test:stories
+      - uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3
+        id: setup-supabase
+        with:
+          version: 2.114.0
+      - name: Prepare isolated Supabase Auth
+        env:
+          # setup-cli forces GHCR, which disables the pinned CLI's built-in registry fallbacks.
+          # Use its default ECR → GHCR → Docker Hub sequence when a registry rate-limits pulls.
+          SUPABASE_INTERNAL_IMAGE_REGISTRY: ""
+        run: pnpm test:admin:prepare
+      - name: Build the application
+        env:
+          NEXT_PUBLIC_SITE_URL: https://example.com
+        run: pnpm exec tsx e2e/admin/run-with-config.ts pnpm build
+      - name: Build the isolated configured storefront fixture
+        run: pnpm exec tsx e2e/admin/run-with-config.ts pnpm test:e2e:prepare
+      - name: Build Storybook
+        run: pnpm build-storybook
+      - name: Test production pages
+        run: pnpm test:e2e
+      - name: Test enabled publishing through HTTP and browsers
+        run: pnpm test:e2e:publishing
+      - name: Build with the local admin origin
+        run: pnpm test:admin:build
+      - name: Test private library and Supabase sign-in
+        run: pnpm test:e2e:admin
+      - name: Stop isolated Supabase Auth
+        if: always() && steps.setup-supabase.outcome == 'success'
+        run: supabase stop --workdir .tmp/admin-e2e --no-backup
+      - name: Upload browser failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: browser-diagnostics
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7

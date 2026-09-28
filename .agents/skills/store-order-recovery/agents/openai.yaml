@@ -1,0 +1,4 @@
+interface:
+  display_name: "Store order recovery"
+  short_description: "Reconcile payments and fulfillment without duplicates"
+  default_prompt: "Use $store-order-recovery to investigate this paid order read-only and prepare a verified recovery action without duplicating fulfillment."

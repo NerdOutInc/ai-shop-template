@@ -1,0 +1,4 @@
+interface:
+  display_name: "Store admin access"
+  short_description: "Set up and recover private library access"
+  default_prompt: "Use $store-admin-access to set up or recover administrator access to this store's private design library."

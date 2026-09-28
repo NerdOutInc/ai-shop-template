@@ -1,0 +1,18 @@
+export const publishingTestConfig = {
+  port: 3300,
+  providerPort: 3301,
+  baseURL: "http://127.0.0.1:3300",
+  providerURL: "http://127.0.0.1:3301",
+  canonicalURL: "https://example.com",
+  shopId: "8675309",
+  readToken: "publishing-e2e-read-token",
+  writeToken: "publishing-e2e-write-token",
+  webhookSecret: "publishing-e2e-webhook-secret-32-characters",
+  cronSecret: "publishing-e2e-worker-secret-32-characters",
+  monitorSecret: "publishing-e2e-monitor-secret-32-characters",
+  merchantFeedPassword: "publishing-e2e-google-merchant-password-32-characters",
+  metaFeedPassword: "publishing-e2e-meta-catalog-password-32-characters",
+  blobHost: "publishinge2e.public.blob.vercel-storage.com",
+  blobToken: "vercel_blob_rw_publishinge2e_synthetic-test-only-token",
+  databaseUrl: process.env.PUBLISHING_E2E_DATABASE_URL,
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Store owner handoff"
+  short_description: "Prepare clear owner actions and verify completion"
+  default_prompt: "Use $store-owner-handoff to prepare the exact remaining owner action for this setup, then resume and verify the saved result."

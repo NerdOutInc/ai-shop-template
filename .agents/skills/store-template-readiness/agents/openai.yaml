@@ -1,0 +1,4 @@
+interface:
+  display_name: "Store template readiness"
+  short_description: "Audit reusable branding and fresh-store setup"
+  default_prompt: "Use $store-template-readiness to audit this template for brand isolation, fresh-store setup and readiness evidence."
