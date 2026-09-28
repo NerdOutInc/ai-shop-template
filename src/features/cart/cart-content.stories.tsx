@@ -69,7 +69,7 @@ export const Populated: Story = {
     await userEvent.click(canvas.getByRole("button", { name: /Decrease quantity/ }))
     await expect(canvas.getByRole("heading", { name: "The good stuff (1)" })).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: /Remove We just hang together/ }))
-    await expect(canvas.getByRole("heading", { name: "A little room for adventure." })).toBeVisible()
+    await expect(canvas.getByRole("heading", { name: "Ready for your next favorite." })).toBeVisible()
   },
 }
 
@@ -77,6 +77,9 @@ export const Empty: Story = {
   beforeEach: () => window.localStorage.removeItem("your-store-cart-v1"),
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("link", { name: "Find your shirt" })).toBeVisible()
+    await expect(
+      canvas.getByText("Your cart is empty. Explore the collection to find a shirt that suits you.")
+    ).toBeVisible()
     await expect(canvas.queryByRole("button", { name: "Checkout" })).not.toBeInTheDocument()
   },
 }

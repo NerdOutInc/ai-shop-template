@@ -6,8 +6,10 @@ import { parsePrintifyProduct } from "@/lib/printify/parse-printify-product"
 
 import { readRevealableProduct } from "@/features/publishing/read-revealable-product.server"
 
+import { getSitemapProductIds } from "./get-sitemap-product-ids.server"
 import { listStorefrontProductIds } from "./list-storefront-product-ids.server"
 import { normalizeCatalogProduct } from "./normalize-catalog-product"
+import { PublishedSnapshotRejectedError } from "./published-snapshot-rejected-error"
 import { readPublishedCatalog } from "./read-published-catalog.server"
 import { readStorefrontProduct } from "./read-storefront-product.server"
 
@@ -189,10 +191,47 @@ describe("storefront publication cache", () => {
       const raw = { ...fixture(), ...productionChanges }
       vi.mocked(readRevealableProduct).mockResolvedValue(revealable(raw))
       const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json(fixture()))
-      await expect(readStorefrontProduct("shirt")).rejects.toThrow("Published product unavailable")
+      await expect(readStorefrontProduct("shirt")).rejects.toBeInstanceOf(PublishedSnapshotRejectedError)
       expect(fetchMock).not.toHaveBeenCalled()
       expect(cacheEntries.size).toBe(0)
       expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain("private invalid value")
+    }
+  )
+
+  it.each([{ print_areas: [] }, { print_details: { print_on_side: "private invalid value", separator_type: false } }])(
+    "withholds only the snapshot rejected by the production parser from sitemap membership: %j",
+    async (productionChanges) => {
+      listRevealableProductIds.mockResolvedValue([
+        { id: "valid", revealAt: null },
+        { id: "rejected", revealAt: null },
+      ])
+      vi.mocked(readRevealableProduct).mockImplementation(async (id) =>
+        revealable({ ...fixture(), id, ...(id === "rejected" ? productionChanges : {}) })
+      )
+      const fetchMock = vi.spyOn(globalThis, "fetch")
+
+      await expect(getSitemapProductIds()).resolves.toEqual(["valid"])
+      expect(fetchMock).not.toHaveBeenCalled()
+
+      // A rejected cache fill must not keep a repaired publication out of the sitemap.
+      vi.mocked(readRevealableProduct).mockImplementation(async (id) => revealable({ ...fixture(), id }))
+      await expect(getSitemapProductIds()).resolves.toEqual(["valid", "rejected"])
+    }
+  )
+
+  it.each([new Error("private-password"), new PublishedSnapshotRejectedError()])(
+    "still rejects the sitemap when one product storage read fails: %s",
+    async (storageFailure) => {
+      listRevealableProductIds.mockResolvedValue([
+        { id: "valid", revealAt: null },
+        { id: "offline", revealAt: null },
+      ])
+      vi.mocked(readRevealableProduct).mockImplementation(async (id) => {
+        if (id === "offline") throw storageFailure
+        return revealable({ ...fixture(), id })
+      })
+
+      await expect(getSitemapProductIds()).rejects.toThrow("Published product unavailable")
     }
   )
 
@@ -324,7 +363,7 @@ describe("storefront publication cache", () => {
     "rejects invalid or mismatched cached snapshots: %j",
     async (changes) => {
       vi.mocked(readRevealableProduct).mockResolvedValue(revealable({ ...fixture(), ...changes }))
-      await expect(readStorefrontProduct("shirt")).rejects.toThrow("Published product unavailable")
+      await expect(readStorefrontProduct("shirt")).rejects.toBeInstanceOf(PublishedSnapshotRejectedError)
       expect(cacheEntries.size).toBe(0)
     }
   )

@@ -4,7 +4,7 @@ export function checkoutErrorResponse(error: unknown) {
   const known = error instanceof CheckoutError
   return Response.json(
     {
-      error: known ? error.message : "The shop hit a tricky hold. Please try again shortly.",
+      error: known ? error.message : "The shop hit a snag. Please try again shortly.",
       code: known ? error.code : "CHECKOUT_UNAVAILABLE",
     },
     {

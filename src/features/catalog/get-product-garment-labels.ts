@@ -6,20 +6,20 @@ const categoryLabels: Record<string, { categoryName: string; name: string; title
     categoryName: "T-shirts",
     name: "tee",
     title: "T-Shirt",
-    titlePattern: /(?:t[- ]?shirt|tee)\b/i,
+    titlePattern: /\b(?:t[- ]?shirts?|tees?)\b/i,
   },
   "crop-tops": { categoryName: "Crop tops", name: "crop top", title: "Crop Top", titlePattern: /\bcrop[-\s]+tops?\b/i },
   "tank-tops": {
     categoryName: "Tank tops",
     name: "tank top",
     title: "Tank Top",
-    titlePattern: /tank\s+top\b/i,
+    titlePattern: /\btank[-\s]+tops?\b/i,
   },
   sweatshirts: {
     categoryName: "Sweatshirts",
     name: "sweatshirt",
     title: "Sweatshirt",
-    titlePattern: /sweatshirt\b/i,
+    titlePattern: /\bsweatshirts?\b/i,
   },
 }
 
@@ -60,7 +60,7 @@ export function getProductGarmentLabels({ garment }: Pick<CatalogProduct, "garme
             `(?<![\\p{L}\\p{N}])${savedCategoryName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\p{L}\\p{N}])`,
             "iu"
           )
-        : /apparel\b/i),
+        : /\bapparel\b/i),
     description: descriptionType
       ? `A ${descriptionType} from ${storeConfig.name}.`
       : typeLabel

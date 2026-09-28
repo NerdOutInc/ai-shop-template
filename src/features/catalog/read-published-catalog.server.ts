@@ -5,6 +5,7 @@ import { z } from "zod"
 import { readCatalogStock } from "@/features/catalog-sync/read-catalog-stock.server"
 import { listGarmentDisplayProfiles } from "@/features/garment-catalog/list-garment-display-profiles.server"
 import { isPublishedVariantAvailable } from "@/lib/printify/is-published-variant-available"
+import { productionFingerprintVersion } from "@/lib/printify/production-fingerprint-version"
 import { parsePrintifyProduct } from "@/lib/printify/parse-printify-product"
 
 import type { CatalogResult } from "./catalog-product"
@@ -21,7 +22,7 @@ const snapshotSchema = z
           id: z.number().int(),
           storefront_production_fingerprint: z
             .string()
-            .regex(/^v2:[a-f0-9]{64}$/)
+            .regex(new RegExp(`^${productionFingerprintVersion}:[a-f0-9]{64}$`))
             .optional(),
         })
         .passthrough()

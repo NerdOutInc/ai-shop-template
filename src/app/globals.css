@@ -238,11 +238,11 @@ button:disabled {
 .button:hover {
   filter: brightness(1.2);
 }
-.button-coral {
+.button-accent {
   background: var(--accent);
   color: var(--foreground);
 }
-.button-coral:hover {
+.button-accent:hover {
   filter: brightness(0.95);
 }
 .button:disabled {
@@ -472,7 +472,7 @@ button:disabled {
   position: fixed;
   inset: 0;
   z-index: 60;
-  background: rgb(23 38 45 / 35%);
+  background: color-mix(in srgb, var(--foreground) 35%, transparent);
   transition: opacity 180ms;
 }
 .cart-confirmation {
@@ -489,7 +489,7 @@ button:disabled {
   border-radius: 6px;
   background: var(--background);
   color: var(--foreground);
-  box-shadow: 0 12px 48px rgb(23 38 45 / 18%);
+  box-shadow: 0 12px 48px color-mix(in srgb, var(--foreground) 18%, transparent);
   transition:
     opacity 180ms,
     transform 180ms;

@@ -1,3 +1,5 @@
+import "../../../test/configured-store"
+import { storeConfig } from "@/lib/store-config"
 import { act, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { StrictMode } from "react"
@@ -992,4 +994,16 @@ describe("ProductDetails", () => {
     expect(screen.queryByText(/^\$\d/)).not.toBeInTheDocument()
     expect(addItem).not.toHaveBeenCalled()
   })
+})
+
+it("does not advertise placeholder shipping for a configured, published store before shipping confirmation", () => {
+  expect(storeConfig.configured).toBe(true)
+  expect(storeConfig.policies.published).toBe(true)
+  storeConfig.commerce.shippingConfirmed = false
+  storeConfig.commerce.firstItemShippingCents = 0
+  storeConfig.commerce.additionalItemShippingCents = 0
+  render(<ProductDetails product={product} />)
+  expect(screen.getByText(/Shipping rates and delivery estimates are being confirmed/)).toBeInTheDocument()
+  expect(screen.queryByText(/\$0\.00 for the first shirt/)).not.toBeInTheDocument()
+  expect(screen.queryByText(/Estimated delivery, including printing/)).not.toBeInTheDocument()
 })

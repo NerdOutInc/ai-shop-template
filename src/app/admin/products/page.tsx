@@ -5,6 +5,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { requireAdmin } from "@/features/admin/require-admin.server"
 import { readAdminProductSchedule } from "@/features/design-of-the-week/read-admin-product-schedule.server"
 import { listCadenceSlots } from "@/features/publishing/list-cadence-slots"
+import { storeConfig } from "@/lib/store-config"
 import { formatStoreMoment } from "@/lib/format-store-moment"
 import { FeaturedOrderList } from "@/features/featured-order/featured-order-list"
 import type { FeaturedOrderProduct } from "@/features/featured-order/featured-order-product"
@@ -23,7 +24,7 @@ export default async function AdminProductsPage() {
   // may be merged but not pushed), and then the lineup simply carries no garment notices.
   const [result, drop, garmentStatus] = await Promise.all([
     listFeaturedOrder(),
-    readAdminProductSchedule(),
+    storeConfig.features.designOfTheWeek ? readAdminProductSchedule() : null,
     listProductGarmentStatus(),
   ])
   // `complete` is the database's answer and is only ever passed along here, never worked out again.
@@ -35,7 +36,7 @@ export default async function AdminProductsPage() {
     return garment ? { ...product, garmentSetup: { blueprintId: garment.blueprintId, label: garment.label } } : product
   })
   // Both drops are counted against the same lineup and the same instant the lineup was grouped by.
-  const now = Math.max(result.status === "ready" ? result.now : 0, drop.status === "ready" ? drop.now : 0)
+  const now = Math.max(result.status === "ready" ? result.now : 0, drop?.status === "ready" ? drop.now : 0)
   // The summary says "cannot be shown", which is only true of a product hidden from the storefront. One that
   // is already up on an unfinished garment (a republish onto another blueprint, say) stays up and
   // sells as before; its row still carries the notice, but counting it here would be a fib. Hidden
@@ -48,12 +49,14 @@ export default async function AdminProductsPage() {
   ).length
   const garmentKey = ({ garmentSetup }: FeaturedOrderProduct) =>
     garmentSetup ? `waiting:${garmentSetup.blueprintId ?? ""}:${garmentSetup.label ?? ""}` : ""
-  const slots = listCadenceSlots({ from: new Date(now), count: 6 }).map((date) => ({
-    value: date.toISOString(),
-    label: formatStoreMoment(date.toISOString(), { weekday: "long", month: "long", day: "numeric" }),
-  }))
+  const slots = (storeConfig.features.designOfTheWeek ? listCadenceSlots({ from: new Date(now), count: 6 }) : []).map(
+    (date) => ({
+      value: date.toISOString(),
+      label: formatStoreMoment(date.toISOString(), { weekday: "long", month: "long", day: "numeric" }),
+    })
+  )
   const designOfWeekProductIds =
-    drop.status === "ready"
+    drop?.status === "ready"
       ? drop.entries.filter((entry) => Date.parse(entry.liveAt) <= now).map((entry) => entry.productId)
       : []
 
@@ -65,8 +68,9 @@ export default async function AdminProductsPage() {
         </p>
         <h1 className="display-heading">Shop lineup</h1>
         <p className="mt-4 text-muted-foreground">
-          Plan the next six weeks, preview products privately, and arrange the shop. Published products are ready to
-          show or feature. Good company, one week at a time.
+          {storeConfig.features.designOfTheWeek
+            ? "Plan the next six weeks, preview products privately, and arrange the shop. Published products are ready to show or feature."
+            : "Preview products privately and arrange the shop. Published products are ready to show."}
         </p>
       </header>
       <ProductsSectionNav current="lineup" />
@@ -75,8 +79,8 @@ export default async function AdminProductsPage() {
         // Each row carries the precise pointer; this saves scanning three lists to learn there is any.
         <p className="rounded-lg border p-4 text-sm">
           {waitingCount === 1
-            ? "1 product is waiting on garment setup and cannot be shown or scheduled."
-            : `${waitingCount} products are waiting on garment setup and cannot be shown or scheduled.`}{" "}
+            ? `1 product is waiting on garment setup and cannot be shown${storeConfig.features.designOfTheWeek ? " or scheduled" : ""}.`
+            : `${waitingCount} products are waiting on garment setup and cannot be shown${storeConfig.features.designOfTheWeek ? " or scheduled" : ""}.`}{" "}
           <Link
             href="/admin/products/garments"
             className="inline-flex min-h-11 items-center underline underline-offset-4"
@@ -85,7 +89,7 @@ export default async function AdminProductsPage() {
           </Link>
         </p>
       )}
-      {drop.status === "unavailable" && (
+      {drop?.status === "unavailable" && (
         <Alert variant="destructive">
           <AlertDescription>
             The weekly schedule is unavailable right now. Product order is still available. Check that the latest
@@ -110,15 +114,15 @@ export default async function AdminProductsPage() {
               (product) =>
                 `${product.id}:${product.hiddenAt ?? ""}:${product.revealAt ?? ""}:${product.addedToShopAt ?? ""}:${garmentKey(product)}`
             ),
-            ...(drop.status === "ready"
+            ...(drop?.status === "ready"
               ? drop.entries.map((entry) => `${entry.productId}:${entry.liveAt}`)
-              : ["schedule-unavailable"]),
+              : [storeConfig.features.designOfTheWeek ? "schedule-unavailable" : "schedule-disabled"]),
             ...slots.map((slot) => slot.value),
           ].join("\n")}
           products={lineup}
           now={now}
           designOfWeekProductIds={designOfWeekProductIds}
-          schedule={drop.status === "ready" ? { entries: drop.entries, slots } : undefined}
+          schedule={drop?.status === "ready" ? { entries: drop.entries, slots } : undefined}
         />
       )}
     </main>

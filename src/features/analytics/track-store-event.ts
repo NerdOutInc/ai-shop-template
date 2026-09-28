@@ -1,5 +1,6 @@
 import { inject, track } from "@vercel/analytics"
 
+import { storeConfig } from "@/lib/store-config"
 import { isPrivateAppPath } from "@/lib/is-private-app-path"
 
 import { getStoreVisitSource } from "./get-store-visit-source"
@@ -12,7 +13,14 @@ type StoreEvent =
 
 /** Returns whether the SDK call ran, not whether Vercel received it. */
 export function trackStoreEvent(event: StoreEvent): boolean {
-  if (typeof window === "undefined" || isPrivateAppPath(window.location.pathname)) return false
+  if (
+    !storeConfig.configured ||
+    !storeConfig.policies.published ||
+    !storeConfig.commerce.shippingConfirmed ||
+    typeof window === "undefined" ||
+    isPrivateAppPath(window.location.pathname)
+  )
+    return false
   try {
     const source = getStoreVisitSource()
     // Pro permits two properties. Copy only these fields, never arbitrary order data.

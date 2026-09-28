@@ -23,14 +23,14 @@ The admin **Products** page (`/admin/products`) controls Featured order. Drag a 
 - Prices are saved USD retail cents. Available options require both `is_enabled` and `is_available`. Product detail can show enabled unavailable combinations without allowing their purchase.
 - A product with no available variants stays visible as Currently unavailable. Equal prices show one amount; differing prices show From. Descriptions become plain text, with supported size-guide tables parsed into safe rows and cells.
 - The selected Primary mockup determines the initial image/color. Galleries retain variant associations and Printify color names. Approved transparent artwork previews are pinned to the exact immutable revision and production fingerprint. Private masters never enter public presentation models.
-- Published projections use a five-minute database cache that publication and admin changes invalidate. Stock comes from the last complete background observation, normally refreshed every 30 minutes. Missing stock, unknown fingerprints or observations at least two hours old pause ordering while preserving listing content. Checkout and fulfillment still recheck provider state uncached.
+- Published projections use a five-minute database cache that publication and admin changes invalidate. Stock comes from the last complete background observation, normally refreshed every 30 minutes. Missing stock, a stock observation that does not match the snapshot’s production fingerprint, or observations at least two hours old pause ordering while preserving valid listing content. A snapshot that the current production parser rejects, or a display projection missing a current production fingerprint, is withheld from the catalog and omitted from the sitemap; its product page can be unavailable until the publication is repaired. Other valid products and static pages remain in the sitemap. A database or other storage-read failure still makes the whole sitemap return a retryable HTTP 503 rather than report incomplete membership. Checkout and fulfillment still recheck provider state uncached.
 - Empty catalogs have an empty state. Missing configuration and read failures report unavailability rather than switching to provider requests. Logs exclude credentials, raw upstream responses and customer payloads.
 
 Configure and verify workers explicitly; `vercel.json` starts without schedules. See [background refresh operations](catalog-background-refresh.md).
 
 ## Sorting
 
-**Featured** uses saved lineup order and places the current weekly feature first. **Newest** uses the product's latest arrival timestamp. **Most Popular** uses quantities on production/fulfilled Printify orders, excluding canceled/unpaid orders, samples and marked reprints. Popularity is a conservative provider signal, not a Stripe revenue report or a fabricated customer rating.
+**Featured** uses saved lineup order and places the current weekly feature first when `storeConfig.features.designOfTheWeek` is enabled. **Newest** uses the product's latest arrival timestamp. **Most Popular** uses quantities on production/fulfilled Printify orders, excluding canceled/unpaid orders, samples and marked reprints. Popularity is a conservative provider signal, not a Stripe revenue report or a fabricated customer rating.
 
 Popularity refreshes run every six hours when the worker is configured. Complete observations remain usable for at most 24 hours; partial scans never replace them. When unavailable, the page explains that it is showing Featured order. The refresh stores product quantities, not addresses or raw orders.
 
@@ -53,6 +53,8 @@ Hide preserves product history and weekly assignments. Show requires a complete 
 ### The Design of the Week
 
 The owner selects individual published products under **Products**. The schedule is stored in `commerce.product_week_schedule`, distinct from artwork favorites or drafts. Hidden scheduled products require complete garments. Already-visible products keep their visibility when featured. A current feature cannot be silently removed by an editor that waited past its start time; mutation receipts describe the actual outcome.
+
+Enable `storeConfig.features.designOfTheWeek` to expose the home section, footer link and admin scheduling controls. It starts disabled. Disabled stores skip weekly membership reads and return 404 from the scheduling API; catalog, lineup ordering and manual Show/Hide remain available. Disabling this presentation feature does not cancel existing product reveals or delete schedule history. Cancel future assignments before disabling it if those products should stay hidden. Re-enabling it resumes the saved schedule.
 
 Configure `storeConfig.timeZone` and `storeConfig.weeklyFeature` in `src/lib/store-config.ts`. The default is Monday at 09:00 UTC; `weekday` uses Sunday = 0 through Saturday = 6. Confirm the owner's named IANA time zone and preferred cadence. Week boundaries follow that zone's wall clock across daylight-saving changes.
 

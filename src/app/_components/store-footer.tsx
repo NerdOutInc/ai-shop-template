@@ -12,13 +12,15 @@ export function StoreFooter() {
       <div className="page-width footer-inner">
         <p className="font-display text-xl">{storeConfig.tagline}</p>
         <nav aria-label="Footer navigation" className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
-          <Link href="/about" className="inline-flex min-h-11 items-center">
-            About
-          </Link>
+          {storeConfig.features.about && (
+            <Link href="/about" className="inline-flex min-h-11 items-center">
+              About
+            </Link>
+          )}
           <Link href="/shop" className="inline-flex min-h-11 items-center">
             {storeConfig.home.shopLabel}
           </Link>
-          <DesignOfTheWeekLink />
+          {storeConfig.features.designOfTheWeek && <DesignOfTheWeekLink />}
           <Link href="/shipping" className="inline-flex min-h-11 items-center">
             Shipping & care
           </Link>

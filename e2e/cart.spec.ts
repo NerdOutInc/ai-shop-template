@@ -61,15 +61,17 @@ test("edits and persists the bag with accessible keyboard controls and no narrow
   await page.screenshot({ path: testInfo.outputPath("cart-320px.png"), fullPage: true })
   expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([])
   await page.getByRole("button", { name: /Remove First design/ }).click()
-  await expect(page.getByRole("heading", { name: "A little room for adventure." })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Ready for your next favorite." })).toBeVisible()
 })
 
 test("explains the same US shipping rate on the public shipping page", async ({ page }) => {
   await page.goto("/shipping")
   await expect(page.getByRole("heading", { name: "Shipping & care", exact: true })).toBeVisible()
   await expect(page.getByRole("main")).toContainText(
-    "Fixture policy: standard shipping is $4.95 for the first item and $2.40 for each additional item."
+    "Shipping is $4.95 for the first shirt, plus $2.40 for each additional shirt."
   )
+  await expect(page.getByRole("main")).toContainText("4–15 business days")
+  await expect(page.getByRole("main")).toContainText("They do not change checkout charges")
 })
 
 test("checks out directly by keyboard and preserves the bag and request identity on a retry", async ({

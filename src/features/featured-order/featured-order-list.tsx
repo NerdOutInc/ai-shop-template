@@ -649,7 +649,9 @@ export function FeaturedOrderList({
             <EmptyHeader>
               <EmptyTitle>No published products yet</EmptyTitle>
               <EmptyDescription>
-                Publish a product in Printify to preview it here and plan its featured week.
+                {schedule
+                  ? "Publish a product in Printify to preview it here and plan its featured week."
+                  : "Publish a product in Printify to preview it here and arrange the shop."}
               </EmptyDescription>
             </EmptyHeader>
           </Empty>

@@ -5,6 +5,7 @@ import { checkoutRecoveryHistoryKey } from "@/features/checkout/checkout-recover
 import { selectedProductIds } from "./catalog-product-ids"
 
 import { beginKeyboardNavigation } from "../test/begin-keyboard-navigation"
+import { storeConfig } from "../test/store-config"
 import { stubDropArtwork } from "./stub-drop-artwork"
 
 type SdkCall = { args: unknown[]; url: string; referrer: string }
@@ -682,7 +683,8 @@ test("the checkout handoff is styled and keyboard accessible at 320 pixels", asy
     expect(nonce).not.toBe("")
     expect(response!.headers()["content-security-policy"]).toContain(`style-src 'nonce-${nonce}'`)
     expect(await page.locator("script").evaluate((element: HTMLScriptElement) => element.nonce)).toBe(nonce)
-    await expect(page.locator("body")).toHaveCSS("background-color", "rgb(255, 253, 246)")
+    const background = storeConfig.theme.background.match(/[a-f0-9]{2}/gi)!.map((channel) => parseInt(channel, 16))
+    await expect(page.locator("body")).toHaveCSS("background-color", `rgb(${background.join(", ")})`)
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
     const fallback = page.getByRole("link", { name: "Continue without marketing tracking" })
     expect((await fallback.boundingBox())!.height).toBeGreaterThanOrEqual(44)

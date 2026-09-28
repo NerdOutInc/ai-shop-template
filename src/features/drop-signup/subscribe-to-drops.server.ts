@@ -19,7 +19,8 @@ export async function subscribeToDrops(input: DropSignupRequest): Promise<Subscr
   // teach a bot nothing about why it failed.
   if (input.company !== undefined && input.company !== "") return "saved"
 
-  if (!storeConfig.configured || !storeConfig.policies.published) return "unavailable"
+  if (!storeConfig.configured || !storeConfig.policies.published || !storeConfig.features.dropSignup)
+    return "unavailable"
 
   const identity = await getPublicRequestIdentity()
   // Fail closed. "No bucket, so allow" would hand the form to anyone off the platform's header path.

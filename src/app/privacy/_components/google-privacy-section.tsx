@@ -28,7 +28,7 @@ export function GooglePrivacySection() {
       </p>
       <p>
         Google has a separate choice from Meta and stays off until you allow it. Declining does not affect shopping. We
-        remember your choice for 180 days and honor Global Privacy Control as a denial. Privacy choices in the footer
+        honor your saved choice for 180 days and honor Global Privacy Control as a denial. Privacy choices in the footer
         lets you change your decision. Withdrawing permission stops our Google measurement events and attempts to remove
         Google marketing cookies set on this website. Google may receive the consent update; withdrawal does not erase
         information already received. Advertising personalization and enhanced conversion customer-data matching are not
@@ -36,8 +36,9 @@ export function GooglePrivacySection() {
       </p>
       <p>
         Google may set analytics cookies such as _ga and advertising cookies such as _gcl_. We send a Google-specific
-        purchase identifier to limit duplicates, and retain up to 100 purchase-attempt markers in this browser for 90
-        days. Clearing browser data, using another device, blocking scripts, declining cookies, or not returning from
+        purchase identifier to limit duplicates, and treat up to 100 purchase-attempt markers in this browser as current
+        for 90 days. Saved choices and attempt markers can remain beyond their eligibility windows until replaced or
+        cleared. Clearing browser data, using another device, blocking scripts, declining cookies, or not returning from
         payment can affect measurement.
       </p>
     </>

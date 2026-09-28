@@ -190,7 +190,7 @@ function OrderRow({ order }: { order: AdminOrder }) {
               className="font-condensed text-xl font-semibold"
               title={order.requestId}
             >
-              Order ORDER-{order.requestId.slice(0, 8).toUpperCase()}
+              ORDER-{order.requestId.slice(0, 8).toUpperCase()}
             </h2>
             {order.testOrder && <Badge variant="outline">Test order</Badge>}
             <time dateTime={order.createdAt} className="text-sm text-muted-foreground">

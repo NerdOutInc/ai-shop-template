@@ -3,6 +3,8 @@ import { render, screen, within } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import userEvent from "@testing-library/user-event"
 
+import { storeConfig } from "@/lib/store-config"
+
 import type { CatalogProduct } from "./catalog-product"
 
 import { ProductList } from "./product-list"
@@ -470,3 +472,15 @@ describe("ProductList", () => {
     expect(screen.getByRole("heading")).toHaveTextContent(product.title)
   })
 })
+
+it.each(["Art for the everyday.", "Night-owl originals."])(
+  "uses the configured tagline in the shop sidebar: %s",
+  (tagline) => {
+    storeConfig.tagline = tagline
+    render(<ProductList catalog={{ status: "ready", products: [product] }} />)
+    expect(
+      within(screen.getByRole("complementary", { name: "Filter products" })).getByText(tagline)
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/Snack breaks welcome/)).not.toBeInTheDocument()
+  }
+)

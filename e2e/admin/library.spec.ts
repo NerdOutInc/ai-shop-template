@@ -842,7 +842,7 @@ test("takes an email for the next drop and records the consent it showed", async
   ).rows
   // Stored normalized, with what they were shown, and confirmed by nothing -- because nothing sends yet.
   expect(saved).toEqual([
-    { email: "customer@example.com", source: "design-of-the-week", consent_copy_version: "v1", confirmed_at: null },
+    { email: "customer@example.com", source: "design-of-the-week", consent_copy_version: "v2", confirmed_at: null },
   ])
 
   // Signing up again refreshes consent rather than erroring or making a twin.

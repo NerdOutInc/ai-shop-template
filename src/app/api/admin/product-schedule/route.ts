@@ -4,6 +4,7 @@ import { getAdminActor } from "@/features/admin/get-admin-actor.server"
 import { listCadenceSlots } from "@/features/publishing/list-cadence-slots"
 import { refreshStorefront } from "@/features/design-of-the-week/refresh-storefront.server"
 import { getPublishingStore } from "@/features/publishing/get-publishing-store.server"
+import { storeConfig } from "@/lib/store-config"
 import { env } from "@/lib/env"
 import { getSiteUrl } from "@/lib/get-site-url"
 import { hasSameOrigin } from "@/lib/has-same-origin"
@@ -20,6 +21,7 @@ function sameOrigin(request: Request) {
 }
 
 export async function PUT(request: Request) {
+  if (!storeConfig.features.designOfTheWeek) return respond({ error: "Not found." }, 404)
   if (!sameOrigin(request)) return respond({ error: "Use the Products page to schedule products." }, 403)
   const actor = await getAdminActor()
   if (!actor) return respond({ error: "Sign in as an administrator." }, 401)
@@ -62,6 +64,7 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  if (!storeConfig.features.designOfTheWeek) return respond({ error: "Not found." }, 404)
   if (!sameOrigin(request)) return respond({ error: "Use the Products page to remove a scheduled product." }, 403)
   const actor = await getAdminActor()
   if (!actor) return respond({ error: "Sign in as an administrator." }, 401)

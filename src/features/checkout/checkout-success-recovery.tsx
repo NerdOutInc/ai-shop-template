@@ -21,12 +21,12 @@ export function CheckoutSuccessRecovery() {
             : "Reopening your checkout. One moment, friend."}
       </p>
       {recovery.error ? (
-        <button type="button" className="button button-coral mt-6" onClick={recovery.retry}>
+        <button type="button" className="button button-accent mt-6" onClick={recovery.retry}>
           Try again
         </button>
       ) : null}
       {recovery.gone ? (
-        <a href={`mailto:${supportEmail}`} className="button button-coral mt-6">
+        <a href={`mailto:${supportEmail}`} className="button button-accent mt-6">
           Contact us about your order
         </a>
       ) : null}

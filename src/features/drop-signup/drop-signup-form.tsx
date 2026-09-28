@@ -2,7 +2,10 @@
 
 import { useId, useRef, useState } from "react"
 
+import { storeConfig } from "@/lib/store-config"
+
 import { dropConsentCopy } from "./drop-consent-copy"
+import { DropRemovalLink } from "./drop-removal-link"
 
 type DropSignupFormProps = { source: "design-of-the-week" | "footer" | "home" }
 type State =
@@ -10,10 +13,13 @@ type State =
 
 export function DropSignupForm({ source }: DropSignupFormProps) {
   const emailId = useId()
+  const consentId = useId()
   const honeypotId = useId()
   const [email, setEmail] = useState("")
   const [state, setState] = useState<State>({ status: "idle" })
   const honeypot = useRef<HTMLInputElement>(null)
+
+  if (!storeConfig.configured || !storeConfig.policies.published || !storeConfig.features.dropSignup) return null
 
   async function submit(event: React.FormEvent) {
     event.preventDefault()
@@ -45,7 +51,16 @@ export function DropSignupForm({ source }: DropSignupFormProps) {
       <label htmlFor={emailId} className="font-condensed text-lg font-bold tracking-wider uppercase">
         Know when the next one drops
       </label>
-      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{dropConsentCopy.text}</p>
+      <p id={consentId} className="mt-2 text-sm leading-relaxed text-muted-foreground">
+        {dropConsentCopy.text} <DropRemovalLink />. Read our{" "}
+        <a
+          href="/privacy"
+          className="underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
+          privacy policy
+        </a>
+        .
+      </p>
       <div className="mt-4 flex flex-wrap gap-3">
         <input
           id={emailId}
@@ -54,13 +69,14 @@ export function DropSignupForm({ source }: DropSignupFormProps) {
           required
           autoComplete="email"
           inputMode="email"
+          aria-describedby={consentId}
           placeholder="you@example.com"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           disabled={state.status === "sending"}
-          className="min-h-12 min-w-0 flex-1 rounded-sm border border-foreground/25 bg-background px-3 text-base focus-visible:outline-2 focus-visible:outline-offset-2"
+          className="min-h-12 min-w-0 flex-1 basis-full rounded-sm border border-foreground/25 bg-background px-3 text-base focus-visible:outline-2 focus-visible:outline-offset-2 sm:basis-0"
         />
-        <button type="submit" className="button" disabled={state.status === "sending"}>
+        <button type="submit" className="button w-full sm:w-auto" disabled={state.status === "sending"}>
           {state.status === "sending" ? "Signing up…" : "Keep me posted"}
         </button>
       </div>

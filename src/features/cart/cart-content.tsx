@@ -21,7 +21,7 @@ export function CartContent({ cancelled = false }: { cancelled?: boolean }) {
   if (!hydrated)
     return (
       <p role="status" className="py-16">
-        Gathering your gear…
+        Loading your cart…
       </p>
     )
   if (items.length === 0)
@@ -35,12 +35,11 @@ export function CartContent({ cancelled = false }: { cancelled?: boolean }) {
           unoptimized
           className="mx-auto h-auto w-40"
         />
-        <h2 className="display-heading mt-7 text-4xl">A little room for adventure.</h2>
+        <h2 className="display-heading mt-7 text-4xl">Ready for your next favorite.</h2>
         <p className="mx-auto mt-5 max-w-sm leading-7 text-foreground/75">
-          Your cart is empty. Your next favorite is waiting.
-          <br className="hidden sm:block" /> Let’s find your next favorite shirt.
+          Your cart is empty. Explore the collection to find a shirt that suits you.
         </p>
-        <Link href="/shop" className="button button-coral mt-8">
+        <Link href="/shop" className="button button-accent mt-8">
           Find your shirt
         </Link>
       </section>
@@ -138,7 +137,7 @@ export function CartContent({ cancelled = false }: { cancelled?: boolean }) {
           </ul>
           <p className="mt-5 text-xs leading-5 text-foreground/70">
             Up to {cartLimits.maxQuantityPerVariant} of each size/color and {cartLimits.maxTotalQuantity} items per
-            order. A whole crew’s worth of good hangs.
+            order.
           </p>
           <Link
             href="/shop"

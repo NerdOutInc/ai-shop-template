@@ -16,6 +16,7 @@ import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { NativeSelect } from "@/components/ui/native-select"
 import type { ProductScheduleEntry } from "@/features/publishing/product-schedule-entry"
+import { formatWeeklyCadence } from "@/features/publishing/format-weekly-cadence"
 import { formatStoreMoment } from "@/lib/format-store-moment"
 
 import { isProductOnTheWall } from "./is-product-on-the-wall"
@@ -183,8 +184,8 @@ export function ProductScheduleDialog({
           </>
         )}
         <p className="text-sm text-muted-foreground">
-          Hidden products appear in the shop on Monday at 4 AM Central. Removing a product from a future week leaves its
-          shop visibility unchanged. Products stay for sale after their featured week ends.
+          Hidden products appear in the shop on {formatWeeklyCadence()}. Removing a product from a future week leaves
+          its shop visibility unchanged. Products stay for sale after their featured week ends.
         </p>
         {error && (
           <Alert variant="destructive">

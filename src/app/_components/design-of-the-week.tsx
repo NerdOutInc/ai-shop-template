@@ -11,6 +11,7 @@ import { DropSignupForm } from "@/features/drop-signup/drop-signup-form"
 import { DropProductGrid } from "./drop-product-grid"
 
 export async function DesignOfTheWeek() {
+  if (!storeConfig.features.designOfTheWeek) return null
   // Share one live-clock reading so the section and catalog agree when a new week begins.
   await connection()
   const reading = readProductWeek()
@@ -19,7 +20,7 @@ export async function DesignOfTheWeek() {
   const roster = catalog.products.filter((product) => dropIds.has(product.id))
   // The pick holds all week, so a sold-out tee would hold its slot all week too.
   const pool = catalog.products.filter((product) => !dropIds.has(product.id) && product.availability === "available")
-  const signupEnabled = storeConfig.configured && storeConfig.policies.published
+  const signupEnabled = storeConfig.features.dropSignup && storeConfig.configured && storeConfig.policies.published
   const more = drop === null ? [] : pickMoreLikeThis(drop.liveAt, pool, 4)
 
   return (
@@ -31,7 +32,7 @@ export async function DesignOfTheWeek() {
             Check the shop for our current collection, or come back soon for new designs.
           </p>
           <Link href="/shop" className="button mt-7">
-            Shop all tees
+            {storeConfig.home.shopLabel}
           </Link>
           {signupEnabled && (
             <div className="mt-12">
@@ -82,7 +83,7 @@ export async function DesignOfTheWeek() {
           </div>
           <div className="text-center">
             <Link href="/shop" className="button">
-              Shop all tees
+              {storeConfig.home.shopLabel}
             </Link>
           </div>
         </>
