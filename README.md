@@ -47,7 +47,7 @@ The initial supported workflow is **Next Level 6210, USD, standard shipping to t
 
 ## Run locally
 
-Use Node.js 24.15 or later within Node 24, and the pnpm version pinned in `package.json`:
+Use the Node.js version pinned in [`.node-version`](.node-version) and the pnpm version pinned in `package.json`. The `engines` field describes the supported Node range; local validation and CI use the pinned version:
 
 ```sh
 corepack enable
@@ -84,7 +84,7 @@ See [the skill catalog](.agents/skills/store-template-readiness/references/skill
 
 ## Development and release
 
-`pnpm check` runs baseline checks. `pnpm check:all` adds Storybook, builds and isolated browser/database suites. `pnpm check:template` scans repository files for local paths, private setup files and private keys. Read [AGENTS.md](AGENTS.md) for required validation and review boundaries.
+Install the [test prerequisites](docs/ci.md#local-test-prerequisites), including the pinned Python tools, before running validation. `pnpm check` runs baseline checks. `pnpm check:all` adds Storybook, builds and isolated browser/database suites. Every PR runs both through the [CI workflow](docs/ci.md); configure its **Required checks** status as a branch rule before merging. `pnpm check:template` scans repository files for local paths, private setup files and private keys. Read [AGENTS.md](AGENTS.md) for required validation and review boundaries.
 
 A generated repository is independent of this template; GitHub does not automatically apply future template updates. Follow the [store update contract](docs/store-update-contract.md) to record the original content baseline before customization and prepare reviewed upstream ports later. Template maintainers enable GitHub's **Template repository** setting on this repository; a downstream store usually leaves that setting off.
 
