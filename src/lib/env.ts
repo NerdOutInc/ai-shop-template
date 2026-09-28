@@ -1,63 +1,12 @@
 import { createEnv } from "@t3-oss/env-nextjs"
-import { z } from "zod"
 
-import { isPublicBlobHost } from "./is-public-blob-host"
+import { envSchema } from "./env-schema"
 
 export const env = createEnv({
-  server: {
-    NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-    VERCEL: z.enum(["1"]).optional(),
-    CHECKOUT_RATE_LIMIT_SECRET: z.string().min(32).max(256).optional(),
-    VERCEL_URL: z.string().min(1).optional(),
-    VERCEL_ENV: z.enum(["development", "preview", "production"]).optional(),
-    PRINTIFY_API_TOKEN: z.string().optional(),
-    PRINTIFY_PUBLISHING_API_TOKEN: z.string().optional(),
-    PRINTIFY_DRAFTS_API_TOKEN: z.string().optional(),
-    PRINTIFY_SHOP_ID: z.string().optional(),
-    DATABASE_URL: z.string().optional(),
-    DATABASE_SSL_CA: z.string().optional(),
-    STRIPE_SECRET_KEY: z.string().optional(),
-    STRIPE_WEBHOOK_SECRET: z.string().optional(),
-    STRIPE_TAX_ENABLED: z.enum(["true", "false"]).optional(),
-    PRINTIFY_FULFILLMENT_ENABLED: z.enum(["true", "false"]).optional(),
-    PRINTIFY_PUBLISHING_ENABLED: z
-      .enum(["true", "false"])
-      .default("false")
-      .transform((value) => value === "true"),
-    PRINTIFY_WEBHOOK_SECRET: z.string().min(32).optional(),
-    PRINTIFY_MONITOR_SECRET: z.string().min(32).optional(),
-    GOOGLE_MERCHANT_FEED_PASSWORD: z.string().min(32).max(256).optional(),
-    META_CATALOG_FEED_PASSWORD: z.string().min(32).max(256).optional(),
-    RESEND_API_KEY: z.string().min(1).optional(),
-    ORDER_ALERT_FROM_EMAIL: z.email().optional(),
-    ORDER_ALERTS_ENABLED: z.enum(["true", "false"]).default("false"),
-    CRON_SECRET: z.string().min(32).optional(),
-    GOOGLE_TAG_ENABLED: z.string().optional(),
-    GOOGLE_TAG_ID: z.string().optional(),
-    META_PIXEL_ENABLED: z.string().optional(),
-    META_PIXEL_ID: z.string().optional(),
-    ADMIN_LIBRARY_ENABLED: z
-      .enum(["true", "false"])
-      .default("false")
-      .transform((value) => value === "true"),
-    ADMIN_OWNER_EMAIL: z.email().optional(),
-    ADMIN_SETUP_SECRET: z.string().min(32).max(256).optional(),
-    SUPABASE_SECRET_KEY: z.string().min(1).optional(),
-    PRIVATE_BLOB_READ_WRITE_TOKEN: z.string().min(1).optional(),
-  },
-  client: {
-    NEXT_PUBLIC_PRODUCT_IMAGE_BLOB_HOST: z
-      .string()
-      .refine(isPublicBlobHost, "Use a public Vercel Blob store hostname")
-      .optional(),
-    NEXT_PUBLIC_SITE_URL: z.url().optional(),
-    NEXT_PUBLIC_SUPABASE_URL: z.url().optional(),
-    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().min(1).optional(),
-  },
+  ...envSchema,
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
     VERCEL: process.env.VERCEL,
-    CHECKOUT_RATE_LIMIT_SECRET: process.env.CHECKOUT_RATE_LIMIT_SECRET,
     VERCEL_URL: process.env.VERCEL_URL,
     VERCEL_ENV: process.env.VERCEL_ENV,
     PRINTIFY_API_TOKEN: process.env.PRINTIFY_API_TOKEN,
@@ -66,6 +15,7 @@ export const env = createEnv({
     PRINTIFY_SHOP_ID: process.env.PRINTIFY_SHOP_ID,
     DATABASE_URL: process.env.DATABASE_URL,
     DATABASE_SSL_CA: process.env.DATABASE_SSL_CA,
+    CHECKOUT_RATE_LIMIT_SECRET: process.env.CHECKOUT_RATE_LIMIT_SECRET,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
     STRIPE_TAX_ENABLED: process.env.STRIPE_TAX_ENABLED,

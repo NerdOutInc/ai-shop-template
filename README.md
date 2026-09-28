@@ -45,7 +45,7 @@ No particular AI vendor, browser plugin or paid model subscription is bundled. T
 
 Each store uses its own repository, domain, deployment, Supabase project, Printify shop, Stripe account and storage. The template contains no product catalog, customer history, administrator, source-brand artwork or provider account connection. It is a starting point, not a running merchant account.
 
-The initial supported workflow is **Next Level 6210, USD, standard shipping to the 50 US states plus DC**. Other garments need complete profiles; new currencies, countries, discounts or shipping models can require coordinated code and test changes. The template's sample shipping amounts and delivery windows are not an approved business policy.
+The initial supported workflow is **Next Level 6210 (blueprint 1317), print provider 99 for the built-in per-design color workflow, USD, standard shipping to the 50 US states plus DC**. Other model/provider recipes need independent compatibility work and complete profiles; new currencies, countries, discounts or shipping models can require coordinated code and test changes. The template's sample shipping amounts and delivery windows are not an approved business policy.
 
 ## Run locally
 
@@ -59,9 +59,9 @@ pnpm setup:check
 pnpm dev
 ```
 
-Open [localhost:3000](http://localhost:3000). The neutral shell works without provider secrets; the catalog and checkout need the services in [store setup](docs/store-setup.md). `pnpm setup:check` loads local environment files with Next.js precedence and reports configuration only, without displaying secrets. `pnpm setup:check --launch` checks launch configuration; neither command creates resources or proves provider delivery.
+Open [localhost:3000](http://localhost:3000). The neutral shell works without provider secrets; the catalog and checkout need the services in [store setup](docs/store-setup.md). `pnpm setup:check` loads local environment files with Next.js precedence and reports configuration only, without displaying secrets. `pnpm setup:check --sandbox` fails until the sandbox configuration gates pass; `pnpm setup:check --launch` checks live configuration and the required schedules in `vercel.json`. Use `--env-file PATH` with either strict mode to inspect a protected dotenv export without loading development secrets. Output distinguishes configured values from remotely unverified readiness. None of these commands contacts providers, creates resources or proves delivery. The supported selling deployment uses Vercel Pro or Enterprise with the reviewed worker schedules; see [hosting requirements](docs/store-setup.md#supported-hosting-and-scheduled-workers).
 
-Keep actual answers and progress in ignored `.store-setup.local.json`, copied from [`store-setup.example.json`](store-setup.example.json). Credentials belong in `.env.local`, provider secret managers or private grant files, never that progress file. Your permanent public choices belong in source configuration; private owner details do not.
+Keep actual answers and progress in ignored `.store-setup.local.json`, copied from [`store-setup.example.json`](store-setup.example.json). Credentials belong in `.env.local`, provider secret managers or private grant files, never that progress file. Your permanent public choices belong in source configuration; private owner details do not. `.worktreeinclude` carries only this progress file into new Codex managed worktrees as a snapshot. Verify it arrived and reconcile the latest resume timestamp at handoff; secrets and `.env` files are deliberately excluded. Other clients may copy this one inspected, non-secret file explicitly.
 
 ## Work with your agent
 

@@ -13,11 +13,11 @@ Before verifying `/feeds/google`, `/feeds/meta` and publishing health, complete 
 
 ## Diagnose the environment first
 
-Record checkout/branch/commit, target deployment URL/environment, canonical origin, provider account/shop identities, and publishing/paid fulfillment enablement. Inspect variable presence and sanitized error codes without revealing values.
+Record checkout/branch/commit, target deployment URL/environment, canonical origin, provider account/shop identities, and publishing/paid fulfillment enablement. Inspect variable presence and sanitized error codes without revealing values. `pnpm setup:check --launch --env-file PATH` checks an isolated protected dotenv export without merging development settings; it still cannot prove the deployed environment or credential validity.
 
 Development, Preview, and Production variables are independent. Credentials set only in Preview do not configure Production. A configuration error before a provider request calls for inspecting configuration, not changing catalog behavior. Restart the affected server or deploy a new version after environment updates, then verify runtime behavior.
 
-A fresh clone has no credentials. If local worktree tooling copies ignored development configuration, verify that behavior and its current contents; it does not imply synchronized rotations or a running Postgres/Stripe listener. Verify ports, listener destination, database isolation, and running services. Do not distribute live credentials into development worktrees.
+A fresh clone has no credentials. The tracked `.worktreeinclude` copies only non-secret setup progress into new Codex worktrees; verify the snapshot and reconcile newer progress. Configure isolated environment secrets separately; progress does not imply synchronized rotations or a running Postgres/Stripe listener. Verify ports, listener destination, database isolation, and running services. Do not distribute live credentials into development worktrees.
 
 Keep credential responsibilities separate: storefront/checkout Printify access, publishing writes, webhook signatures, webhook administration, cron, health monitor, Merchant feed authentication, and Stripe API access. A health-monitor credential cannot run the publishing worker. Use actual required scopes; do not broaden access to cure an unrelated failure.
 
@@ -46,7 +46,7 @@ Respect test database guards. Database suites use disposable local databases and
 
 ## Release the authorized result
 
-The accepted launch checklist includes working Checkout, one verified real order, an inspected physical sample, and Google-approved listings. Keep evidence/status for each. Whether pending sample inspection or Google approval delays opening remains an owner decision: show the unfinished checks at the concrete launch decision and ask whether to wait or open with those named checks pending. Never mark them complete from approval to launch.
+The launch checklist requires working sandbox Checkout and the enabled services’ deployed evidence. Real purchase tests, physical samples and merchant listing approval are separate, scope-dependent checks: a purchase needs its own authorization, and an unused Google/Meta channel is not applicable. Record pending sample or chosen-channel approval for the owner’s concrete launch decision. Never mark a check verified merely because opening was approved. Run `pnpm setup:check --launch` for local configuration and required schedules; it does not verify providers or authorize activation.
 
 Going live and testing a purchase require explicit approval; name both if requesting them together. This includes clarifying simulated versus paid tests, not treating every automated fixture check as a purchase. An instructed product batch needs no separate batch review or approval per product, but does not grant release or purchase approval. Reuse the exact approvals already granted.
 

@@ -11,7 +11,7 @@ Read the [store setup](../../../docs/store-setup.md) for the actual shipping, pa
 
 ## Establish the intended account and business facts
 
-Use the [confirmed store defaults](../store-template-readiness/references/store-defaults.md) and relevant [owner intake](../store-owner-handoff/references/owner-intake.md) inputs. Each store has its own domain, provider resources and Blob storage. Start with the supported Next Level 6210 profile; pricing, shipping and business policy come from this owner. New product publication should flow into the existing scheduled feed automatically, without per-product code changes or manual feed reconstruction.
+Use the [confirmed store defaults](../store-template-readiness/references/store-defaults.md) and relevant [owner intake](../store-owner-handoff/references/owner-intake.md) inputs. Each store has its own domain, provider resources and Blob storage. Start with the supported Next Level 6210 (blueprint 1317), provider 99 profile for the built-in design-color workflow; pricing, shipping and business policy come from this owner. New product publication should flow into the existing scheduled feed automatically, without per-product code changes or manual feed reconstruction.
 
 Inspect existing Merchant Center accounts, data sources, Search Console properties, and the production deployment before creating replacements. Use current source and account state to verify anything carried forward from a prior task. Do not assume an implementation, deployment, or unfinished task is complete.
 

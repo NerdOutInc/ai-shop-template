@@ -17,7 +17,10 @@
     "delegatedChoices": [],
     "draftsByDefault": true,
     "timeZone": null,
-    "weeklyFeature": null
+    "weeklyFeature": null,
+    "printifyBlueprintId": null,
+    "printifyPrintProviderId": null,
+    "commerceIdentity": null
   },
   "authorization": {
     "scope": [],
@@ -65,7 +68,8 @@
       "status": "not-started",
       "publicResourceId": null,
       "environment": null,
-      "evidence": []
+      "evidence": [],
+      "credentialRotationDueAt": null
     },
     "stripe": {
       "status": "not-started",
@@ -96,12 +100,17 @@
     "localChecks": [],
     "sandboxCheckout": null,
     "liveOrder": null,
-    "physicalSample": null
+    "physicalSample": null,
+    "configurationChecks": [],
+    "scheduledWorkers": [],
+    "ownerClaim": null
   },
   "resume": {
     "phase": "intake",
     "nextAction": "Read the setup skill and ask the first concise brand questions.",
     "needsOwner": [],
-    "updatedAt": null
+    "updatedAt": null,
+    "branch": null,
+    "commit": null
   }
 }
