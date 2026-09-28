@@ -27,7 +27,7 @@ beforeEach(() => {
 describe("listFeaturedOrder", () => {
   it("lists every active product in its saved order with a display title and image", async () => {
     listAdminProducts.mockResolvedValue([
-      { snapshot: { ...createCatalogFixture("second-tee"), title: "Second Tee — Your Store" }, ...shown },
+      { snapshot: { ...createCatalogFixture("second-tee"), title: "Second Tee — Fixture Store" }, ...shown },
       { snapshot: createCatalogFixture("first-tee"), ...shown },
     ])
     expect(await listFeaturedOrder()).toEqual({
@@ -78,7 +78,7 @@ describe("listFeaturedOrder", () => {
 
   it("keeps a product the storefront cannot display so a save still names it", async () => {
     listAdminProducts.mockResolvedValue([
-      { snapshot: { id: "broken-tee", title: "Broken Tee — Your Store" }, ...shown },
+      { snapshot: { id: "broken-tee", title: "Broken Tee — Fixture Store" }, ...shown },
       { snapshot: { id: "untitled" }, ...shown },
     ])
     expect(await listFeaturedOrder()).toEqual({

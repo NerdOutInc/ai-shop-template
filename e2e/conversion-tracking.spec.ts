@@ -87,7 +87,7 @@ test("tracks the organic shopping funnel once and sanitizes a Stripe-style purch
       contentType: "text/html",
       // The fixture shop is HTTP; retain the payment origin across that local downgrade.
       headers: { "Referrer-Policy": "origin" },
-      body: `<!doctype html><title>Offline checkout fixture</title><link rel="icon" href="data:,"><a href="${successUrl}">Return to Your Store</a>`,
+      body: `<!doctype html><title>Offline checkout fixture</title><link rel="icon" href="data:,"><a href="${successUrl}">Return to Fixture Store</a>`,
     })
   )
   await page.route("**/api/checkout/status?*", (route) => {
@@ -117,7 +117,7 @@ test("tracks the organic shopping funnel once and sanitizes a Stripe-style purch
   await page.getByRole("button", { name: "Checkout", exact: true }).click()
   await expect(page).toHaveURL(stripeUrl)
   await expect.poll(() => analytics.filter((event) => event.name === "begin_checkout")).toHaveLength(1)
-  await page.getByRole("link", { name: "Return to Your Store" }).click()
+  await page.getByRole("link", { name: "Return to Fixture Store" }).click()
   await expect(page).toHaveURL(`${shopOrigin}/checkout/success`)
   await expect(page.getByRole("heading", { name: "Your order is confirmed." })).toBeVisible()
   expect(await page.evaluate(() => document.referrer)).toBe("")

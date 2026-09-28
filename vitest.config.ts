@@ -5,7 +5,10 @@ import react from "@vitejs/plugin-react"
 import { playwright } from "@vitest/browser-playwright"
 import { defineConfig } from "vitest/config"
 
+import { storeConfigPlugin } from "./test/store-config-plugin"
+
 export default defineConfig({
+  plugins: [storeConfigPlugin()],
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),

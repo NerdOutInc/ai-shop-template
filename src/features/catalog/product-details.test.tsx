@@ -73,7 +73,7 @@ vi.mock("next/navigation", async () => {
 
 const product: CatalogProduct = {
   id: "111111000000000000000002",
-  title: "Sample Morning Scene — Your Store | Next Level 6210",
+  title: "Sample Morning Scene — Fixture Store | Next Level 6210",
   garment: {
     manufacturer: "Next Level",
     model: "6210",

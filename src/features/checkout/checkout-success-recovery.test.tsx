@@ -32,7 +32,7 @@ describe("order status recovery feedback", () => {
     expect(screen.queryByRole("button", { name: "Try again" })).not.toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Contact us about your order" })).toHaveAttribute(
       "href",
-      "mailto:support@example.com"
+      "mailto:support@fixture.example"
     )
     expect(screen.getByRole("link", { name: "Browse the shirts" })).toHaveAttribute("href", "/shop")
     expect(fetcher).toHaveBeenCalledTimes(failure === "404" ? 1 : 0)

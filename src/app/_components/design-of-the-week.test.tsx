@@ -8,7 +8,7 @@ import { readProductWeek } from "@/features/design-of-the-week/read-product-week
 import { DesignOfTheWeek } from "./design-of-the-week"
 
 vi.mock("server-only", () => ({}))
-const store = vi.hoisted(() => ({ configured: true, name: "Your Store", policies: { published: true } }))
+const store = vi.hoisted(() => ({ configured: true, name: "Fixture Store", policies: { published: true } }))
 vi.mock("@/lib/store-config", () => ({ storeConfig: store }))
 vi.mock("next/server", () => ({ connection: vi.fn() }))
 vi.mock("@/features/catalog/get-catalog.server", () => ({ getCatalog: vi.fn() }))

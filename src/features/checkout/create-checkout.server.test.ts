@@ -397,7 +397,7 @@ function checkoutFixture() {
     amount_total: 3499,
     expires_at: Math.floor(Date.now() / 1000) + 3600,
     total_details: { amount_shipping: 0, amount_discount: 0, amount_tax: 0 },
-    metadata: { storefront: "your-store", checkout_request_id: requestId, shop_id: "1234" },
+    metadata: { storefront: "fixture-store", checkout_request_id: requestId, shop_id: "1234" },
     client_reference_id: requestId,
     payment_intent: "pi_fixture",
   }

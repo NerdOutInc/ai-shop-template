@@ -1,3 +1,4 @@
+import { storeConfig } from "../test/store-config"
 import { parsePrintifyProduct } from "@/lib/printify/parse-printify-product"
 import { productionFingerprintVersion } from "@/lib/printify/production-fingerprint-version"
 import { listCadenceSlots } from "@/features/publishing/list-cadence-slots"
@@ -33,7 +34,11 @@ try {
        values ('123',1312,'Next Level','5080','crop-tops',212,'female','adult','US')`
   )
   const now = new Date()
-  const recentSlots = listCadenceSlots({ from: new Date(now.getTime() - 15 * 86_400_000), count: 3 })
+  const recentSlots = listCadenceSlots({
+    cadence: { ...storeConfig.weeklyFeature, timeZone: storeConfig.timeZone },
+    from: new Date(now.getTime() - 15 * 86_400_000),
+    count: 3,
+  })
   const currentWeek = recentSlots.filter((instant) => instant.getTime() <= now.getTime()).at(-1)
   if (!currentWeek) throw new Error("No current weekly slot for the catalog fixture")
   // When each public product entered the shop, which Newest sorts by and the New badge reads. The

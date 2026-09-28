@@ -15,7 +15,7 @@ function fixture(): MerchantProduct {
     product: normalizeCatalogProduct({
       id: "sample-shirt",
       shop_id: 123,
-      title: "Sample Morning Scene — Your Store | Next Level 6210",
+      title: "Sample Morning Scene — Fixture Store | Next Level 6210",
       description: "<p>A colorful illustrated scene.</p><p>Detailed shapes fill the frame.</p>",
       variants: [
         { id: 1, price: 2500, is_enabled: true, is_available: true, options: [10, 20] },
@@ -167,7 +167,7 @@ describe("createMerchantFeed", () => {
     expect(value(rows[0]!, "title")).toBe("Sample Morning Scene – Black / S")
     expect(value(rows[0]!, "description")).toBe(merchantProduct.product.description)
     expect(value(rows[0]!, "canonical_link")).toBe("https://example.com/shop/sample-shirt")
-    expect(value(rows[0]!, "brand")).toBe("Your Store")
+    expect(value(rows[0]!, "brand")).toBe("Fixture Store")
     expect(value(rows[0]!, "google_product_category")).toBe("212")
     expect(value(rows[0]!, "condition")).toBe("new")
     expect(value(rows[0]!, "gender")).toBe("unisex")

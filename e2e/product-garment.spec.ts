@@ -24,15 +24,15 @@ test("uses each product's configured garment for its header and search metadata"
       product: catalogProducts[0]!,
       model: "Next Level 6210",
       type: "Unisex tee",
-      title: "Fixture First Design – T-Shirt | Your Store",
-      description: /A unisex T-shirt from Your Store\.$/,
+      title: "Fixture First Design – T-Shirt | Fixture Store",
+      description: /A unisex T-shirt from Fixture Store\.$/,
     },
     {
       product: cropTop,
       model: "Next Level 5080",
       type: "Women's crop top",
-      title: "Fixture Festival Crop - Women's Festival Crop Top | Your Store",
-      description: /A women's crop top from Your Store\.$/,
+      title: "Fixture Festival Crop - Women's Festival Crop Top | Fixture Store",
+      description: /A women's crop top from Fixture Store\.$/,
     },
   ]) {
     // Client navigation has its own SEO journey; this checks each product's published page response.

@@ -4,7 +4,7 @@ vi.mock("server-only", () => ({}))
 afterEach(() => vi.unstubAllGlobals())
 const email = {
   from: "orders@example.com",
-  to: ["support@example.com"],
+  to: ["support@fixture.example"],
   subject: "Check order",
   text: "Internal reminder",
 }

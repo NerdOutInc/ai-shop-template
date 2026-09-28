@@ -6,8 +6,8 @@ import { ShippingStructuredData } from "./shipping-structured-data"
 vi.mock("@/lib/get-site-url", () => ({ getSiteUrl: () => new URL("https://store.example") }))
 const config = vi.hoisted(() => ({
   configured: true,
-  name: "Your Store",
-  supportEmail: "support@example.com",
+  name: "Fixture Store",
+  supportEmail: "support@fixture.example",
   logo: { src: "/images/store-mark.svg" },
   socialLinks: [],
   policies: { published: true },

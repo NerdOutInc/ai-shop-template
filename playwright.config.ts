@@ -34,7 +34,7 @@ export default defineConfig(
           ],
           webServer: [
             {
-              command: `pnpm exec next start --hostname 127.0.0.1 --port ${port}`,
+              command: `pnpm exec next start .tmp/unconfigured-storefront-e2e --hostname 127.0.0.1 --port ${port}`,
               // Keep browser journeys offline even when a developer has configured a real shop locally.
               env: offlineStoreEnvironment,
               url: `${baseURL}/api/health`,

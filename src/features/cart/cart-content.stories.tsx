@@ -1,3 +1,4 @@
+import { configuredStoreConfig } from "../../../test/configured-store-config"
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect } from "storybook/test"
 
@@ -39,11 +40,7 @@ const meta = {
   ],
   beforeEach: () => {
     const previousStore = structuredClone(storeConfig)
-    storeConfig.configured = true
-    storeConfig.policies.published = true
-    storeConfig.commerce.shippingConfirmed = true
-    storeConfig.commerce.firstItemShippingCents = 495
-    storeConfig.commerce.additionalItemShippingCents = 240
+    Object.assign(storeConfig, structuredClone(configuredStoreConfig))
     const previous = window.localStorage.getItem("your-store-cart-v1")
     window.localStorage.setItem("your-store-cart-v1", JSON.stringify(cart))
     return () => {

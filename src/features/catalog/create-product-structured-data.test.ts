@@ -17,7 +17,7 @@ function productFixture(): CatalogProduct {
   return normalizeCatalogProduct({
     id: "sample-shirt",
     shop_id: 123,
-    title: "Sample Morning Scene — Your Store | Next Level 6210",
+    title: "Sample Morning Scene — Fixture Store | Next Level 6210",
     description: "A colorful illustrated scene.",
     variants: [
       { id: 1, price: 2500, is_enabled: true, is_available: true, options: [10, 20] },
@@ -66,7 +66,7 @@ describe("createProductStructuredData", () => {
       name: "Sample Morning Scene",
       description: "A colorful illustrated scene.",
       productGroupID: "sample-shirt",
-      brand: { "@type": "Brand", name: "Your Store" },
+      brand: { "@type": "Brand", name: "Fixture Store" },
       variesBy: ["https://schema.org/color", "https://schema.org/size"],
     })
     expect(group?.hasVariant).toHaveLength(3)

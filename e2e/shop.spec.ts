@@ -15,9 +15,9 @@ test("shows a useful first-collection placeholder without credentials, accessibi
   expect(response?.status()).toBe(200)
   await expect(page.getByRole("heading", { name: "Shop the collection", exact: true, level: 1 })).toBeVisible()
   await expect(page.getByText("Our first collection is on its way. Check back soon.", { exact: true })).toBeVisible()
-  await expect(page).toHaveTitle("Shop | Your Store")
+  await expect(page).toHaveTitle("Shop | Fixture Store")
   await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", /\S+/)
-  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute("content", /Your Store/)
+  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute("content", /Fixture Store/)
   await expect(page.getByRole("main")).toHaveAttribute("id", "main-content")
 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
@@ -42,7 +42,7 @@ test("provides keyboard navigation from home to the shop and back with visible f
   const homeTabKey = await beginKeyboardNavigation(page, browserName)
   await expect(page.getByRole("link", { name: "Skip to content", exact: true })).toBeFocused()
   await page.keyboard.press(homeTabKey)
-  await expect(page.getByRole("link", { name: "Your Store home", exact: true })).toBeFocused()
+  await expect(page.getByRole("link", { name: "Fixture Store home", exact: true })).toBeFocused()
   for (const name of ["About", "Shop"]) {
     const link = navigation.getByRole("link", { name, exact: true })
     await page.keyboard.press(homeTabKey)
@@ -59,7 +59,7 @@ test("provides keyboard navigation from home to the shop and back with visible f
   await expect(page.getByRole("heading", { name: "Shop the collection", exact: true, level: 1 })).toBeVisible()
 
   await page.reload()
-  const homeLink = page.getByRole("link", { name: "Your Store home", exact: true })
+  const homeLink = page.getByRole("link", { name: "Fixture Store home", exact: true })
   await expect(homeLink).toHaveAttribute("href", "/")
   const shopTabKey = await beginKeyboardNavigation(page, browserName)
   await expect(page.getByRole("link", { name: "Skip to content", exact: true })).toBeFocused()
