@@ -140,7 +140,12 @@ export function checkTemplate(root = process.cwd(), policy = defaultPolicy) {
         }
       }
       for (const match of matches(databaseUrl)) {
-        if (isCredentialedDatabaseUrl(match[0]))
+        if (
+          isCredentialedDatabaseUrl(match[0]) &&
+          !policy.allowedMatches.some(
+            (item) => item.path === file && item.rule === "database-url" && item.sha256 === digest(match[0])
+          )
+        )
           report(file, "credentialed database URL", location, lineAt(match.index))
       }
       if (hasBrowserState(content)) {
