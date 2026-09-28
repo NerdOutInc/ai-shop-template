@@ -2,6 +2,8 @@
 
 This guide expands the mandatory rules in [AGENTS.md](../AGENTS.md). Start with the nearest owner of a responsibility, and share code when another real consumer needs it. A shop coming soon does not need an empty shopping mall of folders.
 
+For long-term maintenance across brands, see the proposed [update strategy](store-update-strategy.md), [update contract](store-update-contract.md), and [bounded engine pilot](store-engine-pilot.md). These plans preserve the current single-store template; they do not change the source conventions below or authorize a production migration.
+
 ## Folder ownership
 
 Paths below are relative to the repository root. They describe where code belongs when needed; they are not a list of directories to scaffold immediately.
