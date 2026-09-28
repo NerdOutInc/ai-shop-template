@@ -101,17 +101,15 @@ select has_table_privilege(current_user, 'commerce.checkout_orders', 'SELECT') a
        has_table_privilege(current_user, 'commerce.checkout_orders', 'UPDATE') as can_update_orders,
        has_table_privilege(current_user, 'public.library_assets', 'SELECT') as can_read_private_assets;
 
-select browser_role, n.nspname as schema_name, c.relname as object_name
-from pg_class c
-join pg_namespace n on n.oid = c.relnamespace
-cross join (values ('anon'), ('authenticated')) as browser_roles(browser_role)
-where c.relkind in ('r', 'v', 'm', 'p')
-  and (n.nspname in ('commerce', 'private')
-       or (n.nspname = 'public' and c.relname = 'library_assets'))
-  and has_table_privilege(browser_role, c.oid, 'SELECT,INSERT,UPDATE,DELETE');
 ```
 
-Both user names must be `store_app_runtime`; `rolcanlogin` must be true and every privileged role flag must be false. The four runtime access checks must be true, and the browser-role query must return **zero rows**. The baseline intentionally grants authenticated users limited RLS-protected access to other public library tables; do not remove those policies or add broad browser grants to fix an application error. Confirm application reads/writes through this login with the setup tests. Record only safe check outcomes in setup state, never the connection URL/password.
+Both user names must be `store_app_runtime`; `rolcanlogin` must be true and every privileged role flag must be false. The four runtime access checks must be true. Using the migration-owner connection, run the complete browser-role audit below; it must return **zero rows**. The audit covers every table privilege (including TRUNCATE) and sequence privilege across the application schemas, while allowing only the intended authenticated reads and favorite edits. The baseline intentionally grants authenticated users limited RLS-protected access to other public library tables; do not remove those policies or add broad browser grants to fix an application error. Confirm application reads/writes through this login with the setup tests. Record only safe check outcomes in setup state, never the connection URL/password.
+
+```bash
+psql -X -v ON_ERROR_STOP=1 "$OWNER_DATABASE_URL" -f scripts/database/audit-browser-privileges.sql
+```
+
+Keep this owner connection separate from the restricted runtime connection above. The query reads catalog permissions only; it does not modify data.
 
 ### Garment categories: apply then deploy
 
