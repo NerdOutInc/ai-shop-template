@@ -70,7 +70,7 @@ function fixture() {
     amount_total: 3775,
     total_details: { amount_tax: 280, amount_discount: 0, amount_shipping: 495 },
     metadata: {
-      storefront: "your-store",
+      storefront: "fixture-store",
       shop_id: stored.order.shopId,
       checkout_request_id: stored.order.requestId,
     },

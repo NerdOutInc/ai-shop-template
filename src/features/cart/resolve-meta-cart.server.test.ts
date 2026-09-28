@@ -12,7 +12,7 @@ vi.mock("@/lib/get-site-url", () => ({ getSiteUrl: () => new URL("https://exampl
 
 const product: CatalogProduct = {
   id: "aaaaaaaaaaaaaaaaaaaaaaaa",
-  title: "Good hangs — Your Store | Next Level 6210",
+  title: "Good hangs — Fixture Store | Next Level 6210",
   description: "A shirt for good company.",
   addedToShopAt: null,
   salesCount: null,
@@ -92,13 +92,13 @@ describe("Meta cart catalog resolution", () => {
 
   it.each([
     {
-      title: "The Conversation Continues — Your Store | Next Level 6210",
+      title: "The Conversation Continues — Fixture Store | Next Level 6210",
       color: "CVC Midnight Navy",
       expectedTitle: "The Conversation Continues – CVC Midnight Navy / M",
       expectedOtherTitle: "The Conversation Continues – Clay / XL",
     },
     {
-      title: "<Keep> & \"Going\" 'Together' — Your Store | Next Level 6210",
+      title: "<Keep> & \"Going\" 'Together' — Fixture Store | Next Level 6210",
       color: 'Black & "White"',
       expectedTitle: '<Keep> & "Going" \'Together\' – Black & "White" / M',
       expectedOtherTitle: "<Keep> & \"Going\" 'Together' – Clay / XL",

@@ -62,10 +62,10 @@ describe("getGarmentDescriptionBlocks", () => {
     ])
   })
 
-  it.each(["Rest Restores Mana", "Rest Restores Mana — Your Store | Next Level 6210", "rest restores  mana"])(
+  it.each(["Rest Restores Mana", "Rest Restores Mana — Fixture Store | Next Level 6210", "rest restores  mana"])(
     "does not treat a heading repeating the product title as the garment section: %s",
     (heading) => {
-      const productTitle = "Rest Restores Mana — Your Store | Next Level 6210"
+      const productTitle = "Rest Restores Mana — Fixture Store | Next Level 6210"
       expect(garmentText(`<h2>${heading}</h2><p>Your forearms need a recharge, too.</p>`, productTitle)).toEqual([])
       expect(
         garmentText(

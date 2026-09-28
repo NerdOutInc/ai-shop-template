@@ -18,7 +18,7 @@ test("makes draft policies reachable without publishing placeholder support deta
   const main = page.getByRole("main")
   await expect(main.getByRole("heading", { level: 1, name: "Returns & order help" })).toBeVisible()
   await expect(main).toContainText("preparing its policies")
-  await expect(main.getByRole("link", { name: "support@example.com" })).toHaveCount(0)
+  await expect(main.getByRole("link", { name: "support@fixture.example" })).toHaveCount(0)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([])
   for (const [label, target] of [
@@ -28,7 +28,7 @@ test("makes draft policies reachable without publishing placeholder support deta
     await footer.getByRole("link", { name: label!, exact: true }).click()
     await expect(page).toHaveURL(target!)
     await expect(main).toContainText("preparing its policies")
-    await expect(main.getByRole("link", { name: "support@example.com" })).toHaveCount(0)
+    await expect(main.getByRole("link", { name: "support@fixture.example" })).toHaveCount(0)
     await expect(page.locator('script[type="application/ld+json"]')).toHaveCount(0)
   }
 })

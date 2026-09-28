@@ -129,10 +129,10 @@ describe("readGarmentDescription", () => {
     )
   })
 
-  it.each(["Rest Restores Mana", "Rest Restores Mana — Your Store | Next Level 6210", "rest restores  mana"])(
+  it.each(["Rest Restores Mana", "Rest Restores Mana — Fixture Store | Next Level 6210", "rest restores  mana"])(
     "does not start at a heading repeating the donor's saved title: %s",
     (heading) => {
-      const saved = "Rest Restores Mana — Your Store | Next Level 6210"
+      const saved = "Rest Restores Mana — Fixture Store | Next Level 6210"
       expect(
         readGarmentDescription(`<h2>${heading}</h2><p>Somebody else's joke.</p>${details}${care}${chart}`, saved)
       ).toEqual({

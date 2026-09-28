@@ -76,7 +76,7 @@ describe.skipIf(!databaseUrl)("durable owner reminder outbox", () => {
     expect(await run(new Date("2026-09-14T18:00:00Z"))).toMatchObject({ sent: 0 })
     expect(await run(new Date("2026-09-15T16:00:00Z"))).toMatchObject({ sent: 1 })
     expect(send).toHaveBeenCalledTimes(2)
-    expect(send.mock.calls[0]?.[0].to).toEqual(["support@example.com"])
+    expect(send.mock.calls[0]?.[0].to).toEqual(["support@fixture.example"])
   })
   it("ignores tests, unpaid orders and other shops", async () => {
     await seed((o) => {

@@ -5,7 +5,7 @@ import printifySizeGuideDescriptions from "../../../test/printify-size-guide-des
 import { getProductIntroduction } from "./get-product-introduction"
 import { readProductDescription } from "./read-product-description"
 
-const title = "Rest Restores Mana — Your Store | Next Level 6210"
+const title = "Rest Restores Mana — Fixture Store | Next Level 6210"
 
 describe("getProductIntroduction", () => {
   it.each(printifySizeGuideDescriptions)(

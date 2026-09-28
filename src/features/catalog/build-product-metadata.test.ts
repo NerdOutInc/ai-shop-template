@@ -8,7 +8,7 @@ const product = {
   ...normalizeCatalogProduct({
     id: "mana-tee",
     shop_id: 123,
-    title: "Rest Restores Mana — Your Store | Next Level 6210",
+    title: "Rest Restores Mana — Fixture Store | Next Level 6210",
     description: "<p>Your forearms need a recharge, too.</p>",
     variants: [],
     options: [],
@@ -40,12 +40,12 @@ describe("buildProductMetadata", () => {
       },
     })
     const title = "Braided Script and a Clip - Women's Festival Crop Top"
-    const description = "Your forearms need a recharge, too. A women's crop top from Your Store."
+    const description = "Your forearms need a recharge, too. A women's crop top from Fixture Store."
     expect(metadata).toMatchObject({
       title,
       description,
-      openGraph: { title: `${title} | Your Store`, description },
-      twitter: { title: `${title} | Your Store`, description },
+      openGraph: { title: `${title} | Fixture Store`, description },
+      twitter: { title: `${title} | Fixture Store`, description },
     })
     expect(JSON.stringify(metadata)).not.toMatch(/unisex|t-shirt/i)
   })
@@ -105,9 +105,9 @@ describe("buildProductMetadata", () => {
     const title = `Rest Restores Mana – ${garment.categoryName}`
     expect(metadata).toMatchObject({
       title,
-      description: `Your forearms need a recharge, too. ${label} from Your Store.`,
-      openGraph: { title: `${title} | Your Store` },
-      twitter: { title: `${title} | Your Store` },
+      description: `Your forearms need a recharge, too. ${label} from Fixture Store.`,
+      openGraph: { title: `${title} | Fixture Store` },
+      twitter: { title: `${title} | Fixture Store` },
     })
     expect(buildProductMetadata({ ...configured, title: `Mana ${garment.categoryName}` }).title).toBe(
       `Mana ${garment.categoryName}`
@@ -128,13 +128,13 @@ describe("buildProductMetadata", () => {
       },
     })
     expect(metadata.title).toBe("Mana Tank Top")
-    expect(metadata.description).toContain("A men's tank top from Your Store.")
+    expect(metadata.description).toContain("A men's tank top from Fixture Store.")
   })
 
   it("uses neutral copy for unavailable metadata and the saved name for custom categories", () => {
     const missing = buildProductMetadata({ ...product, garment: null })
     expect(missing.title).toBe("Rest Restores Mana – Apparel")
-    expect(missing.description).toContain("Apparel from Your Store.")
+    expect(missing.description).toContain("Apparel from Fixture Store.")
     const custom = buildProductMetadata({
       ...product,
       garment: {
@@ -146,19 +146,19 @@ describe("buildProductMetadata", () => {
         gender: null,
       },
     })
-    expect(custom.description).toContain("Custom layers from Your Store.")
+    expect(custom.description).toContain("Custom layers from Fixture Store.")
     expect(JSON.stringify([missing, custom])).not.toMatch(/unisex|t-shirt/i)
   })
 
   it("gives search and both social cards consistent product copy and the actual product photo", () => {
     const metadata = buildProductMetadata(product)
-    const description = "Your forearms need a recharge, too. A unisex T-shirt from Your Store."
-    const socialTitle = "Rest Restores Mana – T-Shirt | Your Store"
+    const description = "Your forearms need a recharge, too. A unisex T-shirt from Fixture Store."
+    const socialTitle = "Rest Restores Mana – T-Shirt | Fixture Store"
     const images = [{ url: product.image.src, alt: product.image.alt }]
     expect(metadata).toMatchObject({
       title: "Rest Restores Mana – T-Shirt",
       description,
-      openGraph: { title: socialTitle, description, images, siteName: "Your Store", type: "website" },
+      openGraph: { title: socialTitle, description, images, siteName: "Fixture Store", type: "website" },
       twitter: { title: socialTitle, description, images, card: "summary_large_image" },
     })
   })
@@ -171,7 +171,7 @@ describe("buildProductMetadata", () => {
       ),
     })
     expect(metadata.description).toBe(
-      "A purple pixel-art chalk bag brings a little RPG logic to the gym. A unisex T-shirt from Your Store."
+      "A purple pixel-art chalk bag brings a little RPG logic to the gym. A unisex T-shirt from Fixture Store."
     )
     expect(metadata.description!.length).toBeLessThanOrEqual(170)
   })
@@ -181,7 +181,7 @@ describe("buildProductMetadata", () => {
       ...product,
       ...readProductDescription(`<p>${"Climb with good company and a little more patience ".repeat(8)}.</p>`),
     })
-    expect(metadata.description).toMatch(/\w… A unisex T-shirt from Your Store\.$/)
+    expect(metadata.description).toMatch(/\w… A unisex T-shirt from Fixture Store\.$/)
     expect(metadata.description!.length).toBeLessThanOrEqual(170)
     expect(metadata.description).not.toContain("<p>")
   })
@@ -193,6 +193,6 @@ describe("buildProductMetadata", () => {
   })
 
   it("does not repeat a T-shirt label already present in the published title", () => {
-    expect(buildProductMetadata({ ...product, title: "Mana T-Shirt — Your Store" }).title).toBe("Mana T-Shirt")
+    expect(buildProductMetadata({ ...product, title: "Mana T-Shirt — Fixture Store" }).title).toBe("Mana T-Shirt")
   })
 })

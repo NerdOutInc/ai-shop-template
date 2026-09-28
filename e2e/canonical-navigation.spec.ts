@@ -44,20 +44,20 @@ test.beforeEach(async ({ page, browserName, baseURL }) => {
 })
 
 for (const { from, path, navigation, label, title } of [
-  { from: "/", path: "/about", navigation: "Primary navigation", label: "About", title: "About | Your Store" },
+  { from: "/", path: "/about", navigation: "Primary navigation", label: "About", title: "About | Fixture Store" },
   {
     from: "/",
     path: "/returns",
     navigation: "Footer navigation",
     label: "Returns & order help",
-    title: "Returns & order help | Your Store",
+    title: "Returns & order help | Fixture Store",
   },
   {
     from: "/about",
     path: "/returns",
     navigation: "Footer navigation",
     label: "Returns & order help",
-    title: "Returns & order help | Your Store",
+    title: "Returns & order help | Fixture Store",
   },
 ]) {
   test(`replaces the canonical after fast client navigation from ${from} to ${path}`, async ({ page }) => {
@@ -101,7 +101,7 @@ for (const from of ["/", "/about"]) {
       .click()
     await expect(page).toHaveURL("/cart")
     expect(await page.evaluate((initial) => initial === document, initialDocument)).toBe(true)
-    await expect(page).toHaveTitle("Your cart | Your Store")
+    await expect(page).toHaveTitle("Your cart | Fixture Store")
     await expect(page.locator('link[rel="canonical"]')).toHaveCount(0)
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex, nofollow")
   })

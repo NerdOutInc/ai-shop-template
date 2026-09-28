@@ -6,8 +6,8 @@ import { StoreStructuredData } from "./store-structured-data"
 vi.mock("@/lib/get-site-url", () => ({ getSiteUrl: () => new URL("https://store.example") }))
 const config = vi.hoisted(() => ({
   configured: true,
-  name: "Your Store",
-  supportEmail: "support@example.com",
+  name: "Fixture Store",
+  supportEmail: "support@fixture.example",
   logo: { src: "/images/store-mark.svg" },
   socialLinks: [],
   policies: { published: true },
@@ -25,13 +25,13 @@ it("describes the public store identity and customer support", () => {
   expect(data).toMatchObject({
     "@type": "OnlineStore",
     "@id": "https://store.example/#store",
-    name: "Your Store",
+    name: "Fixture Store",
     url: "https://store.example/",
-    email: "support@example.com",
+    email: "support@fixture.example",
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "customer support",
-      email: "support@example.com",
+      email: "support@fixture.example",
     },
   })
   expect(data).not.toHaveProperty("hasMerchantReturnPolicy")

@@ -13,7 +13,7 @@ describe("owner-only shipping reminder", () => {
   })
   it("includes a private exact order link, useful facts and a clearly unsent draft", () => {
     const email = buildOrderAlertEmail(input())
-    expect(email.to).toEqual(["support@example.com"])
+    expect(email.to).toEqual(["support@fixture.example"])
     expect(email.subject).toContain("Shipping check-in")
     expect(email.text).toContain("Original ship-by date: 2026-09-16")
     expect(email.text).toContain("Business days since payment: 8")

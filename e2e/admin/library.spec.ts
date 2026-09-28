@@ -1,3 +1,4 @@
+import { storeConfig } from "../../test/store-config"
 import { execFileSync } from "node:child_process"
 import { createHash } from "node:crypto"
 import { readFile } from "node:fs/promises"
@@ -611,7 +612,11 @@ test("owner arranges the featured lineup and the shop follows it", async ({ brow
   // Seed one arrived product feature. The public page and admin current-week list agree on the
   // explicit product ID and its arrived reveal.
   const now = new Date()
-  const liveAt = listCadenceSlots({ from: new Date(now.getTime() - 15 * 86_400_000), count: 3 })
+  const liveAt = listCadenceSlots({
+    cadence: { ...storeConfig.weeklyFeature, timeZone: storeConfig.timeZone },
+    from: new Date(now.getTime() - 15 * 86_400_000),
+    count: 3,
+  })
     .filter((instant) => instant.getTime() <= now.getTime())
     .at(-1)!
     .toISOString()

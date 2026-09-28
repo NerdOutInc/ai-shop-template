@@ -19,9 +19,9 @@ test("shows the branded landing page without accessibility violations or horizon
   const shopLink = page.getByRole("link", { name: "Shop", exact: true })
   await expect(shopLink).toBeVisible()
   await expect(shopLink).toHaveAttribute("href", "/shop")
-  await expect(page).toHaveTitle(/Your Store/)
+  await expect(page).toHaveTitle(/Fixture Store/)
   await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", /\S+/)
-  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute("content", /Your Store/)
+  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute("content", /Fixture Store/)
 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
   expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([])

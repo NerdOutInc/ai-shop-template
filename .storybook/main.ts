@@ -1,5 +1,7 @@
 import type { StorybookConfig } from "@storybook/nextjs-vite"
 
+import { storeConfigPlugin } from "../test/store-config-plugin"
+
 const config: StorybookConfig = {
   stories: ["../src/**/*.stories.@(ts|tsx)"],
   staticDirs: ["../public"],
@@ -11,6 +13,7 @@ const config: StorybookConfig = {
   viteFinal(config) {
     return {
       ...config,
+      plugins: [...(config.plugins ?? []), storeConfigPlugin()],
       optimizeDeps: {
         ...config.optimizeDeps,
         // Discover the menu before stories start; a late optimization reload aborts running tests.

@@ -15,7 +15,7 @@ describe("current payment checks", () => {
         status: "succeeded",
         currency: "usd",
         amount_received: 3495,
-        metadata: { storefront: "your-store", checkout_request_id: order.request_id },
+        metadata: { storefront: "fixture-store", checkout_request_id: order.request_id },
         latest_charge: {
           paid: true,
           livemode: true,

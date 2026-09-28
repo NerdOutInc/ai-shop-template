@@ -17,7 +17,7 @@ function productFixture(): CatalogProduct {
   return normalizeCatalogProduct({
     id: "climb-shirt",
     shop_id: 123,
-    title: "Small Wins — Your Store | Next Level 6210",
+    title: "Small Wins — Fixture Store | Next Level 6210",
     description: "A little progress counts.",
     variants: [
       { id: 1, price: 2500, is_enabled: true, is_available: true, options: [10, 20] },
@@ -66,7 +66,7 @@ describe("createProductStructuredData", () => {
       name: "Small Wins",
       description: "A little progress counts.",
       productGroupID: "climb-shirt",
-      brand: { "@type": "Brand", name: "Your Store" },
+      brand: { "@type": "Brand", name: "Fixture Store" },
       variesBy: ["https://schema.org/color", "https://schema.org/size"],
     })
     expect(group?.hasVariant).toHaveLength(3)
