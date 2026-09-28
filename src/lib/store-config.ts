@@ -36,6 +36,7 @@ export const storeConfig = storeConfigSchema.parse({
     ],
   },
   commerce: {
+    identity: "your-store",
     shippingConfirmed: false,
     firstItemShippingCents: 0,
     additionalItemShippingCents: 0,

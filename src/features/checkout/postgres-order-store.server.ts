@@ -69,6 +69,29 @@ export class PostgresOrderStore implements OrderStore {
         throw new CheckoutError("ORDER_BUSY", "Your order is being processed. Please try again in a moment.", 409)
       // Autocommit each phase before contacting a provider. Rolling back the phase after a timeout could order twice.
       return (await callback({
+        ensureCommerceIdentity: async (identity) => {
+          if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(identity) || identity.length > 80) {
+            throw new CheckoutError(
+              "COMMERCE_IDENTITY_INVALID",
+              "Checkout is unavailable while we check the store settings."
+            )
+          }
+          // A singleton INSERT elects the first identity across concurrent serverless instances.
+          // Runtime has no UPDATE or DELETE privilege, so a rebrand cannot replace the winner.
+          await client.query(
+            "insert into commerce.store_identity (singleton, identity) values (true, $1) on conflict (singleton) do nothing",
+            [identity]
+          )
+          const result = await client.query<{ identity: string }>(
+            "select identity from commerce.store_identity where singleton"
+          )
+          if (result.rows[0]?.identity !== identity) {
+            throw new CheckoutError(
+              "COMMERCE_IDENTITY_CHANGED",
+              "Checkout is unavailable while we check the store settings."
+            )
+          }
+        },
         get: async () =>
           normalize(
             (await client.query<OrderRow>("select * from commerce.checkout_orders where request_id = $1", [requestId]))

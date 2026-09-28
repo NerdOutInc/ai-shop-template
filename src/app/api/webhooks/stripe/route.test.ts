@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { fulfillCheckout } from "@/features/checkout/fulfill-checkout.server"
 import { getCommerceServices } from "@/features/checkout/get-commerce-services.server"
 
+import { orderAlertFixture } from "../../../../../test/order-alert-fixture"
+
 import { POST } from "./route"
 
 vi.mock("server-only", () => ({}))
@@ -51,6 +53,41 @@ describe("Stripe webhook", () => {
     async (eventType) => {
       expect((await POST(request(eventType))).status).toBe(200)
       expect(fulfillCheckout).toHaveBeenCalledWith(expect.anything(), sessionId)
+    }
+  )
+
+  it.each(["matches", "missing", "foreign"] as const)(
+    "checks delayed-payment failure against the saved commerce identity: %s",
+    async (identity) => {
+      vi.spyOn(console, "error").mockImplementation(() => undefined)
+      const order = orderAlertFixture().snapshot
+      order.commerceIdentity = "permanent-store"
+      if (identity === "missing") Reflect.deleteProperty(order, "commerceIdentity")
+      const stored = { order, sessionId, state: "pending" }
+      const update = vi.fn(async () => {})
+      vi.spyOn(stripe.checkout.sessions, "retrieve").mockResolvedValue({
+        id: sessionId,
+        payment_status: "unpaid",
+        metadata: {
+          storefront: identity === "foreign" ? "another-store" : "permanent-store",
+          checkout_request_id: order.requestId,
+          shop_id: order.shopId,
+        },
+      } as never)
+      vi.mocked(getCommerceServices).mockReturnValue({
+        stripe,
+        webhookSecret: secret,
+        store: {
+          findBySession: async () => stored,
+          withLock: async (_requestId: string, callback: (record: unknown) => Promise<void>) =>
+            callback({ get: async () => stored, update }),
+        },
+      } as never)
+      expect((await POST(request("checkout.session.async_payment_failed"))).status).toBe(
+        identity === "matches" ? 200 : 500
+      )
+      if (identity === "matches") expect(update).toHaveBeenCalledExactlyOnceWith({ failureCode: "PAYMENT_FAILED" })
+      else expect(update).not.toHaveBeenCalled()
     }
   )
 

@@ -6,6 +6,8 @@ import { isPublicBlobHost } from "./is-public-blob-host"
 export const env = createEnv({
   server: {
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+    VERCEL: z.enum(["1"]).optional(),
+    CHECKOUT_RATE_LIMIT_SECRET: z.string().min(32).max(256).optional(),
     VERCEL_URL: z.string().min(1).optional(),
     VERCEL_ENV: z.enum(["development", "preview", "production"]).optional(),
     PRINTIFY_API_TOKEN: z.string().optional(),
@@ -54,6 +56,8 @@ export const env = createEnv({
   },
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
+    VERCEL: process.env.VERCEL,
+    CHECKOUT_RATE_LIMIT_SECRET: process.env.CHECKOUT_RATE_LIMIT_SECRET,
     VERCEL_URL: process.env.VERCEL_URL,
     VERCEL_ENV: process.env.VERCEL_ENV,
     PRINTIFY_API_TOKEN: process.env.PRINTIFY_API_TOKEN,

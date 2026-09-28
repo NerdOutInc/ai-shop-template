@@ -17,6 +17,7 @@ function fixture() {
     payment: null,
     order: {
       requestId: "0f271d57-31dc-4f4d-a3d2-4393ac7593da",
+      commerceIdentity: "fixture-store-commerce",
       requestFingerprint: "fingerprint",
       expiresAt: 1_800_000_000,
       shopId: "shop1234",
@@ -41,7 +42,7 @@ function fixture() {
     amount_total: 3775,
     total_details: { amount_tax: 280, amount_discount: 0, amount_shipping: 495 },
     metadata: {
-      storefront: "fixture-store",
+      storefront: "fixture-store-commerce",
       shop_id: stored.order.shopId,
       checkout_request_id: stored.order.requestId,
     },
@@ -50,6 +51,15 @@ function fixture() {
 }
 
 describe("buildPurchaseConversion", () => {
+  it("counts a saved payment identity independently of the current store configuration", () => {
+    const { session, stored } = fixture()
+    stored.order.commerceIdentity = "permanent-store"
+    session.metadata!.storefront = "permanent-store"
+    expect(buildPurchaseConversion(session, stored, true)?.totalUsd).toBe(37.75)
+    Reflect.deleteProperty(stored.order, "commerceIdentity")
+    expect(buildPurchaseConversion(session, stored, true)).toBeNull()
+  })
+
   it("uses the confirmed total, including tax", () => {
     const { session, stored } = fixture()
     expect(buildPurchaseConversion(session, stored, true)).toEqual({

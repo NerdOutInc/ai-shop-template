@@ -24,6 +24,7 @@ function fixture() {
     payment: null,
     order: {
       requestId: "f7763d49-646d-4003-a317-9b3eb741cf78",
+      commerceIdentity: "fixture-store-commerce",
       requestFingerprint: "private-fingerprint",
       expiresAt: 1_800_000_000,
       shopId: "shop1234",
@@ -70,7 +71,7 @@ function fixture() {
     amount_total: 3775,
     total_details: { amount_tax: 280, amount_discount: 0, amount_shipping: 495 },
     metadata: {
-      storefront: "fixture-store",
+      storefront: "fixture-store-commerce",
       shop_id: stored.order.shopId,
       checkout_request_id: stored.order.requestId,
     },

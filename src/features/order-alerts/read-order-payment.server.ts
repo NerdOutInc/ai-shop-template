@@ -1,4 +1,3 @@
-import { storeConfig } from "@/lib/store-config"
 import "server-only"
 
 import type Stripe from "stripe"
@@ -18,7 +17,8 @@ export async function readOrderPayment(stripe: Stripe, order: AlertOrder): Promi
       intent.status !== "succeeded" ||
       intent.currency !== "usd" ||
       intent.amount_received !== order.payment.totalAmount ||
-      intent.metadata.storefront !== storeConfig.id ||
+      !order.snapshot.commerceIdentity ||
+      intent.metadata.storefront !== order.snapshot.commerceIdentity ||
       intent.metadata.checkout_request_id !== order.request_id ||
       !charge ||
       typeof charge === "string" ||

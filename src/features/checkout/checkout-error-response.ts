@@ -9,7 +9,7 @@ export function checkoutErrorResponse(error: unknown) {
     },
     {
       status: known ? error.status : 503,
-      headers: { "Cache-Control": "no-store" },
+      headers: { "Cache-Control": "no-store", ...(known && error.status === 429 ? { "Retry-After": "60" } : {}) },
     }
   )
 }

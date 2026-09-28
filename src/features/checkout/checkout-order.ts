@@ -14,6 +14,8 @@ export type OrderItem = {
 }
 
 export type CheckoutOrder = {
+  // Frozen payment identity, independent of future brand/configuration changes.
+  commerceIdentity: string
   requestId: string
   requestFingerprint: string
   expiresAt: number
@@ -60,6 +62,7 @@ export type OrderStore = {
   withLock: <T>(
     requestId: string,
     callback: (record: {
+      ensureCommerceIdentity: (identity: string) => Promise<void>
       get: () => Promise<StoredOrder | null>
       insert: (order: CheckoutOrder) => Promise<void>
       savePayment: (payment: CheckoutPayment) => Promise<void>

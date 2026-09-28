@@ -33,17 +33,25 @@ async function verifyProducts(services: Services, order: CheckoutOrder) {
 
 export async function fulfillCheckout(services: Services, sessionId: string) {
   const session = await services.stripe.checkout.sessions.retrieve(sessionId)
-  if (session.metadata?.storefront !== storeConfig.id) return "ignored"
+  // Existing orders keep their payment identity even if the current brand/config was edited.
+  const knownOrder = await services.store.findBySession(session.id)
+  if (!knownOrder && session.metadata?.storefront !== storeConfig.commerce.identity) return "ignored"
   if (session.payment_status !== "paid") return "unpaid"
-  const requestId = z.uuid().safeParse(session.metadata.checkout_request_id)
+  const requestId = z.uuid().safeParse(session.metadata?.checkout_request_id)
   if (!requestId.success) throw new CheckoutError("ORDER_MISSING", "Your paid order needs our attention.")
   return services.store.withLock(requestId.data, async (record) => {
     const stored = await record.get()
     if (!stored || stored.sessionId !== session.id || stored.order.shopId !== services.printify.shopId) {
       throw new CheckoutError("ORDER_MISSING", "Your paid order needs our attention.")
     }
-    if (stored.state === "submitted" || stored.state === "simulated") return stored.state
     try {
+      if (!stored.order.commerceIdentity) {
+        throw new CheckoutError("ORDER_IDENTITY_MISSING", "Your paid order needs our attention.")
+      }
+      if (session.metadata?.storefront !== stored.order.commerceIdentity) {
+        throw new CheckoutError("PAYMENT_MISMATCH", "Your payment needs our attention before we can print your order.")
+      }
+      if (stored.state === "submitted" || stored.state === "simulated") return stored.state
       const payment = await verifyPaidSession(services.stripe, session, stored.order)
       try {
         await record.savePayment(payment)

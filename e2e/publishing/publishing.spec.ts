@@ -201,7 +201,7 @@ test.afterAll(async () => {
 
 test.beforeEach(async ({ page, request }) => {
   await pool.query(
-    "truncate commerce.catalog_refreshes, commerce.printify_publish_jobs, commerce.printify_product_revisions, commerce.printify_products restart identity cascade"
+    "truncate commerce.checkout_capacity, commerce.catalog_refreshes, commerce.printify_publish_jobs, commerce.printify_product_revisions, commerce.printify_products restart identity cascade"
   )
   await pool.query("delete from commerce.garment_models where shop_id=$1", [config.shopId])
   await seedCompleteGarment(pool, config.shopId)
