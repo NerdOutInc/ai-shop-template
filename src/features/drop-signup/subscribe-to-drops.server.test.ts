@@ -44,7 +44,7 @@ describe("subscribeToDrops", () => {
   })
 
   it("treats an empty honeypot as a person", async () => {
-    await expect(subscribeToDrops({ email: "climber@example.com", source: "footer", company: "" })).resolves.toBe(
+    await expect(subscribeToDrops({ email: "shopper@example.com", source: "footer", company: "" })).resolves.toBe(
       "saved"
     )
     expect(store.subscribe).toHaveBeenCalledTimes(1)
@@ -52,7 +52,7 @@ describe("subscribeToDrops", () => {
 
   it("refuses a caller it cannot identify before touching the store", async () => {
     getPublicRequestIdentity.mockResolvedValue(null)
-    await expect(subscribeToDrops({ email: "climber@example.com", source: "footer" })).resolves.toBe("unidentified")
+    await expect(subscribeToDrops({ email: "shopper@example.com", source: "footer" })).resolves.toBe("unidentified")
     expect(getDropSignupStore).not.toHaveBeenCalled()
     expect(store.allowRequest).not.toHaveBeenCalled()
     expect(store.subscribe).not.toHaveBeenCalled()
@@ -60,28 +60,28 @@ describe("subscribeToDrops", () => {
 
   it("writes nothing for a caller who is over the limit", async () => {
     store.allowRequest.mockResolvedValue(false)
-    await expect(subscribeToDrops({ email: "climber@example.com", source: "footer" })).resolves.toBe("rate-limited")
+    await expect(subscribeToDrops({ email: "shopper@example.com", source: "footer" })).resolves.toBe("rate-limited")
     expect(store.allowRequest).toHaveBeenCalledWith(identity.subject, identity.limit)
     expect(store.subscribe).not.toHaveBeenCalled()
   })
 
   it("counts the request, then saves the normalized address with where it came from", async () => {
-    await expect(subscribeToDrops({ email: "  Climber@Example.COM ", source: "design-of-the-week" })).resolves.toBe(
+    await expect(subscribeToDrops({ email: "  Shopper@Example.COM ", source: "design-of-the-week" })).resolves.toBe(
       "saved"
     )
     expect(store.allowRequest).toHaveBeenCalledWith(identity.subject, identity.limit)
-    expect(store.subscribe).toHaveBeenCalledWith("climber@example.com", "design-of-the-week", identity.address)
+    expect(store.subscribe).toHaveBeenCalledWith("shopper@example.com", "design-of-the-week", identity.address)
     expect(store.allowRequest.mock.invocationCallOrder[0]).toBeLessThan(store.subscribe.mock.invocationCallOrder[0]!)
   })
 
   // A driver error can quote the statement's parameters, and the parameter here is somebody's address.
   it("reports storage trouble without logging what went wrong", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
-    store.subscribe.mockRejectedValue(new Error("duplicate key climber@example.com"))
-    await expect(subscribeToDrops({ email: "climber@example.com", source: "footer" })).resolves.toBe("unavailable")
+    store.subscribe.mockRejectedValue(new Error("duplicate key shopper@example.com"))
+    await expect(subscribeToDrops({ email: "shopper@example.com", source: "footer" })).resolves.toBe("unavailable")
     expect(warn).toHaveBeenCalledTimes(1)
     expect(warn).toHaveBeenCalledWith("Drop signup unavailable", { reason: "storage" })
-    expect(JSON.stringify(warn.mock.calls)).not.toContain("climber@example.com")
+    expect(JSON.stringify(warn.mock.calls)).not.toContain("shopper@example.com")
   })
 
   it("reports an unconfigured store the same way", async () => {
@@ -89,6 +89,6 @@ describe("subscribeToDrops", () => {
     getDropSignupStore.mockImplementation(() => {
       throw new Error("Drop signups are not configured")
     })
-    await expect(subscribeToDrops({ email: "climber@example.com", source: "footer" })).resolves.toBe("unavailable")
+    await expect(subscribeToDrops({ email: "shopper@example.com", source: "footer" })).resolves.toBe("unavailable")
   })
 })

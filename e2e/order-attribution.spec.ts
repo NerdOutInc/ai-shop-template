@@ -9,7 +9,7 @@ const item = {
   entryId: "attribution-test",
   productId: "aaaaaaaaaaaaaaaaaaaaaaaa",
   variantId: 1,
-  title: "Good hangs",
+  title: "First design",
   variantTitle: "Black / M",
   unitAmount: 2800,
   quantity: 1,

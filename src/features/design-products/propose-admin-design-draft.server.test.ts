@@ -16,7 +16,7 @@ const design = {
   id: "5a0c8f6e-3a63-4f56-9f0b-0b8f4d1f7a22",
   displayNumber: 149,
   title: "Good Holds",
-  summary: "A very optimistic foothold.",
+  summary: "A very optimistic pattern.",
   state: "active",
   revisions: [{ id: revisionId }],
   colors: [{ name: "CVC Black", position: 0, source: "assigned" }],
@@ -29,10 +29,10 @@ const tee: PublishedProductRecipe = {
   variants: [{ id: 11, price: 2800, color: "CVC Midnight Navy", size: "M" }],
   placement: { position: "front", x: 0.5, y: 0.4, scale: 0.63, angle: 0 },
   placementDonorProductId: "a",
-  placementDonorTitle: "Rest Restores Mana",
+  placementDonorTitle: "Sample Garden Illustration",
   sizeGuideDonor: {
     productId: "a",
-    title: "Rest Restores Mana",
+    title: "Sample Garden Illustration",
     description:
       '<p><strong>The tee</strong></p><table id="size-guide"><tr><th></th><th>M</th></tr><tr><td>Width, in</td><td>20.50</td></tr></table>',
     sizes: ["M"],
@@ -58,7 +58,11 @@ it("proposes the library's own garment model from the shop's published tee of it
   expect(modelLabel).toBe("Next Level 6210")
   expect(proposal.recipe).toMatchObject({ blueprintId: 1317, printProviderId: 99 })
   expect(proposal.recipe?.variants).toEqual([{ id: 101, price: 2800, color: "CVC Black", size: "M" }])
-  expect(proposal.placementDonor).toEqual({ productId: "a", title: "Rest Restores Mana", placement: tee.placement })
+  expect(proposal.placementDonor).toEqual({
+    productId: "a",
+    title: "Sample Garden Illustration",
+    placement: tee.placement,
+  })
   expect(proposal.unverified).toEqual(["variants[].price", "placement"])
   expect(listCatalogVariants).toHaveBeenCalledWith({
     blueprintId: 1317,

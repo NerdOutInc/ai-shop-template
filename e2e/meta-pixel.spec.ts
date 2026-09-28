@@ -254,7 +254,7 @@ test("a rejected cart addition cannot become a conversion", async ({ context, pa
               entryId: "full",
               productId,
               variantId: 1004,
-              title: "Fixture Good Hangs",
+              title: "Fixture First Design",
               variantTitle: "Clay / XL",
               unitAmount: 3200,
               quantity: 10,
@@ -477,7 +477,7 @@ test("Meta selection ingress cleans raw selections and coupons while preserving 
   ])
   await expect(page).toHaveURL(`${shopOrigin}/checkout/meta`)
   await expect(other).toHaveURL(`${shopOrigin}/checkout/meta`)
-  await expect(page.getByRole("heading", { name: "Fixture Good Hangs – Black / M", exact: true })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Fixture First Design – Black / M", exact: true })).toBeVisible()
   await expect(page.getByText("Quantity: 2", { exact: true })).toBeVisible()
   await expect(other.getByRole("main").getByRole("alert")).toContainText("doesn’t currently support coupon codes")
   await Promise.all([page.reload(), other.reload()])
@@ -630,7 +630,7 @@ test("a cleared Meta recovery cookie explains the permanent failure and keeps th
   await seedConsent(context, "granted")
   await page.goto(`/checkout/meta?products=${productId}-1001:1`)
   await expect(page).toHaveURL(`${shopOrigin}/checkout/meta`)
-  await expect(page.getByRole("heading", { name: "Fixture Good Hangs – Black / M", exact: true })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Fixture First Design – Black / M", exact: true })).toBeVisible()
   await context.clearCookies({ name: /^store-checkout-recovery-/ })
   const unavailable = page.waitForResponse("**/api/checkout/recovery")
   await page.reload()

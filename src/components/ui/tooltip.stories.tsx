@@ -11,7 +11,7 @@ const meta = {
     <TooltipProvider delay={0}>
       <Tooltip>
         <TooltipTrigger render={<Button variant="outline" />}>Rest day reminder</TooltipTrigger>
-        <TooltipContent>Rest restores mana.</TooltipContent>
+        <TooltipContent>More details appear here.</TooltipContent>
       </Tooltip>
     </TooltipProvider>
   ),
@@ -27,9 +27,9 @@ export const Hover: Story = {
     const trigger = canvas.getByRole("button", { name: "Rest day reminder" })
 
     await userEvent.hover(trigger)
-    await waitFor(() => expect(body.getByText("Rest restores mana.", { exact: true })).toBeVisible())
+    await waitFor(() => expect(body.getByText("More details appear here.", { exact: true })).toBeVisible())
     await userEvent.unhover(trigger)
-    await waitFor(() => expect(body.queryByText("Rest restores mana.", { exact: true })).not.toBeInTheDocument())
+    await waitFor(() => expect(body.queryByText("More details appear here.", { exact: true })).not.toBeInTheDocument())
   },
 }
 
@@ -40,9 +40,9 @@ export const Keyboard: Story = {
 
     await userEvent.tab()
     await expect(trigger).toHaveFocus()
-    await waitFor(() => expect(body.getByText("Rest restores mana.", { exact: true })).toBeVisible())
+    await waitFor(() => expect(body.getByText("More details appear here.", { exact: true })).toBeVisible())
     await userEvent.keyboard("{Escape}")
-    await waitFor(() => expect(body.queryByText("Rest restores mana.", { exact: true })).not.toBeInTheDocument())
+    await waitFor(() => expect(body.queryByText("More details appear here.", { exact: true })).not.toBeInTheDocument())
     await expect(trigger).toHaveFocus()
   },
 }

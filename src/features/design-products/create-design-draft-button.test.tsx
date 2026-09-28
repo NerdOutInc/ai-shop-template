@@ -25,7 +25,7 @@ const proposal = {
   blockers: [] as string[],
   placementDonor: {
     productId: "published-reference",
-    title: "Rest Restores Mana",
+    title: "Sample Garden Illustration",
     placement: { position: "front", x: 0.5, y: 0.4, scale: 0.63, angle: 0 },
   },
   unverified: ["variants[].price"],
@@ -52,7 +52,7 @@ describe("CreateDesignDraftButton", () => {
     expect(screen.getByText("CVC Black, Heather Maroon")).toBeVisible()
     expect(screen.getByText("M $28.00, 2XL $32.00")).toBeVisible()
     expect(screen.getByText("Heather Maroon, 2XL: Printify cannot make it right now")).toBeVisible()
-    expect(screen.getByText("Rest Restores Mana")).toBeVisible()
+    expect(screen.getByText("Sample Garden Illustration")).toBeVisible()
     expect(screen.getByText("Printify product published-reference")).toBeVisible()
     expect(screen.queryByText("Review the placement")).not.toBeInTheDocument()
     expect(request).toHaveBeenCalledTimes(1)
@@ -72,7 +72,7 @@ describe("CreateDesignDraftButton", () => {
     vi.stubGlobal("fetch", request)
     render(button())
     await userEvent.click(screen.getByRole("button", { name: "Create Printify draft" }))
-    expect(await screen.findByText("Rest Restores Mana")).toBeVisible()
+    expect(await screen.findByText("Sample Garden Illustration")).toBeVisible()
     expect(screen.getByText(/Published tees of this model use different placements/)).toBeVisible()
     expect(screen.getByRole("button", { name: "Create draft" })).toBeEnabled()
     expect(request).toHaveBeenCalledTimes(1)
@@ -89,7 +89,7 @@ describe("CreateDesignDraftButton", () => {
     render(button())
     await userEvent.click(screen.getByRole("button", { name: "Create Printify draft" }))
     expect(await screen.findByText("Printify product published-reference")).toBeVisible()
-    expect(screen.queryByText("Rest Restores Mana")).not.toBeInTheDocument()
+    expect(screen.queryByText("Sample Garden Illustration")).not.toBeInTheDocument()
   })
 
   it("continues the same request until Printify is done, then refreshes the page's product list", async () => {

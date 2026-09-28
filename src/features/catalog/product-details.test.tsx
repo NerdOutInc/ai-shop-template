@@ -73,7 +73,7 @@ vi.mock("next/navigation", async () => {
 
 const product: CatalogProduct = {
   id: "111111000000000000000002",
-  title: "Small Wins — Your Store | Next Level 6210",
+  title: "Sample Morning Scene — Your Store | Next Level 6210",
   garment: {
     manufacturer: "Next Level",
     model: "6210",
@@ -142,7 +142,11 @@ const product: CatalogProduct = {
   sizeGuide: { sizes: ["S", "M", "2XL"], measurements: [{ label: "Width, in", values: ["19.00", "20.50", "26.00"] }] },
   availability: "available",
 }
-const artwork = { src: "/images/small-wins-artwork.png", alt: "Small Wins artwork", backgroundColor: "#222222" }
+const artwork = {
+  src: "/images/sample-scene-artwork.png",
+  alt: "Sample Morning Scene artwork",
+  backgroundColor: "#222222",
+}
 
 it("keeps an available variant purchasable when an unavailable variant shares its displayed options", async () => {
   window.history.replaceState(null, "", `/shop/${product.id}?color=Black&size=M`)
@@ -260,7 +264,7 @@ describe("ProductDetails", () => {
 
   it("does not claim a model or fit when garment metadata is missing", () => {
     render(<ProductDetails product={{ ...product, garment: null }} />)
-    expect(screen.getByRole("heading", { name: "Small Wins" })).toBeVisible()
+    expect(screen.getByRole("heading", { name: "Sample Morning Scene" })).toBeVisible()
     expect(screen.queryByText("Next Level 6210", { exact: true })).not.toBeInTheDocument()
     expect(screen.queryByText("Unisex tee", { exact: true })).not.toBeInTheDocument()
   })
@@ -273,7 +277,7 @@ describe("ProductDetails", () => {
         <ProductDetails product={product} preview />
       </StrictMode>
     )
-    await user.click(screen.getByRole("button", { name: "View photo 2 of Small Wins" }))
+    await user.click(screen.getByRole("button", { name: "View photo 2 of Sample Morning Scene" }))
     expect(screen.getByRole("img", { name: "Black shirt back" })).toBeVisible()
     await user.click(screen.getByRole("button", { name: "Heather Grey" }))
     await user.click(screen.getByRole("button", { name: "M" }))
@@ -371,7 +375,7 @@ describe("ProductDetails", () => {
 
   it("replaces color and size in the URL, preserves unrelated parameters and hash, and clears incompatible sizes", async () => {
     const user = userEvent.setup()
-    window.history.replaceState(null, "", `?campaign=crag#fit`)
+    window.history.replaceState(null, "", `?campaign=spring#fit`)
     const historyLength = window.history.length
     render(<ProductDetails product={product} />)
     await user.click(screen.getByRole("button", { name: "S" }))
@@ -380,22 +384,22 @@ describe("ProductDetails", () => {
     expect(new URLSearchParams(window.location.search).has("size")).toBe(false)
     await user.click(screen.getByRole("button", { name: "M" }))
     expect(new URLSearchParams(window.location.search)).toEqual(
-      new URLSearchParams({ campaign: "crag", color: "Heather Grey", size: "M" })
+      new URLSearchParams({ campaign: "spring", color: "Heather Grey", size: "M" })
     )
     expect(window.location.hash).toBe("#fit")
     expect(window.history.length).toBe(historyLength)
     expect(window.history.replaceState).toHaveBeenLastCalledWith(
       null,
       "",
-      `/shop/${product.id}?campaign=crag&color=Heather+Grey&size=M#fit`
+      `/shop/${product.id}?campaign=spring&color=Heather+Grey&size=M#fit`
     )
   })
 
   it("canonicalizes missing or invalid selections to the Primary color without inventing a size", async () => {
-    window.history.replaceState(null, "", `?color=Invisible&size=Enormous&campaign=crag`)
+    window.history.replaceState(null, "", `?color=Invisible&size=Enormous&campaign=spring`)
     render(<ProductDetails product={{ ...product, defaultColor: "Heather Grey" }} />)
     await waitFor(() => {
-      expect(window.location.search).toBe("?color=Heather+Grey&campaign=crag")
+      expect(window.location.search).toBe("?color=Heather+Grey&campaign=spring")
     })
     expect(screen.getByRole("button", { name: "Heather Grey" })).toHaveAttribute("aria-pressed", "true")
     expect(screen.getByRole("button", { name: "Choose a size" })).toBeDisabled()
@@ -457,14 +461,14 @@ describe("ProductDetails", () => {
     expect(addItem).toHaveBeenCalledExactlyOnceWith({
       productId: product.id,
       variantId: 2,
-      title: "Small Wins",
+      title: "Sample Morning Scene",
       variantTitle: "Black / 2XL",
       image: product.images[0]!.src,
       unitAmount: 2800,
       quantity: 1,
     })
     const confirmation = within(await screen.findByRole("dialog", { name: "Added to cart" }))
-    expect(confirmation.getByText("Small Wins", { exact: true })).toBeInTheDocument()
+    expect(confirmation.getByText("Sample Morning Scene", { exact: true })).toBeInTheDocument()
     expect(confirmation.getByText("Black / 2XL", { exact: true })).toBeInTheDocument()
     expect(confirmation.getByText("Quantity: 1", { exact: true })).toBeInTheDocument()
     expect(confirmation.getByText("$28.00", { exact: true })).toBeInTheDocument()
@@ -483,7 +487,7 @@ describe("ProductDetails", () => {
     await user.click(firstConfirmation.getByRole("button", { name: "Continue shopping" }))
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument())
     expect(screen.getByRole("button", { name: "Add to cart" })).toBeEnabled()
-    expect(screen.queryByText("Small Wins added to your cart.")).not.toBeInTheDocument()
+    expect(screen.queryByText("Sample Morning Scene added to your cart.")).not.toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: "Heather Grey" }))
     await user.click(screen.getByRole("button", { name: "M" }))
@@ -549,7 +553,7 @@ describe("ProductDetails", () => {
   it("switches to matching-color images and clears an unavailable size on color change", async () => {
     const user = userEvent.setup()
     render(<ProductDetails product={product} />)
-    await user.click(screen.getByRole("button", { name: "View photo 2 of Small Wins" }))
+    await user.click(screen.getByRole("button", { name: "View photo 2 of Sample Morning Scene" }))
     expect(screen.getByRole("img", { name: "Black shirt back" })).toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: "S" }))
     await user.click(screen.getByRole("button", { name: "Heather Grey" }))
@@ -597,13 +601,17 @@ describe("ProductDetails", () => {
           }}
         />
       )
-      await user.click(screen.getByRole("button", { name: "View photo 2 of Small Wins" }))
-      if (viewArtwork) await user.click(screen.getByRole("button", { name: "View artwork of Small Wins" }))
+      await user.click(screen.getByRole("button", { name: "View photo 2 of Sample Morning Scene" }))
+      if (viewArtwork) await user.click(screen.getByRole("button", { name: "View artwork of Sample Morning Scene" }))
       await user.click(screen.getByRole("button", { name: "Heather Grey" }))
       expect(
-        screen.getByRole("button", { name: viewArtwork ? "View artwork of Small Wins" : "View photo 1 of Small Wins" })
+        screen.getByRole("button", {
+          name: viewArtwork ? "View artwork of Sample Morning Scene" : "View photo 1 of Sample Morning Scene",
+        })
       ).toHaveAttribute("aria-pressed", "true")
-      expect(screen.getByRole("img", { name: viewArtwork ? "Small Wins artwork" : greyBack.alt })).toBeInTheDocument()
+      expect(
+        screen.getByRole("img", { name: viewArtwork ? "Sample Morning Scene artwork" : greyBack.alt })
+      ).toBeInTheDocument()
       await user.click(screen.getByRole("button", { name: "M" }))
       await user.click(screen.getByRole("button", { name: "Add to cart" }))
       expect(addItem).toHaveBeenCalledWith(expect.objectContaining({ image: greyBack.src, variantId: 3 }))
@@ -611,7 +619,9 @@ describe("ProductDetails", () => {
       await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument())
       await user.click(screen.getByRole("button", { name: "Black" }))
       expect(
-        screen.getByRole("button", { name: viewArtwork ? "View artwork of Small Wins" : "View photo 2 of Small Wins" })
+        screen.getByRole("button", {
+          name: viewArtwork ? "View artwork of Sample Morning Scene" : "View photo 2 of Sample Morning Scene",
+        })
       ).toHaveAttribute("aria-pressed", "true")
     }
   )
@@ -624,9 +634,12 @@ describe("ProductDetails", () => {
       variantIds: [3],
     }
     render(<ProductDetails product={{ ...product, images: [...product.images, greyBack] }} />)
-    await user.click(screen.getByRole("button", { name: "View photo 2 of Small Wins" }))
+    await user.click(screen.getByRole("button", { name: "View photo 2 of Sample Morning Scene" }))
     act(() => window.history.replaceState(null, "", "?color=Heather+Grey&size=M"))
-    expect(screen.getByRole("button", { name: "View photo 2 of Small Wins" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "View photo 2 of Sample Morning Scene" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    )
     expect(screen.getByRole("img", { name: greyBack.alt })).toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: "Add to cart" }))
     expect(addItem).toHaveBeenCalledWith(expect.objectContaining({ image: greyBack.src }))
@@ -653,7 +666,10 @@ describe("ProductDetails", () => {
       />
     )
     await user.click(screen.getByRole("button", { name: "Heather Grey" }))
-    expect(screen.getByRole("button", { name: "View photo 2 of Small Wins" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "View photo 2 of Sample Morning Scene" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    )
     expect(screen.getByRole("img", { name: "Heather Grey shirt front" })).toBeInTheDocument()
   })
 
@@ -668,40 +684,64 @@ describe("ProductDetails", () => {
         }}
       />
     )
-    await user.click(screen.getByRole("button", { name: "View photo 2 of Small Wins" }))
+    await user.click(screen.getByRole("button", { name: "View photo 2 of Sample Morning Scene" }))
     await user.click(screen.getByRole("button", { name: "Heather Grey" }))
-    expect(screen.getByRole("button", { name: "View photo 1 of Small Wins" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "View photo 1 of Sample Morning Scene" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    )
     expect(screen.getByRole("img", { name: "Heather Grey shirt front" })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "View artwork of Small Wins" })).toHaveAttribute("aria-pressed", "false")
+    expect(screen.getByRole("button", { name: "View artwork of Sample Morning Scene" })).toHaveAttribute(
+      "aria-pressed",
+      "false"
+    )
     // An explicit click on the fallback replaces the unavailable view preference, even without scrolling.
-    await user.click(screen.getByRole("button", { name: "View photo 1 of Small Wins" }))
+    await user.click(screen.getByRole("button", { name: "View photo 1 of Sample Morning Scene" }))
     await user.click(screen.getByRole("button", { name: "Black" }))
-    expect(screen.getByRole("button", { name: "View photo 1 of Small Wins" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "View photo 1 of Sample Morning Scene" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    )
     expect(screen.getByRole("img", { name: "Black shirt front" })).toBeInTheDocument()
   })
 
   it("resets the view for a different product", async () => {
     const user = userEvent.setup()
     const { rerender } = render(<ProductDetails product={product} />)
-    await user.click(screen.getByRole("button", { name: "View photo 2 of Small Wins" }))
+    await user.click(screen.getByRole("button", { name: "View photo 2 of Sample Morning Scene" }))
     rerender(<ProductDetails product={{ ...product, id: "different-product" }} />)
-    expect(screen.getByRole("button", { name: "View photo 1 of Small Wins" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "View photo 1 of Sample Morning Scene" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    )
   })
 
   it("keeps keyboard and arrow navigation synchronized with the selected thumbnail", async () => {
     const user = userEvent.setup()
     render(<ProductDetails product={{ ...product, artwork }} />)
-    const gallery = screen.getByRole("region", { name: "Small Wins photos" })
+    const gallery = screen.getByRole("region", { name: "Sample Morning Scene photos" })
     gallery.focus()
     await user.keyboard("{ArrowRight}")
-    expect(screen.getByRole("button", { name: "View photo 2 of Small Wins" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "View photo 2 of Sample Morning Scene" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    )
     expect(screen.getByRole("img", { name: "Black shirt back" })).toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: "Next slide" }))
-    expect(screen.getByRole("button", { name: "View artwork of Small Wins" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "View artwork of Sample Morning Scene" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    )
     await user.click(screen.getByRole("button", { name: "Previous slide" }))
-    expect(screen.getByRole("button", { name: "View photo 2 of Small Wins" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "View photo 2 of Sample Morning Scene" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    )
     await user.click(screen.getByRole("button", { name: "Heather Grey" }))
-    expect(screen.getByRole("button", { name: "View photo 1 of Small Wins" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "View photo 1 of Sample Morning Scene" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    )
     expect(screen.getByRole("img", { name: "Heather Grey shirt front" })).toBeInTheDocument()
   })
 
@@ -710,14 +750,16 @@ describe("ProductDetails", () => {
     async (viewArtwork) => {
       const user = userEvent.setup()
       render(<ProductDetails product={{ ...product, artwork }} />)
-      await user.click(screen.getByRole("button", { name: "View photo 2 of Small Wins" }))
-      if (viewArtwork) await user.click(screen.getByRole("button", { name: "View artwork of Small Wins" }))
+      await user.click(screen.getByRole("button", { name: "View photo 2 of Sample Morning Scene" }))
+      if (viewArtwork) await user.click(screen.getByRole("button", { name: "View artwork of Sample Morning Scene" }))
       await user.click(screen.getByRole("button", { name: "Black" }))
       expect(
-        screen.getByRole("button", { name: viewArtwork ? "View artwork of Small Wins" : "View photo 2 of Small Wins" })
+        screen.getByRole("button", {
+          name: viewArtwork ? "View artwork of Sample Morning Scene" : "View photo 2 of Sample Morning Scene",
+        })
       ).toHaveAttribute("aria-pressed", "true")
       expect(
-        screen.getByRole("img", { name: viewArtwork ? "Small Wins artwork" : "Black shirt back" })
+        screen.getByRole("img", { name: viewArtwork ? "Sample Morning Scene artwork" : "Black shirt back" })
       ).toBeInTheDocument()
       await user.click(screen.getByRole("button", { name: "S" }))
       await user.click(screen.getByRole("button", { name: "Add to cart" }))
@@ -728,7 +770,7 @@ describe("ProductDetails", () => {
   it("pins one New badge to the gallery frame so it stays put while the shopper moves between slides", async () => {
     const user = userEvent.setup()
     const { rerender } = render(<ProductDetails product={{ ...product, artwork }} isNew />)
-    const gallery = screen.getByRole("region", { name: "Small Wins photos" })
+    const gallery = screen.getByRole("region", { name: "Sample Morning Scene photos" })
     expect(screen.getAllByText("New")).toHaveLength(1)
     const badge = screen.getByText("New")
     expect(gallery).toContainElement(badge)
@@ -736,8 +778,11 @@ describe("ProductDetails", () => {
     expect(badge.closest('[aria-roledescription="slide"]')).toBeNull()
 
     await user.click(screen.getByRole("button", { name: "Next slide" }))
-    expect(screen.getByRole("button", { name: "View photo 2 of Small Wins" })).toHaveAttribute("aria-pressed", "true")
-    await user.click(screen.getByRole("button", { name: "View artwork of Small Wins" }))
+    expect(screen.getByRole("button", { name: "View photo 2 of Sample Morning Scene" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    )
+    await user.click(screen.getByRole("button", { name: "View artwork of Sample Morning Scene" }))
     expect(screen.getAllByText("New")).toHaveLength(1)
     expect(screen.getByText("New")).toBeVisible()
     expect(screen.getByText("New").closest('[aria-hidden="true"]')).toBeNull()
@@ -750,18 +795,18 @@ describe("ProductDetails", () => {
   it("appends artwork after the garment photos and retains the garment photo when adding to cart", async () => {
     const user = userEvent.setup()
     render(<ProductDetails product={{ ...product, artwork }} />)
-    const photos = screen.getByRole("region", { name: "Small Wins photos" })
+    const photos = screen.getByRole("region", { name: "Sample Morning Scene photos" })
     const thumbnails = within(photos).getAllByRole("button", { name: /^View (?:photo|artwork)/ })
     expect(thumbnails.map((button) => button.getAttribute("aria-label"))).toEqual([
-      "View photo 1 of Small Wins",
-      "View photo 2 of Small Wins",
-      "View artwork of Small Wins",
+      "View photo 1 of Sample Morning Scene",
+      "View photo 2 of Sample Morning Scene",
+      "View artwork of Sample Morning Scene",
     ])
     await user.click(thumbnails[1]!)
     await user.tab()
     expect(thumbnails[2]).toHaveFocus()
     await user.keyboard("{Enter}")
-    expect(screen.getByRole("img", { name: "Small Wins artwork" }).parentElement).toHaveStyle({
+    expect(screen.getByRole("img", { name: "Sample Morning Scene artwork" }).parentElement).toHaveStyle({
       backgroundColor: "#222222",
     })
     expect(thumbnails[2]).toHaveAttribute("aria-pressed", "true")
@@ -773,23 +818,26 @@ describe("ProductDetails", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument())
     await user.click(thumbnails[0]!)
     expect(screen.getByRole("img", { name: "Black shirt front" })).toBeInTheDocument()
-    expect(screen.queryByRole("img", { name: "Small Wins artwork" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("img", { name: "Sample Morning Scene artwork" })).not.toBeInTheDocument()
   })
 
   it("keeps artwork selected with its new color even when the number of garment photos changes", async () => {
     const user = userEvent.setup()
     render(<ProductDetails product={{ ...product, artwork }} />)
-    await user.click(screen.getByRole("button", { name: "View artwork of Small Wins" }))
+    await user.click(screen.getByRole("button", { name: "View artwork of Sample Morning Scene" }))
     await user.click(screen.getByRole("button", { name: "Heather Grey" }))
-    const artworkButton = screen.getByRole("button", { name: "View artwork of Small Wins" })
+    const artworkButton = screen.getByRole("button", { name: "View artwork of Sample Morning Scene" })
     expect(artworkButton).toHaveAttribute("aria-pressed", "true")
     expect(artworkButton.firstElementChild).toHaveStyle({ backgroundColor: "#aaaaaa" })
-    expect(screen.getByRole("img", { name: "Small Wins artwork" }).parentElement).toHaveStyle({
+    expect(screen.getByRole("img", { name: "Sample Morning Scene artwork" }).parentElement).toHaveStyle({
       backgroundColor: "#aaaaaa",
     })
     expect(screen.getByText("Image 2 of 2")).toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: "Black" }))
-    expect(screen.getByRole("button", { name: "View artwork of Small Wins" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "View artwork of Sample Morning Scene" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    )
     expect(screen.getByText("Image 3 of 3")).toBeInTheDocument()
   })
 
@@ -799,7 +847,7 @@ describe("ProductDetails", () => {
       render(
         <ProductDetails product={{ ...product, artwork, colors: product.colors.map((color) => ({ ...color, hex })) }} />
       )
-      expect(screen.queryByRole("button", { name: "View artwork of Small Wins" })).not.toBeInTheDocument()
+      expect(screen.queryByRole("button", { name: "View artwork of Sample Morning Scene" })).not.toBeInTheDocument()
       expect(screen.getByRole("img", { name: "Black shirt front" })).toBeInTheDocument()
     }
   )
@@ -808,8 +856,8 @@ describe("ProductDetails", () => {
     const user = userEvent.setup()
     render(<ProductDetails product={{ ...product, artwork, images: [] }} />)
     expect(screen.getByText("No photo for this color yet")).toBeInTheDocument()
-    await user.click(screen.getByRole("button", { name: "View artwork of Small Wins" }))
-    expect(screen.getByRole("img", { name: "Small Wins artwork" })).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "View artwork of Sample Morning Scene" }))
+    expect(screen.getByRole("img", { name: "Sample Morning Scene artwork" })).toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: "S" }))
     await user.click(screen.getByRole("button", { name: "Add to cart" }))
     expect(addItem).toHaveBeenCalledWith(expect.objectContaining({ image: undefined }))
@@ -831,12 +879,10 @@ describe("ProductDetails", () => {
   it("shows only the garment paragraph and fabric bullets under The garment", async () => {
     const user = userEvent.setup()
     const parsed = readProductDescription(
-      '<p>A hermit crab has moved into a chalk bucket.</p><p><strong>The tee</strong></p><p>Printed on the Next Level 6210.</p><ul><li><p>60% cotton, 40% polyester</p></li><li><p>Tear-away label</p></li></ul><p><strong>Care</strong></p><p>Skip the bleach and dry cleaning.</p><table id="size-guide"><tr><th></th><th>M</th></tr><tr><td>Width, in</td><td>20.50</td></tr></table>'
+      '<p>A colorful garden fills a geometric frame.</p><p><strong>The tee</strong></p><p>Printed on the Next Level 6210.</p><ul><li><p>60% cotton, 40% polyester</p></li><li><p>Tear-away label</p></li></ul><p><strong>Care</strong></p><p>Skip the bleach and dry cleaning.</p><table id="size-guide"><tr><th></th><th>M</th></tr><tr><td>Width, in</td><td>20.50</td></tr></table>'
     )
     const { container } = render(<ProductDetails product={{ ...product, ...parsed }} />)
-    expect(container.querySelector(".product-story")).toHaveTextContent(
-      /^A hermit crab has moved into a chalk bucket\.$/
-    )
+    expect(container.querySelector(".product-story")).toHaveTextContent(/^A colorful garden fills a geometric frame\.$/)
     expect(screen.queryByText("The garment & the details")).not.toBeInTheDocument()
     const summary = screen.getByText("The garment", { selector: "summary" })
     await user.click(summary)
@@ -846,17 +892,17 @@ describe("ProductDetails", () => {
       "60% cotton, 40% polyester",
       "Tear-away label",
     ])
-    for (const repeated of ["The tee", "A hermit crab has moved into a chalk bucket.", "Care"])
+    for (const repeated of ["The tee", "A colorful garden fills a geometric frame.", "Care"])
       expect(section.queryByText(repeated)).not.toBeInTheDocument()
     expect(screen.queryByText("Skip the bleach and dry cleaning.")).not.toBeInTheDocument()
     expect(screen.getByText("Shipping & care")).toBeInTheDocument()
   })
 
   it("leaves The garment out when a description has no garment section", () => {
-    const parsed = readProductDescription("<p>A hermit crab has moved into a chalk bucket.</p>")
+    const parsed = readProductDescription("<p>A colorful garden fills a geometric frame.</p>")
     render(<ProductDetails product={{ ...product, ...parsed }} />)
     expect(screen.queryByText("The garment", { selector: "summary" })).not.toBeInTheDocument()
-    expect(screen.getAllByText("A hermit crab has moved into a chalk bucket.")).toHaveLength(1)
+    expect(screen.getAllByText("A colorful garden fills a geometric frame.")).toHaveLength(1)
     expect(screen.getByText("Size guide")).toBeInTheDocument()
   })
 

@@ -10,7 +10,7 @@ const daysAgo = (days: number) => new Date(now - days * day).toISOString()
 function product(changes: Partial<FeaturedOrderProduct>): FeaturedOrderProduct {
   return {
     id: "tee",
-    title: "Good hangs",
+    title: "Sample first design",
     image: null,
     hiddenAt: null,
     revealAt: null,

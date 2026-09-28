@@ -4,6 +4,8 @@ An AI-first clothing store you own. Create a repository, clone it, and ask your 
 
 [**Use this template**](https://github.com/new?template_name=t-shirt-shop-template&template_owner=NerdOutInc) · [Agent setup guide](docs/store-setup.md) · [Architecture](docs/architecture.md)
 
+The upstream template repository currently has **internal** visibility: enterprise members with read access can use the template, subject to permission to create a repository in their chosen destination. It is not publicly accessible. A generated store has its own repository visibility. See GitHub's [template access requirements](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template) and [internal repository visibility](https://docs.github.com/en/enterprise-cloud@latest/repositories/creating-and-managing-repositories/about-repositories#about-internal-repositories).
+
 ## Start your store
 
 1. Click **Use this template → Create a new repository** on GitHub. Give your store its own repository.
@@ -84,7 +86,7 @@ See [the skill catalog](.agents/skills/store-template-readiness/references/skill
 
 ## Development and release
 
-Install the [test prerequisites](docs/ci.md#local-test-prerequisites), including the pinned Python tools, before running validation. `pnpm check` runs baseline checks. `pnpm check:all` adds Storybook, builds and isolated browser/database suites. Every PR runs both through the [CI workflow](docs/ci.md); configure its **Required checks** status as a branch rule before merging. `pnpm check:template` scans repository files for local paths, private setup files and private keys. Read [AGENTS.md](AGENTS.md) for required validation and review boundaries.
+Install the [test prerequisites](docs/ci.md#local-test-prerequisites), including the pinned Python tools, before running validation. `pnpm check` runs baseline checks. `pnpm check:all` adds Storybook, builds and isolated browser/database suites. Every PR runs both through the [CI workflow](docs/ci.md); configure its **Required checks** status as a branch rule before merging. `pnpm check:template` scans repository and staged files for known source identity and assets, credentials, private setup state, local paths, and unsafe symlinks; see [template hygiene](docs/template-hygiene.md) for scope and limits. Read [AGENTS.md](AGENTS.md) for required validation and review boundaries.
 
 A generated repository is independent of this template; GitHub does not automatically apply future template updates. Follow the [store update contract](docs/store-update-contract.md) to record the original content baseline before customization and prepare reviewed upstream ports later. Template maintainers enable GitHub's **Template repository** setting on this repository; a downstream store usually leaves that setting off.
 

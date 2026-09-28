@@ -10,8 +10,8 @@ import { ProductCard } from "./product-card"
 function catalogProductFixture(overrides: Partial<CatalogProduct> = {}): CatalogProduct {
   return {
     id: "sample-product",
-    title: "Sample climbing shirt",
-    description: "A shirt for climbing and snack breaks.",
+    title: "Sample graphic shirt",
+    description: "A shirt for everyday adventures and snack breaks.",
     addedToShopAt: "2026-09-01T12:00:00.000Z",
     salesCount: 2,
     image: null,
@@ -360,7 +360,7 @@ describe("ProductCard", () => {
     expect(badge.tagName).toBe("SPAN")
     expect(screen.getAllByRole("link")).toHaveLength(1)
     expect(screen.getByRole("link")).toHaveAttribute("aria-labelledby", nameBefore)
-    expect(screen.getByRole("link")).toHaveAccessibleName("Sample climbing shirt")
+    expect(screen.getByRole("link")).toHaveAccessibleName("Sample graphic shirt")
 
     rerender(<ProductCard product={product} isNew={false} />)
     expect(screen.queryByText("New")).not.toBeInTheDocument()

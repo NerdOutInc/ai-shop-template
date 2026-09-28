@@ -6,7 +6,7 @@ import { ProductStructuredData } from "./product-structured-data"
 
 describe("ProductStructuredData", () => {
   it("renders parseable JSON-LD in server HTML without letting catalog text end the script element", () => {
-    const maliciousText = '</script><script>alert("unexpected send")</script>'
+    const maliciousText = '</script><script>alert("unexpected content")</script>'
     const product: CatalogProduct = {
       id: "shirt",
       title: maliciousText,

@@ -98,7 +98,7 @@ test("tracks the organic shopping funnel once and sanitizes a Stripe-style purch
   })
 
   await page.goto(`/shop/${productId}`, { referer: "https://www.google.com/search?q=graphic+shirts" })
-  await expect(page.getByRole("heading", { level: 1, name: "Fixture Good Hangs" })).toBeVisible()
+  await expect(page.getByRole("heading", { level: 1, name: "Fixture First Design" })).toBeVisible()
   await expect.poll(() => analytics.filter((event) => event.name === "product_viewed")).toHaveLength(1)
   await page.getByRole("button", { name: "Black", exact: true }).click()
   await page.getByRole("button", { name: "M", exact: true }).click()

@@ -17,11 +17,11 @@ describe("DropSignupForm", () => {
     const request = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ subscribed: true }) })
     vi.stubGlobal("fetch", request)
     render(<DropSignupForm source="design-of-the-week" />)
-    await userEvent.type(field(), "climber@example.com")
+    await userEvent.type(field(), "shopper@example.com")
     await userEvent.click(submit())
 
     expect(JSON.parse(String(request.mock.calls[0]?.[1]?.body))).toEqual({
-      email: "climber@example.com",
+      email: "shopper@example.com",
       source: "design-of-the-week",
       company: "",
     })
@@ -40,7 +40,7 @@ describe("DropSignupForm", () => {
       })
     )
     render(<DropSignupForm source="footer" />)
-    await userEvent.type(field(), "climber@example.com")
+    await userEvent.type(field(), "shopper@example.com")
     await userEvent.click(submit())
     expect(await screen.findByRole("alert")).toHaveTextContent("Give it a few minutes")
   })
@@ -48,7 +48,7 @@ describe("DropSignupForm", () => {
   it("says something useful when the request never lands", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("offline")))
     render(<DropSignupForm source="home" />)
-    await userEvent.type(field(), "climber@example.com")
+    await userEvent.type(field(), "shopper@example.com")
     await userEvent.click(submit())
     expect(await screen.findByRole("alert")).toHaveTextContent("Check your connection")
   })
@@ -84,7 +84,7 @@ describe("DropSignupForm", () => {
     const request = vi.fn(() => new Promise(() => {}))
     vi.stubGlobal("fetch", request)
     render(<DropSignupForm source="footer" />)
-    await userEvent.type(field(), "climber@example.com")
+    await userEvent.type(field(), "shopper@example.com")
     await userEvent.click(submit())
     expect(submit()).toBeDisabled()
     expect(request).toHaveBeenCalledTimes(1)
