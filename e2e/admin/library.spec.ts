@@ -146,10 +146,10 @@ test("setup refuses both unconfirmed and confirmed accounts created outside enro
   const registration = createClient(config.authURL, config.publishableKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   })
-  const { data, error } = await registration.auth.signUp({
-    email: config.ownerEmail,
-    password: "disposable-preexisting-account-password-123!",
-  })
+  const credentials = { email: config.ownerEmail, password: "disposable-preexisting-account-password-123!" }
+  const { data, error } = config.publicSignup
+    ? await registration.auth.signUp(credentials)
+    : await auth.auth.admin.createUser({ ...credentials, email_confirm: false })
   if (error || !data.user) throw error ?? new Error("Missing disposable registration")
   expect(data.user.email_confirmed_at).toBeFalsy()
   const existingId = data.user.id
@@ -164,7 +164,7 @@ test("setup refuses both unconfirmed and confirmed accounts created outside enro
       await page.getByLabel("Owner email").fill(config.ownerEmail)
       await page.getByLabel("One-time setup key").fill(config.setupSecret)
       await page.getByRole("button", { name: "Send an email code" }).click()
-      await expect(page.getByRole("status")).toContainText("Could not prepare a dedicated owner account")
+      await expect(page.getByRole("status")).toContainText("An existing account conflicts with owner setup")
       await expect(page.getByLabel("Email verification code")).toHaveCount(0)
       const state = (await pool.query("select enrollment_user_id,consumed_at from private.admin_setup_state")).rows[0]
       expect(state.enrollment_user_id).not.toBe(existingId)
@@ -212,12 +212,13 @@ test("owner setup, passkeys, exact private downloads, personal favorites and rev
   const enrollment = (await pool.query("select enrollment_user_id,consumed_at from private.admin_setup_state")).rows[0]
   expect(enrollment.consumed_at).toBeNull()
   expect((await pool.query("select * from public.admin_memberships")).rows).toHaveLength(0)
-  // Public signup cannot attach a known password between provisioning and mailbox verification.
+  // With signup disabled, this is the production OTP path; the other CI case also checks duplicate signup.
   const registration = createClient(config.authURL, config.publishableKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   })
   const attemptedPassword = "disposable-new-registration-password-123!"
-  await registration.auth.signUp({ email: config.ownerEmail, password: attemptedPassword })
+  const duplicate = await registration.auth.signUp({ email: config.ownerEmail, password: attemptedPassword })
+  if (!config.publicSignup) expect(duplicate.error?.code).toBe("signup_disabled")
   expect(
     (await registration.auth.signInWithPassword({ email: config.ownerEmail, password: attemptedPassword })).error
   ).not.toBeNull()

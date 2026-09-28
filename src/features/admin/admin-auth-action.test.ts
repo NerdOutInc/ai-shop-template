@@ -3,6 +3,8 @@ import { adminAuthAction } from "./admin-auth-action"
 
 const mocks = vi.hoisted(() => ({
   configured: true,
+  ownerEmail: "owner@example.test",
+  provisioningKey: "server-secret-fixture",
   getUser: vi.fn(),
   signOut: vi.fn(),
   signInWithOtp: vi.fn(),
@@ -22,11 +24,15 @@ const mocks = vi.hoisted(() => ({
 vi.mock("server-only", () => ({}))
 vi.mock("@/lib/env", () => ({
   env: {
-    ADMIN_OWNER_EMAIL: "owner@example.test",
+    get ADMIN_OWNER_EMAIL() {
+      return mocks.ownerEmail
+    },
     get ADMIN_SETUP_SECRET() {
       return mocks.secret
     },
-    SUPABASE_SECRET_KEY: "server-secret-fixture",
+    get SUPABASE_SECRET_KEY() {
+      return mocks.provisioningKey
+    },
   },
 }))
 vi.mock("./get-admin-auth-config.server", () => ({
@@ -60,6 +66,9 @@ vi.mock("./admin-store.server", () => ({
 }))
 
 beforeEach(() => {
+  vi.spyOn(console, "error").mockImplementation(() => undefined)
+  mocks.ownerEmail = "owner@example.test"
+  mocks.provisioningKey = "server-secret-fixture"
   mocks.configured = true
   mocks.getSource.mockResolvedValue("192.0.2.1")
   mocks.setupStatus.mockResolvedValue("available")
@@ -196,13 +205,88 @@ describe("admin authentication server actions", () => {
     expect(mocks.claimOwner).not.toHaveBeenCalled()
   })
 
-  it("does not provision when enrollment is bound to another email or setup was consumed concurrently", async () => {
+  it("does not provision when setup was consumed concurrently", async () => {
     mocks.reserveOwner.mockResolvedValue(null)
     expect(
       (await adminAuthAction({ operation: "request-setup", email: "owner@example.test", proof: mocks.secret })).ok
     ).toBe(false)
     expect(mocks.createUser).not.toHaveBeenCalled()
     expect(mocks.signInWithOtp).not.toHaveBeenCalled()
+  })
+
+  it("uses the corrected server-configured email and a fresh reserved ID", async () => {
+    mocks.ownerEmail = "corrected@example.test"
+    mocks.reserveOwner.mockResolvedValue("new-reservation")
+    mocks.createUser.mockResolvedValue({
+      data: {
+        user: {
+          id: "new-reservation",
+          email: "corrected@example.test",
+          email_confirmed_at: "2026-09-28T00:00:00Z",
+        },
+      },
+      error: null,
+    })
+    expect(
+      (await adminAuthAction({ operation: "request-setup", email: "corrected@example.test", proof: mocks.secret })).ok
+    ).toBe(true)
+    expect(mocks.createUser).toHaveBeenCalledWith({
+      id: "new-reservation",
+      email: "corrected@example.test",
+      email_confirm: true,
+    })
+    expect(
+      (await adminAuthAction({ operation: "request-setup", email: "owner@example.test", proof: mocks.secret })).ok
+    ).toBe(false)
+    expect(mocks.createUser).toHaveBeenCalledOnce()
+  })
+
+  it.each([
+    ["unconfigured", "ADMIN_OWNER_UNCONFIGURED", "not configured"],
+    ["credentials", "ADMIN_OWNER_PROVIDER_CREDENTIALS", "provisioning credential"],
+    ["network", "ADMIN_OWNER_PROVIDER_UNAVAILABLE", "provider availability"],
+    ["conflict", "ADMIN_OWNER_ACCOUNT_CONFLICT", "existing account conflicts"],
+    ["mismatch", "ADMIN_OWNER_ACCOUNT_MISMATCH", "reserved owner account"],
+    ["migration", "ADMIN_OWNER_MIGRATION_REQUIRED", "database migration is missing"],
+  ])("gives actionable, sanitized %s diagnostics", async (scenario, code, message) => {
+    const sensitive = "owner@example.test server-secret-fixture private-provider-payload"
+    if (scenario === "unconfigured") mocks.provisioningKey = ""
+    if (scenario === "credentials")
+      mocks.createUser.mockResolvedValue({ data: { user: null }, error: { status: 401, message: sensitive } })
+    if (scenario === "network") mocks.createUser.mockRejectedValue(new Error(sensitive))
+    if (scenario === "conflict")
+      mocks.createUser.mockResolvedValue({ data: { user: null }, error: { code: "email_exists", message: sensitive } })
+    if (scenario === "mismatch")
+      mocks.createUser.mockResolvedValue({ data: { user: { id: "unexpected", email: sensitive } }, error: null })
+    if (scenario === "migration")
+      mocks.setupStatus.mockRejectedValue(
+        Object.assign(new Error(sensitive), { code: "42703", internalQuery: sensitive })
+      )
+    const result = await adminAuthAction({
+      operation: "request-setup",
+      email: "owner@example.test",
+      proof: mocks.secret,
+    })
+    expect(result.ok).toBe(false)
+    expect(result.message).toContain(message)
+    expect(console.error).toHaveBeenCalledWith("Owner setup unavailable", { code })
+    expect(mocks.signInWithOtp).not.toHaveBeenCalled()
+    expect(JSON.stringify([result, vi.mocked(console.error).mock.calls])).not.toMatch(
+      /owner@example|server-secret|private-provider/
+    )
+    if (scenario === "credentials") expect(mocks.getUserById).not.toHaveBeenCalled()
+  })
+
+  it("does not misreport a failed identity lookup as a conflicting account", async () => {
+    mocks.createUser.mockResolvedValue({ error: { code: "email_exists" } })
+    mocks.getUserById.mockResolvedValue({ data: { user: null }, error: { status: 503 } })
+    const result = await adminAuthAction({
+      operation: "request-setup",
+      email: "owner@example.test",
+      proof: mocks.secret,
+    })
+    expect(result.message).toContain("provider availability")
+    expect(console.error).toHaveBeenCalledWith("Owner setup unavailable", { code: "ADMIN_OWNER_PROVIDER_UNAVAILABLE" })
   })
 
   it("requires an enrollment before accepting a setup code", async () => {

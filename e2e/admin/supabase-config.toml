@@ -38,9 +38,8 @@ enabled = true
 site_url = "http://localhost:3300"
 additional_redirect_urls = []
 jwt_expiry = 3600
-# Deliberately enabled in this disposable fixture: owner enrollment must remain safe
-# even if a merchant forgets the production recommendation to disable signup.
-enable_signup = true
+# Production default. CI also runs the same journeys with signup deliberately enabled.
+enable_signup = false
 enable_anonymous_sign_ins = false
 minimum_password_length = 8
 

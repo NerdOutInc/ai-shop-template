@@ -1,6 +1,7 @@
 import "server-only"
 
-export type AdminLibraryFailureCode = "ADMIN_SETUP_STATUS_UNAVAILABLE" | "ADMIN_ACTOR_LOOKUP_FAILED"
+export type AdminLibraryFailureCode =
+  "ADMIN_SETUP_STATUS_UNAVAILABLE" | "ADMIN_ACTOR_LOOKUP_FAILED" | "ADMIN_AUTH_ACTION_FAILED"
 
 export type AdminLibraryFailureCause = "permission-denied" | "missing-relation" | "connection-failure" | "other"
 
@@ -26,7 +27,7 @@ function classifyFailure(error: unknown): AdminLibraryFailureCause {
   const code = typeof error === "object" && error !== null && "code" in error ? error.code : undefined
   if (typeof code !== "string") return "other"
   if (code === "42501") return "permission-denied"
-  if (code === "42P01" || code === "3F000") return "missing-relation"
+  if (code === "42P01" || code === "3F000" || code === "42703") return "missing-relation"
   // SQLSTATE classes 08 (connection exception) and 28 (rejected at connect), 57P0x (server not accepting
   // sessions) and 53300 (too many connections) all mean the session could not be established as configured.
   // pg's own connect and query timeouts carry no code and stay "other".

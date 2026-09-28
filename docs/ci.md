@@ -2,17 +2,17 @@
 
 `Check` runs on every pull request, including drafts, on pushes to `main`, and for merge queues. It has no changed-path filter. A manual run of `Check` uses the same jobs. Browser checks should not need a calendar invitation.
 
-| Check                                          | Coverage                                                                                                                                                                       |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Foundation checks                              | Structure, migration references, lint, types, formatting, unit and isolated Postgres tests, architecture, skills, artwork, template checks, and the merchant application build |
-| Integration checks / Storybook checks          | Chromium component interactions and accessibility checks, followed by the static Storybook build                                                                               |
-| Integration checks / Storefront browser checks | Public Chromium, mobile Chromium, and WebKit journeys; configured catalog and publishing HTTP/browser journeys against disposable local Postgres                               |
-| Integration checks / Admin browser checks      | Private library, owner setup, Supabase email sign-in, and virtual passkeys against disposable local Supabase Auth                                                              |
-| Required checks                                | Fails unless Foundation and all integration jobs succeeded; failure, cancellation, and skipped dependencies cannot count as success                                            |
+| Check                                                         | Coverage                                                                                                                                                                       |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Foundation checks                                             | Structure, migration references, lint, types, formatting, unit and isolated Postgres tests, architecture, skills, artwork, template checks, and the merchant application build |
+| Integration checks / Storybook checks                         | Chromium component interactions and accessibility checks, followed by the static Storybook build                                                                               |
+| Integration checks / Storefront browser checks                | Public Chromium, mobile Chromium, and WebKit journeys; configured catalog and publishing HTTP/browser journeys against disposable local Postgres                               |
+| Integration checks / Admin browser checks (signup false/true) | Private library, owner setup, Supabase email sign-in, and virtual passkeys against disposable local Supabase Auth with public signup disabled and enabled                      |
+| Required checks                                               | Fails unless Foundation and all integration jobs succeeded; failure, cancellation, and skipped dependencies cannot count as success                                            |
 
 The `Integration checks` workflow is reusable and can also be dispatched manually for diagnosis. The PR workflow calls the copy at the same commit being checked. It does not rerun the foundation suite. Each integration job has its own runner and required tools; the admin job starts and stops only its local Supabase instance. Publishing runs after a successful fixture build even if a public browser assertion fails, so both suites can report useful failures.
 
-PR integration suites start only after Foundation passes. This avoids spending browser runner minutes when lint, types, formatting, tests, or the merchant build fail. The trade-off is longer successful runs: Foundation adds its elapsed time before the three integration jobs run in parallel. A failed Foundation skips integration, and **Required checks** still fails.
+PR integration suites start only after Foundation passes. This avoids spending browser runner minutes when lint, types, formatting, tests, or the merchant build fail. The trade-off is longer successful runs: Foundation adds its elapsed time before the integration jobs run in parallel, including both admin signup settings. A failed Foundation skips integration, and **Required checks** still fails.
 
 ## Required merge gate
 
@@ -28,7 +28,7 @@ Database URLs name disposable databases created inside each hosted job. Provider
 
 Local validation, CI, and the publishing monitor use the exact Node version in `.node-version`; `package.json`'s `engines` describes the broader supported range, not a choice of validation versions. pnpm uses `packageManager`, and validation jobs install with the frozen lockfile. The pnpm store and Python package downloads are cached. Browser binaries are installed from the locked Playwright dependency; browser downloads and application builds are not shared between jobs, preventing stale fixture configuration from crossing suites.
 
-On failure, open the failing step and its suite-specific artifact: `storybook-diagnostics`, `storefront-browser-diagnostics`, `publishing-browser-diagnostics`, or `admin-browser-diagnostics`. Browser artifacts include the HTML report, retained traces, and failure screenshots. Storybook's Vitest project explicitly enables failure screenshots under `test-results/storybook/`, which the job uploads along with available Storybook logs. Keeping generated files outside `src/` avoids source-structure errors after a local failure. Local screenshots and Vitest attachments are ignored by Git. Artifacts expire after seven days; a failure before a browser starts may have logs only. Supabase cleanup runs after both success and failure.
+On failure, open the failing step and its suite-specific artifact: `storybook-diagnostics`, `storefront-browser-diagnostics`, `publishing-browser-diagnostics`, or `admin-browser-diagnostics-signup-false`/`admin-browser-diagnostics-signup-true`. Browser artifacts include the HTML report, retained traces, and failure screenshots. Storybook's Vitest project explicitly enables failure screenshots under `test-results/storybook/`, which the job uploads along with available Storybook logs. Keeping generated files outside `src/` avoids source-structure errors after a local failure. Local screenshots and Vitest attachments are ignored by Git. Artifacts expire after seven days; a failure before a browser starts may have logs only. Supabase cleanup runs after both success and failure.
 
 For local validation, use `pnpm check` for the foundation, including its disposable PostgreSQL databases, and `pnpm check:all` to add browser and local Supabase Auth coverage. Install the prerequisites below for the command you run. Never substitute a skipped database test for a passing integration check. See [the architecture guide](architecture.md#enforcement-and-verification) and [store setup](store-setup.md#verify-before-accepting-real-orders).
 
@@ -70,6 +70,15 @@ On Linux, use `pnpm exec playwright install --with-deps chromium webkit` to inst
 `pnpm check:all` prepares and rebuilds the fixtures before the browser suites. For a focused publishing run, use the [publishing commands](printify-publishing.md#validate-the-complete-connection), including `pnpm test:e2e:prepare` each time; a root `pnpm build` does not refresh `.tmp/storefront-e2e`. After local admin testing, stop only the instance this checkout started:
 
 ```sh
+supabase stop --workdir .tmp/admin-e2e --no-backup
+```
+
+Local admin preparation defaults to public signup disabled. To exercise the other CI configuration, stop this checkout's fixture first, then prepare and rebuild it:
+
+```sh
+ADMIN_E2E_PUBLIC_SIGNUP=true pnpm test:admin:prepare
+pnpm test:admin:build
+pnpm test:e2e:admin
 supabase stop --workdir .tmp/admin-e2e --no-backup
 ```
 

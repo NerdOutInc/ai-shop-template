@@ -9,6 +9,8 @@ import { getAdminActor } from "./get-admin-actor.server"
 import { getAdminAuthConfig } from "./get-admin-auth-config.server"
 import { getAdminAuthSource } from "./get-admin-auth-source.server"
 import { getAdminDatabase } from "./get-admin-database.server"
+import { logAdminLibraryFailure } from "./log-admin-library-failure.server"
+import { ownerSetupFailure } from "./owner-setup-failure.server"
 import { prepareAdminOwner } from "./prepare-admin-owner.server"
 
 export type AdminAuthResult = { ok: boolean; message: string; destination?: string }
@@ -43,6 +45,8 @@ export async function adminAuthAction(input: unknown): Promise<AdminAuthResult> 
   if (!parsed.success || !config)
     return { ok: false, message: "Admin sign-in is unavailable. Check the form or contact the store owner." }
   const command = parsed.data
+  const isSetup = command.operation === "request-setup" || command.operation === "verify-setup"
+  let verifiedSetup = false
   try {
     const client = await createAdminServerClient()
     if (command.operation === "sign-out") {
@@ -52,36 +56,33 @@ export async function adminAuthAction(input: unknown): Promise<AdminAuthResult> 
         : { ok: true, message: "Signed out.", destination: "/admin/sign-in" }
     }
     const store = new AdminStore(getAdminDatabase())
-    const isSetup = command.operation === "request-setup" || command.operation === "verify-setup"
     const source = command.operation === "finish-passkey" ? null : await getAdminAuthSource()
     if (command.operation !== "finish-passkey" && !source)
       return { ok: false, message: "Admin sign-in is unavailable. Contact the deployment owner." }
     if (
       isSetup &&
-      (!(await store.allowAuthAttempt(`setup:${source}`)) ||
-        !validOwnerProof(command.email, command.proof) ||
-        (await store.setupStatus()) !== "available")
+      (!(await store.allowAuthAttempt(`setup:${source}`)) || !validOwnerProof(command.email, command.proof))
     )
       return {
         ok: false,
         message: "Owner setup could not be verified. Check your setup details or use owner recovery.",
       }
 
+    if (isSetup) {
+      verifiedSetup = true
+      if ((await store.setupStatus()) !== "available") return ownerSetupFailure("setup-changed")
+    }
+
     if (command.operation === "request-email" || command.operation === "request-setup") {
       if (!(await store.allowAuthAttempt(`send:${source}`)))
         return { ok: false, message: "Too many code requests. Try again in 15 minutes." }
       if (command.operation === "request-setup") {
-        if (!(await prepareAdminOwner(store, command.email)))
-          return {
-            ok: false,
-            message:
-              "Could not prepare a dedicated owner account. Ask the Supabase project owner to check the setup recovery guide before trying again.",
-          }
+        const prepared = await prepareAdminOwner(store, command.email)
+        if (!prepared.ok) return ownerSetupFailure(prepared.reason)
       }
       const { error } = await client.auth.signInWithOtp({ email: command.email, options: { shouldCreateUser: false } })
       // Ordinary login does not reveal whether a supplied address has an account.
-      if (error && command.operation === "request-setup")
-        return { ok: false, message: "Could not send the setup code. Check email delivery and the OTP email template." }
+      if (error && command.operation === "request-setup") return ownerSetupFailure("email-delivery")
       return {
         ok: true,
         message:
@@ -123,10 +124,7 @@ export async function adminAuthAction(input: unknown): Promise<AdminAuthResult> 
         const claimed = await store.claimOwner(current.user.id, ownerEmail)
         if (!claimed && !(await store.isActiveMember(current.user.id))) {
           await client.auth.signOut({ scope: "local" })
-          return {
-            ok: false,
-            message: "Owner setup is already complete. Use sign-in or ask the dashboard owner to restore access.",
-          }
+          return ownerSetupFailure("setup-changed")
         }
         return {
           ok: true,
@@ -145,7 +143,11 @@ export async function adminAuthAction(input: unknown): Promise<AdminAuthResult> 
       }
     }
     return { ok: true, message: "Signed in.", destination: "/admin/concepts" }
-  } catch {
+  } catch (error) {
+    const code = typeof error === "object" && error !== null && "code" in error ? error.code : undefined
+    if (verifiedSetup && (code === "42703" || code === "42P01" || code === "3F000"))
+      return ownerSetupFailure("migration-required")
+    logAdminLibraryFailure("ADMIN_AUTH_ACTION_FAILED", error)
     return {
       ok: false,
       message: "Admin sign-in is temporarily unavailable. Please try again or contact the store owner.",
