@@ -8,6 +8,7 @@ export async function createAdminDatabaseFixture(connectionString: string) {
     ![
       "/store_template_test",
       "/store_commerce_test",
+      "/store_capacity_test",
       "/store_catalog_test",
       "/store_catalog_e2e",
       "/store_publishing_test",

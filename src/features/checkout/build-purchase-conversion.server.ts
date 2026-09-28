@@ -1,4 +1,3 @@
-import { storeConfig } from "@/lib/store-config"
 import "server-only"
 
 import { createHash } from "node:crypto"
@@ -30,7 +29,8 @@ export function buildPurchaseConversion(
     session.payment_status !== "paid" ||
     !session.id ||
     session.id !== stored.sessionId ||
-    session.metadata?.storefront !== storeConfig.id ||
+    !order.commerceIdentity ||
+    session.metadata?.storefront !== order.commerceIdentity ||
     session.metadata.shop_id !== order.shopId ||
     session.metadata.checkout_request_id !== order.requestId ||
     session.client_reference_id !== order.requestId ||

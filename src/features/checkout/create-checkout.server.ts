@@ -23,11 +23,13 @@ type Services = {
   automaticTax: boolean
   liveFulfillment: boolean
   expectedLivemode: boolean
+  capacity: { reserveProviderReads: (count: number) => Promise<void> }
 }
 
 type Request = HostedCheckoutRequest
 
 async function quoteRequest(services: Services, request: Request) {
+  await services.capacity.reserveProviderReads(new Set(request.items.map((item) => item.productId)).size)
   const items = await readCheckoutItems(services.printify, request)
   const subtotal = items.reduce((sum, item) => sum + item.quantity * item.unitAmount, 0)
   const shipping = calculateCartShipping(items)
@@ -50,6 +52,9 @@ export async function createCheckout(services: Services, request: Request) {
     const existing = await record.get()
     if (existing && existing.order.requestFingerprint !== fingerprint) {
       throw new CheckoutError("REQUEST_CONFLICT", "Your bag has changed. Please request a fresh shipping quote.", 409)
+    }
+    if (existing && !existing.order.commerceIdentity) {
+      throw new CheckoutError("ORDER_IDENTITY_MISSING", "This checkout needs our attention. Please contact the shop.")
     }
     if (existing?.sessionId && existing.checkoutUrl) {
       const session = await services.stripe.checkout.sessions.retrieve(existing.sessionId)
@@ -99,6 +104,7 @@ export async function createCheckout(services: Services, request: Request) {
       }
     }
     if (!order) {
+      await record.ensureCommerceIdentity(storeConfig.commerce.identity)
       const quote = await quoteRequest(services, request)
       if (quote.shipping !== request.expectedShippingAmount)
         throw new CheckoutError(
@@ -107,6 +113,7 @@ export async function createCheckout(services: Services, request: Request) {
           409
         )
       order = {
+        commerceIdentity: storeConfig.commerce.identity,
         requestId: request.requestId,
         requestFingerprint: fingerprint,
         expiresAt: Math.floor(Date.now() / 1000) + 3600,
@@ -142,8 +149,8 @@ export async function createCheckout(services: Services, request: Request) {
       expires_at: order.expiresAt,
       adaptive_pricing: { enabled: false },
       automatic_tax: { enabled: services.automaticTax },
-      metadata: { storefront: storeConfig.id, checkout_request_id: order.requestId, shop_id: order.shopId },
-      payment_intent_data: { metadata: { storefront: storeConfig.id, checkout_request_id: order.requestId } },
+      metadata: { storefront: order.commerceIdentity, checkout_request_id: order.requestId, shop_id: order.shopId },
+      payment_intent_data: { metadata: { storefront: order.commerceIdentity, checkout_request_id: order.requestId } },
       line_items: order.items.map((item) => ({
         quantity: item.quantity,
         price_data: {

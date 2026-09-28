@@ -1,4 +1,3 @@
-import { storeConfig } from "@/lib/store-config"
 import "server-only"
 
 import type Stripe from "stripe"
@@ -24,7 +23,8 @@ export async function verifyPaidSession(
     session.mode !== "payment" ||
     session.status !== "complete" ||
     session.payment_status !== "paid" ||
-    session.metadata?.storefront !== storeConfig.id ||
+    !order.commerceIdentity ||
+    session.metadata?.storefront !== order.commerceIdentity ||
     session.metadata.checkout_request_id !== order.requestId ||
     session.metadata.shop_id !== order.shopId ||
     session.client_reference_id !== order.requestId ||

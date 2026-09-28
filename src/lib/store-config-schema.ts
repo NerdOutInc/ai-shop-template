@@ -38,6 +38,11 @@ export const storeConfigSchema = z
     home: z.object({ headline: text, introduction: text, shopLabel: text }),
     about: z.object({ heading: text, paragraphs: z.array(text).min(1) }),
     commerce: z.object({
+      // Permanent payment identity; cosmetic brand IDs can change independently.
+      identity: z
+        .string()
+        .max(80)
+        .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
       shippingConfirmed: z.boolean(),
       firstItemShippingCents: z.number().int().nonnegative(),
       additionalItemShippingCents: z.number().int().nonnegative(),
@@ -56,8 +61,16 @@ export const storeConfigSchema = z
     }),
   })
   .superRefine((store, context) => {
-    if (store.configured && (store.id === "your-store" || store.supportEmail.endsWith("@example.com"))) {
-      context.addIssue({ code: "custom", message: "Replace the placeholder store ID and support email before launch" })
+    if (
+      store.configured &&
+      (store.id === "your-store" ||
+        store.commerce.identity === "your-store" ||
+        store.supportEmail.endsWith("@example.com"))
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Replace the placeholder store ID, commerce identity, and support email before launch",
+      })
     }
     if (
       store.policies.published &&

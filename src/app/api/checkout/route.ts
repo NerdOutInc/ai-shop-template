@@ -23,6 +23,7 @@ export async function POST(request: Request) {
     const parsed = hostedCheckoutRequestSchema.safeParse(body)
     if (!parsed.success)
       throw new CheckoutError("INVALID_REQUEST", "Please check the items and delivery details in your bag.", 400)
+    await services.capacity.admit(request.headers)
     // Honor the browser's privacy signal even if a stale tab still sends previously captured metadata.
     if (request.headers.get("sec-gpc") === "1" && "attribution" in parsed.data) delete parsed.data.attribution
     return Response.json(await createCheckout(services, parsed.data), { headers: { "Cache-Control": "no-store" } })

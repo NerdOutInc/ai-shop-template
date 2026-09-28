@@ -1,4 +1,3 @@
-import { storeConfig } from "@/lib/store-config"
 import type Stripe from "stripe"
 
 import { CheckoutError } from "@/features/checkout/checkout-error"
@@ -30,12 +29,22 @@ export async function POST(request: Request) {
       await fulfillCheckout(services, event.data.object.id)
     } else if (event.type === "checkout.session.async_payment_failed") {
       const session = await services.stripe.checkout.sessions.retrieve(event.data.object.id)
-      if (session.metadata?.storefront === storeConfig.id && session.payment_status !== "paid") {
+      if (session.payment_status !== "paid") {
         const order = await services.store.findBySession(session.id)
         if (order)
           await services.store.withLock(order.order.requestId, async (record) => {
             const latest = await record.get()
-            if (latest?.state === "pending") await record.update({ failureCode: "PAYMENT_FAILED" })
+            if (latest?.sessionId !== session.id || latest.state !== "pending") return
+            if (!latest.order.commerceIdentity)
+              throw new CheckoutError("ORDER_IDENTITY_MISSING", "Order needs attention")
+            if (
+              session.metadata?.storefront !== latest.order.commerceIdentity ||
+              session.metadata.checkout_request_id !== latest.order.requestId ||
+              session.metadata.shop_id !== latest.order.shopId
+            ) {
+              throw new CheckoutError("PAYMENT_MISMATCH", "Order needs attention")
+            }
+            await record.update({ failureCode: "PAYMENT_FAILED" })
           })
       }
     }

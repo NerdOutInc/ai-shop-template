@@ -69,6 +69,61 @@ describe.skipIf(!databaseUrl)("Postgres checkout durability", () => {
     await pool?.end()
   })
 
+  it("pins one commerce identity across competing instances and survives reconnects", async () => {
+    const results = await Promise.allSettled([
+      firstStore.withLock(randomUUID(), (record) => record.ensureCommerceIdentity("first-store")),
+      secondStore.withLock(randomUUID(), (record) => record.ensureCommerceIdentity("second-store")),
+    ])
+    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1)
+    const rejected = results.find((result) => result.status === "rejected")
+    expect(rejected).toMatchObject({ reason: { code: "COMMERCE_IDENTITY_CHANGED" } })
+    const row = await pool.query<{ identity: string }>("select identity from commerce.store_identity")
+    expect(row.rows).toHaveLength(1)
+    // Saturating this three-connection pool must not make identity checks request another connection.
+    await Promise.all(
+      Array.from({ length: 3 }, () =>
+        firstStore.withLock(randomUUID(), (record) => record.ensureCommerceIdentity(row.rows[0]!.identity))
+      )
+    )
+    const reopened = new PostgresOrderStore(databaseUrl!)
+    try {
+      await expect(
+        reopened.withLock(randomUUID(), (record) => record.ensureCommerceIdentity(row.rows[0]!.identity))
+      ).resolves.toBeUndefined()
+      await expect(
+        reopened.withLock(randomUUID(), (record) => record.ensureCommerceIdentity("replacement-store"))
+      ).rejects.toMatchObject({
+        code: "COMMERCE_IDENTITY_CHANGED",
+      })
+    } finally {
+      await reopened.close()
+    }
+  })
+
+  it("permits runtime reads and repeat inserts but denies replacement and browser access", async () => {
+    const client = await pool.connect()
+    try {
+      await client.query("set role store_app_runtime")
+      const row = await client.query<{ identity: string }>("select identity from commerce.store_identity")
+      await client.query("insert into commerce.store_identity values (true, $1) on conflict (singleton) do nothing", [
+        row.rows[0]!.identity,
+      ])
+      await expect(client.query("update commerce.store_identity set identity = 'replacement'")).rejects.toMatchObject({
+        code: "42501",
+      })
+      await expect(client.query("delete from commerce.store_identity")).rejects.toMatchObject({ code: "42501" })
+      await client.query("reset role")
+      for (const role of ["anon", "authenticated", "service_role"]) {
+        await client.query(`set role ${role}`)
+        await expect(client.query("select * from commerce.store_identity")).rejects.toMatchObject({ code: "42501" })
+        await client.query("reset role")
+      }
+    } finally {
+      await client.query("reset role")
+      client.release()
+    }
+  })
+
   it("keeps the function alive for idle cleanup only after releasing the checkout lock", async () => {
     const pending: Promise<unknown>[] = []
     vi.stubEnv("VERCEL_URL", "checkout-pool-test.vercel.app")
@@ -264,6 +319,7 @@ function checkoutFixture() {
   const productId = "111111000000000000000002"
   const order: CheckoutOrder = {
     requestId,
+    commerceIdentity: "fixture-store-commerce",
     requestFingerprint: "fingerprint",
     expiresAt: Math.floor(Date.now() / 1000) + 3600,
     shopId: "1234",
@@ -308,9 +364,11 @@ function checkoutFixture() {
   const savePayment = vi.fn(async (payment: CheckoutPayment) => {
     if (stored && !stored.payment) stored = { ...stored, payment }
   })
+  const ensureCommerceIdentity = vi.fn(async () => {})
   const store: OrderStore = {
     withLock: async (_id, callback) =>
       callback({
+        ensureCommerceIdentity,
         get: async () => stored,
         insert: async (newOrder) => {
           stored = {
@@ -344,7 +402,7 @@ function checkoutFixture() {
     amount_total: 3000 + order.shippingAmount,
     expires_at: Math.floor(Date.now() / 1000) + 3600,
     total_details: { amount_shipping: order.shippingAmount, amount_discount: 0, amount_tax: 0 },
-    metadata: { storefront: "fixture-store", checkout_request_id: requestId, shop_id: "1234" },
+    metadata: { storefront: "fixture-store-commerce", checkout_request_id: requestId, shop_id: "1234" },
     client_reference_id: requestId,
     payment_intent: "pi_fixture",
     shipping_cost: {
@@ -444,6 +502,7 @@ function checkoutFixture() {
   }
   return {
     order,
+    ensureCommerceIdentity,
     sessionId,
     session,
     line,
