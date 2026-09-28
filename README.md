@@ -4,6 +4,8 @@ An AI-first clothing store you own. Create a repository, clone it, and ask your 
 
 [**Use this template**](https://github.com/new?template_name=t-shirt-shop-template&template_owner=NerdOutInc) · [Agent setup guide](docs/store-setup.md) · [Architecture](docs/architecture.md)
 
+The upstream template repository currently has **internal** visibility: enterprise members with read access can use the template, subject to permission to create a repository in their chosen destination. It is not publicly accessible. A generated store has its own repository visibility. See GitHub's [template access requirements](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template) and [internal repository visibility](https://docs.github.com/en/enterprise-cloud@latest/repositories/creating-and-managing-repositories/about-repositories#about-internal-repositories).
+
 ## Start your store
 
 1. Click **Use this template → Create a new repository** on GitHub. Give your store its own repository.
