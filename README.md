@@ -47,7 +47,7 @@ The initial supported workflow is **Next Level 6210, USD, standard shipping to t
 
 ## Run locally
 
-Use the Node.js version pinned in [`.node-version`](.node-version) (24.21.0) and the pnpm version pinned in `package.json`:
+Use the Node.js version pinned in [`.node-version`](.node-version) and the pnpm version pinned in `package.json`. The `engines` field describes the supported Node range; local validation and CI use the pinned version:
 
 ```sh
 corepack enable
