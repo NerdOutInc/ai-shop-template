@@ -4,6 +4,8 @@ import { useEffect, useState, useSyncExternalStore } from "react"
 
 import type { MetaCartResult } from "@/features/cart/resolve-meta-cart.server"
 
+import { checkoutRecoveryHistoryKey } from "./checkout-recovery-history-key"
+
 type RecoveryResponse = { kind: "success"; sessionId: string | null } | { kind: "meta"; result: MetaCartResult }
 
 function subscribe(listener: () => void) {
@@ -13,7 +15,7 @@ function subscribe(listener: () => void) {
 
 function getReference() {
   try {
-    return JSON.stringify(window.history.state?.kagCheckoutRecovery ?? null)
+    return JSON.stringify(window.history.state?.[checkoutRecoveryHistoryKey] ?? null)
   } catch {
     return "null"
   }

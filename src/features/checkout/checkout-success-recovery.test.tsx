@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
+import { checkoutRecoveryHistoryKey } from "./checkout-recovery-history-key"
 import { CheckoutSuccessRecovery } from "./checkout-success-recovery"
 
 vi.mock("@/features/cart/checkout-status", () => ({
@@ -10,7 +11,7 @@ vi.mock("@/features/cart/checkout-status", () => ({
 
 beforeEach(() => {
   window.history.replaceState(
-    { kagCheckoutRecovery: { kind: "success", selector: "a".repeat(32) } },
+    { [checkoutRecoveryHistoryKey]: { kind: "success", selector: "a".repeat(32) } },
     "",
     "/checkout/success"
   )

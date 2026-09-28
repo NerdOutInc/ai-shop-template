@@ -1,3 +1,4 @@
+import { checkoutRecoveryHistoryKey } from "@/features/checkout/checkout-recovery-history-key"
 import { isMarketingDenied } from "@/features/analytics/is-marketing-denied"
 
 import { buildOrderAttribution } from "./build-order-attribution"
@@ -45,7 +46,7 @@ export function getOrderAttribution(): OrderAttribution | undefined {
 
     const url = new URL(window.location.href)
     if (url.pathname === "/checkout/meta" && !url.search) {
-      const visit = window.history.state?.kagCheckoutRecovery?.visit
+      const visit = window.history.state?.[checkoutRecoveryHistoryKey]?.visit
       if (
         visit &&
         ["facebook", "instagram", "meta_shops"].includes(visit.metaSource) &&

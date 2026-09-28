@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { marketingPreferences } from "@/features/analytics/marketing-preferences"
 
+import { checkoutRecoveryHistoryKey } from "./checkout-recovery-history-key"
 import { checkoutRecoveryCookie } from "./checkout-recovery-cookie.server"
 import { createCheckoutIngress } from "./create-checkout-ingress.server"
 
@@ -24,7 +25,7 @@ describe("checkout ingress", () => {
     expect(response.headers.get("content-security-policy")).toContain("default-src 'none'")
     expect(response.headers.get("content-security-policy")).toContain("connect-src 'self'")
     expect(html).toContain("verify:true")
-    expect(html).toContain("kagCheckoutRecovery:{kind,selector,visit}")
+    expect(html).toContain(`[${JSON.stringify(checkoutRecoveryHistoryKey)}]:{kind,selector,visit}`)
     expect(html).toContain('"/checkout/success"')
     expect(html).toContain("recovery_unavailable=1")
     expect(html).not.toContain("facebook.net")
@@ -162,7 +163,7 @@ describe("checkout handoff script", () => {
     const { fetch, location, history } = await runHandoff()
     expect(fetch).toHaveBeenCalledOnce()
     expect(history.replaceState).toHaveBeenCalledWith(
-      { kagCheckoutRecovery: { kind: "success", selector: expect.any(String), visit: expect.any(Object) } },
+      { [checkoutRecoveryHistoryKey]: { kind: "success", selector: expect.any(String), visit: expect.any(Object) } },
       "",
       "/checkout/success"
     )
@@ -177,7 +178,9 @@ describe("checkout handoff script", () => {
       url: "https://example.com/checkout/meta?products=private&cart_origin=instagram&utm_campaign=private-campaign",
     })
     expect(history.replaceState.mock.calls[0]?.[0]).toMatchObject({
-      kagCheckoutRecovery: { visit: { source: "social", metaSource: "instagram", createdAt: expect.any(Number) } },
+      [checkoutRecoveryHistoryKey]: {
+        visit: { source: "social", metaSource: "instagram", createdAt: expect.any(Number) },
+      },
     })
     expect(JSON.stringify(history.replaceState.mock.calls)).not.toContain("private")
   })
@@ -189,7 +192,9 @@ describe("checkout handoff script", () => {
         url: `https://example.com/checkout/meta?products=private&cart_origin=instagram&${campaign}`,
       })
       expect(history.replaceState.mock.calls[0]?.[0]).toMatchObject({
-        kagCheckoutRecovery: { visit: { source: "paid", metaSource: "instagram", createdAt: expect.any(Number) } },
+        [checkoutRecoveryHistoryKey]: {
+          visit: { source: "paid", metaSource: "instagram", createdAt: expect.any(Number) },
+        },
       })
       expect(JSON.stringify(history.replaceState.mock.calls)).not.toContain("private")
     }
@@ -203,7 +208,7 @@ describe("checkout handoff script", () => {
         url: "https://example.com/checkout/meta?products=private&cart_origin=instagram",
       })
       expect(history.replaceState.mock.calls[0]?.[0]).toMatchObject({
-        kagCheckoutRecovery: { visit: { source: "social", createdAt: expect.any(Number) } },
+        [checkoutRecoveryHistoryKey]: { visit: { source: "social", createdAt: expect.any(Number) } },
       })
       expect(JSON.stringify(history.replaceState.mock.calls)).not.toContain("metaSource")
     }
@@ -234,7 +239,7 @@ describe("checkout handoff script", () => {
       savedVisit: { source: "organic_search", createdAt: Date.now() - 1000 },
     })
     expect(history.replaceState.mock.calls[0]?.[0]).toMatchObject({
-      kagCheckoutRecovery: { visit: { source: "organic_search", createdAt: expect.any(Number) } },
+      [checkoutRecoveryHistoryKey]: { visit: { source: "organic_search", createdAt: expect.any(Number) } },
     })
     expect(JSON.stringify(history.replaceState.mock.calls)).not.toContain("metaSource")
   })

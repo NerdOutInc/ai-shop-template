@@ -7,6 +7,7 @@ import { NextResponse, type NextRequest } from "next/server"
 import { classifyStoreVisitSource } from "@/features/analytics/classify-store-visit-source"
 import { marketingPreferences } from "@/features/analytics/marketing-preferences"
 
+import { checkoutRecoveryHistoryKey } from "./checkout-recovery-history-key"
 import { checkoutRecoveryCookie } from "./checkout-recovery-cookie.server"
 
 export function createCheckoutIngress(request: NextRequest) {
@@ -77,7 +78,7 @@ export function createCheckoutIngress(request: NextRequest) {
         .then(response => {
           if (finished) return;
           if (!response.ok) throw new Error();
-          history.replaceState({...history.state,kagCheckoutRecovery:{kind,selector,visit}}, "", ${JSON.stringify(url.pathname)});
+          history.replaceState({...history.state,[${JSON.stringify(checkoutRecoveryHistoryKey)}]:{kind,selector,visit}}, "", ${JSON.stringify(url.pathname)});
           location.reload();
           finished = true;
           clearTimeout(timeout);
