@@ -36,6 +36,23 @@ function has(results, file, rule, messageId) {
   return results[file].some((message) => message.ruleId === rule && (!messageId || message.messageId === messageId))
 }
 
+test("browser tests use fixture configuration through every import form", async (t) => {
+  const results = await lint(t, {
+    "src/lib/store-config.ts": "export const storeConfig = { name: 'Merchant' }",
+    "test/store-config.ts": "export const storeConfig = { name: 'Fixture Store' }",
+    "e2e/alias.spec.ts": "import { storeConfig } from '@/lib/store-config'; void storeConfig",
+    "e2e/relative.spec.ts": "import { storeConfig } from '../src/lib/store-config'; void storeConfig",
+    "e2e/nested/extension.spec.ts": "import { storeConfig } from '../../src/lib/store-config.ts'; void storeConfig",
+    "e2e/dynamic.spec.ts": "void import('@/lib/store-config')",
+    "e2e/fixture.spec.ts": "import { storeConfig } from '../test/store-config'; void storeConfig",
+    "src/lib/consumer.ts": "import { storeConfig } from './store-config'; export const name = storeConfig.name",
+  })
+  for (const name of ["alias", "relative", "nested/extension", "dynamic"])
+    assert.ok(has(results, `e2e/${name}.spec.ts`, "architecture/imports", "merchantConfig"), name)
+  assert.deepEqual(results["e2e/fixture.spec.ts"], [])
+  assert.deepEqual(results["src/lib/consumer.ts"], [])
+})
+
 test("allows shared dependencies and direct acyclic feature imports with local relative imports", async (t) => {
   const results = await lint(t, {
     "src/lib/format-price.ts": "export const formatPrice = (n: number) => String(n)",

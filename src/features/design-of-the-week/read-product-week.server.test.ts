@@ -29,20 +29,20 @@ beforeEach(() => {
   testEnv.PRINTIFY_PUBLISHING_ENABLED = true
   vi.spyOn(console, "warn").mockImplementation(() => undefined)
   vi.useFakeTimers()
-  vi.setSystemTime(new Date("2026-10-26T08:59:59Z"))
+  vi.setSystemTime(new Date("2026-10-30T22:29:59Z"))
 })
 afterEach(() => vi.useRealTimers())
 
 describe("readProductWeek", () => {
   it("reveals and expires cached membership without a write or a database reread", async () => {
     list.mockResolvedValue([
-      { id: "a", productId: "tee-a", liveAt: "2026-10-26T09:00:00.000Z" },
-      { id: "b", productId: "tee-b", liveAt: "2026-10-26T09:00:00.000Z" },
+      { id: "a", productId: "tee-a", liveAt: "2026-10-30T22:30:00.000Z" },
+      { id: "b", productId: "tee-b", liveAt: "2026-10-30T22:30:00.000Z" },
     ])
     expect(await readProductWeek()).toBeNull()
-    vi.setSystemTime(new Date("2026-10-26T09:00:00Z"))
-    expect(await readProductWeek()).toEqual({ liveAt: "2026-10-26T09:00:00.000Z", productIds: ["tee-a", "tee-b"] })
-    vi.setSystemTime(new Date("2026-11-02T10:00:00Z"))
+    vi.setSystemTime(new Date("2026-10-30T22:30:00Z"))
+    expect(await readProductWeek()).toEqual({ liveAt: "2026-10-30T22:30:00.000Z", productIds: ["tee-a", "tee-b"] })
+    vi.setSystemTime(new Date("2026-11-06T23:30:00Z"))
     expect(await readProductWeek()).toBeNull()
     expect(list).toHaveBeenCalledTimes(1)
   })
@@ -50,7 +50,7 @@ describe("readProductWeek", () => {
   it("does not cache failures or leak database details", async () => {
     list.mockRejectedValueOnce(new Error("private database host"))
     expect(await readProductWeek()).toBeNull()
-    list.mockResolvedValue([{ id: "a", productId: "tee-a", liveAt: "2026-10-19T09:00:00.000Z" }])
+    list.mockResolvedValue([{ id: "a", productId: "tee-a", liveAt: "2026-10-23T22:30:00.000Z" }])
     expect((await readProductWeek())?.productIds).toEqual(["tee-a"])
     expect(JSON.stringify(vi.mocked(console.warn).mock.calls)).not.toContain("private database host")
   })
