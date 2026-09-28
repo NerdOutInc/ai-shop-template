@@ -105,6 +105,42 @@ test("rejects example credentials and runtime secret length violations without d
   }
 })
 
+test("header-bound credentials reject line breaks without disclosing their values", () => {
+  const admin = {
+    ...environment,
+    ADMIN_LIBRARY_ENABLED: "true",
+    ADMIN_OWNER_EMAIL: "owner@newbrand.com",
+    ADMIN_SETUP_SECRET: "j".repeat(32),
+    NEXT_PUBLIC_SUPABASE_URL: "https://newbrand.supabase.co",
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "k".repeat(32),
+    SUPABASE_SECRET_KEY: "l".repeat(32),
+    PRIVATE_BLOB_READ_WRITE_TOKEN: "m".repeat(32),
+    PRINTIFY_DRAFTS_API_TOKEN: "n".repeat(32),
+  }
+  assert.ok(status(admin).every((check) => check.ready))
+  for (const [key, checkName] of [
+    ["PRINTIFY_API_TOKEN", "Printify catalog and publishing"],
+    ["PRINTIFY_PUBLISHING_API_TOKEN", "Printify catalog and publishing"],
+    ["BLOB_READ_WRITE_TOKEN", "Printify catalog and publishing"],
+    ["CRON_SECRET", "Printify catalog and publishing"],
+    ["PRINTIFY_DRAFTS_API_TOKEN", "Library product drafts"],
+    ["STRIPE_SECRET_KEY", "Stripe payments"],
+    ["SUPABASE_SECRET_KEY", "Owner sign-in and private artwork"],
+    ["PRIVATE_BLOB_READ_WRITE_TOKEN", "Owner sign-in and private artwork"],
+    ["NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "Owner sign-in and private artwork"],
+    ["RESEND_API_KEY", "Environment syntax"],
+    ["PRINTIFY_MONITOR_SECRET", "Environment syntax"],
+  ]) {
+    for (const lineBreak of ["\r", "\n"]) {
+      const value = `header-secret-sentinel-${"x".repeat(32)}${lineBreak}suffix`
+      const checks = status({ ...admin, [key]: value })
+      assert.equal(ready("Environment syntax", checks), false, key)
+      assert.equal(ready(checkName, checks), false, key)
+      assert.ok(!JSON.stringify(checks).includes("header-secret-sentinel"), key)
+    }
+  }
+})
+
 test("launch requires actual publishing and stock schedules; disabled monitor is optional", () => {
   for (const missing of [
     "/api/internal/printify-publishing",
@@ -241,6 +277,33 @@ test("enabled owner bootstrap requires a valid setup proof or dated claim eviden
         },
       })
     ),
+    true
+  )
+})
+
+test("enabled Meta measurement uses the runtime pixel ID length boundaries", () => {
+  for (const length of [1, 4, 26]) {
+    assert.equal(
+      ready(
+        "Meta measurement",
+        status({ ...environment, META_PIXEL_ENABLED: "true", META_PIXEL_ID: "1".repeat(length) })
+      ),
+      false,
+      `Reject ${length}-digit pixel IDs`
+    )
+  }
+  for (const length of [5, 25]) {
+    assert.equal(
+      ready(
+        "Meta measurement",
+        status({ ...environment, META_PIXEL_ENABLED: "true", META_PIXEL_ID: "1".repeat(length) })
+      ),
+      true,
+      `Accept the ${length}-digit boundary`
+    )
+  }
+  assert.equal(
+    ready("Meta measurement", status({ ...environment, META_PIXEL_ENABLED: "false", META_PIXEL_ID: "1" })),
     true
   )
 })

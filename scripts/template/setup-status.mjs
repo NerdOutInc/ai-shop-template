@@ -153,13 +153,12 @@ export function setupStatus(config, environment, { mode = "configuration", sched
         "NEXT_PUBLIC_PRODUCT_IMAGE_BLOB_HOST",
       ]) &&
       /^[1-9]\d*$/.test(environment.PRINTIFY_SHOP_ID ?? "") &&
-      ["PRINTIFY_API_TOKEN", "PRINTIFY_PUBLISHING_API_TOKEN"].every((key) => !/[\r\n]/.test(environment[key] ?? "")) &&
-      (has("BLOB_STORE_ID") || has("BLOB_READ_WRITE_TOKEN")),
+      (has("BLOB_STORE_ID") || required(["BLOB_READ_WRITE_TOKEN"])),
     "Configure the store's shop, read/publishing tokens, public Blob, signed webhook and CRON_SECRET (32+ characters). Publish a reviewed product and initialize stock before testing Checkout."
   )
   add(
     "Library product drafts",
-    required(["PRINTIFY_DRAFTS_API_TOKEN"]) && !/[\r\n]/.test(environment.PRINTIFY_DRAFTS_API_TOKEN ?? ""),
+    required(["PRINTIFY_DRAFTS_API_TOKEN"]),
     "Set the separate PRINTIFY_DRAFTS_API_TOKEN for enabled private-library drafts.",
     enabled("ADMIN_LIBRARY_ENABLED")
   )
@@ -207,7 +206,7 @@ export function setupStatus(config, environment, { mode = "configuration", sched
   )
   add(
     "Meta measurement",
-    /^\d+$/.test(environment.META_PIXEL_ID ?? ""),
+    /^\d{5,25}$/.test(environment.META_PIXEL_ID ?? ""),
     "Set this store's META_PIXEL_ID and verify consent and authorized production activation.",
     enabled("META_PIXEL_ENABLED")
   )

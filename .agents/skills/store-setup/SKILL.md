@@ -23,9 +23,13 @@ Then resolve only the business inputs needed for the next phase: prices or margi
 
 Use image tools for accepted concept work and show results. Preserve approved artwork instead of regenerating it during implementation. Translate the chosen direction into `src/lib/store-config.ts`, theme, public logo/favicon and home assets. Test legibility, responsive layout, keyboard focus and real favicon rendering. Merchandise art belongs to the private library; public identity assets are intentionally public. Complete policy wording with the owner before setting `policies.published` true. Choose immutable `commerce.identity` before the first Checkout; cosmetic brand IDs may change later but payment identity must not. Keep optional weekly feature, signup and About features disabled until selected and operationally ready.
 
+Follow [branding and icon generation](../../../docs/branding.md), [storefront feature controls](../../../docs/storefront-features.md), [shipping and policy setup](../../../docs/storefront-policies.md), and [drop signup operations](../../../docs/drop-signup.md). Use the approved source with the documented icon generator; review its output and run `pnpm test:branding`. Signup needs a working manual suppression/list-removal process before activation.
+
 ## Configure providers and accounts
 
 Follow the dependency order in the runbook. Apply schema migrations with the documented Supabase CLI `db push` flow so migration history is recorded. Complete [runtime login provisioning](../../../docs/store-setup.md#provision-the-runtime-login): the database baseline does not supply a password. Prepare the owner’s private `psql` password prompts, configure the restricted login and verify its identity/grants before using the app. Reuse verified resources dedicated to this store. Keep sandbox and production identities separate. Prefer documented APIs/CLIs; use authenticated browser and computer tools for dashboard tasks they cannot cover.
+
+Use [Checkout resilience](../../../docs/checkout-resilience.md) for immutable identity, admission limits and deployment protection; review [operating costs](../../../docs/store-operations-costs.md) before service activation. Prepare the [local test prerequisites](../../../docs/ci.md#local-test-prerequisites) before claiming the full suite ran.
 
 Prepare each form and ask the owner to enter username/password, email codes, 2FA, CAPTCHA, passkeys and operating-system Yes/OK permissions directly. Never collect those in chat or replay them. For a missing application secret, prepare the exact provider secret field or ignored environment file; ask for confirmation it is stored, not its value. Account login does not create an application API key.
 

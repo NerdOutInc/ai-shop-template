@@ -56,6 +56,24 @@ test("CLI reads isolated local configuration, rejects strict modes, and never ec
     assert.equal(isolated.status, 1)
     assert.match(isolated.stdout, /CONFIGURED Environment syntax/)
     assert.doesNotMatch(isolated.stdout + isolated.stderr, /parent-secret-sentinel|redacted-sentinel|secret-sentinel/)
+    writeFileSync(productionFile, 'BLOB_READ_WRITE_TOKEN="header-secret-sentinel\nsecret-suffix"\n')
+    const invalidHeader = spawnSync(
+      process.execPath,
+      [
+        "--conditions=react-server",
+        "--import",
+        require.resolve("tsx"),
+        script,
+        "--launch",
+        "--env-file",
+        productionFile,
+      ],
+      { cwd, env: { PATH: process.env.PATH }, encoding: "utf8" }
+    )
+    assert.equal(invalidHeader.status, 1)
+    assert.match(invalidHeader.stdout, /TODO\s+Environment syntax/)
+    assert.match(invalidHeader.stdout, /BLOB_READ_WRITE_TOKEN/)
+    assert.doesNotMatch(invalidHeader.stdout + invalidHeader.stderr, /header-secret-sentinel|secret-suffix/)
     const invalid = spawnSync(
       process.execPath,
       ["--conditions=react-server", "--import", require.resolve("tsx"), script, "--sandbox", "--launch"],

@@ -16,13 +16,19 @@ Prepare forms first, then let the owner enter usernames/passwords, email codes, 
 
 Ask a short first round about brand name, audience, existing domain/assets/accounts, visual direction, products, selling region and budget. Offer generated alternatives for storefront concepts, logo, favicon and color palettes. Ask which explorations the owner wants and their count, show the options, and implement the selected direction while preserving original/approved assets.
 
+Use the [branding guide](branding.md) for the public asset map, logo choices, font stacks and favicon/PWA generation. Preserve the approved mark, generate the required sizes with `pnpm icons:generate --source public/images/store-mark.svg --background '#25364d'` after choosing the store's actual background color, and run `pnpm test:branding`. The generator also supports `--output-root .tmp/brand-icons-preview` for inspection before replacing public icons.
+
 Resolve prices or a margin rule, garment colors/sizes/provider, shipping charges, delivery promises, support contact, policies, IANA time zone, weekly feature day/time and delegated product choices before their dependent step. Follow [owner intake](../.agents/skills/store-owner-handoff/references/owner-intake.md). Reuse existing answers; missing information is not permission to invent a merchant policy.
 
 The current commerce implementation supports **USD, standard shipping to the 50 US states plus DC**. The built-in per-design color picker, design-page draft button and `drafts.propose` support **Next Level 6210, blueprint 1317, print provider 99** only. Choose that combination for the complete built-in workflow. Another provider or garment needs an explicit verified front-art recipe and its own supported variants; its colors do not become supported by the per-design picker. Additional garments also need complete merchant profiles. Territory/military/international destinations, currency conversion, coupon offers and arbitrary shipping models need coordinated implementation and tests.
 
 Record the owner's confirmed initial blueprint/provider in `decisions.printifyBlueprintId` and `decisions.printifyPrintProviderId` in `.store-setup.local.json`; the automatic setup check supports 1317/99. A different explicit recipe remains a separate assessed workflow, not a promise that the built-in setup gates support it. Set `decisions.commerceIdentity` to the immutable store identity chosen before the first Checkout. Set `commerce.identity` in store configuration and keep it stable and distinct from cosmetic branding IDs: pending payment records depend on it. Configure `CHECKOUT_RATE_LIMIT_SECRET` before opening new Checkout sessions, using one independent random 32–256 character server secret shared by this store's replicas; never record its value in setup state. A brand rename must not rotate either identity or the secret as an incidental copy change.
 
+Follow [Checkout resilience](checkout-resilience.md) for database identity verification, admission limits, trusted deployment headers, edge/WAF protection and provider spending checks.
+
 Customize `src/lib/store-config.ts`, public identity assets, theme and home copy. Set `timeZone` to the owner’s IANA zone. Optional `features.designOfTheWeek`, `features.dropSignup` and `features.about` start false; enable only the owner’s selected features. Confirm support and list-removal operations before enabling drop signup. Set `weeklyFeature` when the weekly feature is selected; the neutral default is Monday at 09:00 UTC. `configured`, `policies.published` and `commerce.shippingConfirmed` start false. Set them true only after implementing the actual brand, owner-reviewed policy text, shipping amounts and delivery estimates. Both sandbox and live Checkout are blocked until these gates are complete. A schema passing validation cannot establish that a shipping promise is accurate or a policy is appropriate.
+
+Use [storefront feature controls](storefront-features.md), [shipping and policy setup](storefront-policies.md), and [drop signup operations](drop-signup.md) for the implementation and launch checklist. Signup currently requires manual suppression/list-removal handling; it does not supply a campaign sender, export screen or automated erasure workflow.
 
 ## Dependency order
 
@@ -63,7 +69,7 @@ The no-secret shell is available at `http://localhost:3000`; provider-backed cat
 
 ### Local verification prerequisites
 
-`pnpm dev` needs the pinned JavaScript dependencies. Repository validation has additional prerequisites; a missing executable is not a passing check. Follow `package.json`, `scripts/skills/requirements.txt` and `.github/workflows/check.yml` for current versions and commands. Python 3.12 with the pinned Ruff and Pillow packages is needed for skill lint/format and artwork tests:
+`pnpm dev` needs the pinned JavaScript dependencies. Repository validation has additional prerequisites; a missing executable is not a passing check. Follow [the CI guide's local prerequisites](ci.md#local-test-prerequisites), `package.json`, `scripts/skills/requirements.txt` and `.github/workflows/check.yml` for current versions and commands. Python 3.12 with the pinned Ruff and Pillow packages is needed for skill lint/format and artwork tests:
 
 ```sh
 python3 -m venv .tmp/setup-tools
@@ -78,6 +84,8 @@ Connect only the new repository to the intended Vercel project. The default `ver
 ### Supported hosting and scheduled workers
 
 The supported Vercel deployment for this commercial store is **Pro or Enterprise**. Official requirements checked **2026-09-27**: [cron limits](https://vercel.com/docs/cron-jobs/usage-and-pricing) allow 100 jobs per project on each plan, but Hobby runs each job at most daily with hour-level precision; Pro/Enterprise support minute-level schedules. [Hobby is restricted to personal, noncommercial use](https://vercel.com/docs/plans/hobby). Function usage is billable under the selected plan; verify current costs and existing owner authorization before purchasing anything.
+
+Review [store operations and costs](store-operations-costs.md) with the owner for recurring provider charges, required workers and conditional integrations before choosing or activating a plan.
 
 Configure publishing recovery every minute (`* * * * *`), stock every 30 minutes (`*/30 * * * *`), and popularity every six hours (`0 */6 * * *`). Vercel schedules use UTC; the app's weekly feature uses its separately configured IANA time zone. A daily stock job cannot satisfy the app's two-hour freshness cutoff: missing/expired observations close browsing availability and cause merchant feeds to return 503. Initialize both catalog observations and then verify recurring successful runs, following [background refresh](catalog-background-refresh.md). Keep configured schedules, observed execution and completed work as separate evidence.
 
