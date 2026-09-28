@@ -38,32 +38,30 @@ export async function verifyPaidSession(
     session.amount_total !== order.subtotal + order.shippingAmount + tax
   )
     throw mismatch()
-  {
-    const shipping = session.shipping_cost
-    if (
-      !shipping?.shipping_rate ||
-      shipping.amount_subtotal !== order.shippingAmount ||
-      !Number.isSafeInteger(shipping.amount_tax) ||
-      shipping.amount_tax < 0 ||
-      shipping.amount_tax > tax ||
-      shipping.amount_total !== order.shippingAmount + shipping.amount_tax
-    )
-      throw mismatch()
-    const rate =
-      typeof shipping.shipping_rate === "string"
-        ? await stripe.shippingRates.retrieve(shipping.shipping_rate)
-        : shipping.shipping_rate
-    if (
-      rate.type !== "fixed_amount" ||
-      rate.fixed_amount?.amount !== order.shippingAmount ||
-      rate.fixed_amount.currency !== order.currency ||
-      rate.tax_behavior !== "exclusive" ||
-      rate.metadata.kind !== "shipping" ||
-      rate.metadata.checkout_request_id !== order.requestId ||
-      (typeof shipping.shipping_rate === "string" && rate.id !== shipping.shipping_rate)
-    )
-      throw mismatch()
-  }
+  const shipping = session.shipping_cost
+  if (
+    !shipping?.shipping_rate ||
+    shipping.amount_subtotal !== order.shippingAmount ||
+    !Number.isSafeInteger(shipping.amount_tax) ||
+    shipping.amount_tax < 0 ||
+    shipping.amount_tax > tax ||
+    shipping.amount_total !== order.shippingAmount + shipping.amount_tax
+  )
+    throw mismatch()
+  const rate =
+    typeof shipping.shipping_rate === "string"
+      ? await stripe.shippingRates.retrieve(shipping.shipping_rate)
+      : shipping.shipping_rate
+  if (
+    rate.type !== "fixed_amount" ||
+    rate.fixed_amount?.amount !== order.shippingAmount ||
+    rate.fixed_amount.currency !== order.currency ||
+    rate.tax_behavior !== "exclusive" ||
+    rate.metadata.kind !== "shipping" ||
+    rate.metadata.checkout_request_id !== order.requestId ||
+    (typeof shipping.shipping_rate === "string" && rate.id !== shipping.shipping_rate)
+  )
+    throw mismatch()
   const lines = await stripe.checkout.sessions.listLineItems(session.id, { limit: 100, expand: ["data.price.product"] })
   if (lines.has_more || lines.data.length !== order.items.length) throw mismatch()
   const unmatched = [...order.items]

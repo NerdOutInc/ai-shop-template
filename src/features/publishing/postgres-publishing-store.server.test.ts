@@ -2167,6 +2167,7 @@ describe.skipIf(!databaseUrl)("durable Printify publishing", () => {
     // Named rather than counted, so adding a commerce table is a deliberate act that says which one.
     expect(rows.map((row) => row.relname).toSorted()).toEqual([
       "catalog_refreshes",
+      "checkout_capacity",
       "checkout_orders",
       "design_product_artwork",
       "drop_subscribers",
@@ -2178,8 +2179,8 @@ describe.skipIf(!databaseUrl)("durable Printify publishing", () => {
       "product_week_schedule",
       "public_request_attempts",
       "published_image_uploads",
-
       "shop_categories",
+      "store_identity",
     ])
     expect(rows.every((row) => row.relrowsecurity && !row.public_usage)).toBe(true)
   })

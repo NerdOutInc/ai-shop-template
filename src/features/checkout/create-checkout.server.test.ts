@@ -20,12 +20,17 @@ beforeEach(() => {
 })
 
 describe("createCheckout", () => {
-  it("blocks an unfinished store before payment or order side effects", async () => {
+  it.each(["configured", "policies", "shipping"])("blocks the %s gate before checkout side effects", async (gate) => {
     const fixture = hostedFixture()
-    storeConfig.configured = false
+    if (gate === "configured") storeConfig.configured = false
+    if (gate === "policies") storeConfig.policies.published = false
+    if (gate === "shipping") storeConfig.commerce.shippingConfirmed = false
     await expect(createCheckout(fixture.services, fixture.request)).rejects.toMatchObject({
       code: "STORE_SETUP_REQUIRED",
     })
+    expect(fixture.ensureCommerceIdentity).not.toHaveBeenCalled()
+    expect(fixture.services.capacity.reserveProviderReads).not.toHaveBeenCalled()
+    expect(readCheckoutItems).not.toHaveBeenCalled()
     expect(fixture.stripe.checkout.sessions.create).not.toHaveBeenCalled()
     expect(fixture.getStored()).toBeNull()
   })
@@ -83,12 +88,12 @@ describe("createCheckout", () => {
 
   it("reserves provider-read capacity before a quote and retains a claim after provider failure", async () => {
     const fixture = hostedFixture()
-    vi.mocked(readCheckoutItems).mockRejectedValueOnce(new Error("provider unavailable"))
+    vi.mocked(readCheckoutItems).mockImplementationOnce(async (...args) => {
+      await args[2](1)
+      throw new Error("provider unavailable")
+    })
     await expect(createCheckout(fixture.services, fixture.request)).rejects.toThrow("provider unavailable")
     expect(fixture.services.capacity.reserveProviderReads).toHaveBeenCalledExactlyOnceWith(1)
-    expect(fixture.services.capacity.reserveProviderReads.mock.invocationCallOrder[0]).toBeLessThan(
-      vi.mocked(readCheckoutItems).mock.invocationCallOrder[0]!
-    )
     await createCheckout(fixture.services, fixture.request)
     expect(fixture.services.capacity.reserveProviderReads).toHaveBeenCalledTimes(2)
   })
@@ -104,13 +109,28 @@ describe("createCheckout", () => {
     expect(fixture.stripe.checkout.sessions.create).toHaveBeenCalledTimes(1)
   })
 
+  it("throttles saved-session Stripe reads while retaining the saved retry", async () => {
+    const fixture = hostedFixture()
+    await createCheckout(fixture.services, fixture.request)
+    const saved = structuredClone(fixture.getStored())
+    fixture.services.capacity.reserveStripeRead.mockRejectedValueOnce({ code: "CHECKOUT_RATE_LIMITED" })
+    await expect(createCheckout(fixture.services, fixture.request)).rejects.toMatchObject({
+      code: "CHECKOUT_RATE_LIMITED",
+    })
+    expect(fixture.stripe.checkout.sessions.retrieve).not.toHaveBeenCalled()
+    expect(fixture.getStored()).toEqual(saved)
+    await expect(createCheckout(fixture.services, fixture.request)).resolves.toMatchObject({
+      sessionId: fixture.sessionId,
+    })
+  })
+
   it("stops before provider reads when the shared capacity budget is exhausted", async () => {
     const fixture = hostedFixture()
     fixture.services.capacity.reserveProviderReads.mockRejectedValueOnce({ code: "CHECKOUT_RATE_LIMITED" })
     await expect(createCheckout(fixture.services, fixture.request)).rejects.toMatchObject({
       code: "CHECKOUT_RATE_LIMITED",
     })
-    expect(readCheckoutItems).not.toHaveBeenCalled()
+    expect(fixture.getStored()).toBeNull()
     expect(fixture.stripe.checkout.sessions.create).not.toHaveBeenCalled()
   })
 
@@ -186,7 +206,7 @@ describe("createCheckout", () => {
     await expect(createCheckout(fixture.services, fixture.request)).rejects.toMatchObject({
       code: "PRODUCT_UNAVAILABLE",
     })
-    expect(readCheckoutItems).toHaveBeenCalledExactlyOnceWith(fixture.printify, fixture.request)
+    expect(readCheckoutItems).toHaveBeenCalledExactlyOnceWith(fixture.printify, fixture.request, expect.any(Function))
     expect(fixture.stripe.checkout.sessions.create).not.toHaveBeenCalled()
   })
 
@@ -195,7 +215,7 @@ describe("createCheckout", () => {
     const providerRequest = vi.spyOn(fixture.printify, "request")
     await createCheckout(fixture.services, fixture.request)
 
-    expect(readCheckoutItems).toHaveBeenCalledWith(fixture.printify, fixture.request)
+    expect(readCheckoutItems).toHaveBeenCalledWith(fixture.printify, fixture.request, expect.any(Function))
     expect(providerRequest).not.toHaveBeenCalled()
     expect(fixture.stripe.customers.create).not.toHaveBeenCalled()
     expect(fixture.getStored()?.order).toMatchObject({
@@ -386,7 +406,10 @@ function hostedFixture(quantity = 1) {
   fixture.setStored(null)
   fixture.order.items[0]!.productFingerprint = `v2:${"b".repeat(64)}`
   const items = [{ ...fixture.order.items[0]!, quantity }]
-  vi.mocked(readCheckoutItems).mockResolvedValue(items)
+  vi.mocked(readCheckoutItems).mockImplementation(async (...args) => {
+    await args[2](new Set(args[1].items.map((item) => item.productId)).size)
+    return items
+  })
   const request = {
     items: [{ productId: fixture.productId, variantId: 101, quantity, expectedUnitAmount: 3000 }],
     requestId: fixture.order.requestId,
@@ -557,7 +580,7 @@ function checkoutFixture() {
       siteUrl: "https://shop.example.com",
       automaticTax: false,
       expectedLivemode: false,
-      capacity: { reserveProviderReads: vi.fn(async () => {}) },
+      capacity: { reserveStripeRead: vi.fn(async () => undefined), reserveProviderReads: vi.fn(async () => {}) },
     },
   }
 }

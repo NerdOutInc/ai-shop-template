@@ -1,8 +1,9 @@
-import { storeConfig } from "@/lib/store-config"
 import "server-only"
 
 import type Stripe from "stripe"
 import { z } from "zod"
+
+import { storeConfig } from "@/lib/store-config"
 
 import { CheckoutError } from "./checkout-error"
 import type { CheckoutOrder, OrderStore } from "./checkout-order"
@@ -59,26 +60,20 @@ export async function fulfillCheckout(services: Services, sessionId: string) {
         if (error instanceof CheckoutError) throw error
         throw new CheckoutError("PAYMENT_CAPTURE_UNAVAILABLE", "Your paid order needs our attention before printing.")
       }
-      let order = stored.order
-      {
-        const shippingAddress = readStripeShippingAddress(session)
-        if (!order.shippingAddress) {
-          await record.saveShippingAddress(shippingAddress)
-          order = { ...order, shippingAddress }
-        } else if (
-          Object.entries(shippingAddress).some(
-            ([field, value]) => order.shippingAddress?.[field as keyof typeof shippingAddress] !== value
-          )
-        ) {
-          throw new CheckoutError(
-            "SHIPPING_ADDRESS_CONFLICT",
-            "Your delivery details changed after payment and need our attention before printing."
-          )
-        }
+      const shippingAddress = readStripeShippingAddress(session)
+      if (!stored.order.shippingAddress) {
+        await record.saveShippingAddress(shippingAddress)
+      } else if (
+        Object.entries(shippingAddress).some(
+          ([field, value]) => stored.order.shippingAddress?.[field as keyof typeof shippingAddress] !== value
+        )
+      ) {
+        throw new CheckoutError(
+          "SHIPPING_ADDRESS_CONFLICT",
+          "Your delivery details changed after payment and need our attention before printing."
+        )
       }
-      if (!order.shippingAddress) {
-        throw new CheckoutError("SHIPPING_ADDRESS_INVALID", "Your delivery details need our attention before printing.")
-      }
+      const order = { ...stored.order, shippingAddress: stored.order.shippingAddress ?? shippingAddress }
       if (!session.livemode) {
         await record.update({ state: "simulated", failureCode: null })
         return "simulated"

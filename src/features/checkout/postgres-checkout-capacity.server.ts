@@ -36,6 +36,19 @@ export class PostgresCheckoutCapacity {
     ])
   }
 
+  async admitStatus(headers: Headers) {
+    const key = checkoutClientKey(headers, this.options.secret, this.options.vercel)
+    await this.reserve([
+      { bucket: "status", intervalMs: 500, burst: 20, cost: 1 },
+      { bucket: `status-client:${key}`, intervalMs: 2_000, burst: 10, cost: 1 },
+    ])
+  }
+
+  async reserveStripeRead() {
+    // Public status and resumed checkouts share headroom below Stripe's account-wide endpoint limit.
+    await this.reserve([{ bucket: "stripe-read", intervalMs: 500, burst: 10, cost: 1 }])
+  }
+
   async reserveProviderReads(count: number) {
     if (!Number.isInteger(count) || count < 1 || count > 20) throw new Error("Invalid checkout read reservation")
     // One budget per database, not per token/shop/deployment: leave capacity for fulfillment and publishing.
