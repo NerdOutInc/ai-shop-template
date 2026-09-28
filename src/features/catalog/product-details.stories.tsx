@@ -610,3 +610,28 @@ export const ShippingPreparing: Story = {
     await expect(canvas.queryByText(/for the first shirt/)).not.toBeInTheDocument()
   },
 }
+
+export const DarkAccent: Story = {
+  decorators: [
+    (Story) => (
+      <div style={{ "--accent": "#1e3a8a", "--accent-foreground": "#ffffff" } as React.CSSProperties}>
+        <Story />
+      </div>
+    ),
+  ],
+  play: async ({ canvas }) => {
+    const size = canvas.getByRole("button", { name: /^S$/ })
+    size.focus()
+    await userEvent.keyboard("{Enter}")
+    const add = canvas.getByRole("button", { name: "Add to cart" })
+    await expect(getComputedStyle(add).backgroundColor).toBe("rgb(30, 58, 138)")
+    await expect(getComputedStyle(add).color).toBe("rgb(255, 255, 255)")
+    add.focus()
+    await expect(getComputedStyle(add).outlineStyle).not.toBe("none")
+    await userEvent.keyboard("{Enter}")
+    const dialog = within(document.body)
+    await waitFor(() => expect(dialog.getByRole("dialog", { name: "Added to cart" })).toBeVisible())
+    await userEvent.keyboard("{Escape}")
+    await waitFor(() => expect(add).toHaveFocus())
+  },
+}

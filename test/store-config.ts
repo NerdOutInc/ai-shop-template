@@ -5,6 +5,7 @@ export const storeConfig = storeConfigSchema.parse({
   configured: false,
   id: "fixture-store",
   name: "Fixture Store",
+  shortName: "Fixture",
   description: "A new home for original apparel. Our first collection is on its way.",
   tagline: "Make room for your next favorite.",
   locale: "en-US",
@@ -12,7 +13,12 @@ export const storeConfig = storeConfigSchema.parse({
   features: { designOfTheWeek: true, dropSignup: true, about: true },
   weeklyFeature: { weekday: 1, hour: 9, minute: 0 },
   supportEmail: "support@fixture.example",
-  logo: { src: "/images/store-mark.svg", width: 48, height: 48 },
+  logo: { src: "/images/store-mark.svg", width: 48, height: 48, showName: true },
+  fonts: {
+    body: '"Helvetica Neue", Arial, sans-serif',
+    heading: '"Helvetica Neue", Arial, sans-serif',
+    label: '"Helvetica Neue", Arial, sans-serif',
+  },
   socialLinks: [],
   theme: {
     background: "#fafbfc",

@@ -39,6 +39,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { themeColor: theme.primary }
 
 const brandStyle = {
+  "--font-body": storeConfig.fonts.body,
+  "--font-heading": storeConfig.fonts.heading,
+  "--font-label": storeConfig.fonts.label,
   "--background": theme.background,
   "--popover": theme.background,
   "--popover-foreground": theme.foreground,
