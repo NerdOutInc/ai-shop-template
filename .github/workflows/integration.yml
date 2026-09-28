@@ -93,9 +93,7 @@ jobs:
         run: |
           sudo rm -f /etc/apt/sources.list.d/google-chrome*.list /etc/apt/sources.list.d/google-chrome*.sources
           pnpm exec playwright install --with-deps chromium webkit
-      - name: Build the offline storefront
-        run: pnpm build
-      - name: Build the isolated configured storefront fixture
+      - name: Build the unconfigured and configured storefront fixtures
         id: storefront-build
         run: pnpm test:e2e:prepare
       - name: Test production pages

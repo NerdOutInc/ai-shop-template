@@ -13,11 +13,11 @@ Before verifying `/feeds/google`, `/feeds/meta` and publishing health, complete 
 
 ## Diagnose the environment first
 
-Record checkout/branch/commit, target deployment URL/environment, canonical origin, provider account/shop identities, and publishing/paid fulfillment enablement. Inspect variable presence and sanitized error codes without revealing values.
+Record checkout/branch/commit, target deployment URL/environment, canonical origin, provider account/shop identities, and publishing/paid fulfillment enablement. Inspect variable presence and sanitized error codes without revealing values. `pnpm setup:check -- --launch --env-file PATH` checks an isolated protected dotenv export without merging development settings; it still cannot prove the deployed environment or credential validity.
 
 Development, Preview, and Production variables are independent. Credentials set only in Preview do not configure Production. A configuration error before a provider request calls for inspecting configuration, not changing catalog behavior. Restart the affected server or deploy a new version after environment updates, then verify runtime behavior.
 
-A fresh clone has no credentials. If local worktree tooling copies ignored development configuration, verify that behavior and its current contents; it does not imply synchronized rotations or a running Postgres/Stripe listener. Verify ports, listener destination, database isolation, and running services. Do not distribute live credentials into development worktrees.
+A fresh clone has no credentials. The tracked `.worktreeinclude` copies only non-secret setup progress into new Codex and [Claude Code git worktrees](https://code.claude.com/docs/en/worktrees#copy-gitignored-files-into-worktrees), including Claude Code subagent and desktop worktrees. It is a snapshot, not synchronization. Verify the copied state, run `pnpm setup:check` to detect newer `resume.updatedAt` copies in the repository's other worktrees, and reconcile progress before continuing or handing off. Configure isolated environment secrets separately; progress does not imply synchronized rotations or a running Postgres/Stripe listener. Verify ports, listener destination, database isolation, and running services. Do not distribute live credentials into development worktrees.
 
 Keep credential responsibilities separate: storefront/checkout Printify access, publishing writes, webhook signatures, webhook administration, cron, health monitor, Merchant feed authentication, and Stripe API access. A health-monitor credential cannot run the publishing worker. Use actual required scopes; do not broaden access to cure an unrelated failure.
 
@@ -28,6 +28,10 @@ Database TLS must verify the chain and hostname. This implementation relies on s
 ## Verify by layer
 
 For a focused environment repair, verify the affected behavior and relevant dependencies. Use the full set below when auditing a launch; do not expand a two-variable repair into unrelated account setup.
+
+For a full launch, read back the [repository security settings and default-branch Required checks rule](../../../docs/launch-checklist.md#repository-security-and-merge-gate). Record disabled or unavailable secret scanning/push protection as unresolved. If the private library is enabled, require dated evidence that unrestricted Supabase signup was disabled before `/admin/setup`, and retain the [open admin-1 finding](../../../docs/admin-auth.md#open-security-follow-up) in the owner's launch decision. The setup checker cannot verify that provider mitigation or close the finding.
+
+Review the deployment's WAF rate limits for `POST /api/checkout` and `GET /api/checkout/status`, spend alerts, and repeated **Checkout fulfillment needs retry** alerts using [checkout operational controls](../../../docs/checkout-resilience.md#launch-checks-and-remaining-operational-limits). Verify plan availability, saved thresholds and the responding owner; keep signed payment webhooks outside anonymous-checkout rules. An application budget does not prove edge protection or spend alerts are enabled.
 
 | Layer            | Evidence                                                                                                                                                                                                                                                                                    |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -40,13 +44,15 @@ For a focused environment repair, verify the affected behavior and relevant depe
 | Analytics        | Follow [conversion measurement](../../../docs/store-setup.md#conversion-measurement). Verify the store's Vercel project, production hostname and current plan's custom-event availability for `product_viewed`, `add_to_cart`, `begin_checkout` and `purchase`.                             |
 | Owner operations | Support destination, payment receipts, actual shipping/returns policy, fulfillment funding/approval setting, and ownership of failures. Do not invent commitments.                                                                                                                          |
 
+Check Stripe's public business/support details, statement descriptor and Successful payments/Refunds receipt settings in the intended account. Verify the Printify shop label and owner-approved return handling, and mark the actual received tracking email's sender, Reply-To and branding verified or pending. Record token issue/expiry dates, the next rotation date and a rotation owner without credential values. These are explicit [launch checklist items](../../../docs/launch-checklist.md), separate from payment or publication success.
+
 The isolated [conversion browser tests](../../../e2e/conversion-tracking.spec.ts) intercept payments and analytics; they verify behavior without proving Vercel ingestion. Keep fixture events out of production analytics. Sandbox and simulated payments intentionally produce no `purchase` event. After an authorized deployment, verify ordinary browsing events in the matching production dashboard and confirm `purchase` on the next legitimate live order or an explicitly authorized live test. Leave that measurement pending until observed; an analytics check does not authorize a purchase. Keep analytics delivery, payment and fulfillment evidence separate.
 
 Respect test database guards. Database suites use disposable local databases and may replace schemas. Read their setup, supply only the intended disposable database, and report skipped database checks rather than treating mocks as durability verification.
 
 ## Release the authorized result
 
-The accepted launch checklist includes working Checkout, one verified real order, an inspected physical sample, and Google-approved listings. Keep evidence/status for each. Whether pending sample inspection or Google approval delays opening remains an owner decision: show the unfinished checks at the concrete launch decision and ask whether to wait or open with those named checks pending. Never mark them complete from approval to launch.
+The launch checklist requires working sandbox Checkout and the enabled services’ deployed evidence. Real purchase tests, physical samples and merchant listing approval are separate, scope-dependent checks: a purchase needs its own authorization, and an unused Google/Meta channel is not applicable. Record pending sample or chosen-channel approval for the owner’s concrete launch decision. Never mark a check verified merely because opening was approved. Run `pnpm setup:check --launch` for local configuration and required schedules; it does not verify providers or authorize activation.
 
 Going live and testing a purchase require explicit approval; name both if requesting them together. This includes clarifying simulated versus paid tests, not treating every automated fixture check as a purchase. An instructed product batch needs no separate batch review or approval per product, but does not grant release or purchase approval. Reuse the exact approvals already granted.
 

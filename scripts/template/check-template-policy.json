@@ -1490,6 +1490,24 @@
       "rule": "provider-key",
       "sha256": "770a5bfbb069dd76e9571983637c06225c0026c3d321d90b38356ac7c6fa518c",
       "reason": "Synthetic local Blob credential used only by the offline provider fixture."
+    },
+    {
+      "path": "scripts/template/setup-check.test.mjs",
+      "rule": "database-url",
+      "sha256": "a432fb54e9cdb9e21356b3018cc395bcc991fe54e4ab9f73c52076a9124c172d",
+      "reason": "Synthetic offline setup-validator fixture; this exact URL is never connected to. Changing its bytes or path requires review."
+    },
+    {
+      "path": "scripts/template/setup-status.test.mjs",
+      "rule": "database-url",
+      "sha256": "1822e5b678dc4ced9010dc02123e8717996b52fd08a849bb0a4de5896bb26e45",
+      "reason": "Synthetic offline setup-validator fixture; this exact URL is never connected to. Changing its bytes or path requires review."
+    },
+    {
+      "path": "scripts/template/setup-unreadable.test.mjs",
+      "rule": "database-url",
+      "sha256": "18fc638b3ab2c49df5e0d7aab974ccd84ac41fb1884f8cf2bfb63f59cee6022a",
+      "reason": "Synthetic offline setup-validator fixture; this exact URL is never connected to. Changing its bytes or path requires review."
     }
   ],
   "allowedSymlinks": [

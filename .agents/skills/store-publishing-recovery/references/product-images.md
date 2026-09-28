@@ -4,7 +4,7 @@ Use this reference for new-store Blob setup and recovery of published images. Th
 
 ## Configure the implemented pipeline
 
-- Apply the [fresh database baseline](../../../../supabase/migrations/20260928000354_storefront_baseline.sql) to the new empty database. Retain publication receipts as the store operates; they let interrupted uploads resume.
+- Apply the [fresh database baseline](../../../../supabase/migrations/20260928000354_storefront_baseline.sql) to the new empty database through [Supabase CLI `db push` and verify migration history](../../../../docs/store-setup.md#database-and-tls). Retain publication receipts as the store operates; they let interrupted uploads resume.
 - Connect a **public** Blob store dedicated to this store/environment. Set `NEXT_PUBLIC_PRODUCT_IMAGE_BLOB_HOST` to its exact hostname, such as `example.public.blob.vercel-storage.com`, without a scheme or path. See [.env.example](../../../../.env.example) and [host validation](../../../../src/lib/is-public-blob-host.ts). Preview storage/data must be separate from production.
 - Configure server-side Blob SDK authentication: the runbook supports Vercel OIDC with `BLOB_STORE_ID`, or `BLOB_READ_WRITE_TOKEN` where required. Verify which binding the target deployment actually uses without exposing credentials. Installing the SDK or setting the public hostname does not authenticate uploads.
 - Build and deploy with that hostname. [Next.js configuration](../../../../next.config.ts) embeds the exact host and `/published-mockups/v1/**` path into the optimizer allowlist; changing only runtime configuration is insufficient. Arbitrary custom domains are not accepted by the current Blob host validator.

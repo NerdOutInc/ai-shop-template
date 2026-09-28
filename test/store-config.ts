@@ -10,9 +10,9 @@ export const storeConfig = storeConfigSchema.parse({
   tagline: "Wear your Friday feeling.",
   locale: "en-US",
   timeZone: "America/Chicago",
+  weeklyFeature: { weekday: 5, hour: 17, minute: 30 },
   features: { designOfTheWeek: true, dropSignup: true, about: true },
   privacy: { retainedDropSubscribers: false },
-  weeklyFeature: { weekday: 5, hour: 17, minute: 30 },
   supportEmail: "support@fixture.example",
   logo: { src: "/images/store-mark.svg", width: 48, height: 48, showName: true },
   fonts: {
