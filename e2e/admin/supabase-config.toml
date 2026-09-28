@@ -24,7 +24,7 @@ enabled = false
 [studio]
 enabled = false
 
-[inbucket]
+[local_smtp]
 enabled = true
 port = 58834
 smtp_port = 58835

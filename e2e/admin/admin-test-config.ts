@@ -14,6 +14,6 @@ export function adminTestConfig() {
     publishableKey: status.PUBLISHABLE_KEY!,
     secretKey: status.SECRET_KEY!,
     databaseUrl: status.DB_URL!,
-    mailURL: status.MAILPIT_URL ?? status.INBUCKET_URL!,
+    mailURL: status.MAILPIT_URL!,
   }
 }
