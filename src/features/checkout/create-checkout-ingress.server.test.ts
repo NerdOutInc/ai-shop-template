@@ -12,18 +12,25 @@ vi.mock("server-only", () => ({}))
 
 const sessionId = "cs_live_original1234567890"
 const url = `https://example.com/checkout/success?session_id=${sessionId}`
-const initialBrand = { name: storeConfig.name, locale: storeConfig.locale, theme: { ...storeConfig.theme } }
+const initialBrand = {
+  name: storeConfig.name,
+  locale: storeConfig.locale,
+  theme: { ...storeConfig.theme },
+  fonts: { ...storeConfig.fonts },
+}
 
 afterEach(() => {
   storeConfig.name = initialBrand.name
   storeConfig.locale = initialBrand.locale
   Object.assign(storeConfig.theme, initialBrand.theme)
+  Object.assign(storeConfig.fonts, initialBrand.fonts)
 })
 
 describe("checkout ingress", () => {
-  it("uses the configured brand, locale, and palette without remote assets", async () => {
+  it("uses the configured brand, locale, fonts, and palette without remote assets", async () => {
     storeConfig.name = "Another & Co."
-    storeConfig.locale = "fr-CA"
+    storeConfig.locale = "en-US"
+    Object.assign(storeConfig.fonts, { body: "Verdana, sans-serif", heading: "Georgia, serif", label: "monospace" })
     Object.assign(storeConfig.theme, {
       background: "#112233",
       foreground: "#ddeeff",
@@ -36,7 +43,7 @@ describe("checkout ingress", () => {
     })
     const response = createCheckoutIngress(new NextRequest(url))
     const document = new DOMParser().parseFromString(await response.text(), "text/html")
-    expect(document.documentElement.lang).toBe("fr-CA")
+    expect(document.documentElement.lang).toBe("en-US")
     expect(document.title).toBe("Returning to Another & Co.")
     expect(document.querySelector(".brand")!.textContent).toBe("Another & Co.")
     const style = document.querySelector("style")!.textContent!
@@ -51,14 +58,14 @@ describe("checkout ingress", () => {
       "accentForeground",
     ] as const)
       expect(style).toContain(storeConfig.theme[key])
-    expect(style).toContain("font-family: ui-sans-serif, system-ui")
+    for (const font of Object.values(storeConfig.fonts)) expect(style).toContain(`font-family: ${font};`)
     expect(style).not.toMatch(/#fffdf6|#17262d|#f36a50|Arial/)
     expect(document.querySelector("script[src], img, iframe, link")).toBeNull()
   })
 
   it("escapes configured text instead of treating it as handoff HTML", async () => {
     storeConfig.name = 'A & <script>alert("brand")</script>'
-    storeConfig.locale = 'en" data-injected="true'
+    Object.assign(storeConfig, { locale: 'en" data-injected="true' })
     const response = createCheckoutIngress(new NextRequest(url))
     const document = new DOMParser().parseFromString(await response.text(), "text/html")
     expect(document.documentElement.lang).toBe(storeConfig.locale)
