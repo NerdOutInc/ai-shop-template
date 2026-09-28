@@ -54,6 +54,8 @@ export SUPABASE_PRIVILEGES_TEST=true
 
 Setting the flag does not provide privilege-test evidence in checkouts that do not contain that test. Do not reset or stop another checkout's containers to free ports.
 
+The provider-default privilege test uses Supabase Postgres `17.6.1.167`. It reuses a cached copy or downloads that same version from Supabase's public ECR, GHCR or Docker Hub registry, in that order. Registry throttling can fall back to another official mirror; inability to obtain the image still fails the suite. The test never substitutes plain Postgres or skips permission assertions after a download failure.
+
 For `pnpm check:all`, install the browsers matching the locked Playwright version:
 
 ```sh
