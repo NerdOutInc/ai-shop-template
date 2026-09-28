@@ -41,6 +41,8 @@ Verify `git remote -v` points to the owner's newly generated repository. Rename 
 
 Review `.github/workflows/` against the new remote and default branch. The baseline Check workflow targets `main`; adjust that branch filter if the owner chose another name. The optional monitor derives the repository from GitHub's runtime context and runs on its default branch, but still needs this repository’s own health URL, secret, enablement and optional incident assignee. Verify generated issue/recovery links and intended repository permissions before enabling it. Do not copy another repository’s secrets or incident settings.
 
+Enable and verify Dependabot alerts and security updates for the generated repository using [repository security settings](dependency-maintenance.md#repository-security-settings). These make vulnerabilities and blocked security fixes visible when a required Next release falls outside the supported patch range; template files do not establish the new repository's settings.
+
 ## Local baseline and deployment
 
 Use Node 24.15 or later within Node 24 and the pnpm version pinned in `package.json`:
