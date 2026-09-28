@@ -77,8 +77,93 @@ describe.skipIf(!databaseUrl)("durable checkout capacity", () => {
   })
 
   it("coordinates public Stripe reads independently of request IDs and client networks", async () => {
-    const results = await Promise.allSettled(Array.from({ length: 16 }, (_, i) => replicas[i % 4]!.reserveStripeRead()))
+    const results = await Promise.allSettled(
+      Array.from({ length: 16 }, (_, i) => replicas[i % 4]!.reserveStripeRead(`cs_live_customer${i}`, "status"))
+    )
     expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(10)
+  })
+
+  it("does not let unknown-session traffic spend the shared status or Stripe budgets", async () => {
+    await Promise.all(
+      Array.from({ length: 20 }, (_, i) => replicas[i % 4]!.admitStatus(headers(Math.floor(i / 10) + 1)))
+    )
+    const buckets = (await pool.query<{ bucket: string }>("select bucket from commerce.checkout_capacity")).rows
+    expect(buckets).toHaveLength(2)
+    expect(buckets.every(({ bucket }) => bucket.startsWith("status-client:"))).toBe(true)
+    await expect(replicas[0]!.admitStatus(headers(3))).resolves.toBeUndefined()
+    await expect(replicas[0]!.reserveStripeRead("cs_live_payingCustomer", "status")).resolves.toBeUndefined()
+  })
+
+  it("caps one session across replicas and both public paths without debiting rejected shared work", async () => {
+    const results = await Promise.allSettled(
+      Array.from({ length: 12 }, (_, i) =>
+        replicas[i % 4]!.reserveStripeRead("cs_live_oneCustomer", i % 2 ? "status" : "checkout")
+      )
+    )
+    expect(results.filter(({ status }) => status === "fulfilled")).toHaveLength(1)
+    // Nine unrelated customers still fit the ten-read burst after the twelve-request storm.
+    await Promise.all(
+      Array.from({ length: 9 }, (_, i) => replicas[i % 4]!.reserveStripeRead(`cs_live_other${i}`, "status"))
+    )
+    await expect(replicas[0]!.reserveStripeRead("cs_live_overBudget", "status")).rejects.toMatchObject({ status: 429 })
+    const buckets = (await pool.query<{ bucket: string }>("select bucket from commerce.checkout_capacity")).rows
+    expect(buckets.some(({ bucket }) => bucket.includes("cs_live"))).toBe(false)
+    await pool.query("update commerce.checkout_capacity set available_at=clock_timestamp()-interval '1 second'")
+    await expect(replicas[1]!.reserveStripeRead("cs_live_oneCustomer", "status")).resolves.toBeUndefined()
+  })
+
+  it("applies configured shared budgets while keeping client and session ceilings", async () => {
+    const runtimeUrl = new URL(databaseUrl!)
+    runtimeUrl.searchParams.set("options", "-c role=store_app_runtime")
+    const tuned = new PostgresCheckoutCapacity(runtimeUrl.toString(), {
+      secret: "capacity-test-secret-not-for-deployment",
+      vercel: true,
+      limits: JSON.stringify({
+        ingress: { burst: 2 },
+        status: { burst: 2 },
+        stripeRead: { burst: 3 },
+        providerRead: { burst: 25 },
+      }),
+    })
+    try {
+      await tuned.admit(headers(1))
+      await tuned.admit(headers(2))
+      await expect(tuned.admit(headers(3))).rejects.toMatchObject({ status: 429 })
+      await tuned.reserveStripeRead("cs_live_tuned1", "status")
+      await tuned.reserveStripeRead("cs_live_tuned2", "status")
+      await expect(tuned.reserveStripeRead("cs_live_tuned3", "status")).rejects.toMatchObject({ status: 429 })
+      await tuned.reserveStripeRead("cs_live_tuned3")
+      await expect(tuned.reserveStripeRead("cs_live_tuned4")).rejects.toMatchObject({ status: 429 })
+      await tuned.reserveProviderReads(20)
+      await tuned.reserveProviderReads(5)
+      await expect(tuned.reserveProviderReads(1)).rejects.toMatchObject({ status: 429 })
+      await pool.query("update commerce.checkout_capacity set available_at=clock_timestamp()-interval '1 second'")
+      await expect(tuned.reserveProviderReads(20)).resolves.toBeUndefined()
+    } finally {
+      await tuned.close()
+    }
+  })
+
+  it("retains configurable budget debt beyond ten idle minutes", async () => {
+    const runtimeUrl = new URL(databaseUrl!)
+    runtimeUrl.searchParams.set("options", "-c role=store_app_runtime")
+    const slow = new PostgresCheckoutCapacity(runtimeUrl.toString(), {
+      secret: "capacity-test-secret-not-for-deployment",
+      vercel: true,
+      limits: JSON.stringify({ providerRead: { perMinute: 1, burst: 20 } }),
+    })
+    try {
+      await slow.reserveProviderReads(20)
+      await pool.query(
+        "update commerce.checkout_capacity set available_at=available_at-interval '10 minutes', expires_at=expires_at-interval '10 minutes'"
+      )
+      // Another admitted path performs cleanup after half the twenty-minute refill horizon.
+      await replicas[0]!.admit(headers(1))
+      await expect(slow.reserveProviderReads(20)).rejects.toMatchObject({ status: 429 })
+      await expect(slow.reserveProviderReads(10)).resolves.toBeUndefined()
+    } finally {
+      await slow.close()
+    }
   })
 
   it("expires old identities without holding database locks across provider work", async () => {

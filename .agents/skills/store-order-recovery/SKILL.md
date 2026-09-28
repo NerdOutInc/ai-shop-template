@@ -34,7 +34,19 @@ Follow the durable phase even when the failure code is generic: a first create t
 | Provider already sending to production, in production, or fulfilled         | Use the existing order; reconcile the application state through its supported flow.                                                                          |
 | `PRODUCT_CHANGED`                                                           | Compare saved production fingerprints and availability with current variants. Do not overwrite snapshots or relax comparison to make fulfillment pass.       |
 | Address/item mismatch, duplicate provider orders, incomplete reconciliation | Stop dependent mutations and present the specific conflict for merchant review.                                                                              |
-| `PAYMENT_MISMATCH` / `PAYMENT_REVERSED`                                     | Inspect captured totals, line items, refund, and dispute evidence before any fulfillment.                                                                    |
+| `ORDER_IDENTITY_MISSING` on an unfinished order                             | The snapshot lacks `commerceIdentity`. Stop automatic recovery and follow the identity checks below; there is no supported backfill.                         |
+| `PAYMENT_MISMATCH` with differing payment identities                        | Session `metadata.storefront` differs from saved `order.commerceIdentity`. Reconcile identity before investigating amounts or refunds.                       |
+| Other `PAYMENT_MISMATCH` / `PAYMENT_REVERSED`                               | After identity agrees, inspect captured totals, line items, refund, and dispute evidence before any fulfillment.                                             |
+
+A paid webhook redelivery for an already `submitted` or `simulated` order acknowledges its saved completed state after matching the Session and shop. It does not revalidate or backfill identity, rewrite payment facts, or repeat provider work. An unfinished order still requires its explicit saved identity.
+
+For either identity failure, confirm the exact Stripe account/mode, Session, saved request and shop with read-only evidence. These gates stop before the failing attempt verifies or saves capture; preserve any payment recorded by an earlier attempt. An empty saved payment is not proof of nonpayment.
+
+For `ORDER_IDENTITY_MISSING`, preserve the snapshot and stop dependent replay/provider mutations. Do not infer identity from current branding. Escalate to the owner and maintainer for a separately reviewed migration or payment-resolution plan; this workflow provides no supported backfill.
+
+For an identity-related `PAYMENT_MISMATCH`, compare the Session's `metadata.storefront` with the saved `order.commerceIdentity`. Do not rewrite the snapshot or Stripe metadata to force a match. Resolve the evidence conflict with the owner/maintainer before an authorized replay; refund and dispute checks alone do not resolve an identity mismatch.
+
+`COMMERCE_IDENTITY_CHANGED` affects new checkout creation, not paid-order fulfillment. Follow the [permanent commerce identity guidance](../../../docs/checkout-resilience.md#permanent-commerce-identity) to compare configuration with the pinned database value; do not treat it as a request to recreate or alter an order.
 
 Use the code's current status vocabulary when diagnosing; this table explains decisions rather than replacing provider state validation. Logs expose the Stripe event ID and a fixed failure code, not raw exception/provider text.
 

@@ -36,16 +36,73 @@ describe("paid checkout fulfillment", () => {
     expect(fixture.ensureCommerceIdentity).not.toHaveBeenCalled()
   })
 
-  it("fails explicitly when a saved order has no payment identity", async () => {
-    const fixture = checkoutFixture()
-    Reflect.deleteProperty(fixture.order, "commerceIdentity")
-    await expect(fulfillCheckout(fixture.services, fixture.sessionId)).rejects.toMatchObject({
-      code: "ORDER_IDENTITY_MISSING",
-    })
-    expect(fixture.getStored()?.failureCode).toBe("ORDER_IDENTITY_MISSING")
-    expect(fixture.getStored()?.payment).toBeNull()
-    expect(readCheckoutProduct).not.toHaveBeenCalled()
-  })
+  it.each([
+    { state: "submitted", identity: "missing" },
+    { state: "submitted", identity: "mismatched" },
+    { state: "simulated", identity: "missing" },
+    { state: "simulated", identity: "mismatched" },
+  ] as const)(
+    "acknowledges a finished $state order with $identity identity without changing it",
+    async ({ state, identity }) => {
+      const fixture = checkoutFixture()
+      fixture.setStored({ ...fixture.getStored()!, state })
+      if (identity === "missing") Reflect.deleteProperty(fixture.order, "commerceIdentity")
+      else fixture.session.metadata.storefront = "another-store"
+      const before = structuredClone(fixture.getStored())
+      const provider = vi.spyOn(fixture.printify, "request")
+
+      expect(await fulfillCheckout(fixture.services, fixture.sessionId)).toBe(state)
+      expect(await fulfillCheckout(fixture.services, fixture.sessionId)).toBe(state)
+
+      expect(fixture.getStored()).toEqual(before)
+      expect(fixture.savePayment).not.toHaveBeenCalled()
+      expect(fixture.stripe.paymentIntents.retrieve).not.toHaveBeenCalled()
+      expect(fixture.stripe.checkout.sessions.listLineItems).not.toHaveBeenCalled()
+      expect(readCheckoutProduct).not.toHaveBeenCalled()
+      expect(provider).not.toHaveBeenCalled()
+    }
+  )
+
+  it.each([
+    { state: "submitted", mismatch: "session" },
+    { state: "submitted", mismatch: "shop" },
+    { state: "simulated", mismatch: "session" },
+    { state: "simulated", mismatch: "shop" },
+  ] as const)(
+    "still rejects a finished $state order with a different $mismatch binding",
+    async ({ state, mismatch }) => {
+      const fixture = checkoutFixture()
+      fixture.setStored({ ...fixture.getStored()!, state })
+      if (mismatch === "session") fixture.setStored({ ...fixture.getStored()!, sessionId: "cs_other" })
+      else fixture.order.shopId = "9876"
+      const before = structuredClone(fixture.getStored())
+      const provider = vi.spyOn(fixture.printify, "request")
+
+      await expect(fulfillCheckout(fixture.services, fixture.sessionId)).rejects.toMatchObject({
+        code: "ORDER_MISSING",
+      })
+
+      expect(fixture.getStored()).toEqual(before)
+      expect(fixture.savePayment).not.toHaveBeenCalled()
+      expect(readCheckoutProduct).not.toHaveBeenCalled()
+      expect(provider).not.toHaveBeenCalled()
+    }
+  )
+
+  it.each(["pending", "creating", "created", "submitting"] as const)(
+    "fails explicitly when an unfinished %s order has no payment identity",
+    async (state) => {
+      const fixture = checkoutFixture()
+      fixture.setStored({ ...fixture.getStored()!, state })
+      Reflect.deleteProperty(fixture.order, "commerceIdentity")
+      await expect(fulfillCheckout(fixture.services, fixture.sessionId)).rejects.toMatchObject({
+        code: "ORDER_IDENTITY_MISSING",
+      })
+      expect(fixture.getStored()?.failureCode).toBe("ORDER_IDENTITY_MISSING")
+      expect(fixture.getStored()?.payment).toBeNull()
+      expect(readCheckoutProduct).not.toHaveBeenCalled()
+    }
+  )
 
   it("rejects foreign metadata on a known order instead of silently ignoring its paid event", async () => {
     const fixture = checkoutFixture()

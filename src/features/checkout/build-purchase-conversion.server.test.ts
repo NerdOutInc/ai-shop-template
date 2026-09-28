@@ -3,7 +3,7 @@ import type Stripe from "stripe"
 import { describe, expect, it, vi } from "vitest"
 
 import { buildPurchaseConversion } from "./build-purchase-conversion.server"
-import type { StoredOrder } from "./checkout-order"
+import type { CheckoutPayment, StoredOrder } from "./checkout-order"
 
 vi.mock("server-only", () => ({}))
 
@@ -50,7 +50,59 @@ function fixture() {
   return { session, stored }
 }
 
+function verifiedPayment(): CheckoutPayment {
+  return {
+    status: "paid",
+    paymentIntentId: "pi_verified",
+    paidAt: "2026-09-28T12:00:00.000Z",
+    livemode: true,
+    currency: "usd",
+    subtotalAmount: 3000,
+    shippingAmount: 495,
+    taxAmount: 280,
+    totalAmount: 3775,
+    customerName: "Private Customer",
+    customerEmail: "private@example.com",
+  }
+}
+
 describe("buildPurchaseConversion", () => {
+  it("uses the same minimal receipt from the immutable verified capture without a Session read", () => {
+    const { stored, session } = fixture()
+    const expected = buildPurchaseConversion(session, stored, true)
+    stored.payment = verifiedPayment()
+    expect(buildPurchaseConversion(null, stored, true)).toEqual(expected)
+    expect(Object.keys(buildPurchaseConversion(null, stored, true)!)).toEqual(["receipt", "totalUsd"])
+  })
+
+  it.each<Partial<CheckoutPayment>>([
+    { livemode: false },
+    { currency: "eur" as "usd" },
+    { subtotalAmount: 1 },
+    { shippingAmount: 0 },
+    { taxAmount: -1 },
+    { taxAmount: 280.5 },
+    { totalAmount: 1 },
+    { totalAmount: Number.MAX_SAFE_INTEGER + 1 },
+  ])("rejects inconsistent saved capture values %j", (patch) => {
+    const { stored } = fixture()
+    stored.payment = { ...verifiedPayment(), ...patch }
+    expect(buildPurchaseConversion(null, stored, true)).toBeNull()
+  })
+
+  it.each(["test-environment", "simulated", "reversed", "identity-missing", "session-missing"])(
+    "does not count a saved capture when %s",
+    (kind) => {
+      const { stored } = fixture()
+      stored.payment = verifiedPayment()
+      if (kind === "simulated") stored.state = "simulated"
+      if (kind === "reversed") stored.failureCode = "PAYMENT_REVERSED"
+      if (kind === "identity-missing") Reflect.deleteProperty(stored.order, "commerceIdentity")
+      if (kind === "session-missing") stored.sessionId = null
+      expect(buildPurchaseConversion(null, stored, kind !== "test-environment")).toBeNull()
+    }
+  )
+
   it("counts a saved payment identity independently of the current store configuration", () => {
     const { session, stored } = fixture()
     stored.order.commerceIdentity = "permanent-store"
