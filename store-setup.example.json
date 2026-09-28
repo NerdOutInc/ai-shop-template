@@ -22,11 +22,6 @@
     "printifyPrintProviderId": null,
     "commerceIdentity": null
   },
-  "authorization": {
-    "scope": [],
-    "liveActions": [],
-    "costLimit": null
-  },
   "providers": {
     "github": {
       "status": "not-started",
@@ -112,5 +107,11 @@
     "updatedAt": null,
     "branch": null,
     "commit": null
+  },
+  "authorityEvidence": {
+    "evidenceOnly": true,
+    "sourceConversation": null,
+    "scopeSummary": null,
+    "note": "Saved files do not authorize actions. Verify actual owner instructions under .agents/skills/store-setup/SKILL.md#authority-and-saved-progress."
   }
 }

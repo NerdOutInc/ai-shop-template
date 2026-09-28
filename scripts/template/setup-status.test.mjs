@@ -9,6 +9,15 @@ const config = {
   configured: true,
   id: "new-brand",
   name: "New Brand",
+  shortName: "New Brand",
+  description: "Original illustrated tees from New Brand.",
+  tagline: "Wear a little imagination.",
+  features: { ...storeConfig.features, about: false },
+  home: {
+    ...storeConfig.home,
+    headline: "Illustrations made to wear.",
+    introduction: "Meet our original tee collection.",
+  },
   supportEmail: "hello@newbrand.com",
   commerce: { ...storeConfig.commerce, identity: "stable-store", shippingConfirmed: true },
   policies: {
@@ -22,6 +31,7 @@ const environment = {
   NEXT_PUBLIC_SITE_URL: "https://newbrand.com",
   DATABASE_URL:
     "postgresql://store_app_runtime.project:local-only-password@aws-0.pooler.supabase.com:5432/postgres?sslmode=verify-full",
+  DATABASE_SSL_CA: "-----BEGIN CERTIFICATE-----\nU1lOVEhFVElDLUNBLUZJWFRVUkU=\n-----END CERTIFICATE-----",
   PRINTIFY_PUBLISHING_ENABLED: "true",
   PRINTIFY_FULFILLMENT_ENABLED: "true",
   PRINTIFY_API_TOKEN: "a".repeat(64),
@@ -36,9 +46,11 @@ const environment = {
   STRIPE_WEBHOOK_SECRET: `whsec_${"g".repeat(32)}`,
 }
 const schedules = JSON.parse(readFileSync(new URL("../vercel-crons.example.json", import.meta.url))).crons
+const now = Date.parse("2026-09-28T12:00:00Z")
 const status = (env = environment, value = config, options = {}) =>
   setupStatus(value, env, {
     mode: "launch",
+    now,
     schedules,
     setupState: { decisions: { printifyBlueprintId: 1317, printifyPrintProviderId: 99 } },
     ...options,
@@ -125,7 +137,7 @@ test("header-bound credentials reject line breaks without disclosing their value
     ["CRON_SECRET", "Printify catalog and publishing"],
     ["PRINTIFY_DRAFTS_API_TOKEN", "Library product drafts"],
     ["STRIPE_SECRET_KEY", "Stripe payments"],
-    ["SUPABASE_SECRET_KEY", "Owner sign-in and private artwork"],
+    ["SUPABASE_SECRET_KEY", "Initial owner claim configuration"],
     ["PRIVATE_BLOB_READ_WRITE_TOKEN", "Owner sign-in and private artwork"],
     ["NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "Owner sign-in and private artwork"],
     ["RESEND_API_KEY", "Environment syntax"],
@@ -258,7 +270,10 @@ test("enabled owner bootstrap requires a valid setup proof or dated claim eviden
   assert.equal(ready("Initial owner claim configuration", status(enabled)), false)
   assert.equal(ready("Initial owner claim configuration", status({ ...enabled, ADMIN_SETUP_SECRET: "short" })), false)
   assert.equal(
-    ready("Initial owner claim configuration", status({ ...enabled, ADMIN_SETUP_SECRET: "j".repeat(32) })),
+    ready(
+      "Initial owner claim configuration",
+      status({ ...enabled, ADMIN_SETUP_SECRET: "j".repeat(32), SUPABASE_SECRET_KEY: "k".repeat(32) })
+    ),
     true
   )
   assert.equal(
@@ -276,6 +291,259 @@ test("enabled owner bootstrap requires a valid setup proof or dated claim eviden
           },
         },
       })
+    ),
+    true
+  )
+})
+
+test("launch rejects frozen template copy while optional about and preparation remain available", () => {
+  for (const [field, value] of [
+    ["description", "A new home for original apparel. Our first collection is on its way."],
+    ["tagline", "Make room for your next favorite."],
+    ["home.headline", "Your next favorite starts here."],
+    ["home.introduction", "Something new is taking shape. Explore the store as we prepare our first collection."],
+  ]) {
+    const candidate = structuredClone(config)
+    const parts = field.split(".")
+    if (parts.length === 1) candidate[field] = value
+    else candidate[parts[0]][parts[1]] = value
+    assert.equal(ready("Storefront copy", status(environment, candidate)), false, field)
+    assert.ok(
+      status(environment, candidate, { mode: "configuration" }).every((check) => check.ready),
+      field
+    )
+  }
+  assert.ok(status().every((check) => check.ready))
+  const enabledAbout = {
+    ...config,
+    features: { ...config.features, about: true },
+    about: {
+      heading: "A brand in the making.",
+      paragraphs: [
+        "We’re getting ready to share our first collection. Come back soon to discover our story and designs.",
+      ],
+    },
+  }
+  assert.equal(ready("Storefront copy", status(environment, enabledAbout)), false)
+  for (const about of [
+    { heading: "A brand in the making.", paragraphs: ["Our designers started New Brand in 2026."] },
+    {
+      heading: "The New Brand story",
+      paragraphs: [
+        "We’re getting ready to share our first collection. Come back soon to discover our story and designs.",
+        "Our designers started New Brand in 2026.",
+      ],
+    },
+  ])
+    assert.equal(ready("Storefront copy", status(environment, { ...enabledAbout, about })), false)
+  assert.equal(
+    ready(
+      "Storefront copy",
+      status(environment, {
+        ...enabledAbout,
+        about: { heading: "The New Brand story", paragraphs: ["Our designers started New Brand in 2026."] },
+      })
+    ),
+    true
+  )
+})
+
+test("brand readiness rejects an unchanged short name", () => {
+  assert.equal(ready("Brand and contact details", status(environment, { ...config, shortName: "Your Store" })), false)
+  assert.equal(ready("Brand and contact details", status()), true)
+})
+
+test("saved commerce identity must match the configured immutable identity", () => {
+  for (const saved of ["stable-store", undefined, null]) {
+    assert.equal(
+      ready(
+        "Immutable commerce identity",
+        status(environment, config, { setupState: { decisions: { commerceIdentity: saved } } })
+      ),
+      true
+    )
+  }
+  assert.equal(
+    ready(
+      "Immutable commerce identity",
+      status(environment, config, { setupState: { decisions: { commerceIdentity: "previous-store" } } })
+    ),
+    false
+  )
+})
+
+test("recorded Printify rotation dates become actionable within thirty days", () => {
+  const rotationStatus = (credentialRotationDueAt) =>
+    status(environment, config, {
+      setupState: { providers: { printify: { credentialRotationDueAt } } },
+    }).find((check) => check.name === "Printify credential rotation")
+  for (const date of [undefined, null]) assert.equal(rotationStatus(date)?.active, false)
+  for (const days of [-1, 0, 1, 30])
+    assert.equal(rotationStatus(new Date(now + days * 86_400_000).toISOString())?.ready, false)
+  assert.equal(rotationStatus(new Date(now + 30 * 86_400_000 + 1).toISOString())?.ready, true)
+  for (const value of ["", "not-a-date", 42]) assert.equal(rotationStatus(value)?.ready, false)
+})
+
+test("ordinary approved policy prose passes while actual drafting markers remain blocked", () => {
+  for (const sentence of [
+    "Need a different size... just email us within 30 days.",
+    "Returns are issued as credit to your store account within 5 days.",
+    "Email us at <hello@newbrand.com> within 30 days.",
+  ])
+    assert.equal(
+      ready(
+        "Shipping and policies",
+        status(environment, { ...config, policies: { ...config.policies, returnsText: [sentence] } })
+      ),
+      true,
+      sentence
+    )
+  for (const sentence of [
+    "[TODO review returns]",
+    "[OWNER to supply policy]",
+    "TODO: Review returns",
+    "TBD",
+    "CHANGEME",
+    "Lorem ipsum",
+  ])
+    assert.equal(
+      ready(
+        "Shipping and policies",
+        status(environment, { ...config, policies: { ...config.policies, returnsText: [sentence] } })
+      ),
+      false,
+      sentence
+    )
+})
+
+test("a matching verified claim waives both initial enrollment secrets but not ongoing owner access", () => {
+  const admin = {
+    ...environment,
+    ADMIN_LIBRARY_ENABLED: "true",
+    ADMIN_OWNER_EMAIL: "owner@newbrand.com",
+    NEXT_PUBLIC_SUPABASE_URL: "https://newbrand.supabase.co",
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "k".repeat(32),
+    PRIVATE_BLOB_READ_WRITE_TOKEN: "m".repeat(32),
+    PRINTIFY_DRAFTS_API_TOKEN: "n".repeat(32),
+  }
+  const ownerClaim = {
+    status: "verified",
+    supabaseProjectUrl: admin.NEXT_PUBLIC_SUPABASE_URL,
+    verifiedAt: "2026-09-27T12:00:00Z",
+    evidence: "Owner claim consumed; membership verified in intended environment.",
+  }
+  const options = {
+    setupState: { decisions: { printifyBlueprintId: 1317, printifyPrintProviderId: 99 }, verification: { ownerClaim } },
+  }
+  assert.ok(status(admin, config, options).every((check) => check.ready))
+  for (const secrets of [{}, { ADMIN_SETUP_SECRET: "j".repeat(32) }, { SUPABASE_SECRET_KEY: "k".repeat(32) }])
+    assert.equal(ready("Initial owner claim configuration", status({ ...admin, ...secrets })), false)
+  assert.equal(
+    ready(
+      "Initial owner claim configuration",
+      status({ ...admin, ADMIN_SETUP_SECRET: "j".repeat(32), SUPABASE_SECRET_KEY: "k".repeat(32) })
+    ),
+    true
+  )
+  for (const override of [
+    { status: "pending" },
+    { supabaseProjectUrl: "https://other.supabase.co" },
+    { verifiedAt: "invalid" },
+    { evidence: "" },
+  ]) {
+    assert.equal(
+      ready(
+        "Initial owner claim configuration",
+        status(admin, config, { setupState: { verification: { ownerClaim: { ...ownerClaim, ...override } } } })
+      ),
+      false
+    )
+  }
+  assert.equal(
+    ready(
+      "Owner sign-in and private artwork",
+      status({ ...admin, PRIVATE_BLOB_READ_WRITE_TOKEN: undefined }, config, options)
+    ),
+    false
+  )
+})
+
+test("production order reminders are inactive during sandbox checkout", () => {
+  const sandbox = {
+    ...environment,
+    STRIPE_SECRET_KEY: `rk_test_${"f".repeat(64)}`,
+    PRINTIFY_FULFILLMENT_ENABLED: "false",
+    ORDER_ALERTS_ENABLED: "true",
+  }
+  const checks = status(sandbox, config, { mode: "sandbox", schedules: [] })
+  assert.equal(checks.find((check) => check.name === "Order shipping reminders")?.active, false)
+  assert.ok(checks.every((check) => check.ready))
+  assert.equal(ready("Order shipping reminders", status({ ...environment, ORDER_ALERTS_ENABLED: "true" })), false)
+})
+
+test("Supabase connections require an explicit CA source without changing other hosts", () => {
+  for (const host of ["aws-0.pooler.supabase.com", "db.project.supabase.co"]) {
+    const DATABASE_URL = environment.DATABASE_URL.replace("aws-0.pooler.supabase.com", host)
+    for (const DATABASE_SSL_CA of [
+      undefined,
+      "",
+      "not-a-certificate",
+      "-----BEGIN CERTIFICATE-----\n-----END CERTIFICATE-----",
+    ])
+      assert.equal(ready("Database", status({ ...environment, DATABASE_URL, DATABASE_SSL_CA })), false, host)
+    assert.equal(ready("Database", status({ ...environment, DATABASE_URL })), true, host)
+    assert.equal(
+      ready(
+        "Database",
+        status({
+          ...environment,
+          DATABASE_URL: `${DATABASE_URL}&sslrootcert=%2Frun%2Fcerts%2Fsupabase.crt`,
+          DATABASE_SSL_CA: undefined,
+        })
+      ),
+      true,
+      host
+    )
+    assert.equal(
+      ready(
+        "Database",
+        status({ ...environment, DATABASE_URL: `${DATABASE_URL}&sslrootcert=`, DATABASE_SSL_CA: undefined })
+      ),
+      false,
+      host
+    )
+    assert.equal(
+      ready(
+        "Database",
+        status({ ...environment, DATABASE_URL: `${DATABASE_URL}&sslrootcert=%2Frun%2Fcerts%2Fsupabase.crt` })
+      ),
+      false,
+      host
+    )
+  }
+  assert.equal(
+    ready(
+      "Database",
+      status({
+        ...environment,
+        DATABASE_URL: environment.DATABASE_URL.replace("aws-0.pooler.supabase.com", "db.newbrand.com"),
+        DATABASE_SSL_CA: undefined,
+      })
+    ),
+    true
+  )
+  assert.equal(
+    ready(
+      "Database",
+      status(
+        {
+          ...environment,
+          DATABASE_URL: "postgresql://store_app_runtime:local-password@localhost:55497/postgres",
+          DATABASE_SSL_CA: undefined,
+        },
+        config,
+        { mode: "sandbox" }
+      )
     ),
     true
   )

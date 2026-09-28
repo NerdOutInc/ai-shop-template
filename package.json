@@ -37,7 +37,7 @@
     "check:all": "pnpm check && pnpm test:stories && pnpm test:admin:prepare && tsx e2e/admin/run-with-config.ts pnpm build && pnpm build-storybook && pnpm test:e2e:prepare && pnpm test:e2e && pnpm test:e2e:publishing && pnpm test:admin:build && pnpm test:e2e:admin",
     "design-agent": "node --conditions=react-server --import tsx scripts/design-agent/run.mjs",
     "test:design-agent": "node --conditions=react-server --import tsx --test scripts/design-agent/*.test.mjs",
-    "setup:check": "node --conditions=react-server --import tsx scripts/template/setup-check.mjs",
+    "setup:check": "node --conditions=react-server --import tsx -- scripts/template/setup-check.mjs",
     "check:template": "node scripts/template/check-template.mjs",
     "test:template": "node --conditions=react-server --import tsx --test scripts/template/*.test.mjs",
     "test:database": "node --import tsx scripts/database/run-tests.mjs",
