@@ -55,6 +55,12 @@ On Linux, use `pnpm exec playwright install --with-deps chromium webkit` to inst
 - **Supabase CLI 2.114.0 on `PATH`:** use the [official CLI installation guide](https://supabase.com/docs/guides/local-development/cli/getting-started) to install the version pinned in [integration.yml](../.github/workflows/integration.yml), and verify `supabase --version`. `pnpm test:admin:prepare` starts local Auth, Mailpit, and its database and applies the app migrations; no Supabase cloud login or project link is needed.
 - **Available local ports:** public fixtures use 3100/3200, publishing uses 3300/3301, and admin uses 3300 plus the 5883x ports in [supabase-config.toml](../e2e/admin/supabase-config.toml). Publishing and admin run sequentially. The admin fixture currently has a fixed project ID, so run one local admin suite at a time and do not reuse another checkout's running fixture.
 
+Enable the provider-default privilege regression before either `pnpm check` or `pnpm check:all`; CI sets this flag on its database step:
+
+```sh
+export SUPABASE_PRIVILEGES_TEST=true
+```
+
 `pnpm check:all` prepares and rebuilds the fixtures before the browser suites. For a focused publishing run, use the [publishing commands](printify-publishing.md#validate-the-complete-connection), including `pnpm test:e2e:prepare` each time; a root `pnpm build` does not refresh `.tmp/storefront-e2e`. After local admin testing, stop only the instance this checkout started:
 
 ```sh
