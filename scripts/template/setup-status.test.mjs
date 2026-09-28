@@ -575,3 +575,21 @@ test("enabled Meta measurement uses the runtime pixel ID length boundaries", () 
     true
   )
 })
+
+test("capacity overrides use the runtime parser without exposing values", () => {
+  for (const value of [undefined, "", '{"status":{"burst":40}}'])
+    assert.equal(
+      ready("Checkout capacity overrides", status({ ...environment, CHECKOUT_CAPACITY_LIMITS: value })),
+      true
+    )
+  for (const value of ["not-json", '{"unknown":{}}', '{"providerRead":{"burst":1}}', '{"status":{"perMinute":0}}'])
+    assert.equal(
+      ready("Checkout capacity overrides", status({ ...environment, CHECKOUT_CAPACITY_LIMITS: value })),
+      false
+    )
+  const hidden = status({ ...environment, CHECKOUT_CAPACITY_LIMITS: "[SENSITIVE]" }, config, {
+    unreadableKeys: ["CHECKOUT_CAPACITY_LIMITS"],
+  }).find((check) => check.name === "Checkout capacity overrides")
+  assert.equal(hidden.unreadable, true)
+  assert.deepEqual(hidden.unreadableKeys, ["CHECKOUT_CAPACITY_LIMITS"])
+})
