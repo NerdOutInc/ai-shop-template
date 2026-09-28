@@ -12,11 +12,36 @@ function isAmount(value: unknown): value is number {
 }
 
 export function buildPurchaseConversion(
-  session: Stripe.Checkout.Session,
+  session: Stripe.Checkout.Session | null,
   stored: StoredOrder,
   expectedLivemode: boolean
 ): PurchaseConversion | null {
-  const { order } = stored
+  const { order, payment } = stored
+  // The webhook already verified this immutable capture against the Session, lines and charge.
+  if (payment) {
+    if (
+      !expectedLivemode ||
+      payment.livemode !== true ||
+      payment.status !== "paid" ||
+      stored.state === "simulated" ||
+      stored.failureCode === "PAYMENT_REVERSED" ||
+      !stored.sessionId ||
+      !order.commerceIdentity ||
+      order.currency !== "usd" ||
+      payment.currency !== "usd" ||
+      order.shippingMode !== "flat_rate" ||
+      !isAmount(order.subtotal) ||
+      !isAmount(order.shippingAmount) ||
+      !isAmount(payment.taxAmount) ||
+      !isAmount(payment.totalAmount) ||
+      payment.subtotalAmount !== order.subtotal ||
+      payment.shippingAmount !== order.shippingAmount ||
+      payment.totalAmount !== order.subtotal + order.shippingAmount + payment.taxAmount
+    )
+      return null
+    return { receipt: createHash("sha256").update(stored.sessionId).digest("hex"), totalUsd: payment.totalAmount / 100 }
+  }
+  if (!session) return null
   const details = session.total_details
   const tax = details?.amount_tax
   if (

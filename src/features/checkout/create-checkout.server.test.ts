@@ -117,6 +117,7 @@ describe("createCheckout", () => {
     await expect(createCheckout(fixture.services, fixture.request)).rejects.toMatchObject({
       code: "CHECKOUT_RATE_LIMITED",
     })
+    expect(fixture.services.capacity.reserveStripeRead).toHaveBeenCalledExactlyOnceWith(fixture.sessionId)
     expect(fixture.stripe.checkout.sessions.retrieve).not.toHaveBeenCalled()
     expect(fixture.getStored()).toEqual(saved)
     await expect(createCheckout(fixture.services, fixture.request)).resolves.toMatchObject({
