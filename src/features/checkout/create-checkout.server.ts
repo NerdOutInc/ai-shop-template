@@ -23,7 +23,10 @@ type Services = {
   automaticTax: boolean
   liveFulfillment: boolean
   expectedLivemode: boolean
-  capacity: { reserveProviderReads: (count: number) => Promise<void>; reserveStripeRead: () => Promise<void> }
+  capacity: {
+    reserveProviderReads: (count: number) => Promise<void>
+    reserveStripeRead: (sessionId: string) => Promise<void>
+  }
 }
 
 type Request = HostedCheckoutRequest
@@ -58,7 +61,7 @@ export async function createCheckout(services: Services, request: Request) {
       throw new CheckoutError("ORDER_IDENTITY_MISSING", "This checkout needs our attention. Please contact the shop.")
     }
     if (existing?.sessionId && existing.checkoutUrl) {
-      await services.capacity.reserveStripeRead()
+      await services.capacity.reserveStripeRead(existing.sessionId)
       const session = await services.stripe.checkout.sessions.retrieve(existing.sessionId)
       if (session.status === "complete")
         return {

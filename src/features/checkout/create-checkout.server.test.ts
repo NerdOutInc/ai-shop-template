@@ -117,6 +117,7 @@ describe("createCheckout", () => {
     await expect(createCheckout(fixture.services, fixture.request)).rejects.toMatchObject({
       code: "CHECKOUT_RATE_LIMITED",
     })
+    expect(fixture.services.capacity.reserveStripeRead).toHaveBeenCalledExactlyOnceWith(fixture.sessionId)
     expect(fixture.stripe.checkout.sessions.retrieve).not.toHaveBeenCalled()
     expect(fixture.getStored()).toEqual(saved)
     await expect(createCheckout(fixture.services, fixture.request)).resolves.toMatchObject({
@@ -142,11 +143,15 @@ describe("createCheckout", () => {
     expect(original.order.shippingEstimate).toEqual({
       handlingBusinessDays: 10,
       calendar: "us-federal-v1",
-      timeZone: "UTC",
+      timeZone: "America/Chicago",
     })
     original.order.shippingEstimate = { handlingBusinessDays: 7, calendar: "us-federal-v1", timeZone: "UTC" }
     await createCheckout(fixture.services, fixture.request)
-    expect(fixture.getStored()?.order.shippingEstimate?.handlingBusinessDays).toBe(7)
+    expect(fixture.getStored()?.order.shippingEstimate).toEqual({
+      handlingBusinessDays: 7,
+      calendar: "us-federal-v1",
+      timeZone: "UTC",
+    })
   })
 
   it("freezes attribution before Stripe and preserves the original payload when a response is lost", async () => {
