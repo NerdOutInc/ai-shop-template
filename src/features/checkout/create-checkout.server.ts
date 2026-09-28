@@ -1,4 +1,3 @@
-import { storeConfig } from "@/lib/store-config"
 import "server-only"
 
 import { createHash } from "node:crypto"
@@ -6,6 +5,7 @@ import { createHash } from "node:crypto"
 import type Stripe from "stripe"
 
 import { deliveryEstimates } from "@/features/store-policies/delivery-estimates"
+import { storeConfig } from "@/lib/store-config"
 
 import { calculateCartShipping } from "./calculate-cart-shipping"
 import { CheckoutError } from "./checkout-error"
@@ -23,12 +23,18 @@ type Services = {
   automaticTax: boolean
   liveFulfillment: boolean
   expectedLivemode: boolean
+  capacity: {
+    reserveProviderReads: (count: number) => Promise<void>
+    reserveStripeRead: (sessionId: string) => Promise<void>
+  }
 }
 
 type Request = HostedCheckoutRequest
 
 async function quoteRequest(services: Services, request: Request) {
-  const items = await readCheckoutItems(services.printify, request)
+  const items = await readCheckoutItems(services.printify, request, (count) =>
+    services.capacity.reserveProviderReads(count)
+  )
   const subtotal = items.reduce((sum, item) => sum + item.quantity * item.unitAmount, 0)
   const shipping = calculateCartShipping(items)
   return { items, subtotal, shipping, total: subtotal + shipping, currency: "USD" as const }
@@ -51,7 +57,11 @@ export async function createCheckout(services: Services, request: Request) {
     if (existing && existing.order.requestFingerprint !== fingerprint) {
       throw new CheckoutError("REQUEST_CONFLICT", "Your bag has changed. Please request a fresh shipping quote.", 409)
     }
+    if (existing && !existing.order.commerceIdentity) {
+      throw new CheckoutError("ORDER_IDENTITY_MISSING", "This checkout needs our attention. Please contact the shop.")
+    }
     if (existing?.sessionId && existing.checkoutUrl) {
+      await services.capacity.reserveStripeRead(existing.sessionId)
       const session = await services.stripe.checkout.sessions.retrieve(existing.sessionId)
       if (session.status === "complete")
         return {
@@ -99,6 +109,7 @@ export async function createCheckout(services: Services, request: Request) {
       }
     }
     if (!order) {
+      await record.ensureCommerceIdentity(storeConfig.commerce.identity)
       const quote = await quoteRequest(services, request)
       if (quote.shipping !== request.expectedShippingAmount)
         throw new CheckoutError(
@@ -107,6 +118,7 @@ export async function createCheckout(services: Services, request: Request) {
           409
         )
       order = {
+        commerceIdentity: storeConfig.commerce.identity,
         requestId: request.requestId,
         requestFingerprint: fingerprint,
         expiresAt: Math.floor(Date.now() / 1000) + 3600,
@@ -142,8 +154,8 @@ export async function createCheckout(services: Services, request: Request) {
       expires_at: order.expiresAt,
       adaptive_pricing: { enabled: false },
       automatic_tax: { enabled: services.automaticTax },
-      metadata: { storefront: storeConfig.id, checkout_request_id: order.requestId, shop_id: order.shopId },
-      payment_intent_data: { metadata: { storefront: storeConfig.id, checkout_request_id: order.requestId } },
+      metadata: { storefront: order.commerceIdentity, checkout_request_id: order.requestId, shop_id: order.shopId },
+      payment_intent_data: { metadata: { storefront: order.commerceIdentity, checkout_request_id: order.requestId } },
       line_items: order.items.map((item) => ({
         quantity: item.quantity,
         price_data: {

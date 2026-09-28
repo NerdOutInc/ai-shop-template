@@ -1,3 +1,5 @@
+import { storeConfig } from "@/lib/store-config"
+import "../../../test/configured-store"
 import { randomUUID } from "node:crypto"
 import type Stripe from "stripe"
 import { beforeEach, describe, expect, it, vi } from "vitest"
@@ -23,6 +25,103 @@ beforeEach(() => {
 })
 
 describe("paid checkout fulfillment", () => {
+  it("recovers a paid saved order after cosmetic rebranding and configuration drift", async () => {
+    const fixture = checkoutFixture()
+    fixture.session.livemode = false
+    storeConfig.id = "fresh-brand"
+    storeConfig.name = "Fresh Brand"
+    storeConfig.commerce.identity = "accidental-config-change"
+    expect(await fulfillCheckout(fixture.services, fixture.sessionId)).toBe("simulated")
+    expect(fixture.getStored()?.payment?.status).toBe("paid")
+    expect(fixture.ensureCommerceIdentity).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    { state: "submitted", identity: "missing" },
+    { state: "submitted", identity: "mismatched" },
+    { state: "simulated", identity: "missing" },
+    { state: "simulated", identity: "mismatched" },
+  ] as const)(
+    "acknowledges a finished $state order with $identity identity without changing it",
+    async ({ state, identity }) => {
+      const fixture = checkoutFixture()
+      fixture.setStored({ ...fixture.getStored()!, state })
+      if (identity === "missing") Reflect.deleteProperty(fixture.order, "commerceIdentity")
+      else fixture.session.metadata.storefront = "another-store"
+      const before = structuredClone(fixture.getStored())
+      const provider = vi.spyOn(fixture.printify, "request")
+
+      expect(await fulfillCheckout(fixture.services, fixture.sessionId)).toBe(state)
+      expect(await fulfillCheckout(fixture.services, fixture.sessionId)).toBe(state)
+
+      expect(fixture.getStored()).toEqual(before)
+      expect(fixture.savePayment).not.toHaveBeenCalled()
+      expect(fixture.stripe.paymentIntents.retrieve).not.toHaveBeenCalled()
+      expect(fixture.stripe.checkout.sessions.listLineItems).not.toHaveBeenCalled()
+      expect(readCheckoutProduct).not.toHaveBeenCalled()
+      expect(provider).not.toHaveBeenCalled()
+    }
+  )
+
+  it.each([
+    { state: "submitted", mismatch: "session" },
+    { state: "submitted", mismatch: "shop" },
+    { state: "simulated", mismatch: "session" },
+    { state: "simulated", mismatch: "shop" },
+  ] as const)(
+    "still rejects a finished $state order with a different $mismatch binding",
+    async ({ state, mismatch }) => {
+      const fixture = checkoutFixture()
+      fixture.setStored({ ...fixture.getStored()!, state })
+      if (mismatch === "session") fixture.setStored({ ...fixture.getStored()!, sessionId: "cs_other" })
+      else fixture.order.shopId = "9876"
+      const before = structuredClone(fixture.getStored())
+      const provider = vi.spyOn(fixture.printify, "request")
+
+      await expect(fulfillCheckout(fixture.services, fixture.sessionId)).rejects.toMatchObject({
+        code: "ORDER_MISSING",
+      })
+
+      expect(fixture.getStored()).toEqual(before)
+      expect(fixture.savePayment).not.toHaveBeenCalled()
+      expect(readCheckoutProduct).not.toHaveBeenCalled()
+      expect(provider).not.toHaveBeenCalled()
+    }
+  )
+
+  it.each(["pending", "creating", "created", "submitting"] as const)(
+    "fails explicitly when an unfinished %s order has no payment identity",
+    async (state) => {
+      const fixture = checkoutFixture()
+      fixture.setStored({ ...fixture.getStored()!, state })
+      Reflect.deleteProperty(fixture.order, "commerceIdentity")
+      await expect(fulfillCheckout(fixture.services, fixture.sessionId)).rejects.toMatchObject({
+        code: "ORDER_IDENTITY_MISSING",
+      })
+      expect(fixture.getStored()?.failureCode).toBe("ORDER_IDENTITY_MISSING")
+      expect(fixture.getStored()?.payment).toBeNull()
+      expect(readCheckoutProduct).not.toHaveBeenCalled()
+    }
+  )
+
+  it("rejects foreign metadata on a known order instead of silently ignoring its paid event", async () => {
+    const fixture = checkoutFixture()
+    fixture.session.metadata.storefront = "another-store"
+    await expect(fulfillCheckout(fixture.services, fixture.sessionId)).rejects.toMatchObject({
+      code: "PAYMENT_MISMATCH",
+    })
+    expect(fixture.getStored()?.failureCode).toBe("PAYMENT_MISMATCH")
+    expect(readCheckoutProduct).not.toHaveBeenCalled()
+  })
+
+  it("ignores a foreign session with no saved order", async () => {
+    const fixture = checkoutFixture()
+    fixture.setStored(null)
+    fixture.session.metadata.storefront = "another-store"
+    expect(await fulfillCheckout(fixture.services, fixture.sessionId)).toBe("ignored")
+    expect(readCheckoutProduct).not.toHaveBeenCalled()
+  })
+
   it("saves verified payment facts before delivery failures so a paid order remains visible", async () => {
     const fixture = checkoutFixture()
     fixture.session.collected_information.shipping_details = null
@@ -522,6 +621,7 @@ function checkoutFixture() {
   const productId = "111111000000000000000002"
   const order: CheckoutOrder = {
     requestId,
+    commerceIdentity: "fixture-store-commerce",
     requestFingerprint: "fingerprint",
     expiresAt: Math.floor(Date.now() / 1000) + 3600,
     shopId: "1234",
@@ -566,9 +666,11 @@ function checkoutFixture() {
   const savePayment = vi.fn(async (payment: CheckoutPayment) => {
     if (stored && !stored.payment) stored = { ...stored, payment }
   })
+  const ensureCommerceIdentity = vi.fn(async () => {})
   const store: OrderStore = {
     withLock: async (_id, callback) =>
       callback({
+        ensureCommerceIdentity,
         get: async () => stored,
         insert: async (newOrder) => {
           stored = {
@@ -602,7 +704,7 @@ function checkoutFixture() {
     amount_total: 3000 + order.shippingAmount,
     expires_at: Math.floor(Date.now() / 1000) + 3600,
     total_details: { amount_shipping: order.shippingAmount, amount_discount: 0, amount_tax: 0 },
-    metadata: { storefront: "fixture-store", checkout_request_id: requestId, shop_id: "1234" },
+    metadata: { storefront: "fixture-store-commerce", checkout_request_id: requestId, shop_id: "1234" },
     client_reference_id: requestId,
     payment_intent: "pi_fixture",
     shipping_cost: {
@@ -703,6 +805,7 @@ function checkoutFixture() {
   }
   return {
     order,
+    ensureCommerceIdentity,
     sessionId,
     session,
     line,

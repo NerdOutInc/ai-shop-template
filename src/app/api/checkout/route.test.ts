@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
+import { CheckoutError } from "@/features/checkout/checkout-error"
 import { createCheckout } from "@/features/checkout/create-checkout.server"
 import { getCommerceServices } from "@/features/checkout/get-commerce-services.server"
 
@@ -9,6 +10,7 @@ vi.mock("server-only", () => ({}))
 vi.mock("@/features/checkout/create-checkout.server", () => ({ createCheckout: vi.fn() }))
 vi.mock("@/features/checkout/get-commerce-services.server", () => ({ getCommerceServices: vi.fn() }))
 
+const capacity = { admit: vi.fn() }
 const origin = "https://shop.example.com"
 const body = {
   items: [{ productId: "111111000000000000000002", variantId: 101, quantity: 1, expectedUnitAmount: 3000 }],
@@ -39,7 +41,10 @@ function request(data: unknown, requestOrigin = origin) {
 describe("checkout session route", () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(getCommerceServices).mockReturnValue({ siteUrl: origin } as ReturnType<typeof getCommerceServices>)
+    capacity.admit.mockReset().mockResolvedValue(undefined)
+    vi.mocked(getCommerceServices).mockReturnValue({ siteUrl: origin, capacity } as unknown as ReturnType<
+      typeof getCommerceServices
+    >)
     vi.mocked(createCheckout).mockResolvedValue({
       url: "https://checkout.stripe.com/c/pay/test",
       sessionId: "cs_test_123",
@@ -50,13 +55,13 @@ describe("checkout session route", () => {
     const response = await POST(request(body))
     expect(response.status).toBe(200)
     expect(response.headers.get("Cache-Control")).toBe("no-store")
-    expect(createCheckout).toHaveBeenCalledWith({ siteUrl: origin }, body)
+    expect(createCheckout).toHaveBeenCalledWith({ siteUrl: origin, capacity }, body)
   })
 
   it("drops invalid marketing metadata while preserving the payment request", async () => {
     const response = await POST(request({ ...body, attribution: { source: "person@example.com" } }))
     expect(response.status).toBe(200)
-    expect(createCheckout).toHaveBeenCalledWith({ siteUrl: origin }, { ...body, attribution: undefined })
+    expect(createCheckout).toHaveBeenCalledWith({ siteUrl: origin, capacity }, { ...body, attribution: undefined })
   })
 
   it("does not persist submitted attribution when the request carries Global Privacy Control", async () => {
@@ -77,7 +82,7 @@ describe("checkout session route", () => {
     })
     input.headers.set("sec-gpc", "1")
     expect((await POST(input)).status).toBe(200)
-    expect(createCheckout).toHaveBeenCalledWith({ siteUrl: origin }, body)
+    expect(createCheckout).toHaveBeenCalledWith({ siteUrl: origin, capacity }, body)
   })
 
   it.each([
@@ -86,6 +91,22 @@ describe("checkout session route", () => {
     { ...body, shippingAddress: { ...address, country: "CA" } },
   ])("rejects client-supplied addresses and payment overrides without dropping fields", async (invalid) => {
     expect((await POST(request(invalid))).status).toBe(400)
+    expect(createCheckout).not.toHaveBeenCalled()
+  })
+
+  it("stops rejected capacity before creating checkout and includes retry guidance", async () => {
+    capacity.admit.mockRejectedValue(new CheckoutError("CHECKOUT_RATE_LIMITED", "Try later", 429))
+    const response = await POST(request(body))
+    expect(response.status).toBe(429)
+    expect(response.headers.get("Retry-After")).toBe("60")
+    expect(createCheckout).not.toHaveBeenCalled()
+  })
+
+  it("fails closed on limiter storage failure without exposing database details", async () => {
+    capacity.admit.mockRejectedValue(new Error("private database detail"))
+    const response = await POST(request(body))
+    expect(response.status).toBe(503)
+    expect(await response.text()).not.toContain("private database detail")
     expect(createCheckout).not.toHaveBeenCalled()
   })
 

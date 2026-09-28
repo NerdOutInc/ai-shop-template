@@ -58,6 +58,7 @@ export function publishingBrowserConfig(): PlaywrightTestConfig {
           VERCEL_BLOB_API_URL: `${config.providerURL}/blob`,
           NEXT_PUBLIC_PRODUCT_IMAGE_BLOB_HOST: config.blobHost,
           NEXT_PUBLIC_SITE_URL: config.canonicalURL,
+          CHECKOUT_RATE_LIMIT_SECRET: "publishing-e2e-checkout-capacity-fixture-secret",
           STRIPE_SECRET_KEY: "sk_test_publishing_fixture",
           STRIPE_WEBHOOK_SECRET: "whsec_publishing_fixture",
           STRIPE_TAX_ENABLED: "false",

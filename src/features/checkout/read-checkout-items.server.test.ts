@@ -1,3 +1,4 @@
+import "../../../test/configured-store"
 import { randomUUID } from "node:crypto"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -51,13 +52,18 @@ describe("readCheckoutItems", () => {
       options: [{ name: "Size", values: [{ id: 1, title: "M" }] }],
     }
     vi.mocked(readPublishedProduct).mockImplementation(async (id) => (id === product.id ? product : null))
-    return { ...data, request, product }
+    return {
+      ...data,
+      request,
+      product,
+      reserve: vi.fn<(count: number) => Promise<void>>().mockResolvedValue(undefined),
+    }
   }
 
   it("reads approved variants and live availability without quoting an address", async () => {
     const data = fixture()
     const request = vi.spyOn(data.printify, "request").mockResolvedValue(data.product)
-    expect(await readCheckoutItems(data.printify, data.request)).toMatchObject([
+    expect(await readCheckoutItems(data.printify, data.request, data.reserve)).toMatchObject([
       { quantity: 2, unitAmount: 3000, imageUrl: "https://images.printify.com/forest-front.jpg" },
     ])
     expect(request).toHaveBeenCalledTimes(1)
@@ -73,25 +79,89 @@ describe("readCheckoutItems", () => {
       if (change === "other-shop") data.product.shop_id = 9876
       if (change === "other-product") data.product.id = "different-product"
       const request = vi.spyOn(data.printify, "request").mockResolvedValue(data.product)
-      await expect(readCheckoutItems(data.printify, data.request)).rejects.toThrow()
-      expect(request).toHaveBeenCalledTimes(["other-shop", "other-product"].includes(change) ? 0 : 1)
+      await expect(readCheckoutItems(data.printify, data.request, data.reserve)).rejects.toThrow()
+      expect(request).toHaveBeenCalledTimes(change === "unavailable" ? 1 : 0)
     }
   )
+
+  it.each([
+    { change: "wrong-client-price", code: "PRICE_CHANGED" },
+    { change: "disabled-variant", code: "PRODUCT_UNAVAILABLE" },
+    { change: "unknown-variant", code: "PRODUCT_UNAVAILABLE" },
+    { change: "zero-price", code: "PRODUCT_UNAVAILABLE" },
+    { change: "wrong-shipping", code: "SHIPPING_CHANGED" },
+  ])("rejects $change from the published snapshot before live reads", async ({ change, code }) => {
+    const data = fixture()
+    const published = structuredClone(data.product)
+    if (change === "wrong-client-price") data.request.items[0]!.expectedUnitAmount = 1
+    if (change === "disabled-variant") published.variants[0]!.is_enabled = false
+    if (change === "unknown-variant") data.request.items[0]!.variantId = 999
+    if (change === "zero-price") published.variants[0]!.price = 0
+    if (change === "wrong-shipping") data.request.expectedShippingAmount = 1
+    vi.mocked(readPublishedProduct).mockResolvedValue(published)
+    const request = vi.spyOn(data.printify, "request").mockResolvedValue(data.product)
+    await expect(readCheckoutItems(data.printify, data.request, data.reserve)).rejects.toMatchObject({ code })
+    expect(request).not.toHaveBeenCalled()
+    expect(data.reserve).not.toHaveBeenCalled()
+  })
+
+  it("validates every published cart line before starting any live product read", async () => {
+    const data = fixture()
+    const second = { ...structuredClone(data.product), id: "111111000000000000000003" }
+    vi.mocked(readPublishedProduct).mockImplementation(async (id) => (id === second.id ? second : data.product))
+    data.request.items.push({ ...data.request.items[0]!, productId: second.id, expectedUnitAmount: 1 })
+    const request = vi.spyOn(data.printify, "request").mockResolvedValue(data.product)
+    await expect(readCheckoutItems(data.printify, data.request, data.reserve)).rejects.toMatchObject({
+      code: "PRICE_CHANGED",
+    })
+    expect(request).not.toHaveBeenCalled()
+    expect(data.reserve).not.toHaveBeenCalled()
+  })
+
+  it("charges actual failed provider reads and reserves again on a later retry", async () => {
+    const data = fixture()
+    const provider = vi
+      .spyOn(data.printify, "request")
+      .mockRejectedValueOnce(new Error("provider unavailable"))
+      .mockResolvedValue(data.product)
+    await expect(readCheckoutItems(data.printify, data.request, data.reserve)).rejects.toThrow("provider unavailable")
+    expect(data.reserve).toHaveBeenCalledExactlyOnceWith(1)
+    expect(data.reserve.mock.invocationCallOrder[0]).toBeLessThan(provider.mock.invocationCallOrder[0]!)
+    await readCheckoutItems(data.printify, data.request, data.reserve)
+    expect(data.reserve).toHaveBeenCalledTimes(2)
+  })
+
+  it("rejects an exhausted expensive budget after validation but before any live read", async () => {
+    const data = fixture()
+    data.reserve.mockRejectedValueOnce({ code: "CHECKOUT_RATE_LIMITED" })
+    const provider = vi.spyOn(data.printify, "request")
+    await expect(readCheckoutItems(data.printify, data.request, data.reserve)).rejects.toMatchObject({
+      code: "CHECKOUT_RATE_LIMITED",
+    })
+    expect(readPublishedProduct).toHaveBeenCalled()
+    expect(provider).not.toHaveBeenCalled()
+  })
 
   it("rejects a disabled store before provider reads or payment", async () => {
     const data = fixture()
     publishingConfig.PRINTIFY_PUBLISHING_ENABLED = false
     const request = vi.spyOn(data.printify, "request")
-    await expect(readCheckoutItems(data.printify, data.request)).rejects.toMatchObject({ code: "NOT_CONFIGURED" })
+    await expect(readCheckoutItems(data.printify, data.request, data.reserve)).rejects.toMatchObject({
+      code: "NOT_CONFIGURED",
+    })
     expect(request).not.toHaveBeenCalled()
+    expect(data.reserve).not.toHaveBeenCalled()
   })
 
   it("rejects unpublished products before contacting Printify", async () => {
     const data = fixture()
     data.request.items[0]!.productId = "000000000000000000000000"
     const request = vi.spyOn(data.printify, "request")
-    await expect(readCheckoutItems(data.printify, data.request)).rejects.toMatchObject({ code: "PRODUCT_UNAVAILABLE" })
+    await expect(readCheckoutItems(data.printify, data.request, data.reserve)).rejects.toMatchObject({
+      code: "PRODUCT_UNAVAILABLE",
+    })
     expect(request).not.toHaveBeenCalled()
+    expect(data.reserve).not.toHaveBeenCalled()
   })
 
   it("uses published membership and listing values while keeping draft listing edits private", async () => {
@@ -107,8 +177,8 @@ describe("readCheckoutItems", () => {
     data.product.variants[0]!.is_available = true
     data.product.options[0]!.values[0]!.title = "Unpublished size label"
     data.product.print_areas[0]!.placeholders[0]!.images[0]!.imageId = "response-b"
-    vi.spyOn(data.printify, "request").mockResolvedValueOnce(data.product)
-    const quote = await readCheckoutItems(data.printify, data.request)
+    const providerRead = vi.spyOn(data.printify, "request").mockResolvedValueOnce(data.product)
+    const quote = await readCheckoutItems(data.printify, data.request, data.reserve)
     expect(quote).toMatchObject([
       {
         title: "Toast",
@@ -118,6 +188,7 @@ describe("readCheckoutItems", () => {
       },
     ])
     expect(readPublishedProduct).toHaveBeenCalledExactlyOnceWith("new-published-product")
+    expect(providerRead).toHaveBeenCalledTimes(1)
   })
 
   it("does not fill a missing published photo with an unpublished draft photo", async () => {
@@ -126,7 +197,7 @@ describe("readCheckoutItems", () => {
     vi.mocked(readPublishedProduct).mockResolvedValue({ ...data.product, images: [] })
     vi.spyOn(data.printify, "request").mockResolvedValueOnce(data.product)
 
-    const quote = await readCheckoutItems(data.printify, data.request)
+    const quote = await readCheckoutItems(data.printify, data.request, data.reserve)
 
     expect(quote[0]).not.toHaveProperty("imageUrl")
   })
@@ -145,7 +216,7 @@ describe("readCheckoutItems", () => {
     Object.assign(data.product.print_areas[0]!, fields)
     const request = vi.spyOn(data.printify, "request").mockResolvedValueOnce(data.product)
 
-    expect(await readCheckoutItems(data.printify, data.request)).toMatchObject([
+    expect(await readCheckoutItems(data.printify, data.request, data.reserve)).toMatchObject([
       { title: "Toast", variantLabel: "M", unitAmount: 3000, quantity: 2 },
     ])
     expect(request).toHaveBeenCalledTimes(1)
@@ -161,7 +232,9 @@ describe("readCheckoutItems", () => {
     data.product.print_areas[0]!.placeholders[0]!.images[0]!.x = 0.6
     const request = vi.spyOn(data.printify, "request").mockResolvedValue(data.product)
 
-    await expect(readCheckoutItems(data.printify, data.request)).rejects.toMatchObject({ code: "PRODUCT_CHANGED" })
+    await expect(readCheckoutItems(data.printify, data.request, data.reserve)).rejects.toMatchObject({
+      code: "PRODUCT_CHANGED",
+    })
     expect(request).toHaveBeenCalledTimes(1)
   })
 
@@ -172,7 +245,9 @@ describe("readCheckoutItems", () => {
     data.product.variants.push({ ...data.product.variants[0]!, id: 102, options: [2] })
     data.product.print_areas[0]!.variant_ids.unshift(102)
     const request = vi.spyOn(data.printify, "request").mockResolvedValueOnce(data.product)
-    expect(await readCheckoutItems(data.printify, data.request)).toMatchObject([{ unitAmount: 3000, quantity: 2 }])
+    expect(await readCheckoutItems(data.printify, data.request, data.reserve)).toMatchObject([
+      { unitAmount: 3000, quantity: 2 },
+    ])
     expect(request).toHaveBeenCalledTimes(1)
   })
 
@@ -190,7 +265,7 @@ describe("readCheckoutItems", () => {
       if (change === "live-provider") data.product.print_provider_id = 11
       vi.mocked(readPublishedProduct).mockResolvedValue(published)
       const request = vi.spyOn(data.printify, "request").mockResolvedValue(data.product)
-      await expect(readCheckoutItems(data.printify, data.request)).rejects.toMatchObject({
+      await expect(readCheckoutItems(data.printify, data.request, data.reserve)).rejects.toMatchObject({
         code:
           change === "published-price"
             ? "PRICE_CHANGED"
@@ -198,7 +273,7 @@ describe("readCheckoutItems", () => {
               ? "PRODUCT_CHANGED"
               : "PRODUCT_UNAVAILABLE",
       })
-      expect(request).toHaveBeenCalledTimes(["other-shop", "other-product"].includes(change) ? 0 : 1)
+      expect(request).toHaveBeenCalledTimes(change.startsWith("published-") ? 0 : 1)
     }
   )
 

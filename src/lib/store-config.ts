@@ -36,6 +36,9 @@ export const storeConfig = storeConfigSchema.parse({
     ],
   },
   commerce: {
+    // Permanent payment identity: the first new checkout attempt (even a test) pins it in the database.
+    // Keep this value through rebrands.
+    identity: "your-store",
     shippingConfirmed: false,
     firstItemShippingCents: 0,
     additionalItemShippingCents: 0,

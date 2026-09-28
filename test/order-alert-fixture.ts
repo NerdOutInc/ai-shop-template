@@ -10,6 +10,7 @@ export function orderAlertFixture(): AlertOrder {
     failure_code: null,
     snapshot: {
       requestId,
+      commerceIdentity: "fixture-store-commerce",
       requestFingerprint: "fixture",
       expiresAt: 0,
       shopId: "123",

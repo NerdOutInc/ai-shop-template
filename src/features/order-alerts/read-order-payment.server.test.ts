@@ -9,13 +9,14 @@ describe("current payment checks", () => {
     "handles %s without changing payment or refunding",
     async (expected) => {
       const order = orderAlertFixture()
+      order.snapshot.commerceIdentity = "permanent-store"
       const intent = {
         id: "pi_fixture",
         livemode: true,
         status: "succeeded",
         currency: "usd",
         amount_received: 3495,
-        metadata: { storefront: "fixture-store", checkout_request_id: order.request_id },
+        metadata: { storefront: "permanent-store", checkout_request_id: order.request_id },
         latest_charge: {
           paid: true,
           livemode: true,

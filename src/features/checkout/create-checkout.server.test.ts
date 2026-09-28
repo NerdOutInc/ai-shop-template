@@ -20,27 +20,119 @@ beforeEach(() => {
 })
 
 describe("createCheckout", () => {
-  it("blocks an unfinished store before payment or order side effects", async () => {
+  it.each(["configured", "policies", "shipping"])("blocks the %s gate before checkout side effects", async (gate) => {
     const fixture = hostedFixture()
-    storeConfig.configured = false
+    if (gate === "configured") storeConfig.configured = false
+    if (gate === "policies") storeConfig.policies.published = false
+    if (gate === "shipping") storeConfig.commerce.shippingConfirmed = false
     await expect(createCheckout(fixture.services, fixture.request)).rejects.toMatchObject({
       code: "STORE_SETUP_REQUIRED",
     })
+    expect(fixture.ensureCommerceIdentity).not.toHaveBeenCalled()
+    expect(fixture.services.capacity.reserveProviderReads).not.toHaveBeenCalled()
+    expect(readCheckoutItems).not.toHaveBeenCalled()
     expect(fixture.stripe.checkout.sessions.create).not.toHaveBeenCalled()
     expect(fixture.getStored()).toBeNull()
   })
 
-  it("writes a second brand's identity to Stripe", async () => {
+  it("writes the permanent commerce identity independently of the editable brand ID", async () => {
     const fixture = hostedFixture()
     storeConfig.id = "second-brand"
+    storeConfig.commerce.identity = "permanent-store"
     await createCheckout(fixture.services, fixture.request)
     expect(fixture.stripe.checkout.sessions.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        metadata: expect.objectContaining({ storefront: "second-brand" }),
-        payment_intent_data: { metadata: expect.objectContaining({ storefront: "second-brand" }) },
+        metadata: expect.objectContaining({ storefront: "permanent-store" }),
+        payment_intent_data: { metadata: expect.objectContaining({ storefront: "permanent-store" }) },
       }),
       expect.anything()
     )
+  })
+
+  it("keeps the original Stripe identity and payload after a lost response and rebrand", async () => {
+    const fixture = hostedFixture()
+    vi.mocked(fixture.stripe.checkout.sessions.create).mockRejectedValueOnce(new Error("response lost"))
+    await expect(createCheckout(fixture.services, fixture.request)).rejects.toThrow("response lost")
+    storeConfig.id = "fresh-brand"
+    storeConfig.name = "Fresh Brand"
+    storeConfig.commerce.identity = "accidental-config-change"
+    await createCheckout(fixture.services, fixture.request)
+    const calls = vi.mocked(fixture.stripe.checkout.sessions.create).mock.calls
+    expect(calls[1]).toEqual(calls[0])
+    expect(fixture.getStored()?.order.commerceIdentity).toBe("fixture-store-commerce")
+    expect(fixture.ensureCommerceIdentity).toHaveBeenCalledExactlyOnceWith("fixture-store-commerce")
+  })
+
+  it("rejects changed commerce identity before catalog reads or Stripe creation", async () => {
+    const fixture = hostedFixture()
+    vi.mocked(fixture.ensureCommerceIdentity).mockRejectedValueOnce({ code: "COMMERCE_IDENTITY_CHANGED" })
+    await expect(createCheckout(fixture.services, fixture.request)).rejects.toMatchObject({
+      code: "COMMERCE_IDENTITY_CHANGED",
+    })
+    expect(readCheckoutItems).not.toHaveBeenCalled()
+    expect(fixture.services.capacity.reserveProviderReads).not.toHaveBeenCalled()
+    expect(fixture.stripe.checkout.sessions.create).not.toHaveBeenCalled()
+    expect(fixture.getStored()).toBeNull()
+  })
+
+  it("does not guess a commerce identity for an incomplete saved snapshot", async () => {
+    const fixture = hostedFixture()
+    vi.mocked(fixture.stripe.checkout.sessions.create).mockRejectedValueOnce(new Error("response lost"))
+    await expect(createCheckout(fixture.services, fixture.request)).rejects.toThrow("response lost")
+    Reflect.deleteProperty(fixture.getStored()!.order, "commerceIdentity")
+    await expect(createCheckout(fixture.services, fixture.request)).rejects.toMatchObject({
+      code: "ORDER_IDENTITY_MISSING",
+    })
+    expect(fixture.stripe.checkout.sessions.create).toHaveBeenCalledTimes(1)
+  })
+
+  it("reserves provider-read capacity before a quote and retains a claim after provider failure", async () => {
+    const fixture = hostedFixture()
+    vi.mocked(readCheckoutItems).mockImplementationOnce(async (...args) => {
+      await args[2](1)
+      throw new Error("provider unavailable")
+    })
+    await expect(createCheckout(fixture.services, fixture.request)).rejects.toThrow("provider unavailable")
+    expect(fixture.services.capacity.reserveProviderReads).toHaveBeenCalledExactlyOnceWith(1)
+    await createCheckout(fixture.services, fixture.request)
+    expect(fixture.services.capacity.reserveProviderReads).toHaveBeenCalledTimes(2)
+  })
+
+  it("resumes an open saved session without spending provider-read capacity", async () => {
+    const fixture = hostedFixture()
+    await createCheckout(fixture.services, fixture.request)
+    fixture.services.capacity.reserveProviderReads.mockRejectedValue({ code: "CHECKOUT_RATE_LIMITED" })
+    const result = await createCheckout(fixture.services, fixture.request)
+    expect(result.sessionId).toBe(fixture.sessionId)
+    expect(fixture.services.capacity.reserveProviderReads).toHaveBeenCalledTimes(1)
+    expect(readCheckoutItems).toHaveBeenCalledTimes(1)
+    expect(fixture.stripe.checkout.sessions.create).toHaveBeenCalledTimes(1)
+  })
+
+  it("throttles saved-session Stripe reads while retaining the saved retry", async () => {
+    const fixture = hostedFixture()
+    await createCheckout(fixture.services, fixture.request)
+    const saved = structuredClone(fixture.getStored())
+    fixture.services.capacity.reserveStripeRead.mockRejectedValueOnce({ code: "CHECKOUT_RATE_LIMITED" })
+    await expect(createCheckout(fixture.services, fixture.request)).rejects.toMatchObject({
+      code: "CHECKOUT_RATE_LIMITED",
+    })
+    expect(fixture.services.capacity.reserveStripeRead).toHaveBeenCalledExactlyOnceWith(fixture.sessionId)
+    expect(fixture.stripe.checkout.sessions.retrieve).not.toHaveBeenCalled()
+    expect(fixture.getStored()).toEqual(saved)
+    await expect(createCheckout(fixture.services, fixture.request)).resolves.toMatchObject({
+      sessionId: fixture.sessionId,
+    })
+  })
+
+  it("stops before provider reads when the shared capacity budget is exhausted", async () => {
+    const fixture = hostedFixture()
+    fixture.services.capacity.reserveProviderReads.mockRejectedValueOnce({ code: "CHECKOUT_RATE_LIMITED" })
+    await expect(createCheckout(fixture.services, fixture.request)).rejects.toMatchObject({
+      code: "CHECKOUT_RATE_LIMITED",
+    })
+    expect(fixture.getStored()).toBeNull()
+    expect(fixture.stripe.checkout.sessions.create).not.toHaveBeenCalled()
   })
 
   it("freezes the shipping window on the original checkout, including retries after a policy change", async () => {
@@ -119,7 +211,7 @@ describe("createCheckout", () => {
     await expect(createCheckout(fixture.services, fixture.request)).rejects.toMatchObject({
       code: "PRODUCT_UNAVAILABLE",
     })
-    expect(readCheckoutItems).toHaveBeenCalledExactlyOnceWith(fixture.printify, fixture.request)
+    expect(readCheckoutItems).toHaveBeenCalledExactlyOnceWith(fixture.printify, fixture.request, expect.any(Function))
     expect(fixture.stripe.checkout.sessions.create).not.toHaveBeenCalled()
   })
 
@@ -128,7 +220,7 @@ describe("createCheckout", () => {
     const providerRequest = vi.spyOn(fixture.printify, "request")
     await createCheckout(fixture.services, fixture.request)
 
-    expect(readCheckoutItems).toHaveBeenCalledWith(fixture.printify, fixture.request)
+    expect(readCheckoutItems).toHaveBeenCalledWith(fixture.printify, fixture.request, expect.any(Function))
     expect(providerRequest).not.toHaveBeenCalled()
     expect(fixture.stripe.customers.create).not.toHaveBeenCalled()
     expect(fixture.getStored()?.order).toMatchObject({
@@ -319,7 +411,10 @@ function hostedFixture(quantity = 1) {
   fixture.setStored(null)
   fixture.order.items[0]!.productFingerprint = `v2:${"b".repeat(64)}`
   const items = [{ ...fixture.order.items[0]!, quantity }]
-  vi.mocked(readCheckoutItems).mockResolvedValue(items)
+  vi.mocked(readCheckoutItems).mockImplementation(async (...args) => {
+    await args[2](new Set(args[1].items.map((item) => item.productId)).size)
+    return items
+  })
   const request = {
     items: [{ productId: fixture.productId, variantId: 101, quantity, expectedUnitAmount: 3000 }],
     requestId: fixture.order.requestId,
@@ -334,6 +429,7 @@ function checkoutFixture() {
   const productId = "111111000000000000000002"
   const order: CheckoutOrder = {
     requestId,
+    commerceIdentity: "fixture-store-commerce",
     requestFingerprint: "fingerprint",
     expiresAt: Math.floor(Date.now() / 1000) + 3600,
     shopId: "1234",
@@ -363,9 +459,11 @@ function checkoutFixture() {
     failureCode: null,
     payment: null,
   }
+  const ensureCommerceIdentity = vi.fn(async () => {})
   const store: OrderStore = {
     withLock: async (_id, callback) =>
       callback({
+        ensureCommerceIdentity,
         get: async () => stored,
         insert: async (newOrder) => {
           stored = {
@@ -401,7 +499,7 @@ function checkoutFixture() {
     amount_total: 3499,
     expires_at: Math.floor(Date.now() / 1000) + 3600,
     total_details: { amount_shipping: 0, amount_discount: 0, amount_tax: 0 },
-    metadata: { storefront: "fixture-store", checkout_request_id: requestId, shop_id: "1234" },
+    metadata: { storefront: "fixture-store-commerce", checkout_request_id: requestId, shop_id: "1234" },
     client_reference_id: requestId,
     payment_intent: "pi_fixture",
   }
@@ -466,6 +564,7 @@ function checkoutFixture() {
   }
   return {
     order,
+    ensureCommerceIdentity,
     sessionId,
     session,
     line,
@@ -486,6 +585,7 @@ function checkoutFixture() {
       siteUrl: "https://shop.example.com",
       automaticTax: false,
       expectedLivemode: false,
+      capacity: { reserveStripeRead: vi.fn(async () => undefined), reserveProviderReads: vi.fn(async () => {}) },
     },
   }
 }

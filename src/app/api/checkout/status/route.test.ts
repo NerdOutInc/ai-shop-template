@@ -13,17 +13,19 @@ vi.mock("@/features/checkout/get-commerce-services.server", () => ({ getCommerce
 const sessionId = "cs_live_status1234567890"
 const findBySession = vi.fn()
 const retrieveSession = vi.fn()
+const capacity = { admitStatus: vi.fn(), reserveStripeRead: vi.fn() }
 
 function fixture() {
   const stored: StoredOrder = {
     sessionId,
     checkoutUrl: "https://checkout.stripe.com/c/pay/private-checkout",
-    state: "submitted",
+    state: "pending",
     printifyOrderId: "private-provider-order",
     failureCode: null,
     payment: null,
     order: {
       requestId: "f7763d49-646d-4003-a317-9b3eb741cf78",
+      commerceIdentity: "fixture-store-commerce",
       requestFingerprint: "private-fingerprint",
       expiresAt: 1_800_000_000,
       shopId: "shop1234",
@@ -70,7 +72,7 @@ function fixture() {
     amount_total: 3775,
     total_details: { amount_tax: 280, amount_discount: 0, amount_shipping: 495 },
     metadata: {
-      storefront: "fixture-store",
+      storefront: "fixture-store-commerce",
       shop_id: stored.order.shopId,
       checkout_request_id: stored.order.requestId,
     },
@@ -87,6 +89,7 @@ function request(id = sessionId) {
 function configure(expectedLivemode = true) {
   vi.mocked(getCommerceServices).mockReturnValue({
     expectedLivemode,
+    capacity,
     store: { findBySession },
     stripe: { checkout: { sessions: { retrieve: retrieveSession } } },
   } as unknown as ReturnType<typeof getCommerceServices>)
@@ -98,7 +101,26 @@ describe("checkout status route", () => {
     findBySession.mockReset().mockResolvedValue(stored)
     retrieveSession.mockReset().mockResolvedValue(session)
     vi.mocked(getCommerceServices).mockReset()
+    capacity.admitStatus.mockReset().mockResolvedValue(undefined)
+    capacity.reserveStripeRead.mockReset().mockResolvedValue(undefined)
     configure()
+  })
+
+  it("rejects client bursts before database or Stripe reads", async () => {
+    capacity.admitStatus.mockRejectedValueOnce(new CheckoutError("CHECKOUT_RATE_LIMITED", "Try later", 429))
+    const response = await GET(request())
+    expect(response.status).toBe(429)
+    expect(response.headers.get("Retry-After")).toBe("60")
+    expect(findBySession).not.toHaveBeenCalled()
+    expect(retrieveSession).not.toHaveBeenCalled()
+  })
+
+  it("keeps a known unresolved order polling when the shared Stripe allowance is exhausted", async () => {
+    capacity.reserveStripeRead.mockRejectedValueOnce(new CheckoutError("CHECKOUT_RATE_LIMITED", "Try later", 429))
+    const response = await GET(request())
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({ paymentStatus: "pending", purchase: null })
+    expect(retrieveSession).not.toHaveBeenCalled()
   })
 
   it("adds only the real builder's minimal purchase summary to a paid live order's status", async () => {
@@ -109,7 +131,7 @@ describe("checkout status route", () => {
     expect(response.headers.get("Referrer-Policy")).toBe("no-referrer")
     expect(await response.json()).toEqual({
       paymentStatus: "paid",
-      fulfillmentStatus: "submitted",
+      fulfillmentStatus: "pending",
       purchase: { receipt: expect.stringMatching(/^[a-f0-9]{64}$/), totalUsd: 37.75 },
       googlePurchase: {
         transaction_id: expect.stringMatching(/^[a-f0-9]{64}$/),
@@ -127,6 +149,7 @@ describe("checkout status route", () => {
     })
     expect(findBySession).toHaveBeenCalledExactlyOnceWith(sessionId)
     expect(retrieveSession).toHaveBeenCalledExactlyOnceWith(sessionId)
+    expect(capacity.reserveStripeRead).toHaveBeenCalledExactlyOnceWith(sessionId, "status")
   })
 
   it.each(["test", "unpaid"] as const)("keeps %s checkout status available without a purchase", async (kind) => {
@@ -202,6 +225,62 @@ describe("checkout status route", () => {
     })
   })
 
+  it("serves a burst of verified paid confirmations without Stripe or shared read capacity", async () => {
+    const { stored } = fixture()
+    stored.payment = {
+      status: "paid",
+      paymentIntentId: "pi_verified",
+      paidAt: "2026-09-28T12:00:00.000Z",
+      livemode: true,
+      currency: "usd",
+      subtotalAmount: 3000,
+      shippingAmount: 495,
+      taxAmount: 280,
+      totalAmount: 3775,
+      customerName: "Private Customer",
+      customerEmail: "private@example.com",
+    }
+    findBySession.mockResolvedValue(stored)
+    capacity.reserveStripeRead.mockRejectedValue(new CheckoutError("CHECKOUT_RATE_LIMITED", "Try later", 429))
+    retrieveSession.mockRejectedValue(new Error("Stripe unavailable"))
+    for (let customer = 0; customer < 12; customer++) {
+      const response = await GET(request())
+      expect(response.status).toBe(200)
+      const body = await response.json()
+      expect(body).toMatchObject({
+        paymentStatus: "paid",
+        fulfillmentStatus: "pending",
+        purchase: { totalUsd: 37.75 },
+        googlePurchase: { tax: 2.8, value: 30 },
+        metaPurchase: { totalUsd: 37.75 },
+      })
+      expect(JSON.stringify(body)).not.toContain("private@example.com")
+      expect(JSON.stringify(body)).not.toContain("pi_verified")
+    }
+    expect(retrieveSession).not.toHaveBeenCalled()
+    expect(capacity.reserveStripeRead).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ["PAYMENT_FAILED", "failed"],
+    ["CHECKOUT_EXPIRED", "expired"],
+  ])("serves saved %s without spending provider capacity", async (failureCode, paymentStatus) => {
+    const { stored } = fixture()
+    stored.failureCode = failureCode!
+    findBySession.mockResolvedValue(stored)
+    const response = await GET(request())
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({
+      paymentStatus,
+      fulfillmentStatus: "pending",
+      purchase: null,
+      googlePurchase: null,
+      metaPurchase: null,
+    })
+    expect(retrieveSession).not.toHaveBeenCalled()
+    expect(capacity.reserveStripeRead).not.toHaveBeenCalled()
+  })
+
   it("rejects an invalid checkout reference before reading services", async () => {
     const response = await GET(request("invalid"))
 
@@ -220,6 +299,7 @@ describe("checkout status route", () => {
     expect(response.headers.get("Cache-Control")).toBe("no-store")
     expect(await response.json()).toEqual({ error: "We could not locate this checkout.", code: "ORDER_MISSING" })
     expect(retrieveSession).not.toHaveBeenCalled()
+    expect(capacity.reserveStripeRead).not.toHaveBeenCalled()
   })
 
   it("preserves the configuration failure response without attempting order lookup", async () => {

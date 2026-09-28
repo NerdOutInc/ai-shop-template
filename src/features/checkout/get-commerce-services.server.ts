@@ -5,6 +5,7 @@ import Stripe from "stripe"
 import { env } from "@/lib/env"
 
 import { CheckoutError } from "./checkout-error"
+import { PostgresCheckoutCapacity } from "./postgres-checkout-capacity.server"
 import { PostgresOrderStore } from "./postgres-order-store.server"
 import { PrintifyClient } from "./printify-client.server"
 
@@ -35,6 +36,12 @@ function createServices() {
       timeout: 15_000,
     }),
     store: new PostgresOrderStore(env.DATABASE_URL),
+    capacity: new PostgresCheckoutCapacity(env.DATABASE_URL, {
+      secret: env.CHECKOUT_RATE_LIMIT_SECRET,
+      vercel: env.VERCEL === "1",
+      certificate: env.DATABASE_SSL_CA,
+      limits: env.CHECKOUT_CAPACITY_LIMITS,
+    }),
     printify: new PrintifyClient({ apiToken: env.PRINTIFY_API_TOKEN, shopId: env.PRINTIFY_SHOP_ID }),
     webhookSecret: env.STRIPE_WEBHOOK_SECRET,
     siteUrl: url.origin,

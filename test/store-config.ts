@@ -34,6 +34,7 @@ export const storeConfig = storeConfigSchema.parse({
     paragraphs: ["Our Chicago studio turns everyday moments into apparel with a little extra personality."],
   },
   commerce: {
+    identity: "fixture-store-commerce",
     shippingConfirmed: false,
     firstItemShippingCents: 0,
     additionalItemShippingCents: 0,
