@@ -6,7 +6,13 @@ import { Pool } from "pg"
 // Only this disposable local instance is managed here. No linked project or remote credentials are used.
 const workdir = ".tmp/admin-e2e"
 await mkdir(`${workdir}/supabase`, { recursive: true })
-await copyFile("e2e/admin/supabase-config.toml", `${workdir}/supabase/config.toml`)
+const publicSignup = process.env.ADMIN_E2E_PUBLIC_SIGNUP ?? "false"
+if (!["true", "false"].includes(publicSignup)) throw new Error("ADMIN_E2E_PUBLIC_SIGNUP must be true or false")
+const authConfig = await readFile("e2e/admin/supabase-config.toml", "utf8")
+await writeFile(
+  `${workdir}/supabase/config.toml`,
+  authConfig.replace(/^(enable_signup = )false$/m, `$1${publicSignup}`)
+)
 await copyFile("e2e/admin/email-code.html", `${workdir}/supabase/email-code.html`)
 process.stdout.write("Starting isolated local Supabase Auth for browser checks…\n")
 execFileSync(
@@ -45,7 +51,9 @@ try {
 } finally {
   await pool.end()
 }
-await writeFile(`${workdir}/status.json`, JSON.stringify(status), { mode: 0o600 })
+await writeFile(`${workdir}/status.json`, JSON.stringify({ ...status, TEST_PUBLIC_SIGNUP: publicSignup }), {
+  mode: 0o600,
+})
 process.stdout.write(
   "Local Auth and application migrations are ready. Fixture credentials stay in .tmp/admin-e2e/status.json.\n"
 )

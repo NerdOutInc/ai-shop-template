@@ -4,13 +4,14 @@ import { randomUUID } from "node:crypto"
 import { readFile, readdir } from "node:fs/promises"
 import { test } from "node:test"
 import { setTimeout } from "node:timers/promises"
+import { prepareSupabasePostgresImage } from "./prepare-supabase-postgres-image.mjs"
 
 // Keep provider defaults intact: applyAllMigrations drops public, which also drops its default ACLs.
 // Required in CI; locally opt in with SUPABASE_PRIVILEGES_TEST=true.
 // This owns a disposable container with no network or ports.
 test(
   "Supabase defaults cannot widen the store's browser permissions",
-  { skip: !process.env.CI && process.env.SUPABASE_PRIVILEGES_TEST !== "true", timeout: 180_000 },
+  { skip: !process.env.CI && process.env.SUPABASE_PRIVILEGES_TEST !== "true", timeout: 420_000 },
   async (t) => {
     const container = `store-privileges-${randomUUID()}`
     const docker = (args, input) =>
@@ -20,9 +21,12 @@ test(
         ["exec", "-i", container, "psql", "-X", "-qAt", "-v", "ON_ERROR_STOP=1", "-U", role, "-d", "postgres"],
         input
       ).trim()
+    const image = prepareSupabasePostgresImage(docker)
     t.after(() => docker(["rm", "--force", "--volumes", container]))
     docker([
       "run",
+      "--pull",
+      "never",
       "--detach",
       "--name",
       container,
@@ -30,7 +34,7 @@ test(
       "none",
       "--env",
       "POSTGRES_PASSWORD=local-disposable-privilege-test",
-      "public.ecr.aws/supabase/postgres:17.6.1.167",
+      image,
     ])
     for (let attempt = 0; ; attempt++) {
       try {

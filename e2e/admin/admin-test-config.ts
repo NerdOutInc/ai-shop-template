@@ -8,6 +8,7 @@ export function adminTestConfig() {
     throw new Error("Admin browser tests require the dedicated local Supabase fixture")
   return {
     baseURL: "http://localhost:3300",
+    publicSignup: status.TEST_PUBLIC_SIGNUP === "true",
     ownerEmail: "library-owner@example.test",
     setupSecret: "local-only-admin-owner-setup-proof-12345678",
     authURL: status.API_URL!,

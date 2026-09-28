@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { createHash, randomUUID } from "node:crypto"
+import { readFile } from "node:fs/promises"
 import type { Pool } from "pg"
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import { applyAllMigrations } from "../../../test/apply-all-migrations"
@@ -19,6 +20,7 @@ describe.skipIf(!databaseUrl)("admin bootstrap and membership database boundarie
 
   beforeAll(async () => {
     database = await createAdminDatabaseFixture(databaseUrl!)
+    await database.query("alter table auth.users add column if not exists encrypted_password text")
     await applyAllMigrations(database)
     // The store runs as the production login so privileges and policies are real, not superuser defaults.
     runtime = await createRuntimeLoginPool(database, databaseUrl!)
@@ -30,14 +32,118 @@ describe.skipIf(!databaseUrl)("admin bootstrap and membership database boundarie
   })
   beforeEach(async () => {
     await database.query(
-      "truncate public.admin_memberships, private.admin_auth_attempts; update private.admin_setup_state set consumed_at = null, claimed_by = null"
+      "truncate public.admin_memberships, private.admin_auth_attempts; update private.admin_setup_state set consumed_at = null, claimed_by = null, enrollment_user_id = null, enrollment_email = null"
     )
-    ownerId = randomUUID()
+    ownerId = (await store.reserveOwner("owner@example.test"))!
     otherId = randomUUID()
     await database.query(
       "insert into auth.users(id,email,email_confirmed_at) values($1,'owner@example.test',now()),($2,'other@example.test',now())",
       [ownerId, otherId]
     )
+  })
+
+  it("pins one identity across concurrent retries and never reopens consumed setup", async () => {
+    const reservations = await Promise.all(Array.from({ length: 8 }, () => store.reserveOwner("OWNER@example.test")))
+    expect(new Set(reservations)).toEqual(new Set([ownerId]))
+    expect(await store.ownerEnrollment("owner@example.test")).toBe(ownerId)
+    expect(await store.ownerEnrollment("other@example.test")).toBeNull()
+    expect(await store.claimOwner(ownerId, "owner@example.test")).toBe(true)
+    expect(await store.reserveOwner("owner@example.test")).toBeNull()
+    expect(await store.ownerEnrollment("owner@example.test")).toBeNull()
+  })
+
+  it("rotates an unclaimed reservation after a corrected owner email and rejects the abandoned identity", async () => {
+    const correctedId = await store.reserveOwner("corrected@example.test")
+    expect(correctedId).not.toBeNull()
+    expect(correctedId).not.toBe(ownerId)
+    expect(await store.ownerEnrollment("owner@example.test")).toBeNull()
+    expect(await store.ownerEnrollment("corrected@example.test")).toBe(correctedId)
+    expect(await store.claimOwner(ownerId, "owner@example.test")).toBe(false)
+    // Even changing the abandoned account's email cannot make it the current reserved identity.
+    await database.query("update auth.users set email='corrected@example.test' where id=$1", [ownerId])
+    expect(await store.claimOwner(ownerId, "corrected@example.test")).toBe(false)
+    await database.query(
+      "insert into auth.users(id,email,email_confirmed_at) values($1,'corrected@example.test',now())",
+      [correctedId]
+    )
+    expect(await store.claimOwner(correctedId!, "corrected@example.test")).toBe(true)
+    expect(await store.reserveOwner("owner@example.test")).toBeNull()
+    expect(await store.isActiveMember(ownerId)).toBe(false)
+  })
+
+  it("serializes an email correction against an in-flight claim", async () => {
+    const [claimed, replacement] = await Promise.all([
+      store.claimOwner(ownerId, "owner@example.test"),
+      store.reserveOwner("corrected@example.test"),
+    ])
+    if (claimed) {
+      expect(replacement).toBeNull()
+      expect(await store.setupStatus()).toBe("claimed")
+    } else {
+      expect(replacement).not.toBeNull()
+      expect(await store.claimOwner(ownerId, "owner@example.test")).toBe(false)
+      expect(await store.setupStatus()).toBe("available")
+    }
+  })
+
+  it("fails setup status before displaying a form when the enrollment migration is missing", async () => {
+    await database.query("alter table private.admin_setup_state rename column enrollment_email to old_enrollment_email")
+    try {
+      await expect(store.setupStatus()).rejects.toMatchObject({ code: "42703" })
+    } finally {
+      await database.query(
+        "alter table private.admin_setup_state rename column old_enrollment_email to enrollment_email"
+      )
+    }
+  })
+
+  it("reports claim provenance without treating empty state or password presence as proof of ownership", async () => {
+    const sql = await readFile("scripts/database/inspect-owner-enrollment.sql", "utf8")
+    const inspect = async () => (await database.query(sql)).rows[0]
+    await database.query("update private.admin_setup_state set enrollment_user_id=null,enrollment_email=null")
+    expect(await inspect()).toEqual({
+      claim_method: "unclaimed",
+      owner_account_present: null,
+      owner_has_password: null,
+    })
+    // A dashboard claim consumes setup but supplies no reserved-enrollment proof.
+    await database.query("insert into public.admin_memberships(user_id,active) values($1,true)", [ownerId])
+    expect(await inspect()).toEqual({
+      claim_method: "owner-review",
+      owner_account_present: true,
+      owner_has_password: false,
+    })
+    await database.query("update auth.users set encrypted_password='private-fixture-hash' where id=$1", [ownerId])
+    expect(await inspect()).toEqual({
+      claim_method: "owner-review",
+      owner_account_present: true,
+      owner_has_password: true,
+    })
+    // New Admin API accounts have random passwords too; the hash flag alone is not a vulnerability.
+    await database.query(
+      "update private.admin_setup_state set enrollment_user_id=$1,enrollment_email='owner@example.test'",
+      [ownerId]
+    )
+    expect(await inspect()).toEqual({
+      claim_method: "reserved-enrollment",
+      owner_account_present: true,
+      owner_has_password: true,
+    })
+    expect(JSON.stringify(await inspect())).not.toMatch(/private-fixture|example\.test/)
+  })
+
+  it("refuses a previously verified account with the right email but no enrollment", async () => {
+    await database.query("update private.admin_setup_state set enrollment_user_id=null,enrollment_email=null")
+    expect(await store.claimOwner(ownerId, "owner@example.test")).toBe(false)
+    expect(await store.isActiveMember(ownerId)).toBe(false)
+    expect(await store.setupStatus()).toBe("available")
+  })
+
+  it("refuses another account with the exact owner email instead of replacing the reserved identity", async () => {
+    await database.query("update auth.users set email='owner@example.test' where id=$1", [otherId])
+    expect(await store.claimOwner(otherId, "owner@example.test")).toBe(false)
+    expect(await store.isActiveMember(otherId)).toBe(false)
+    expect(await store.ownerEnrollment("owner@example.test")).toBe(ownerId)
   })
 
   it("allows the confirmed configured owner once and never reopens after removal", async () => {
