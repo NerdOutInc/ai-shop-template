@@ -123,7 +123,13 @@ jobs:
           retention-days: 7
 
   admin:
-    name: Admin browser checks
+    name: Admin browser checks (signup ${{ matrix.public-signup }})
+    strategy:
+      fail-fast: false
+      matrix:
+        public-signup: ["false", "true"]
+    env:
+      ADMIN_E2E_PUBLIC_SIGNUP: ${{ matrix.public-signup }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -161,7 +167,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v7.0.1
         with:
-          name: admin-browser-diagnostics
+          name: admin-browser-diagnostics-signup-${{ matrix.public-signup }}
           path: |
             playwright-report/admin/
             test-results/admin/

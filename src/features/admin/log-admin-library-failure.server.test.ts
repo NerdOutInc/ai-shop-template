@@ -27,7 +27,7 @@ describe("Admin library failure diagnostics", () => {
     ["ETIMEDOUT", "connection-failure"],
     ["CERT_HAS_EXPIRED", "connection-failure"],
     ["ERR_TLS_CERT_ALTNAME_INVALID", "connection-failure"],
-    ["42703", "other"],
+    ["42703", "missing-relation"],
     ["57014", "other"],
     ["23505", "other"],
     ["ENOENT", "other"],

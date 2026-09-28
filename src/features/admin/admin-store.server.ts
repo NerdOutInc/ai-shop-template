@@ -19,7 +19,8 @@ export class AdminStore {
   async setupStatus(): Promise<"available" | "claimed" | "recovery"> {
     const result = await this.database.query<{ has_admin: boolean; consumed: boolean }>(
       `select exists(select 1 from public.admin_memberships where active) as has_admin,
-        consumed_at is not null as consumed from private.admin_setup_state where singleton = true`
+        consumed_at is not null as consumed, enrollment_user_id, enrollment_email
+        from private.admin_setup_state where singleton = true`
     )
     const state = result.rows[0]
     if (!state) throw new Error("Admin setup migration is missing")
@@ -32,6 +33,29 @@ export class AdminStore {
       [userId, expectedEmail]
     )
     return result.rows[0]?.claimed === true
+  }
+
+  async reserveOwner(email: string): Promise<string | null> {
+    // Save the ID before contacting Auth so retries never have to adopt an account by email.
+    const result = await this.database.query<{ user_id: string }>(
+      `update private.admin_setup_state
+       set enrollment_user_id = case when enrollment_email = lower($1) then enrollment_user_id else gen_random_uuid() end,
+           enrollment_email = lower($1)
+       where singleton and consumed_at is null
+         and not exists(select 1 from public.admin_memberships where active)
+       returning enrollment_user_id as user_id`,
+      [email]
+    )
+    return result.rows[0]?.user_id ?? null
+  }
+
+  async ownerEnrollment(email: string): Promise<string | null> {
+    const result = await this.database.query<{ user_id: string }>(
+      `select enrollment_user_id as user_id from private.admin_setup_state
+       where singleton and enrollment_email = lower($1) and consumed_at is null`,
+      [email]
+    )
+    return result.rows[0]?.user_id ?? null
   }
 
   async allowAuthAttempt(subject: string, limit = 5): Promise<boolean> {

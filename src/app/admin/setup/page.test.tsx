@@ -53,6 +53,17 @@ describe("owner setup page database failures", () => {
     expect(log).not.toHaveBeenCalled()
   })
 
+  it("withholds the setup form and logs missing enrollment columns", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined)
+    fixture.query.mockRejectedValue(Object.assign(new Error("private enrollment column query"), { code: "42703" }))
+    render(await AdminSetupPage())
+    expect(screen.queryByText("Owner setup form")).not.toBeInTheDocument()
+    expect(screen.getByRole("status")).toHaveTextContent("database migration")
+    expect(log.mock.calls).toEqual([
+      ["Admin library unavailable", { code: "ADMIN_SETUP_STATUS_UNAVAILABLE", cause: "missing-relation" }],
+    ])
+  })
+
   it("offers owner setup when the database reports an unclaimed store", async () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => undefined)
     fixture.query.mockResolvedValue({ rows: [{ has_admin: false, consumed: false }] })
