@@ -50,8 +50,7 @@ jobs:
         with:
           name: storybook-diagnostics
           path: |
-            src/**/__screenshots__/
-            test-results/
+            test-results/storybook/
             *storybook.log
           if-no-files-found: ignore
           retention-days: 7
