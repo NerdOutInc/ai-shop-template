@@ -63,7 +63,7 @@ test("filters either category or both and clears category, size, and color while
   expect(await titles()).toEqual(featuredTitles)
 
   await sort.selectOption("newest")
-  await expect(cards.first()).toHaveAccessibleName("Fixture Fresh Beta")
+  await expect(cards.first()).toHaveAccessibleName("Fixture Newest Design")
   const newestTitles = await titles()
   await crop.click()
   if (await filters.isVisible()) await filters.click()

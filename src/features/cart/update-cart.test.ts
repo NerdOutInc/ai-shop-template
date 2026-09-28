@@ -6,7 +6,7 @@ import { updateCart } from "./update-cart"
 const item: CartItem = {
   productId: "aaaaaaaaaaaaaaaaaaaaaaaa",
   variantId: 1,
-  title: "Good hangs",
+  title: "Sample first design",
   variantTitle: "Coral / M",
   unitAmount: 2800,
   quantity: 2,

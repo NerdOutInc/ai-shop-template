@@ -27,8 +27,8 @@ function artwork(collectionId: string, seed = randomUUID()): LibraryDesignInput 
   return {
     id: randomUUID(),
     title: seed,
-    family: "Climbing",
-    summary: "Flat climbing illustration",
+    family: "Botanical",
+    summary: "Flat botanical illustration",
     mechanism: "Unexpected hold",
     prompt: "Source generation prompt",
     background: null,
@@ -110,7 +110,7 @@ describe.skipIf(!databaseUrl)("scoped agents and resumable design generation dat
     const result = await store.create(actor, {
       requestId: randomUUID(),
       title: "New concepts",
-      brief: "Climbing sloths",
+      brief: "Botanical patterns",
       count,
     })
     await store.plan(actor, result.batchId, directions(count))

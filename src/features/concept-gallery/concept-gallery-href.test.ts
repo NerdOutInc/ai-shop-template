@@ -7,7 +7,7 @@ describe("conceptGalleryHref", () => {
     const url = new URL(
       conceptGalleryHref(
         {
-          search: "#149 & belay",
+          search: "#149 & botanical",
           collectionId: "original shirts",
           family: "characters",
           productModelId: "next-level-6210",
@@ -20,7 +20,7 @@ describe("conceptGalleryHref", () => {
     )
     expect(url.pathname).toBe("/admin/concepts")
     expect(Object.fromEntries(url.searchParams)).toEqual({
-      search: "#149 & belay",
+      search: "#149 & botanical",
       collection: "original shirts",
       family: "characters",
       model: "next-level-6210",

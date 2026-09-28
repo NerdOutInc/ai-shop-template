@@ -290,7 +290,7 @@ function checkoutFixture() {
         variantId: 101,
         quantity: 1,
         unitAmount: 3000,
-        title: "Toast to Small Wins",
+        title: "Sample Morning Scene",
         variantLabel: "Forest / M",
         productFingerprint: `v2:${"a".repeat(64)}`,
       },

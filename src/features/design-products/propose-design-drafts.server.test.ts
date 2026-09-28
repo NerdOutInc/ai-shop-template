@@ -18,7 +18,7 @@ const beard = {
   id: "5a0c8f6e-3a63-4f56-9f0b-0b8f4d1f7a22",
   displayNumber: 149,
   title: "Sample Character",
-  summary: "A very optimistic foothold.",
+  summary: "A very optimistic pattern.",
   state: "active",
   revision: { id: current },
   revisions: [{ id: current }, { id: pinned }],
@@ -29,7 +29,7 @@ const sloth = {
   ...beard,
   id: "8f1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d",
   displayNumber: 211,
-  title: "Slow Send",
+  title: "Sample Calm Scene",
   colors: [
     { name: "Sand", position: 1, source: "assigned" },
     { name: "CVC Midnight Navy", position: 0, source: "assigned" },
@@ -44,10 +44,10 @@ const tee: PublishedProductRecipe = {
   variants: [{ id: 11, price: 2800, color: "CVC Midnight Navy", size: "M" }],
   placement: { position: "front", x: 0.5, y: 0.4, scale: 0.63, angle: 0 },
   placementDonorProductId: "a",
-  placementDonorTitle: "Rest Restores Mana",
+  placementDonorTitle: "Sample Garden Illustration",
   sizeGuideDonor: {
     productId: "a",
-    title: "Rest Restores Mana",
+    title: "Sample Garden Illustration",
     description:
       '<p><strong>The tee</strong></p><table id="size-guide"><tr><th></th><th>M</th></tr><tr><td>Width, in</td><td>20.50</td></tr></table>',
     sizes: ["M"],
@@ -97,7 +97,7 @@ it("carries the selected placement reference and uncertainty into every design's
   for (const proposal of proposals) {
     expect(proposal.placementDonor).toEqual({
       productId: "a",
-      title: "Rest Restores Mana",
+      title: "Sample Garden Illustration",
       placement: tee.placement,
     })
     expect(proposal.unverified).toEqual(["variants[].price", "placement"])

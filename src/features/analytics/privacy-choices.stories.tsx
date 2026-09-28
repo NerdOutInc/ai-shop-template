@@ -14,7 +14,7 @@ const meta = {
   decorators: [
     (Story) => (
       <main className="min-h-screen bg-[#f4f0e7] p-6 text-[#17262d]">
-        <h1 className="font-display text-4xl">It’s us vs. the wall.</h1>
+        <h1 className="font-display text-4xl">Made for your everyday.</h1>
         <p className="mt-4">Your shopping experience stays available whichever choice you make.</p>
         <footer className="mt-20">
           <nav aria-label="Footer navigation">

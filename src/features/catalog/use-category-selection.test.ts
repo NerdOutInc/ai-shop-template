@@ -51,7 +51,7 @@ describe("useCategorySelection", () => {
   })
 
   it("updates shareable selections without adding history entries or dropping unrelated query values and the hash", () => {
-    window.history.replaceState(null, "", "/shop?campaign=send%20it&source=email&source=friend#main-content")
+    window.history.replaceState(null, "", "/shop?campaign=new%20season&source=email&source=friend#main-content")
     const historyLength = window.history.length
     const { result } = renderHook(() => useCategorySelection(availableSlugs))
 
@@ -59,7 +59,7 @@ describe("useCategorySelection", () => {
 
     expect(result.current.categories).toEqual(["crop-tops", "t-shirts"])
     expect(new URLSearchParams(window.location.search).getAll("category")).toEqual(["crop-tops", "t-shirts"])
-    expect(new URLSearchParams(window.location.search).get("campaign")).toBe("send it")
+    expect(new URLSearchParams(window.location.search).get("campaign")).toBe("new season")
     expect(new URLSearchParams(window.location.search).getAll("source")).toEqual(["email", "friend"])
     expect(window.location.hash).toBe("#main-content")
     expect(window.history.length).toBe(historyLength)
@@ -68,7 +68,7 @@ describe("useCategorySelection", () => {
 
     expect(result.current.categories).toEqual([])
     expect(new URLSearchParams(window.location.search).has("category")).toBe(false)
-    expect(new URLSearchParams(window.location.search).get("campaign")).toBe("send it")
+    expect(new URLSearchParams(window.location.search).get("campaign")).toBe("new season")
     expect(new URLSearchParams(window.location.search).getAll("source")).toEqual(["email", "friend"])
     expect(window.location.hash).toBe("#main-content")
     expect(window.history.length).toBe(historyLength)

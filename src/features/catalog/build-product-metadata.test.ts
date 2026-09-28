@@ -6,15 +6,15 @@ import { readProductDescription } from "./read-product-description"
 
 const product = {
   ...normalizeCatalogProduct({
-    id: "mana-tee",
+    id: "sample-tee",
     shop_id: 123,
-    title: "Rest Restores Mana — Your Store | Next Level 6210",
-    description: "<p>Your forearms need a recharge, too.</p>",
+    title: "Sample Garden Illustration — Your Store | Next Level 6210",
+    description: "<p>A bright illustration for everyday adventures.</p>",
     variants: [],
     options: [],
     images: [],
   }),
-  image: { src: "https://images.printify.com/mana-front.jpg", alt: "Rest Restores Mana on a navy shirt" },
+  image: { src: "https://images.printify.com/sample-front.jpg", alt: "Sample Garden Illustration on a navy shirt" },
   garment: {
     manufacturer: "Next Level",
     model: "6210",
@@ -29,7 +29,7 @@ describe("buildProductMetadata", () => {
   it("uses the crop profile in search and both social cards without tee or unisex claims", () => {
     const metadata = buildProductMetadata({
       ...product,
-      title: "Braided Script and a Clip - Women's Festival Crop Top",
+      title: "Sample Abstract Lines - Women's Festival Crop Top",
       garment: {
         manufacturer: "Next Level",
         model: "5080",
@@ -39,8 +39,8 @@ describe("buildProductMetadata", () => {
         gender: "female",
       },
     })
-    const title = "Braided Script and a Clip - Women's Festival Crop Top"
-    const description = "Your forearms need a recharge, too. A women's crop top from Your Store."
+    const title = "Sample Abstract Lines - Women's Festival Crop Top"
+    const description = "A bright illustration for everyday adventures. A women's crop top from Your Store."
     expect(metadata).toMatchObject({
       title,
       description,
@@ -50,7 +50,7 @@ describe("buildProductMetadata", () => {
     expect(JSON.stringify(metadata)).not.toMatch(/unisex|t-shirt/i)
   })
 
-  it.each(["A Collective Noun - Women's Festival Crop Top", "Everyday Type - Women's Festival Crop-Top"])(
+  it.each(["Sample Group Illustration - Women's Festival Crop Top", "Everyday Type - Women's Festival Crop-Top"])(
     "keeps an existing crop-top garment label in %s without appending another",
     (title) => {
       expect(
@@ -73,7 +73,7 @@ describe("buildProductMetadata", () => {
     expect(
       buildProductMetadata({
         ...product,
-        title: "A Collective Noun",
+        title: "Sample Group Illustration",
         garment: {
           ...product.garment,
           model: "5080",
@@ -82,7 +82,7 @@ describe("buildProductMetadata", () => {
           gender: "female",
         },
       }).title
-    ).toBe("A Collective Noun – Crop Top")
+    ).toBe("Sample Group Illustration – Crop Top")
   })
 
   it.each([
@@ -102,22 +102,22 @@ describe("buildProductMetadata", () => {
   ])("preserves the saved $categoryName name and gender in search and social metadata", ({ label, ...garment }) => {
     const configured = { ...product, garment: { ...product.garment, ...garment } }
     const metadata = buildProductMetadata(configured)
-    const title = `Rest Restores Mana – ${garment.categoryName}`
+    const title = `Sample Garden Illustration – ${garment.categoryName}`
     expect(metadata).toMatchObject({
       title,
-      description: `Your forearms need a recharge, too. ${label} from Your Store.`,
+      description: `A bright illustration for everyday adventures. ${label} from Your Store.`,
       openGraph: { title: `${title} | Your Store` },
       twitter: { title: `${title} | Your Store` },
     })
-    expect(buildProductMetadata({ ...configured, title: `Mana ${garment.categoryName}` }).title).toBe(
-      `Mana ${garment.categoryName}`
+    expect(buildProductMetadata({ ...configured, title: `Garden ${garment.categoryName}` }).title).toBe(
+      `Garden ${garment.categoryName}`
     )
   })
 
   it("preserves another configured garment and avoids duplicate labels", () => {
     const metadata = buildProductMetadata({
       ...product,
-      title: "Mana Tank Top",
+      title: "Garden Tank Top",
       garment: {
         manufacturer: "Other Maker",
         model: "24",
@@ -127,13 +127,13 @@ describe("buildProductMetadata", () => {
         gender: "male",
       },
     })
-    expect(metadata.title).toBe("Mana Tank Top")
+    expect(metadata.title).toBe("Garden Tank Top")
     expect(metadata.description).toContain("A men's tank top from Your Store.")
   })
 
   it("uses neutral copy for unavailable metadata and the saved name for custom categories", () => {
     const missing = buildProductMetadata({ ...product, garment: null })
-    expect(missing.title).toBe("Rest Restores Mana – Apparel")
+    expect(missing.title).toBe("Sample Garden Illustration – Apparel")
     expect(missing.description).toContain("Apparel from Your Store.")
     const custom = buildProductMetadata({
       ...product,
@@ -152,11 +152,11 @@ describe("buildProductMetadata", () => {
 
   it("gives search and both social cards consistent product copy and the actual product photo", () => {
     const metadata = buildProductMetadata(product)
-    const description = "Your forearms need a recharge, too. A unisex T-shirt from Your Store."
-    const socialTitle = "Rest Restores Mana – T-Shirt | Your Store"
+    const description = "A bright illustration for everyday adventures. A unisex T-shirt from Your Store."
+    const socialTitle = "Sample Garden Illustration – T-Shirt | Your Store"
     const images = [{ url: product.image.src, alt: product.image.alt }]
     expect(metadata).toMatchObject({
-      title: "Rest Restores Mana – T-Shirt",
+      title: "Sample Garden Illustration – T-Shirt",
       description,
       openGraph: { title: socialTitle, description, images, siteName: "Your Store", type: "website" },
       twitter: { title: socialTitle, description, images, card: "summary_large_image" },
@@ -167,11 +167,11 @@ describe("buildProductMetadata", () => {
     const metadata = buildProductMetadata({
       ...product,
       ...readProductDescription(
-        "<p>A purple pixel-art chalk bag brings a little RPG logic to the gym. Rest is part of the quest; even your forearms need a recharge between long sessions at the wall.</p>"
+        "<p>A purple geometric garden brings a little color to an everyday scene. Small details tell the story; layered shapes and gentle contrasts invite a longer look at every carefully illustrated corner.</p>"
       ),
     })
     expect(metadata.description).toBe(
-      "A purple pixel-art chalk bag brings a little RPG logic to the gym. A unisex T-shirt from Your Store."
+      "A purple geometric garden brings a little color to an everyday scene. A unisex T-shirt from Your Store."
     )
     expect(metadata.description!.length).toBeLessThanOrEqual(170)
   })
@@ -179,7 +179,7 @@ describe("buildProductMetadata", () => {
   it("truncates a long first sentence at a word boundary while retaining garment context", () => {
     const metadata = buildProductMetadata({
       ...product,
-      ...readProductDescription(`<p>${"Climb with good company and a little more patience ".repeat(8)}.</p>`),
+      ...readProductDescription(`<p>${"Walk with good company and a little more curiosity ".repeat(8)}.</p>`),
     })
     expect(metadata.description).toMatch(/\w… A unisex T-shirt from Your Store\.$/)
     expect(metadata.description!.length).toBeLessThanOrEqual(170)
@@ -193,6 +193,6 @@ describe("buildProductMetadata", () => {
   })
 
   it("does not repeat a T-shirt label already present in the published title", () => {
-    expect(buildProductMetadata({ ...product, title: "Mana T-Shirt — Your Store" }).title).toBe("Mana T-Shirt")
+    expect(buildProductMetadata({ ...product, title: "Garden T-Shirt — Your Store" }).title).toBe("Garden T-Shirt")
   })
 })

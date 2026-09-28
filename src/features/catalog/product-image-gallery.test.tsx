@@ -23,7 +23,7 @@ describe("ProductImageGallery image delivery", () => {
         }}
       >
         <ProductImageGallery
-          title="Climbing shirt"
+          title="Graphic shirt"
           images={sources.map((src, index) => ({ src, alt: `View ${index + 1}`, variantIds: [1] }))}
           artwork={null}
           placeholder="No photo"
@@ -55,7 +55,7 @@ describe("ProductImageGallery image delivery", () => {
     const container = document.createElement("div")
     container.innerHTML = renderToStaticMarkup(
       <ProductImageGallery
-        title="Climbing shirt"
+        title="Graphic shirt"
         images={sources.map((src) => ({ src, alt: "Mockup", variantIds: [1] }))}
         artwork={null}
         placeholder="No photo"
@@ -73,7 +73,7 @@ describe("ProductImageGallery New badge", () => {
     const container = document.createElement("div")
     container.innerHTML = renderToStaticMarkup(
       <ProductImageGallery
-        title="Climbing shirt"
+        title="Graphic shirt"
         images={["/front.jpg", "/back.jpg"].map((src) => ({ src, alt: "Mockup", variantIds: [1] }))}
         artwork={{ src: "/artwork.webp", alt: "Artwork", backgroundColor: "#222222" }}
         placeholder="No photo"

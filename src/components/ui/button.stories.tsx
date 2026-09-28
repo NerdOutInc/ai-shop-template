@@ -7,7 +7,7 @@ const meta = {
   title: "UI/Button",
   component: Button,
   args: {
-    children: "Join the hang",
+    children: "Join the list",
     onClick: fn(),
   },
 } satisfies Meta<typeof Button>
@@ -18,7 +18,7 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas, args }) => {
-    const button = canvas.getByRole("button", { name: "Join the hang" })
+    const button = canvas.getByRole("button", { name: "Join the list" })
 
     await userEvent.click(button)
     await expect(args.onClick).toHaveBeenCalledOnce()
@@ -30,7 +30,7 @@ export const Keyboard: Story = {
     variant: "outline",
   },
   play: async ({ canvas, args }) => {
-    const button = canvas.getByRole("button", { name: "Join the hang" })
+    const button = canvas.getByRole("button", { name: "Join the list" })
 
     await userEvent.tab()
     await expect(button).toHaveFocus()

@@ -16,7 +16,7 @@ test.beforeEach(async ({ page }) => {
   await page.route("https://e2e.test/**", (route) =>
     route.fulfill({
       contentType: "image/svg+xml",
-      body: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 700"><rect width="600" height="700" fill="#e9ece9"/><path d="M180 130 75 210 130 320 190 295V570H410V295L470 320 525 210 420 130 360 170H240Z" fill="${route.request().url().includes("clay-shirt") ? "#bc735c" : "#17262d"}"/><text x="300" y="345" text-anchor="middle" fill="#eff3f0" font-size="25">GOOD HANGS</text></svg>`,
+      body: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 700"><rect width="600" height="700" fill="#e9ece9"/><path d="M180 130 75 210 130 320 190 295V570H410V295L470 320 525 210 420 130 360 170H240Z" fill="${route.request().url().includes("clay-shirt") ? "#bc735c" : "#17262d"}"/><text x="300" y="345" text-anchor="middle" fill="#eff3f0" font-size="25">FIRST DESIGN</text></svg>`,
     })
   )
 })
@@ -25,14 +25,14 @@ test("shows only the garment paragraph and fabric list under The garment while k
   page,
 }) => {
   await page.goto("/shop")
-  await page.getByRole("article", { name: "Fixture Good Hangs" }).getByRole("link").click()
+  await page.getByRole("article", { name: "Fixture First Design" }).getByRole("link").click()
   const summary = page.getByText("The garment", { exact: true })
   await summary.focus()
   await expect(summary).toBeFocused()
   await page.keyboard.press("Enter")
   const description = page.locator("details").filter({ has: summary })
   await expect(
-    description.locator("p").filter({ hasText: "Printed on the Next Level 6210 for sessions and rest days." })
+    description.locator("p").filter({ hasText: "Printed on the Next Level 6210 for everyday wear." })
   ).toBeVisible()
   await expect(description.locator("ul > li")).toHaveText([
     "60% cotton, 40% polyester",
@@ -58,10 +58,10 @@ test("previews artwork on the pictured shirt color and offers it as the last gal
   browserName,
 }) => {
   await page.goto("/shop")
-  const card = page.getByRole("article", { name: "Fixture Good Hangs" })
+  const card = page.getByRole("article", { name: "Fixture First Design" })
   const link = card.getByRole("link")
-  const artwork = card.getByAltText("Fixture Good Hangs artwork")
-  const mockup = card.getByAltText("Fixture Good Hangs", { exact: true })
+  const artwork = card.getByAltText("Fixture First Design artwork")
+  const mockup = card.getByAltText("Fixture First Design", { exact: true })
   await expect(mockup).toBeVisible()
   await expect(artwork).not.toBeVisible()
   if (!isMobile) {
@@ -81,17 +81,17 @@ test("previews artwork on the pictured shirt color and offers it as the last gal
   } else {
     await link.tap()
   }
-  await expect(page.getByRole("heading", { level: 1, name: "Fixture Good Hangs" })).toBeVisible()
+  await expect(page.getByRole("heading", { level: 1, name: "Fixture First Design" })).toBeVisible()
   await expect(page.getByRole("button", { name: "Clay", exact: true })).toHaveAttribute("aria-pressed", "true")
   await expect(page.locator('[data-slot="carousel-item"][aria-hidden="false"] .product-main-image')).toHaveAttribute(
     "src",
     "https://e2e.test/clay-shirt.png"
   )
   const thumbnails = page.locator(".product-thumbnails")
-  const artworkButton = page.getByRole("button", { name: "View artwork of Fixture Good Hangs" })
-  await expect(thumbnails.getByRole("button").last()).toHaveAccessibleName("View artwork of Fixture Good Hangs")
+  const artworkButton = page.getByRole("button", { name: "View artwork of Fixture First Design" })
+  await expect(thumbnails.getByRole("button").last()).toHaveAccessibleName("View artwork of Fixture First Design")
   await artworkButton.click()
-  const detailArtwork = page.getByRole("img", { name: "Fixture Good Hangs artwork" })
+  const detailArtwork = page.getByRole("img", { name: "Fixture First Design artwork" })
   await expect(detailArtwork).toBeVisible()
   await expect(detailArtwork.locator("..")).toHaveCSS("background-color", "rgb(188, 115, 92)")
   await expect(detailArtwork).toHaveCSS("mix-blend-mode", "normal")
@@ -110,30 +110,30 @@ test("keeps published mockups and their Primary color when an older local artwor
   isMobile,
 }) => {
   await page.goto("/shop")
-  const card = page.getByRole("article", { name: "Fixture Wall Buddies" })
-  const mockup = card.getByAltText("Fixture Wall Buddies", { exact: true })
+  const card = page.getByRole("article", { name: "Fixture Second Design" })
+  const mockup = card.getByAltText("Fixture Second Design", { exact: true })
   await expect(mockup).toHaveAttribute("src", "https://e2e.test/clay-shirt.png")
-  await expect(card.getByAltText("Fixture Wall Buddies artwork")).toHaveCount(0)
+  await expect(card.getByAltText("Fixture Second Design artwork")).toHaveCount(0)
   if (!isMobile) await card.getByRole("link").hover()
   await expect(mockup).toBeVisible()
   await card.getByRole("link").click()
-  await expect(page.getByRole("heading", { level: 1, name: "Fixture Wall Buddies" })).toBeVisible()
+  await expect(page.getByRole("heading", { level: 1, name: "Fixture Second Design" })).toBeVisible()
   await expect(page.getByRole("button", { name: "Clay", exact: true })).toHaveAttribute("aria-pressed", "true")
   await expect(page.locator('[data-slot="carousel-item"][aria-hidden="false"] .product-main-image')).toHaveAttribute(
     "src",
     "https://e2e.test/clay-shirt.png"
   )
-  await expect(page.getByRole("button", { name: "View artwork of Fixture Wall Buddies" })).toHaveCount(0)
+  await expect(page.getByRole("button", { name: "View artwork of Fixture Second Design" })).toHaveCount(0)
 })
 
 test("navigates product photos and artwork with keyboard focus, arrows, and thumbnails", async ({ page }) => {
   await page.goto("/shop")
-  await page.getByRole("article", { name: "Fixture Good Hangs" }).getByRole("link").click()
-  const gallery = page.getByRole("region", { name: "Fixture Good Hangs photos" })
+  await page.getByRole("article", { name: "Fixture First Design" }).getByRole("link").click()
+  const gallery = page.getByRole("region", { name: "Fixture First Design photos" })
   await expect(gallery.getByRole("button", { name: "Next slide" })).toBeEnabled()
-  const firstPhoto = gallery.getByRole("button", { name: "View photo 1 of Fixture Good Hangs" })
-  const secondPhoto = gallery.getByRole("button", { name: "View photo 2 of Fixture Good Hangs" })
-  const artwork = gallery.getByRole("button", { name: "View artwork of Fixture Good Hangs" })
+  const firstPhoto = gallery.getByRole("button", { name: "View photo 1 of Fixture First Design" })
+  const secondPhoto = gallery.getByRole("button", { name: "View photo 2 of Fixture First Design" })
+  const artwork = gallery.getByRole("button", { name: "View artwork of Fixture First Design" })
   await gallery.focus()
   await page.keyboard.press("ArrowRight")
   await expect(gallery).toBeFocused()
@@ -164,8 +164,8 @@ test("navigates product photos and artwork with keyboard focus, arrows, and thum
 test("drags product photos with a mouse and keeps thumbnail selection in sync", async ({ page, isMobile }) => {
   test.skip(isMobile, "Mouse dragging is covered by the desktop browsers")
   await page.goto("/shop")
-  await page.getByRole("article", { name: "Fixture Good Hangs" }).getByRole("link").click()
-  const gallery = page.getByRole("region", { name: "Fixture Good Hangs photos" })
+  await page.getByRole("article", { name: "Fixture First Design" }).getByRole("link").click()
+  const gallery = page.getByRole("region", { name: "Fixture First Design photos" })
   await expect(gallery.getByRole("button", { name: "Next slide" })).toBeEnabled()
   const image = gallery.locator('[data-slot="carousel-item"][aria-hidden="false"]')
   const bounds = (await image.boundingBox())!
@@ -173,19 +173,19 @@ test("drags product photos with a mouse and keeps thumbnail selection in sync", 
   await page.mouse.down()
   await page.mouse.move(bounds.x + bounds.width * 0.2, bounds.y + bounds.height * 0.5, { steps: 12 })
   await page.mouse.up()
-  await expect(gallery.getByRole("button", { name: "View photo 2 of Fixture Good Hangs" })).toHaveAttribute(
+  await expect(gallery.getByRole("button", { name: "View photo 2 of Fixture First Design" })).toHaveAttribute(
     "aria-pressed",
     "true"
   )
-  await gallery.getByRole("button", { name: "View artwork of Fixture Good Hangs" }).click()
-  await expect(gallery.getByRole("img", { name: "Fixture Good Hangs artwork" })).toBeVisible()
+  await gallery.getByRole("button", { name: "View artwork of Fixture First Design" }).click()
+  await expect(gallery.getByRole("img", { name: "Fixture First Design artwork" })).toBeVisible()
 })
 
 test("keeps the selected product photo when changing or reselecting a color", async ({ page }) => {
   await page.goto("/shop")
-  await page.getByRole("article", { name: "Fixture Good Hangs" }).getByRole("link").click()
-  const gallery = page.getByRole("region", { name: "Fixture Good Hangs photos" })
-  const secondPhoto = gallery.getByRole("button", { name: "View photo 2 of Fixture Good Hangs" })
+  await page.getByRole("article", { name: "Fixture First Design" }).getByRole("link").click()
+  const gallery = page.getByRole("region", { name: "Fixture First Design photos" })
+  const secondPhoto = gallery.getByRole("button", { name: "View photo 2 of Fixture First Design" })
   const selectedImage = gallery.locator('[data-slot="carousel-item"][aria-hidden="false"] .product-main-image')
   await secondPhoto.focus()
   await page.keyboard.press("Enter")
@@ -210,7 +210,7 @@ test("keeps the selected product photo when changing or reselecting a color", as
   await expect(selectedImage).toHaveAttribute("src", "https://e2e.test/clay-shirt-back.png")
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
 
-  await gallery.getByRole("button", { name: "View artwork of Fixture Good Hangs" }).click()
+  await gallery.getByRole("button", { name: "View artwork of Fixture First Design" }).click()
   await black.click()
   await page.getByRole("button", { name: "M", exact: true }).click()
   await page.getByRole("button", { name: "Add to cart", exact: true }).click()
@@ -225,13 +225,13 @@ test("swipes the mobile gallery through photos and artwork while preserving vert
 }) => {
   test.skip(!isMobile || browserName !== "chromium", "Native touch sequences use Chromium's mobile input protocol")
   await page.goto("/shop")
-  await page.getByRole("article", { name: "Fixture Good Hangs" }).getByRole("link").tap()
-  const gallery = page.getByRole("region", { name: "Fixture Good Hangs photos" })
+  await page.getByRole("article", { name: "Fixture First Design" }).getByRole("link").tap()
+  const gallery = page.getByRole("region", { name: "Fixture First Design photos" })
   await expect(gallery.getByRole("button", { name: "Next slide" })).toBeEnabled()
   const activeSlide = gallery.locator('[data-slot="carousel-item"][aria-hidden="false"]')
-  const firstPhoto = gallery.getByRole("button", { name: "View photo 1 of Fixture Good Hangs" })
-  const secondPhoto = gallery.getByRole("button", { name: "View photo 2 of Fixture Good Hangs" })
-  const artwork = gallery.getByRole("button", { name: "View artwork of Fixture Good Hangs" })
+  const firstPhoto = gallery.getByRole("button", { name: "View photo 1 of Fixture First Design" })
+  const secondPhoto = gallery.getByRole("button", { name: "View photo 2 of Fixture First Design" })
+  const artwork = gallery.getByRole("button", { name: "View artwork of Fixture First Design" })
   const touch = await page.context().newCDPSession(page)
 
   async function swipe(direction: "left" | "right" | "up", diagonal = false) {
@@ -332,36 +332,36 @@ test("sorts Featured, Newest, and Most Popular using server-side Printify fixtur
   // fixture's own, and that Newest and Most Popular are not pinned at all.
   const withoutDrop = async () => (await titles()).filter((title) => !dropTitles.includes(title))
   await expect(cards.first()).toContainText(dropTitles[0]!)
-  expect((await withoutDrop())[0]).toBe("Fixture Good Hangs")
+  expect((await withoutDrop())[0]).toBe("Fixture First Design")
 
-  // Newest is when each tee entered the shop (e2e/prepare-catalog.ts). Fresh Beta was shown after
+  // Newest is when each tee entered the shop (e2e/prepare-catalog.ts). Newest Design was shown after
   // the drop began, so it leads. The drop and the tee the clock revealed an hour ago come next, in an
   // order that depends on how long ago this week began; the revealed tee has no stamp of its own, so
   // it is up there only because its reveal counts as its arrival. Everything older follows in arrival
-  // order, which Printify's created_at would not give: it has Wall Buddies ahead of Good Hangs.
+  // order, which Printify's created_at would not give: it has Second Design ahead of First Design.
   await page.getByRole("combobox", { name: /Sort/ }).selectOption("newest")
-  await expect(cards.first()).toContainText("Fixture Fresh Beta")
+  await expect(cards.first()).toContainText("Fixture Newest Design")
   const newest = await titles()
-  expect(newest[0]).toBe("Fixture Fresh Beta")
+  expect(newest[0]).toBe("Fixture Newest Design")
   expect(newest.slice(1, 5).toSorted()).toEqual([...dropTitles, "Fixture Already Dropped"].toSorted())
   expect(newest.slice(5)).toEqual(
     catalogProducts
       .map((product) => product.title)
-      .filter((title) => title !== "Fixture Fresh Beta" && !dropTitles.includes(title))
+      .filter((title) => title !== "Fixture Newest Design" && !dropTitles.includes(title))
   )
 
   await page.getByRole("combobox", { name: /Sort/ }).selectOption("popular")
   // Most Popular makes a claim about what other people bought, so the drop never jumps it.
-  await expect(cards.first()).toContainText("Fixture Wall Buddies")
+  await expect(cards.first()).toContainText("Fixture Second Design")
   await page.getByRole("combobox", { name: /Sort/ }).selectOption("featured")
-  expect((await withoutDrop())[0]).toBe("Fixture Good Hangs")
+  expect((await withoutDrop())[0]).toBe("Fixture First Design")
 })
 
 test("carries the card color into a shareable variant URL without adding option changes to browser history", async ({
   page,
 }) => {
   await page.goto("/shop")
-  const card = page.getByRole("article", { name: "Fixture Good Hangs" })
+  const card = page.getByRole("article", { name: "Fixture First Design" })
   const colors = card.getByRole("group", { name: "Available colors" }).getByRole("button")
   const link = card.getByRole("link")
   await expect(colors.nth(0)).toHaveAccessibleName("Clay")
@@ -434,7 +434,7 @@ test("restores a direct variant URL and removes an unsupported size while preser
   page,
 }) => {
   await page.goto("/shop")
-  const link = page.getByRole("article", { name: "Fixture Good Hangs" }).getByRole("link")
+  const link = page.getByRole("article", { name: "Fixture First Design" }).getByRole("link")
   const productPath = new URL((await link.getAttribute("href"))!, page.url()).pathname
   await page.goto(`${productPath}?color=Clay&size=XL&campaign=send%20it#product-options`)
   await expect(page.getByRole("button", { name: "Clay", exact: true })).toHaveAttribute("aria-pressed", "true")
@@ -474,7 +474,7 @@ test("falls back from unknown URL options and writes the chosen valid variant wi
   page,
 }) => {
   await page.goto("/shop")
-  const link = page.getByRole("article", { name: "Fixture Good Hangs" }).getByRole("link")
+  const link = page.getByRole("article", { name: "Fixture First Design" }).getByRole("link")
   const productPath = new URL((await link.getAttribute("href"))!, page.url()).pathname
   const historyLengthBeforeNavigation = await page.evaluate(() => history.length)
   await page.goto(`${productPath}?color=Not+a+color&size=Not+a+size&campaign=keep#product-options`)
@@ -510,10 +510,10 @@ test("opens a product, selects available variants and fit details, and adds the 
 }) => {
   await page.goto("/shop")
   await page
-    .getByRole("link", { name: /Fixture Good Hangs/ })
+    .getByRole("link", { name: /Fixture First Design/ })
     .first()
     .click()
-  await expect(page.getByRole("heading", { level: 1, name: "Fixture Good Hangs" })).toBeVisible()
+  await expect(page.getByRole("heading", { level: 1, name: "Fixture First Design" })).toBeVisible()
   await expect(page.getByRole("button", { name: "Choose a size", exact: true })).toBeDisabled()
   await expect(page.getByRole("button", { name: "L", exact: true })).toBeDisabled()
   await page.getByRole("button", { name: "M", exact: true }).click()
@@ -529,7 +529,7 @@ test("opens a product, selects available variants and fit details, and adds the 
   await page.getByRole("button", { name: "Add to cart", exact: true }).click()
   const confirmation = page.getByRole("dialog", { name: "Added to cart" })
   await expect(confirmation).toBeVisible()
-  await expect(confirmation.getByText("Fixture Good Hangs", { exact: true })).toBeVisible()
+  await expect(confirmation.getByText("Fixture First Design", { exact: true })).toBeVisible()
   await expect(confirmation.getByText("Clay / XL", { exact: true })).toBeVisible()
   await expect(confirmation.getByText("Quantity: 1", { exact: true })).toBeVisible()
   await expect(confirmation.getByText("$32.00", { exact: true })).toBeVisible()
@@ -557,7 +557,7 @@ test("keeps keyboard focus in the cart confirmation and restores it after every 
   browserName,
 }) => {
   await page.goto("/shop")
-  await page.getByRole("article", { name: "Fixture Good Hangs" }).getByRole("link").click()
+  await page.getByRole("article", { name: "Fixture First Design" }).getByRole("link").click()
   await page.getByRole("button", { name: "M", exact: true }).click()
   const addButton = page.getByRole("button", { name: "Add to cart", exact: true })
   const confirmation = page.getByRole("dialog", { name: "Added to cart" })

@@ -13,7 +13,7 @@ describe("parseDescriptionBlocks", () => {
   it("preserves paragraph breaks, inline emphasis, and a line break without splitting words around inline tags", () => {
     expect(
       parseDescriptionBlocks(
-        "<p>Soft <strong>cotton</strong>, good <em>company</em>.<br>Climb on.</p><p>Rest, too.</p>"
+        "<p>Soft <strong>cotton</strong>, good <em>company</em>.<br>Carry on.</p><p>Rest, too.</p>"
       )
     ).toEqual([
       {
@@ -23,7 +23,7 @@ describe("parseDescriptionBlocks", () => {
           { text: "cotton", bold: true, italic: false },
           { text: ", good ", bold: false, italic: false },
           { text: "company", bold: false, italic: true },
-          { text: ".\nClimb on.", bold: false, italic: false },
+          { text: ".\nCarry on.", bold: false, italic: false },
         ],
       },
       { type: "paragraph", content: [{ text: "Rest, too.", bold: false, italic: false }] },

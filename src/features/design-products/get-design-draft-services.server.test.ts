@@ -120,7 +120,7 @@ describe.skipIf(!databaseUrl)("durable design drafts and original artwork proven
       title: "Good holds",
       family: "Funny",
       summary: "Joke",
-      mechanism: "Climbing",
+      mechanism: "Illustration",
       prompt: "Flat",
       background: null,
       state: "active",

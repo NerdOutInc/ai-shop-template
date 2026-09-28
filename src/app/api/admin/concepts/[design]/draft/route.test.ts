@@ -49,7 +49,7 @@ beforeEach(() => {
       blockers: [],
       placementDonor: {
         productId: "published-reference",
-        title: "Rest Restores Mana",
+        title: "Sample Garden Illustration",
         placement: { position: "front", x: 0.5, y: 0.4, scale: 0.63, angle: 0 },
       },
       unverified: ["variants[].price", "placement"],
@@ -71,7 +71,7 @@ describe("reviewing a draft", () => {
       blockers: [],
       placementDonor: {
         productId: "published-reference",
-        title: "Rest Restores Mana",
+        title: "Sample Garden Illustration",
         placement: { position: "front", x: 0.5, y: 0.4, scale: 0.63, angle: 0 },
       },
       unverified: ["variants[].price", "placement"],

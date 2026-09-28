@@ -14,7 +14,7 @@ const model: PublishedProductRecipe = {
   blueprintId: 1317,
   printProviderId: 99,
   productIds: ["a"],
-  titles: ["Rest Restores Mana"],
+  titles: ["Sample Garden Illustration"],
   // The published tee is navy only; the design below asks for other colours.
   variants: [
     { id: 11, price: 2800, color: "CVC Midnight Navy", size: "M" },
@@ -23,10 +23,10 @@ const model: PublishedProductRecipe = {
   ],
   placement: { position: "front", x: 0.5, y: 0.4, scale: 0.63, angle: 0 },
   placementDonorProductId: "a",
-  placementDonorTitle: "Rest Restores Mana",
+  placementDonorTitle: "Sample Garden Illustration",
   sizeGuideDonor: {
     productId: "a",
-    title: "Rest Restores Mana",
+    title: "Sample Garden Illustration",
     description: `<p><strong>The design</strong></p><p>Somebody else's joke.</p>${garment}`,
     sizes: ["M"],
   },
@@ -41,7 +41,7 @@ const catalog: DesignCatalogVariant[] = [
   { id: 301, color: "CVC Cream", size: "M", available: false },
 ]
 const design = {
-  summary: "Beta & a very <optimistic> foothold.",
+  summary: "Color & a very <optimistic> pattern.",
   colors: [
     { name: "Heather Maroon", position: 1 },
     { name: "CVC Black", position: 0 },
@@ -88,7 +88,7 @@ it("reports a colour with nothing available once, not size by size", () => {
 
 it("writes only the design's paragraph and copies the garment sections untouched", () => {
   expect(build().recipe?.description).toBe(
-    `<p><strong>The design</strong></p><p>Beta &amp; a very &lt;optimistic&gt; foothold.</p>${garment}`
+    `<p><strong>The design</strong></p><p>Color &amp; a very &lt;optimistic&gt; pattern.</p>${garment}`
   )
 })
 
@@ -98,7 +98,7 @@ it("copies a crop top's garment paragraph and fabric list along with its care an
   const table = '<table id="size-guide"><tr><th></th><th>M</th></tr><tr><td>Width, in</td><td>20.50</td></tr></table>'
   const details =
     "<p><strong>The crop top</strong></p><p>Printed on the Next Level 5080, a soft, lightweight crop top.</p><ul><li><p>65% polyester and 35% combed ring-spun cotton</p></li><li><p>Raw sleeve and bottom hems</p></li></ul><p><strong>Care</strong></p><p>Wash cold.</p>"
-  const donorTitle = "Rubber Duck Beta - Festival Crop Top"
+  const donorTitle = "Sample Festival Shapes - Festival Crop Top"
   const description = `<h2>${donorTitle}</h2><p>Somebody else's joke.</p>${details}${table}`
   const result = build({
     model: {
@@ -110,10 +110,10 @@ it("copies a crop top's garment paragraph and fabric list along with its care an
 
   expect(result.blockers).toEqual([])
   expect(result.recipe?.description).toBe(
-    `<p><strong>The design</strong></p><p>Beta &amp; a very &lt;optimistic&gt; foothold.</p>${details}${table}`
+    `<p><strong>The design</strong></p><p>Color &amp; a very &lt;optimistic&gt; pattern.</p>${details}${table}`
   )
   const draft = readProductDescription(result.recipe!.description)
-  expect(getGarmentDescriptionBlocks({ title: "Beta Crop Top", ...draft })).toEqual([
+  expect(getGarmentDescriptionBlocks({ title: "Sample Crop Top", ...draft })).toEqual([
     {
       type: "paragraph",
       content: [{ text: "Printed on the Next Level 5080, a soft, lightweight crop top.", bold: false, italic: false }],
@@ -140,7 +140,7 @@ it.each([false, true])("shows the placement donor and uncertainty even when the 
 
   expect(result.placementDonor).toEqual({
     productId: "a",
-    title: "Rest Restores Mana",
+    title: "Sample Garden Illustration",
     placement: model.placement,
   })
   expect(result.unverified).toEqual(source.unverified)
@@ -163,7 +163,7 @@ it("preserves a leading provider size chart without copying the previous design'
 
   expect(result.blockers).toEqual([])
   expect(result.recipe?.description).toBe(
-    `<p><strong>The design</strong></p><p>Beta &amp; a very &lt;optimistic&gt; foothold.</p>${details}${table}`
+    `<p><strong>The design</strong></p><p>Color &amp; a very &lt;optimistic&gt; pattern.</p>${details}${table}`
   )
 })
 
@@ -196,7 +196,7 @@ it("copies dollar replacement tokens literally in trailing table cells and garme
   const result = build({ model: { ...model, sizeGuideDonor: { ...model.sizeGuideDonor!, description } } })
 
   expect(result.recipe?.description).toBe(
-    `<p><strong>The design</strong></p><p>Beta &amp; a very &lt;optimistic&gt; foothold.</p>${details}${table}`
+    `<p><strong>The design</strong></p><p>Color &amp; a very &lt;optimistic&gt; pattern.</p>${details}${table}`
   )
   expect(readProductDescription(result.recipe!.description).sizeGuide?.measurements[0]?.label).toBe(label)
 })
@@ -210,7 +210,7 @@ it.each(["<p><strong>Size guide</strong></p>", "<h2>Sizing:</h2>"])(
     const result = build({ model: { ...model, sizeGuideDonor: { ...model.sizeGuideDonor!, description } } })
 
     expect(result.recipe?.description).toBe(
-      `<p><strong>The design</strong></p><p>Beta &amp; a very &lt;optimistic&gt; foothold.</p>${details}${table}`
+      `<p><strong>The design</strong></p><p>Color &amp; a very &lt;optimistic&gt; pattern.</p>${details}${table}`
     )
     expect(readProductDescription(result.recipe!.description).description).not.toContain("Somebody else's joke.")
   }
@@ -226,7 +226,7 @@ it("copies one chart when equivalent leading and trailing tables use different f
   const result = build({ model: { ...model, sizeGuideDonor: { ...model.sizeGuideDonor!, description } } })
 
   expect(result.recipe?.description).toBe(
-    `<p><strong>The design</strong></p><p>Beta &amp; a very &lt;optimistic&gt; foothold.</p>${details}${table}`
+    `<p><strong>The design</strong></p><p>Color &amp; a very &lt;optimistic&gt; pattern.</p>${details}${table}`
   )
   expect(result.recipe!.description.match(/<table\b/g)).toHaveLength(1)
   const read = readProductDescription(result.recipe!.description)

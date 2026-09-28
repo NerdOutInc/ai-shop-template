@@ -19,7 +19,7 @@ const storageKey = "your-store-cart-v1"
 const item = {
   productId: "aaaaaaaaaaaaaaaaaaaaaaaa",
   variantId: 1001,
-  title: "Good hangs – Black / M",
+  title: "Sample first design – Black / M",
   variantTitle: "Black / M",
   unitAmount: 2800,
   quantity: 2,
@@ -54,7 +54,14 @@ describe("Meta cart review", () => {
       JSON.stringify({
         version: 1,
         entries: [
-          { ...item, title: "Good hangs", variantId: 1003, variantTitle: "Clay / M", quantity: 1, entryId: "existing" },
+          {
+            ...item,
+            title: "Sample first design",
+            variantId: 1003,
+            variantTitle: "Clay / M",
+            quantity: 1,
+            entryId: "existing",
+          },
         ],
         checkouts: {},
       })
@@ -96,7 +103,7 @@ describe("Meta cart review", () => {
     const user = userEvent.setup()
     review()
     await user.click(screen.getByRole("button", { name: "Add selection to cart" }))
-    await user.click(await screen.findByRole("button", { name: /Remove Good hangs/ }))
+    await user.click(await screen.findByRole("button", { name: /Remove Sample first design/ }))
     await user.click(await screen.findByRole("button", { name: "Add selection to cart" }))
     expect(await screen.findByRole("heading", { name: "The good stuff (2)" })).toBeVisible()
   })
