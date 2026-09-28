@@ -13,6 +13,7 @@ vi.mock("@/features/checkout/get-commerce-services.server", () => ({ getCommerce
 const sessionId = "cs_live_status1234567890"
 const findBySession = vi.fn()
 const retrieveSession = vi.fn()
+const capacity = { admitStatus: vi.fn(), reserveStripeRead: vi.fn() }
 
 function fixture() {
   const stored: StoredOrder = {
@@ -88,6 +89,7 @@ function request(id = sessionId) {
 function configure(expectedLivemode = true) {
   vi.mocked(getCommerceServices).mockReturnValue({
     expectedLivemode,
+    capacity,
     store: { findBySession },
     stripe: { checkout: { sessions: { retrieve: retrieveSession } } },
   } as unknown as ReturnType<typeof getCommerceServices>)
@@ -99,7 +101,24 @@ describe("checkout status route", () => {
     findBySession.mockReset().mockResolvedValue(stored)
     retrieveSession.mockReset().mockResolvedValue(session)
     vi.mocked(getCommerceServices).mockReset()
+    capacity.admitStatus.mockReset().mockResolvedValue(undefined)
+    capacity.reserveStripeRead.mockReset().mockResolvedValue(undefined)
     configure()
+  })
+
+  it("rejects client bursts before database or Stripe reads", async () => {
+    capacity.admitStatus.mockRejectedValueOnce(new CheckoutError("CHECKOUT_RATE_LIMITED", "Try later", 429))
+    const response = await GET(request())
+    expect(response.status).toBe(429)
+    expect(response.headers.get("Retry-After")).toBe("60")
+    expect(findBySession).not.toHaveBeenCalled()
+    expect(retrieveSession).not.toHaveBeenCalled()
+  })
+
+  it("fails closed on the shared Stripe allowance without reading Stripe", async () => {
+    capacity.reserveStripeRead.mockRejectedValueOnce(new CheckoutError("CHECKOUT_RATE_LIMITED", "Try later", 429))
+    expect((await GET(request())).status).toBe(429)
+    expect(retrieveSession).not.toHaveBeenCalled()
   })
 
   it("adds only the real builder's minimal purchase summary to a paid live order's status", async () => {

@@ -4,13 +4,18 @@ import { readPublishedProduct } from "@/features/publishing/read-published-produ
 import { env } from "@/lib/env"
 import { parsePrintifyProduct } from "@/lib/printify/parse-printify-product"
 
+import { calculateCartShipping } from "./calculate-cart-shipping"
 import { CheckoutError } from "./checkout-error"
 import type { OrderItem } from "./checkout-order"
 import type { HostedCheckoutRequest } from "./hosted-checkout-request"
 import type { PrintifyClient } from "./printify-client.server"
 import { readCheckoutProduct } from "./read-checkout-product.server"
 
-export async function readCheckoutItems(client: PrintifyClient, request: Pick<HostedCheckoutRequest, "items">) {
+export async function readCheckoutItems(
+  client: PrintifyClient,
+  request: Pick<HostedCheckoutRequest, "items" | "expectedShippingAmount">,
+  reserveProviderReads: (count: number) => Promise<void>
+) {
   const ids = [...new Set(request.items.map((item) => item.productId))]
   if (!env.PRINTIFY_PUBLISHING_ENABLED)
     throw new CheckoutError("NOT_CONFIGURED", "Checkout is unavailable while we finish connecting the shop.")
@@ -32,20 +37,15 @@ export async function readCheckoutItems(client: PrintifyClient, request: Pick<Ho
       return product
     })
   )
-  const products = await Promise.all(ids.map((id) => readCheckoutProduct(client, id)))
   const items: OrderItem[] = request.items.map((item) => {
-    const liveProduct = products.find((product) => product.id === item.productId)
-    const liveVariant = liveProduct?.variants.find((variant) => variant.id === item.variantId)
     const product = published.find((product) => product.id === item.productId)
     const variant = product?.variants.find((variant) => variant.id === item.variantId)
-    if (!product || !variant || !liveVariant?.available || !variant.enabled || variant.unitAmount <= 0)
+    if (!product || !variant || !variant.enabled || variant.unitAmount <= 0)
       throw new CheckoutError(
         "PRODUCT_UNAVAILABLE",
         "A selected size is no longer available. Please choose another size.",
         409
       )
-    if (liveVariant.fingerprint !== variant.fingerprint)
-      throw new CheckoutError("PRODUCT_CHANGED", "A selected shirt is being updated. Please try again shortly.", 409)
     if (variant.unitAmount !== item.expectedUnitAmount)
       throw new CheckoutError(
         "PRICE_CHANGED",
@@ -63,5 +63,27 @@ export async function readCheckoutItems(client: PrintifyClient, request: Pick<Ho
       productFingerprint: variant.fingerprint,
     }
   })
+  if (calculateCartShipping(items) !== request.expectedShippingAmount)
+    throw new CheckoutError(
+      "SHIPPING_CHANGED",
+      "The shipping price changed. Please review a fresh quote before paying.",
+      409
+    )
+  // Reject the entire invalid cart locally before making provider calls.
+  // Published stock can be stale; only the live read decides current availability.
+  await reserveProviderReads(ids.length)
+  const products = await Promise.all(ids.map((id) => readCheckoutProduct(client, id)))
+  for (const item of items) {
+    const product = products.find((product) => product.id === item.productId)
+    const variant = product?.variants.find((variant) => variant.id === item.variantId)
+    if (!variant?.available)
+      throw new CheckoutError(
+        "PRODUCT_UNAVAILABLE",
+        "A selected size is no longer available. Please choose another size.",
+        409
+      )
+    if (variant.fingerprint !== item.productFingerprint)
+      throw new CheckoutError("PRODUCT_CHANGED", "A selected shirt is being updated. Please try again shortly.", 409)
+  }
   return items
 }

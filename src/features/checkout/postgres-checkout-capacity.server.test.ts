@@ -66,6 +66,21 @@ describe.skipIf(!databaseUrl)("durable checkout capacity", () => {
     await expect(replicas[2]!.reserveProviderReads(20)).resolves.toBeUndefined()
   })
 
+  it("shares status limits across replicas while allowing distinct customers and later polls", async () => {
+    const results = await Promise.allSettled(
+      Array.from({ length: 16 }, (_, i) => replicas[i % 4]!.admitStatus(headers(1)))
+    )
+    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(10)
+    await expect(replicas[0]!.admitStatus(headers(2))).resolves.toBeUndefined()
+    await pool.query("update commerce.checkout_capacity set available_at = clock_timestamp() - interval '1 second'")
+    await expect(replicas[1]!.admitStatus(headers(1))).resolves.toBeUndefined()
+  })
+
+  it("coordinates public Stripe reads independently of request IDs and client networks", async () => {
+    const results = await Promise.allSettled(Array.from({ length: 16 }, (_, i) => replicas[i % 4]!.reserveStripeRead()))
+    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(10)
+  })
+
   it("expires old identities without holding database locks across provider work", async () => {
     await replicas[0]!.admit(headers(1))
     await pool.query("update commerce.checkout_capacity set expires_at = clock_timestamp() - interval '1 second'")

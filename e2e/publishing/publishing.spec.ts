@@ -373,6 +373,7 @@ test("publishes signed events, isolates drafts, preserves hidden shirts, and rem
     requestId: randomUUID(),
     expectedShippingAmount: 500,
   }
+  const checkoutReadsBefore = (await providerState(request)).apiReads
   const quote = await request.post("/api/checkout", {
     data: quoteBody,
     headers: { origin: config.canonicalURL },
@@ -381,6 +382,12 @@ test("publishes signed events, isolates drafts, preserves hidden shirts, and rem
   // hosted-checkout validation, without creating a Stripe session.
   expect(quote.status()).toBe(409)
   expect(await quote.json()).toMatchObject({ code: "SHIPPING_CHANGED" })
+  expect((await providerState(request)).apiReads).toEqual(checkoutReadsBefore)
+  const capacityBuckets = (
+    await pool.query<{ bucket: string }>("select bucket from commerce.checkout_capacity")
+  ).rows.map(({ bucket }) => bucket)
+  expect(capacityBuckets).toHaveLength(2)
+  expect(capacityBuckets).toEqual(expect.arrayContaining(["ingress", expect.stringMatching(/^client:/)]))
 
   // Printify's Hide/Show actions publish visibility with every content selection disabled.
   const visibilitySelection = { title: false, description: false, variants: false, images: false }
@@ -889,7 +896,7 @@ test("pauses only a changed production variant across the Google feed, landing p
     data: {
       items: [{ productId: product.id, variantId: 101, quantity: 1, expectedUnitAmount: 3000 }],
       requestId: randomUUID(),
-      expectedShippingAmount: 500,
+      expectedShippingAmount: 495,
     },
     headers: { origin: config.canonicalURL },
   })
@@ -980,7 +987,7 @@ test("checks live checkout stock even when the cached product still appears avai
     data: {
       items: [{ productId: product.id, variantId: 101, quantity: 1, expectedUnitAmount: 3000 }],
       requestId: randomUUID(),
-      expectedShippingAmount: 500,
+      expectedShippingAmount: 495,
     },
     headers: { origin: config.canonicalURL },
   })

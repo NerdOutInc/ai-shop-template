@@ -1,4 +1,3 @@
-import { storeConfig } from "@/lib/store-config"
 import "server-only"
 
 import { createHash } from "node:crypto"
@@ -6,6 +5,7 @@ import { createHash } from "node:crypto"
 import type Stripe from "stripe"
 
 import { deliveryEstimates } from "@/features/store-policies/delivery-estimates"
+import { storeConfig } from "@/lib/store-config"
 
 import { calculateCartShipping } from "./calculate-cart-shipping"
 import { CheckoutError } from "./checkout-error"
@@ -23,14 +23,15 @@ type Services = {
   automaticTax: boolean
   liveFulfillment: boolean
   expectedLivemode: boolean
-  capacity: { reserveProviderReads: (count: number) => Promise<void> }
+  capacity: { reserveProviderReads: (count: number) => Promise<void>; reserveStripeRead: () => Promise<void> }
 }
 
 type Request = HostedCheckoutRequest
 
 async function quoteRequest(services: Services, request: Request) {
-  await services.capacity.reserveProviderReads(new Set(request.items.map((item) => item.productId)).size)
-  const items = await readCheckoutItems(services.printify, request)
+  const items = await readCheckoutItems(services.printify, request, (count) =>
+    services.capacity.reserveProviderReads(count)
+  )
   const subtotal = items.reduce((sum, item) => sum + item.quantity * item.unitAmount, 0)
   const shipping = calculateCartShipping(items)
   return { items, subtotal, shipping, total: subtotal + shipping, currency: "USD" as const }
@@ -57,6 +58,7 @@ export async function createCheckout(services: Services, request: Request) {
       throw new CheckoutError("ORDER_IDENTITY_MISSING", "This checkout needs our attention. Please contact the shop.")
     }
     if (existing?.sessionId && existing.checkoutUrl) {
+      await services.capacity.reserveStripeRead()
       const session = await services.stripe.checkout.sessions.retrieve(existing.sessionId)
       if (session.status === "complete")
         return {

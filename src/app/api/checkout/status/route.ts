@@ -14,8 +14,10 @@ export async function GET(request: Request) {
     if (!isCheckoutSessionId(sessionId))
       throw new CheckoutError("INVALID_REQUEST", "This checkout link is invalid.", 400)
     const services = getCommerceServices()
+    await services.capacity.admitStatus(request.headers)
     const order = await services.store.findBySession(sessionId)
     if (!order) throw new CheckoutError("ORDER_MISSING", "We could not locate this checkout.", 404)
+    await services.capacity.reserveStripeRead()
     const session = await services.stripe.checkout.sessions.retrieve(sessionId)
     const paymentStatus =
       session.payment_status === "paid"
