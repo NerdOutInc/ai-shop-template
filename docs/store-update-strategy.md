@@ -27,9 +27,9 @@ The full external review supplies a **different** 39% metric: of 466 historical 
 
 Reproduce the activity metric with read-only Git: list `git log SOURCE_SHA --format='%H%x09%cI%x09%P'`, filter the half-open timestamp interval above, inspect each parent-to-commit path set with `git diff-tree --no-commit-id --name-only -r PARENT COMMIT`, and intersect with `git ls-tree -r --name-only TEMPLATE_SHA`. Restrict that intersection to `src/`, `supabase/`, `scripts/`, `e2e/` and `test/` for the narrower 64-commit count. Compare blob IDs from `git ls-tree -r` for tree overlap; that counts files, not compatible behavior. Use authorized source access, and keep private source contents out of public reports.
 
-Current source boundaries also matter:
+Boundaries at the assessed template commit `d498dd3fb8b0e1c84b980b9cf35a42007ec7e04f` also matter:
 
-- [`store-config.ts`](../src/lib/store-config.ts) validates public brand content but defines it in the same module as the schema. It is a useful seam, not an implemented multi-brand loader.
+- At that baseline, [`store-config.ts`](../src/lib/store-config.ts) defines public brand values and their schema together. [PR #7](https://github.com/NerdOutInc/t-shirt-shop-template/pull/7) separates `store-config-schema.ts` and validated portability fixtures. That seam still needs a production build-input contract before it can select brands; test fixture selection is not a multi-brand loader.
 - [`env.ts`](../src/lib/env.ts) and [`get-commerce-services.server.ts`](../src/features/checkout/get-commerce-services.server.ts) configure one store's provider services per process. The latter caches one service instance. A request hostname must never choose another brand's secrets inside that process.
 - Routes, migrations, scripts, skills and tests are part of the product. For example, source DB-lifecycle change `79ffe808` crosses dependencies, shared helpers and checkout; publication change `e43dfc3f` crosses 15 paths; consent change `cf5466b5` crosses 54. Extracting a helper package alone would leave much of the update burden behind.
 
@@ -58,6 +58,8 @@ Creating future stores by cloning and pushing the canonical template's retained 
 | 4: Consider an operating-store adoption | Store-specific inventory, schema transition and recovery rehearsal                                       | Reviewed compatibility report and separate production authorization                                             | Existing store owner; database and release operators     |
 
 The independent-owner route does not disappear if stage 2 succeeds. Keep the neutral profile, docs, skills and fresh-database tests in the canonical repository, and release template snapshots from the same engine source. A generated clone may customize freely; its divergence and support status must remain visible. Brand-specific fixes can originate in a brand repository during an incident, then return as sanitized reusable changes with regression coverage and attribution. Do not require access to another brand's private repository to update a new store.
+
+Until engine adoption, [source-store ports](store-update-contract.md#source-store-ports) account for changes in both directions. The source ledger records the reviewed interval and each disposition; individual template fixes can be adapted to an operating store without shared ancestry or a known whole-store template baseline. Schedule the stage-4 assessment before a second operating owner brand is onboarded, or when a required shared fix needs a schema transition, whichever comes first. Continue urgent fix propagation while that assessment proceeds.
 
 ## Cost and operational tradeoffs
 
