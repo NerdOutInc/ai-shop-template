@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
-  next@16.3.6:
+  next@~16.3.6:
     hash: 6e413855c40e4958911ffe38cd436ec4407d5b2c8a49232f4e730658ecaf311b
     path: patches/next@16.3.6.patch
 

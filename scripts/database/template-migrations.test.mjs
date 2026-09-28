@@ -15,9 +15,17 @@ test(
     const pool = await createAdminDatabaseFixture(connectionString)
     try {
       await applyAllMigrations(pool)
-      for (const table of ["printify_products", "shop_categories", "garment_models"]) {
-        const result = await pool.query(`select count(*)::integer as count from commerce.${table}`)
-        assert.equal(result.rows[0].count, 0, `${table} must have no source shop data`)
+      const applicationTables = await pool.query(`
+        select format('%I.%I', n.nspname, c.relname) as qualified_name
+        from pg_class c join pg_namespace n on n.oid = c.relnamespace
+        where n.nspname in ('public', 'private', 'commerce') and c.relkind in ('r', 'p')
+          and not (n.nspname = 'private' and c.relname = 'admin_setup_state')
+        order by n.nspname, c.relname
+      `)
+      assert.ok(applicationTables.rows.length > 0, "Fresh migrations must create application tables")
+      for (const { qualified_name: table } of applicationTables.rows) {
+        const result = await pool.query(`select count(*)::integer as count from ${table}`)
+        assert.equal(result.rows[0].count, 0, `${table} must start empty`)
       }
       const setup = await pool.query("select singleton, consumed_at, claimed_by from private.admin_setup_state")
       assert.deepEqual(setup.rows, [{ singleton: true, consumed_at: null, claimed_by: null }])
