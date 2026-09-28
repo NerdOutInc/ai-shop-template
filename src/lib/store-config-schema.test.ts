@@ -97,6 +97,62 @@ describe("storeConfigSchema", () => {
     if (!result.success) expect(result.error.issues.map((issue) => issue.path)).toContainEqual(path)
   })
 
+  it.each([
+    '\"Arial, sans-serif',
+    "'Arial, sans-serif",
+    'Arial\", sans-serif',
+    "Arial', sans-serif",
+    "\"Arial', sans-serif",
+    'Arial, \"Helvetica Neue',
+    "Arial,, sans-serif",
+    "Arial, , sans-serif",
+    ",Arial",
+    "Arial,",
+    "123, sans-serif",
+    "123Brand, sans-serif",
+    "-123Brand, sans-serif",
+    "Font 2, sans-serif",
+    "inherit, sans-serif",
+    "initial",
+    "unset, Arial",
+    "revert-layer, Arial",
+    "default, Arial",
+    "InHeRiT, Arial",
+    "serif Display, sans-serif",
+    "system-ui Display, sans-serif",
+    "math Display, sans-serif",
+    'Arial \"Helvetica Neue\", sans-serif',
+    '\"\", serif',
+    "'  ', serif",
+    '\"Arial\"\"Helvetica Neue\", sans-serif',
+    "Arial\n, sans-serif",
+  ])("rejects malformed font-family list %j for every font role", (font) => {
+    for (const role of ["body", "heading", "label"] as const) {
+      const result = storeConfigSchema.safeParse({ ...storeConfig, fonts: { ...storeConfig.fonts, [role]: font } })
+      expect(result.success).toBe(false)
+      if (!result.success) expect(result.error.issues.map((issue) => issue.path)).toContainEqual(["fonts", role])
+    }
+  })
+
+  it.each([
+    '\"Helvetica Neue\", Arial, sans-serif',
+    "'Times New Roman', Georgia, serif",
+    "Helvetica Neue, Arial, sans-serif",
+    'system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif',
+    "ui-monospace, SFMono-Regular, Menlo, monospace",
+    '\"Font 2\", Arial, sans-serif',
+    "'Brand, Display', cursive",
+    `"Founder's Font", serif`,
+    `'Brand "Display"', fantasy`,
+    "--brand-font, _Brand2, sans-serif",
+    '"serif Display", sans-serif',
+    '"default", Arial2, sans-serif',
+    '\"inherit\", sans-serif',
+  ])("preserves valid font-family list %j", (font) => {
+    const result = storeConfigSchema.parse({ ...storeConfig, fonts: { body: font, heading: font, label: font } })
+    expect(result.fonts).toEqual({ body: font, heading: font, label: font })
+  })
+
   it("accepts a dark accent with readable light text", () => {
     expect(
       storeConfigSchema.safeParse({

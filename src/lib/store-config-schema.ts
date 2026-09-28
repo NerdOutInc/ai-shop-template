@@ -4,9 +4,22 @@ import { isStoreTimeZone } from "./is-store-time-zone"
 const color = z.string().regex(/^#[0-9a-f]{6}$/i, "Use a six-digit hex color")
 const localAsset = z.string().regex(/^\/(?!\/)/, "Use an asset path beginning with one slash")
 const text = z.string().trim().min(1)
-const fontStack = text
-  .max(200)
-  .regex(/^[a-z0-9 ,"'_-]+$/i, "Use CSS font family names and fallbacks, not CSS declarations")
+const fontIdentifier = "(?:--|-?[a-z_])[a-z0-9_-]*"
+const fontFamily = `(?:"[a-z0-9 ,_'\\-]+"|'[a-z0-9 ,_"\\-]+'|${fontIdentifier}(?: +${fontIdentifier})*)`
+const fontListPattern = new RegExp(`^${fontFamily}(?: *, *${fontFamily})*$`, "i")
+const fontFamilyPattern = new RegExp(fontFamily, "gi")
+const reservedFontWord = /^(?:inherit|initial|unset|revert|revert-layer|default)$/i
+const genericFontWord =
+  /^(?:serif|sans-serif|monospace|cursive|fantasy|system-ui|ui-serif|ui-sans-serif|ui-monospace|ui-rounded|math|emoji|fangsong)$/i
+const fontStack = text.max(200).refine((value) => {
+  // A broken quote in a root CSS variable can consume all following theme declarations.
+  if (!fontListPattern.test(value)) return false
+  return [...value.matchAll(fontFamilyPattern)].every(([family]) => {
+    if (family.startsWith('"') || family.startsWith("'")) return family.slice(1, -1).trim().length > 0
+    const words = family.split(/ +/)
+    return words.every((word) => !reservedFontWord.test(word) && (words.length === 1 || !genericFontWord.test(word)))
+  })
+}, "Use comma-separated font families with balanced quotes; quote names with numeric words or reserved words")
 
 function contrastRatio(first: string, second: string) {
   const luminance = (hex: string) => {
