@@ -1,9 +1,10 @@
 import assert from "node:assert/strict"
-import { execFileSync, spawnSync } from "node:child_process"
+import childProcess, { execFileSync, spawnSync } from "node:child_process"
 import { createHash } from "node:crypto"
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
+import { syncBuiltinESMExports } from "node:module"
 import test from "node:test"
 import { fileURLToPath } from "node:url"
 import { checkTemplate } from "./check-template.mjs"
@@ -94,7 +95,13 @@ test("story, unit and browser fixtures do not exempt copied source design text",
     ...policy,
     forbiddenIdentifiers: sourceCopy.map(([value, kind]) => {
       const words = value.toLowerCase().match(/[a-z0-9]+/g)
-      return { kind, length: words.join("").length, wordCount: words.length, sha256: sha256(words.join("")) }
+      return {
+        kind,
+        scope: "template",
+        length: words.join("").length,
+        wordCount: words.length,
+        sha256: sha256(words.join("")),
+      }
     }),
   }
   const files = [
@@ -121,6 +128,9 @@ test("story, unit and browser fixtures do not exempt copied source design text",
   )
   for (const file of files) write(file, "An independent new design for climbing, resting and taking small steps.")
   assert.deepEqual(check(sourcePolicy), [])
+  write("src/lib/store-config.ts", "export const storeConfig = { configured: true }")
+  for (const file of files) write(file, sourceCopy.map(([value]) => value).join("\n"))
+  assert.deepEqual(check(sourcePolicy), [])
 })
 
 test("checks tracked and staged versions even when worktree edits or deletions hide a leak", (t) => {
@@ -146,6 +156,168 @@ for (const flag of ["assume-unchanged", "skip-worktree"]) {
     assert.ok(check().some((failure) => failure.includes("(index): provider/browser key")))
   })
 }
+
+test("configured stores allow their own owner and ordinary copy but still reject source account identity", (t) => {
+  const { write, check } = fixture(t)
+  const scopedPolicy = {
+    ...policy,
+    forbiddenIdentifiers: policy.forbiddenIdentifiers.map((item) =>
+      item.kind === "source-owner" ? { ...item, scope: "template" } : item
+    ),
+  }
+  write("LICENSE", "Copyright\nFormer Store Owner\n")
+  write(
+    "src/lib/store-config.ts",
+    'import "module-that-must-not-be-executed"; export const storeConfig = storeSchema.parse({ configured: true, name: "New Store" })'
+  )
+  assert.deepEqual(check(scopedPolicy), [])
+  write("accounts.json", JSON.stringify({ shop: identifiers[4][0] }))
+  assert.ok(check(scopedPolicy).some((failure) => failure.includes("source-shop")))
+  write("accounts.json", "{}")
+  for (const content of [
+    "// export const storeConfig = { configured: true }",
+    'const example = "configured: true"; export const storeConfig = { configured: false }',
+    "export const storeConfig = { configured: Boolean(true) }",
+    "export const storeConfig = { configured: true, ...otherSettings }",
+    "export const storeConfig = { configured: true, configured: false }",
+    "export const storeConfig = { configured: true, ['configured']: false }",
+    "export let storeConfig = { configured: true }",
+    "export const storeConfig = { configured: true }; storeConfig.configured = false",
+    "export const storeConfig = arbitraryFunction({ configured: true })",
+    "export const storeConfig = { configured: true",
+  ]) {
+    write("src/lib/store-config.ts", content)
+    assert.ok(check(scopedPolicy).some((failure) => failure.includes('"LICENSE":2: source-owner')))
+  }
+})
+
+test("worktree and staged configuration scope are independent even when content bytes match", (t) => {
+  const { write, git, check } = fixture(t)
+  const scopedPolicy = {
+    ...policy,
+    forbiddenIdentifiers: policy.forbiddenIdentifiers.map((item) =>
+      item.kind === "source-owner" ? { ...item, scope: "template" } : item
+    ),
+  }
+  const configuration = (configured) => `export const storeConfig = { configured: ${configured} }`
+  write("LICENSE", "Copyright\nFormer Store Owner\n")
+  write("src/lib/store-config.ts", configuration(false))
+  git("add", ".")
+  git("update-index", "--assume-unchanged", "src/lib/store-config.ts")
+  write("src/lib/store-config.ts", configuration(true))
+  assert.deepEqual(check(scopedPolicy), ['"LICENSE":2 (index): source-owner'])
+  git("update-index", "--no-assume-unchanged", "src/lib/store-config.ts")
+  git("add", "src/lib/store-config.ts")
+  assert.deepEqual(check(scopedPolicy), [])
+  git("update-index", "--skip-worktree", "src/lib/store-config.ts")
+  write("src/lib/store-config.ts", configuration(false))
+  assert.deepEqual(check(scopedPolicy), ['"LICENSE":2: source-owner'])
+})
+
+test("an unsafe configuration symlink cannot disable template-scoped rules", (t) => {
+  const { root, write, check } = fixture(t)
+  const scopedPolicy = {
+    ...policy,
+    forbiddenIdentifiers: policy.forbiddenIdentifiers.map((item) => ({ ...item, scope: "template" })),
+  }
+  write("LICENSE", identifiers[1][0])
+  write("private-config.ts", "export const storeConfig = { configured: true }")
+  write(".gitignore", "private-config.ts\n")
+  mkdirSync(join(root, "src/lib"), { recursive: true })
+  symlinkSync(join(root, "private-config.ts"), join(root, "src/lib/store-config.ts"))
+  assert.ok(check(scopedPolicy).some((failure) => failure.includes("source-owner")))
+})
+
+test("line diagnostics preserve multiline identity and never emit matched values", (t) => {
+  const { write, check } = fixture(t)
+  write("docs/leaks.txt", `Heading\nFormer\nStore Owner\n${secret}\n${["", "Users", "synthetic"].join("/")}\n`)
+  const failures = check()
+  assert.ok(failures.includes('"docs/leaks.txt":2: source-owner'))
+  assert.ok(failures.includes('"docs/leaks.txt":4: provider/browser key'))
+  assert.ok(failures.includes('"docs/leaks.txt":5: machine-local path'))
+  assert.ok(!failures.join("\n").includes(secret))
+})
+
+test("large sets of changed files read indexed blobs in one Git batch", (t) => {
+  const { write, git, check } = fixture(t)
+  for (let index = 0; index < 24; index++) write(`docs/changed-${index}.txt`, `File ${index}\n${secret}`)
+  write("binary.bin", Buffer.concat([Buffer.from([0, 1, 2]), Buffer.from(secret)]))
+  git("add", ".")
+  for (let index = 0; index < 24; index++) write(`docs/changed-${index}.txt`, "Clean working text")
+  write("binary.bin", Buffer.from([0, 1, 2]))
+  const originalExec = childProcess.execFileSync
+  const calls = []
+  t.mock.method(childProcess, "execFileSync", (...args) => {
+    if (args[0] === "git") calls.push(args[1])
+    return originalExec(...args)
+  })
+  syncBuiltinESMExports()
+  try {
+    const failures = check()
+    assert.equal(failures.filter((failure) => failure.includes(":2 (index): provider/browser key")).length, 24)
+    assert.ok(failures.includes('"binary.bin":1 (index): provider/browser key'))
+    assert.equal(calls.filter((args) => args[0] === "cat-file" && args.includes("--batch")).length, 1)
+    assert.equal(calls.filter((args) => args[0] === "show").length, 0)
+  } finally {
+    t.mock.restoreAll()
+    syncBuiltinESMExports()
+  }
+})
+
+test("database URLs and Resend tokens reject secrets while safe hosts and placeholders stay usable", (t) => {
+  const { write, check } = fixture(t)
+  const databaseUrl = (host, password = "SyntheticPasswordNeverUsed") =>
+    ["postgresql", "://", `store_app_runtime.synthetic:${password}@${host}/postgres`].join("")
+  const safeHosts = [
+    "localhost",
+    "dev.localhost",
+    "127.0.0.1",
+    "127.20.30.40",
+    "[::1]",
+    "db.example",
+    "db.example.com",
+    "db.example.net",
+    "db.test",
+    "db.invalid",
+  ]
+  const unsafeHosts = [
+    "db.production-host.com",
+    "localhost.evil.com",
+    "db.example.com.evil.com",
+    "notexample.com",
+    "db.test.evil.com",
+    "127.0.0.1.evil.com",
+    "private-host",
+  ]
+  for (const [index, host] of safeHosts.entries()) write(`docs/safe-${index}.txt`, databaseUrl(host))
+  write("docs/placeholder.txt", databaseUrl("db.production-host.com", "PASSWORD"))
+  write("docs/encoded-placeholder.txt", databaseUrl("db.production-host.com", "%3CPASSWORD%3E"))
+  write(
+    "docs/local-query.txt",
+    ["postgresql", ":///postgres?user=fixture&password=SyntheticQueryPasswordNeverUsed&host=localhost"].join("")
+  )
+  assert.deepEqual(check(), [])
+  for (const [index, host] of unsafeHosts.entries()) write(`docs/unsafe-${index}.txt`, databaseUrl(host))
+  write("docs/postgres.txt", databaseUrl(unsafeHosts[0]).replace("postgresql", "postgres"))
+  const resend = ["re", "SyntheticResendCredentialNeverIssued12345"].join("_")
+  write("docs/mail.txt", `Mail setup\n${resend}\n`)
+  const queryUrls = [
+    databaseUrl(unsafeHosts[0], "").concat("?password=SyntheticQueryPasswordNeverUsed"),
+    ["postgresql", "://", unsafeHosts[0], "/postgres?user=fixture&password=SyntheticQueryPasswordNeverUsed"].join(""),
+    databaseUrl("localhost").concat(`?host=${unsafeHosts[0]}`),
+    databaseUrl(unsafeHosts[0], "PASSWORD").concat("?password=SyntheticQueryPasswordNeverUsed"),
+    databaseUrl(unsafeHosts[0]).concat("?password=PASSWORD&host=localhost"),
+  ]
+  for (const [index, url] of queryUrls.entries()) write(`docs/query-${index}.txt`, url)
+  const failures = check()
+  for (let index = 0; index < unsafeHosts.length; index++)
+    assert.ok(failures.includes(`"docs/unsafe-${index}.txt":1: credentialed database URL`))
+  assert.ok(failures.includes('"docs/mail.txt":2: provider/browser key'))
+  assert.ok(failures.includes('"docs/postgres.txt":1: credentialed database URL'))
+  for (let index = 0; index < queryUrls.length; index++)
+    assert.ok(failures.includes(`"docs/query-${index}.txt":1: credentialed database URL`))
+  assert.ok(!failures.join("\n").includes(resend))
+})
 
 test("rejects private env and provider state at any nesting level, including force-added ignored files", (t) => {
   const { write, git, check } = fixture(t)
@@ -275,12 +447,12 @@ test("detects zero-cookie browser exports carrying passkeys or origin private fi
 test("NUL bytes and UTF-16 exports cannot bypass identity or credential checks", (t) => {
   const { write, check } = fixture(t)
   write("metadata.bin", Buffer.concat([Buffer.from([0, 1, 2]), Buffer.from(secret)]))
-  write("export.txt", Buffer.from("Former Store Owner", "utf16le"))
+  write("export.txt", Buffer.from("Heading\nFormer Store Owner", "utf16le"))
   const failures = check()
   assert.ok(
     failures.some((failure) => failure.startsWith('"metadata.bin"') && failure.includes("provider/browser key"))
   )
-  assert.ok(failures.some((failure) => failure.startsWith('"export.txt"') && failure.includes("source-owner")))
+  assert.ok(failures.includes('"export.txt":2: source-owner'))
 })
 
 test("rejects untracked, dangling and tracked symlinks without reading external target content", (t) => {
@@ -394,7 +566,7 @@ test("license exception is one exact attribution line in one file, not a whole-f
   write("LICENSE", `${notice}\nMIT terms are preserved here.\n`)
   assert.deepEqual(check(licensePolicy), [])
   write("LICENSE", `${notice}\nContact Former Store Owner\n${secret}`)
-  assert.ok(check(licensePolicy).some((failure) => failure.includes("source-owner")))
+  assert.ok(check(licensePolicy).includes('"LICENSE":2: source-owner'))
   assert.ok(check(licensePolicy).some((failure) => failure.includes("provider/browser key")))
   write("docs/copied-license.txt", notice)
   assert.ok(
@@ -413,8 +585,15 @@ test("detects POSIX and Windows home paths without exposing the path value", (t)
   ]
   paths.forEach((value, index) => write(`docs/path-${index}.txt`, value))
   write("docs/escaped-windows.json", JSON.stringify({ workspacePath: paths[2] }))
+  const bareHome = ["", "Users", "synthetic"].join("/")
+  write(
+    "docs/path-contexts.txt",
+    [`<string>${paths[0]}</string>`, `a,${paths[1]}`, `a|${paths[1]}`, `HOME=${bareHome}`, `cd ${bareHome} && ls`].join(
+      "\n"
+    )
+  )
   const failures = check()
-  assert.equal(failures.filter((failure) => failure.includes("machine-local path")).length, 4)
+  assert.equal(failures.filter((failure) => failure.includes("machine-local path")).length, 9)
   for (const value of paths) assert.ok(!failures.join("\n").includes(value))
 })
 
