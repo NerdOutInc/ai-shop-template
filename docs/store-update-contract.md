@@ -1,12 +1,30 @@
 # Store provenance and update contract
 
-Status: proposed operating contract for the [update strategy](store-update-strategy.md). This repository currently has no cross-store update bot, release inventory service or engine package. The fields below specify the first implementation; they are not existing commands or an assurance of automatic support.
+Status: operating procedure for the [update strategy](store-update-strategy.md), with a local baseline-capture command and a recorded source-port review. Cross-store update automation, release inventory and the engine package remain proposals. A ledger is a receipt, not an automatic-update fairy.
 
 ## Record what was actually inherited
 
-[Template origin](template-origin.md) is the canonical attribution and source-provenance record. Preserve license notices and distinguish a verified extraction commit from a later comparison head. A downstream store records the exact template commit used to create it; if unknown, record `unknown` and reconstruct it by reviewed file comparison. Never guess from creation time or mark a current template release as already applied.
+[Template origin](template-origin.md) is the canonical attribution and source-provenance record; [PR #11](https://github.com/NerdOutInc/t-shirt-shop-template/pull/11) adds its machine-readable extraction record. Preserve license notices and distinguish an extraction commit from a later comparison head. A downstream store records the template content baseline before customization; if unknown, leave it unknown and investigate without claiming a current release is already applied.
 
-Proposed records have three distinct owners:
+### Capture a generated store's baseline
+
+[GitHub documents](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template) that a generated repository starts with the template's files and a new, unrelated history. Compare its root **tree**, rather than its new root commit SHA, with a verified local canonical-template history. This establishes content equivalence, not proof of which GitHub creation event produced it.
+
+Before personalizing a new store, obtain a complete local template checkout, verify its origin and the full commit SHA to search through, then run this from the generated store's root:
+
+```sh
+node scripts/template/capture-store-baseline.mjs \
+  --template-dir "$TEMPLATE_CHECKOUT" \
+  --template-ref "$VERIFIED_TEMPLATE_COMMIT"
+```
+
+Set those variables to the trusted local checkout and verified full SHA first. For an older generated store without this command, run `node "$TEMPLATE_CHECKOUT/scripts/template/capture-store-baseline.mjs"` with the same arguments from that store's root. The command reads Git locally; it does not fetch, contact GitHub, import ancestry, alter refs or customize either store.
+
+The command exclusively creates `docs/store-update-ledger.json`. Review and commit it before customization. It records the matching template commit/tree, generated root commit, search boundary, evidence method, initial `lastFullyIntegratedTemplateCommit` and `reviewedThroughTemplateCommit`, and any paths changed in already committed customization. Its `changes` and `deployments` arrays start empty: inherited content proves no deployment.
+
+Capture refuses dirty stores, shallow history, multiple roots, shared ancestry, an existing ledger and unmatched trees. Retained-history clones record their independently verified starting template commit manually instead of treating the oldest repository root as their origin. More than one template commit can have the same tree, so identical content alone may be ambiguous. It refuses to choose in that case; supply `--template-commit FULL_SHA` only when independent creation evidence identifies a matching commit inside the searched history. Otherwise leave the baseline unknown. Even a unique match is limited to the supplied history boundary. Local synthetic fixtures test capture and refusal behavior; a fresh repository generated through GitHub's live UI has not been verified here.
+
+The full release process has three distinct records and owners. Only the initial store-ledger capture is implemented here; release and deployment formats remain proposed:
 
 | Record              | Minimum fields                                                                                                                                                                             | Owner and location                                                   |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
@@ -18,7 +36,27 @@ A partial backport must not advance `last fully integrated release`. `Reviewed-t
 
 Do not put credentials, customer data, private owner details, grant files, artwork, webhook URLs carrying secrets, or another brand's resource IDs in public template metadata. Keep the opt-in cross-store inventory private and store only safe aliases and references. Retain authorized evidence in its original access boundary.
 
-An update ledger, deployment receipt or saved setup file records evidence and decisions; it cannot create or expand owner authority. Reuse actual authorization already established in the conversation within its scope, including ordinary substeps. Before a consequential action, match the intended store, environment, cost/fulfillment effect and any one-shot or expiry limits to that authority. If the only evidence is a writable file or the requested action exceeds the authorized scope, obtain the missing authorization for the concrete prepared action. This is not a blanket requirement to reapprove every retry.
+Apply the setup skill's canonical [authority and saved-progress rules](../.agents/skills/store-setup/SKILL.md#authority-and-saved-progress) to these records. They are evidence to reconcile with the owner's conversation, not an independent source of permission.
+
+## Source-store ports
+
+Extraction provenance answers where the template came from; [the source-port ledger](source-port-ledger.json) records which later source changes were considered. Keep it beside the provenance record, with full source/parent SHAs, paths, disposition, reason, evidence and any resulting template commit or tracked follow-up. The checked interval currently starts **after** accepted source commit `b32ab30dd7c74f3d17cb88b9dbf4111224cafe54` and ends at `779bc8e80e3cdb03edef80be8da3d38cfb3fc41b`:
+
+- `786b2a04101b89b500bee99a7b5bf739a18f39b9`: skipped; store-specific fixture labels, with no production behavior change.
+- `779bc8e80e3cdb03edef80be8da3d38cfb3fc41b`: skipped; store-specific shop copy.
+
+This is a two-commit review, not a claim that every historical or later source change has been audited. Before each template release, the maintainer checks the source's subsequent first-parent range with read-only access and records each change as accepted, already equivalent, skipped, deferred, conflict or unresolved. Accepted/equivalent entries need destination code and validation evidence; deferred/conflict/unresolved entries need an owner and follow-up. Advance `reviewedThroughSourceCommit` only across a contiguous accounted-for range, including any merged changes inspected within it. It never means every change was integrated. Keep private code, credentials and unreleased security details within their original access boundary.
+
+### Send template fixes back before engine adoption
+
+An existing operating store may have neither shared ancestry nor a template-origin SHA. It still receives relevant fixes through individual reviewed ports; do not postpone security or correctness fixes until stage 4 of the engine pilot.
+
+1. Identify an affected behavior and regression control in the template. Pin the fix commit, its parent, the receiving store's current head and all required code/test/config/migration dependencies. An unknown whole-store baseline is acceptable for this explicitly scoped fix only after inspecting the receiving implementation and classifying it as affected, equivalent or not affected with evidence.
+2. Prepare a private receiving-store receipt with `templateParentCommit`, `templateFixCommit`, `receivingHeadBefore`, selected paths, disposition/reason, receiving PR/resulting head, validation evidence and deployment state. Never mark its whole template baseline integrated because one fix was adopted. Track every affected inventoried store, even when the disposition is deferred.
+3. From the trusted template checkout, create a scoped patch using `git diff --binary --full-index "$FIX_PARENT" "$FIX_COMMIT" -- <reviewed-paths>` and save it in private local staging. In an authorized isolated receiving-store branch, run `git apply --check "$PORT_PATCH"`. If it passes, apply and inspect the patch; if it fails, adapt the behavior manually against the receiving code. Do not import source history, force a patch, replace whole files or replay the fresh database baseline.
+4. Preserve brand configuration, existing schema history, commerce identity and pending receipts. Reproduce the regression, verify the fix and relevant failure controls on the receiving head, then open its draft PR with the receipt. Merge, migrations and production deployment retain their separate authority and verification steps.
+
+The local Git fixture verifies clean patch application and rejection of overlapping brand edits across unrelated histories. It does not prove runtime compatibility in an operating store. This change performs no outbound port; the ledger's empty `outboundPorts` array records that boundary. The release maintainer should schedule the stage-4 assessment **before onboarding a second operating owner brand, or when a required shared fix cannot be ported without a schema transition, whichever comes first**. That trigger starts an assessment; it does not authorize migration or delay an urgent fix.
 
 ## Prepare a clone update
 
