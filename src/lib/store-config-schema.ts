@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { isStoreTimeZone } from "./is-store-time-zone"
 
 const color = z.string().regex(/^#[0-9a-f]{6}$/i, "Use a six-digit hex color")
 const localAsset = z.string().regex(/^\/(?!\/)/, "Use an asset path beginning with one slash")
@@ -14,14 +15,7 @@ export const storeConfigSchema = z
     description: text,
     tagline: text,
     locale: text,
-    timeZone: text.refine((timeZone) => {
-      try {
-        new Intl.DateTimeFormat("en", { timeZone }).format()
-        return true
-      } catch {
-        return false
-      }
-    }, "Use an IANA time zone such as America/New_York or UTC"),
+    timeZone: text.refine(isStoreTimeZone, "Use UTC or an IANA region/city time zone such as America/New_York"),
     weeklyFeature: z.object({
       weekday: z.number().int().min(0).max(6),
       hour: z.number().int().min(0).max(23),
