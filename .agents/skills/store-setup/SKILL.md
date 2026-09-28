@@ -13,7 +13,7 @@ Read ignored `.store-setup.local.json`, when present, and verify the current bra
 
 Discover callable tools: shell/repository, browser, computer, provider connectors/CLIs, image generation and optional documentation tools. Browser and Computer may be available as host plugins, but are not dependencies installed by this project. Follow their live instructions. If missing, explain the specific gap, give an exact small handoff and continue independent work. Do not install a plugin or provision a paid service without the owner's applicable request.
 
-Verify the generated repository’s remote, personalize `package.json`’s name and README starter links, and review CI/default-branch and monitor settings for that repository. Preserve license and template provenance. Follow [repository personalization](../../../docs/store-setup.md#personalize-the-generated-repository).
+Verify the generated repository’s remote, personalize `package.json`’s name and README starter links, and review CI/default-branch and monitor settings for that repository. Preserve license and template provenance. Follow [repository personalization](../../../docs/store-setup.md#personalize-the-generated-repository). Enable and verify Dependabot alerts and security updates on the generated repository using [repository security settings](../../../docs/dependency-maintenance.md#repository-security-settings), so blocked Next security fixes remain visible when its patch range needs review.
 
 ## Interview and visual direction
 
