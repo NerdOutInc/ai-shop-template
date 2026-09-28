@@ -13,10 +13,10 @@ function fixture(): MerchantProduct {
   return {
     apparel: { googleProductCategory: 212, ageGroup: "adult", gender: "unisex", sizeSystem: "US" },
     product: normalizeCatalogProduct({
-      id: "climb-shirt",
+      id: "sample-shirt",
       shop_id: 123,
-      title: "Small Wins — Fixture Store | Next Level 6210",
-      description: "<p>A little progress counts.</p><p>Bring your friends.</p>",
+      title: "Sample Morning Scene — Fixture Store | Next Level 6210",
+      description: "<p>A colorful illustrated scene.</p><p>Detailed shapes fill the frame.</p>",
       variants: [
         { id: 1, price: 2500, is_enabled: true, is_available: true, options: [10, 20] },
         { id: 2, price: 2850, is_enabled: true, is_available: false, options: [10, 21] },
@@ -102,9 +102,9 @@ describe("createMerchantFeed", () => {
     const rows = items(meta)
     expect(rows.map((row) => ({ id: value(row, "id"), quantity: value(row, "quantity_to_sell_on_facebook") }))).toEqual(
       [
-        { id: "climb-shirt-1", quantity: "999999" },
-        { id: "climb-shirt-2", quantity: "0" },
-        { id: "climb-shirt-3", quantity: "999999" },
+        { id: "sample-shirt-1", quantity: "999999" },
+        { id: "sample-shirt-2", quantity: "0" },
+        { id: "sample-shirt-3", quantity: "999999" },
       ]
     )
     expect(google).not.toContain("quantity_to_sell_on_facebook")
@@ -118,7 +118,7 @@ describe("createMerchantFeed", () => {
     for (const available of [false, true]) {
       variant.available = available
       const row = items(createMerchantFeed([product], siteUrl, "meta"))[0]!
-      expect(value(row, "id")).toBe("climb-shirt-1")
+      expect(value(row, "id")).toBe("sample-shirt-1")
       expect(value(row, "availability")).toBe(available ? "in_stock" : "out_of_stock")
       expect(value(row, "quantity_to_sell_on_facebook")).toBe(available ? "999999" : "0")
     }
@@ -139,34 +139,34 @@ describe("createMerchantFeed", () => {
       }))
     ).toEqual([
       {
-        id: "climb-shirt-1",
-        group: "climb-shirt",
-        link: "https://example.com/shop/climb-shirt?color=Black&size=S",
+        id: "sample-shirt-1",
+        group: "sample-shirt",
+        link: "https://example.com/shop/sample-shirt?color=Black&size=S",
         image: "https://images.printify.com/black-front.jpg",
         price: "25.00 USD",
         availability: "in_stock",
       },
       {
-        id: "climb-shirt-2",
-        group: "climb-shirt",
-        link: "https://example.com/shop/climb-shirt?color=Black&size=2XL",
+        id: "sample-shirt-2",
+        group: "sample-shirt",
+        link: "https://example.com/shop/sample-shirt?color=Black&size=2XL",
         image: "https://images.printify.com/black-front.jpg",
         price: "28.50 USD",
         availability: "out_of_stock",
       },
       {
-        id: "climb-shirt-3",
-        group: "climb-shirt",
-        link: "https://example.com/shop/climb-shirt?color=Heather+Grey&size=2XL",
+        id: "sample-shirt-3",
+        group: "sample-shirt",
+        link: "https://example.com/shop/sample-shirt?color=Heather+Grey&size=2XL",
         image: "https://images.printify.com/grey-front.jpg",
         price: "27.95 USD",
         availability: "in_stock",
       },
     ])
     expect(values(rows[0]!, "additional_image_link")).toEqual(["https://images.printify.com/black-back.jpg"])
-    expect(value(rows[0]!, "title")).toBe("Small Wins – Black / S")
+    expect(value(rows[0]!, "title")).toBe("Sample Morning Scene – Black / S")
     expect(value(rows[0]!, "description")).toBe(merchantProduct.product.description)
-    expect(value(rows[0]!, "canonical_link")).toBe("https://example.com/shop/climb-shirt")
+    expect(value(rows[0]!, "canonical_link")).toBe("https://example.com/shop/sample-shirt")
     expect(value(rows[0]!, "brand")).toBe("Fixture Store")
     expect(value(rows[0]!, "google_product_category")).toBe("212")
     expect(value(rows[0]!, "condition")).toBe("new")
@@ -175,7 +175,7 @@ describe("createMerchantFeed", () => {
     expect(value(rows[0]!, "size_system")).toBe("US")
     expect(value(rows[0]!, "color")).toBe("Black")
     expect(value(rows[0]!, "size")).toBe("S")
-    expect(value(rows[0]!, "item_group_title")).toBe("Small Wins")
+    expect(value(rows[0]!, "item_group_title")).toBe("Sample Morning Scene")
     expect(
       [...rows[0]!.getElementsByTagNameNS(namespace, "variant_option")].map((option) => ({
         name: value(option, "name"),
@@ -256,7 +256,8 @@ describe("createMerchantFeed", () => {
     const merchantProduct = fixture()
     merchantProduct.product.id = "shirt&one"
     merchantProduct.product.title = 'A < B & "friends"'
-    merchantProduct.product.description = 'Keep <climbing> & "trying".\nIt’s us vs. the wall. 🧗 </description><item />'
+    merchantProduct.product.description =
+      'Keep <creating> & "trying".\nMade for your everyday. 🎨 </description><item />'
     merchantProduct.product.colors[0]!.name = "Black & White"
     merchantProduct.product.variants.slice(0, 2).forEach((variant) => {
       variant.color = "Black & White"

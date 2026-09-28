@@ -12,7 +12,7 @@ vi.mock("@/lib/get-site-url", () => ({ getSiteUrl: () => new URL("https://exampl
 
 const product: CatalogProduct = {
   id: "aaaaaaaaaaaaaaaaaaaaaaaa",
-  title: "Good hangs — Fixture Store | Next Level 6210",
+  title: "Sample first design — Fixture Store | Next Level 6210",
   description: "A shirt for good company.",
   addedToShopAt: null,
   salesCount: null,
@@ -69,7 +69,7 @@ describe("Meta cart catalog resolution", () => {
         {
           productId: product.id,
           variantId: 1001,
-          title: "Good hangs – Black / M",
+          title: "Sample first design – Black / M",
           variantTitle: "Black / M",
           image: "https://example.com/black.jpg",
           unitAmount: 2800,
@@ -78,7 +78,7 @@ describe("Meta cart catalog resolution", () => {
         {
           productId: product.id,
           variantId: 1003,
-          title: "Good hangs – Clay / XL",
+          title: "Sample first design – Clay / XL",
           variantTitle: "Clay / XL",
           image: "https://example.com/clay.jpg",
           unitAmount: 3200,
@@ -92,10 +92,10 @@ describe("Meta cart catalog resolution", () => {
 
   it.each([
     {
-      title: "The Conversation Continues — Fixture Store | Next Level 6210",
+      title: "Sample Conversation — Fixture Store | Next Level 6210",
       color: "CVC Midnight Navy",
-      expectedTitle: "The Conversation Continues – CVC Midnight Navy / M",
-      expectedOtherTitle: "The Conversation Continues – Clay / XL",
+      expectedTitle: "Sample Conversation – CVC Midnight Navy / M",
+      expectedOtherTitle: "Sample Conversation – Clay / XL",
     },
     {
       title: "<Keep> & \"Going\" 'Together' — Fixture Store | Next Level 6210",
@@ -190,7 +190,7 @@ describe("Meta cart catalog resolution", () => {
     expect(await resolveMetaCart({ products: `${product.id}-9999:1` })).toEqual({
       status: "error",
       reason: "unavailable",
-      unavailableItem: { title: "Good hangs", variantTitle: null, href: `/shop/${product.id}` },
+      unavailableItem: { title: "Sample first design", variantTitle: null, href: `/shop/${product.id}` },
     })
   })
 
@@ -203,7 +203,7 @@ describe("Meta cart catalog resolution", () => {
     expect(await resolveMetaCart({ products: `${product.id}-1001:1` })).toEqual({
       status: "error",
       reason: "unavailable",
-      unavailableItem: { title: "Good hangs", variantTitle: "Black / M", href: `/shop/${product.id}` },
+      unavailableItem: { title: "Sample first design", variantTitle: "Black / M", href: `/shop/${product.id}` },
     })
   })
 
@@ -219,7 +219,7 @@ describe("Meta cart catalog resolution", () => {
     expect(await resolveMetaCart({ products: `${product.id}-1001:1,${product.id}-1003:1` })).toEqual({
       status: "error",
       reason: "unavailable",
-      unavailableItem: { title: "Good hangs", variantTitle: "Clay / XL", href: `/shop/${product.id}` },
+      unavailableItem: { title: "Sample first design", variantTitle: "Clay / XL", href: `/shop/${product.id}` },
     })
   })
 

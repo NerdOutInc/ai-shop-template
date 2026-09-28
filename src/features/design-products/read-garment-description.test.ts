@@ -10,7 +10,7 @@ const details = "<p><strong>The tee</strong></p><ul><li>60% cotton</li></ul>"
 const care = "<p><strong>Care</strong></p><p>Wash cold.</p>"
 const oldDesign = "<p>The design</p><p>Somebody else's joke.</p>"
 const sizeGuide = { sizes: ["M"], measurements: [{ label: "Width, in", values: ["20.50"] }] }
-const title = "Rest Restores Mana - Premium T-Shirt"
+const title = "Sample Garden Illustration - Premium T-Shirt"
 const read = (html: string) => readGarmentDescription(html, title)
 
 describe("readGarmentDescription", () => {
@@ -121,7 +121,7 @@ describe("readGarmentDescription", () => {
 
   it("does not start at the donor's own title, a bold list item or emphasis in the old design", () => {
     const garment = "<p><strong>The crop top</strong></p><p>Printed on the Next Level 5080.</p>"
-    const design = `<h2>${title}</h2><p>Somebody else's <strong>joke</strong>.</p><ul><li><p><strong>Chalk</strong></p></li></ul>`
+    const design = `<h2>${title}</h2><p>Somebody else's <strong>joke</strong>.</p><ul><li><p><strong>Texture</strong></p></li></ul>`
     const result = read(`${design}${garment}${care}${chart}`)
     expect(result).toEqual({ description: `${garment}${care}${chart}`, sizeGuide })
     expect(readGarmentDescription(`${design}${garment}${chart}`, "Another Design")?.description).toContain(
@@ -129,18 +129,19 @@ describe("readGarmentDescription", () => {
     )
   })
 
-  it.each(["Rest Restores Mana", "Rest Restores Mana — Fixture Store | Next Level 6210", "rest restores  mana"])(
-    "does not start at a heading repeating the donor's saved title: %s",
-    (heading) => {
-      const saved = "Rest Restores Mana — Fixture Store | Next Level 6210"
-      expect(
-        readGarmentDescription(`<h2>${heading}</h2><p>Somebody else's joke.</p>${details}${care}${chart}`, saved)
-      ).toEqual({
-        description: `${details}${care}${chart}`,
-        sizeGuide,
-      })
-    }
-  )
+  it.each([
+    "Sample Garden Illustration",
+    "Sample Garden Illustration — Fixture Store | Next Level 6210",
+    "sample garden  illustration",
+  ])("does not start at a heading repeating the donor's saved title: %s", (heading) => {
+    const saved = "Sample Garden Illustration — Fixture Store | Next Level 6210"
+    expect(
+      readGarmentDescription(`<h2>${heading}</h2><p>Somebody else's joke.</p>${details}${care}${chart}`, saved)
+    ).toEqual({
+      description: `${details}${care}${chart}`,
+      sizeGuide,
+    })
+  })
 
   it("still lends the chart of a donor whose only section is its care", () => {
     expect(read(`${oldDesign}${care}${chart}`)).toEqual({ description: `${care}${chart}`, sizeGuide })

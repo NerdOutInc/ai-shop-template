@@ -383,7 +383,7 @@ test("owner arranges the featured lineup and the shop follows it", async ({ brow
   const context = await browser.newContext({ baseURL: config.baseURL, storageState: ownerSession })
   const page = await context.newPage()
   const lineup = catalogProducts.slice(0, 3)
-  const [goodHangs, wallBuddies, freshBeta] = lineup.map((product) => product.title)
+  const [firstDesign, secondDesign, newestDesign] = lineup.map((product) => product.title)
   await pool.query("delete from commerce.product_week_schedule where shop_id='123'")
   await pool.query("delete from commerce.printify_products where shop_id='123'")
   // Showing a tee is refused until its garment is complete. Seed this synthetic shop explicitly.
@@ -405,7 +405,7 @@ test("owner arranges the featured lineup and the shop follows it", async ({ brow
   expect(reset.status()).toBe(200)
   const shopTitles = page.getByRole("main").getByRole("heading", { level: 2 })
   await page.goto("/shop")
-  await expect(shopTitles).toHaveText([goodHangs!, wallBuddies!, freshBeta!])
+  await expect(shopTitles).toHaveText([firstDesign!, secondDesign!, newestDesign!])
 
   await page.goto("/admin/concepts")
   const nav = page.getByRole("navigation", { name: "Primary navigation" })
@@ -414,14 +414,14 @@ test("owner arranges the featured lineup and the shop follows it", async ({ brow
   await expect(page.getByRole("heading", { name: "Shop lineup" })).toBeVisible()
   await expect(nav.getByRole("link", { name: "Products", exact: true })).toHaveAttribute("aria-current", "page")
   const rows = page.getByRole("list", { name: "Available products" }).getByRole("link")
-  await expect(rows).toHaveText([goodHangs, wallBuddies, freshBeta].map((title) => `View in shop: ${title}`))
+  await expect(rows).toHaveText([firstDesign, secondDesign, newestDesign].map((title) => `View in shop: ${title}`))
 
   const saved = () =>
     page.waitForResponse(
       (response) =>
         response.url().endsWith("/api/admin/products/featured-order") && response.request().method() === "PUT"
     )
-  const announcement = page.getByRole("status").filter({ hasText: `${freshBeta} ` })
+  const announcement = page.getByRole("status").filter({ hasText: `${newestDesign} ` })
   // dnd-kit ignores arrows for a moment after pickup while it measures rows; retry only an unmoved row.
   async function moveUp(expected: string) {
     const unmoved = await announcement.textContent()
@@ -431,21 +431,21 @@ test("owner arranges the featured lineup and the shop follows it", async ({ brow
     }).toPass()
   }
   let save = saved()
-  await page.getByRole("button", { name: `Reorder ${freshBeta}` }).focus()
+  await page.getByRole("button", { name: `Reorder ${newestDesign}` }).focus()
   await page.keyboard.press("Space")
   const dragOverlay = page.locator("[data-product-drag-overlay]")
   // The first over-position announcement can immediately replace pickup; the visible row persists.
   await expect(dragOverlay).toBeVisible()
-  await expect(dragOverlay).toContainText(freshBeta!)
+  await expect(dragOverlay).toContainText(newestDesign!)
   await expect(dragOverlay.locator("img")).toBeVisible()
   await moveUp("position 2 of 3")
   await moveUp("position 1 of 3")
   await page.keyboard.press("Space")
   expect((await save).status()).toBe(200)
-  await expect(rows).toHaveText([freshBeta, goodHangs, wallBuddies].map((title) => `View in shop: ${title}`))
+  await expect(rows).toHaveText([newestDesign, firstDesign, secondDesign].map((title) => `View in shop: ${title}`))
 
-  const from = await page.getByRole("button", { name: `Reorder ${wallBuddies}` }).boundingBox()
-  const toHandle = page.getByRole("button", { name: `Reorder ${freshBeta}` })
+  const from = await page.getByRole("button", { name: `Reorder ${secondDesign}` }).boundingBox()
+  const toHandle = page.getByRole("button", { name: `Reorder ${newestDesign}` })
   const to = await toHandle.boundingBox()
   const toRow = await toHandle.locator("xpath=ancestor::li").boundingBox()
   if (!from || !to || !toRow) throw new Error("Drag handles are not visible")
@@ -455,21 +455,21 @@ test("owner arranges the featured lineup and the shop follows it", async ({ brow
   // Release in the gap just below the first row, outside every droppable row box.
   await page.mouse.move(to.x + to.width / 2, toRow.y + toRow.height + 1, { steps: 12 })
   await expect(page.locator("[data-product-drag-overlay]")).toBeVisible()
-  await expect(page.locator("[data-product-drag-overlay]")).toContainText(wallBuddies!)
+  await expect(page.locator("[data-product-drag-overlay]")).toContainText(secondDesign!)
   await page.mouse.up()
   expect((await save).status()).toBe(200)
-  await expect(rows).toHaveText([wallBuddies, freshBeta, goodHangs].map((title) => `View in shop: ${title}`))
+  await expect(rows).toHaveText([secondDesign, newestDesign, firstDesign].map((title) => `View in shop: ${title}`))
 
   // The complete row follows the pointer through dnd-kit's DragOverlay above; menu actions provide
   // the same reorder operation without requiring a drag.
   await expect(page.locator("[data-product-drag-overlay]")).toHaveCount(0)
-  await page.getByRole("button", { name: `Actions for ${freshBeta}` }).click()
+  await page.getByRole("button", { name: `Actions for ${newestDesign}` }).click()
   save = saved()
   await page.getByRole("menuitem", { name: "Move up in shop" }).click()
   expect((await save).status()).toBe(200)
   await expect(page.getByText("Changes saved.")).toBeVisible()
 
-  const expected = [freshBeta, wallBuddies, goodHangs]
+  const expected = [newestDesign, secondDesign, firstDesign]
   await page.reload()
   await expect(rows).toHaveText(expected.map((title) => `View in shop: ${title}`))
   await page.goto("/shop")
@@ -488,17 +488,17 @@ test("owner arranges the featured lineup and the shop follows it", async ({ brow
 
   // Hidden products have a full admin preview, while both private and public routes stay 404 for visitors.
   await page.goto("/admin/products")
-  await page.getByRole("button", { name: `Actions for ${wallBuddies}` }).click()
+  await page.getByRole("button", { name: `Actions for ${secondDesign}` }).click()
   let visibility = visibilitySaved()
   await page.getByRole("menuitem", { name: "Hide from shop" }).click()
   expect((await visibility).status()).toBe(200)
-  await expect(rows).toHaveText([freshBeta, goodHangs].map((title) => `View in shop: ${title}`))
+  await expect(rows).toHaveText([newestDesign, firstDesign].map((title) => `View in shop: ${title}`))
   const previewPath = `/admin/products/${lineup[1]!.id}`
-  const preview = hidden.getByRole("link", { name: new RegExp(`Preview product\\s*:\\s*${wallBuddies}`) })
+  const preview = hidden.getByRole("link", { name: new RegExp(`Preview product\\s*:\\s*${secondDesign}`) })
   await expect(preview).toHaveAttribute("href", previewPath)
   await preview.click()
   await expect(page).toHaveURL((url) => url.pathname === previewPath)
-  await expect(page.getByRole("heading", { level: 1, name: wallBuddies })).toBeVisible()
+  await expect(page.getByRole("heading", { level: 1, name: secondDesign })).toBeVisible()
   await expect(page.getByRole("complementary", { name: "Admin preview" })).toBeVisible()
   await expect(page.getByText("Purchasing is disabled in admin preview.")).toBeVisible()
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/)
@@ -506,7 +506,7 @@ test("owner arranges the featured lineup and the shop follows it", async ({ brow
   for (const path of [previewPath, `/shop/${lineup[1]!.id}`]) {
     const denied = await visitor.request.get(path)
     expect(denied.status(), path).toBe(404)
-    expect(await denied.text()).not.toContain(wallBuddies!)
+    expect(await denied.text()).not.toContain(secondDesign!)
   }
   await visitor.close()
   await page.getByRole("link", { name: "Back to shop lineup" }).click()
@@ -525,7 +525,7 @@ test("owner arranges the featured lineup and the shop follows it", async ({ brow
   })
   // Picking up and dropping a hidden product without choosing a week must never set a reveal.
   for (const dropKey of ["Space", "Enter"]) {
-    await hidden.getByRole("button", { name: `Reorder ${wallBuddies}` }).focus()
+    await hidden.getByRole("button", { name: `Reorder ${secondDesign}` }).focus()
     await page.keyboard.press("Space")
     await expect(dragOverlay).toBeVisible()
     // KeyboardSensor attaches its key listener in a zero-delay timer after showing the overlay.
@@ -547,15 +547,15 @@ test("owner arranges the featured lineup and the shop follows it", async ({ brow
   await firstWeek.getByRole("button", { name: "Add the first product" }).click()
   const picker = page.getByRole("dialog", { name: "Add products to this week" })
   await expect(picker).toBeVisible()
-  await picker.getByRole("checkbox", { name: new RegExp(`^${wallBuddies}`) }).check()
-  await picker.getByRole("checkbox", { name: new RegExp(`^${goodHangs}`) }).check()
+  await picker.getByRole("checkbox", { name: new RegExp(`^${secondDesign}`) }).check()
+  await picker.getByRole("checkbox", { name: new RegExp(`^${firstDesign}`) }).check()
   let scheduling = scheduleSaved()
   await picker.getByRole("button", { name: "Add 2 products" }).click()
   expect((await scheduling).status()).toBe(200)
   await expect(picker).toHaveCount(0)
   await expect(firstWeek.getByRole("listitem")).toHaveCount(2)
-  await expect(firstWeek.getByRole("button", { name: `Scheduled actions for ${wallBuddies}` })).toBeVisible()
-  await expect(firstWeek.getByRole("button", { name: `Scheduled actions for ${goodHangs}` })).toBeVisible()
+  await expect(firstWeek.getByRole("button", { name: `Scheduled actions for ${secondDesign}` })).toBeVisible()
+  await expect(firstWeek.getByRole("button", { name: `Scheduled actions for ${firstDesign}` })).toBeVisible()
   // Scheduling a shown product preserves visibility; the hidden one stays hidden until the slot.
   expect((await context.request.get(`/shop/${lineup[1]!.id}`)).status()).toBe(404)
   expect((await context.request.get(`/shop/${lineup[0]!.id}`)).status()).toBe(200)
@@ -569,7 +569,7 @@ test("owner arranges the featured lineup and the shop follows it", async ({ brow
 
   const scheduledRequests = scheduleRequests.length
   for (const dropKey of ["Space", "Enter"]) {
-    await firstWeek.getByRole("button", { name: `Move ${wallBuddies} to another week by dragging` }).focus()
+    await firstWeek.getByRole("button", { name: `Move ${secondDesign} to another week by dragging` }).focus()
     await page.keyboard.press("Space")
     await expect(dragOverlay).toBeVisible()
     await page.evaluate(() => new Promise<void>((resolve) => setTimeout(resolve, 0)))
@@ -579,7 +579,7 @@ test("owner arranges the featured lineup and the shop follows it", async ({ brow
     await expect(firstWeek.getByRole("listitem")).toHaveCount(2)
   }
 
-  await firstWeek.getByRole("button", { name: `Scheduled actions for ${wallBuddies}` }).click()
+  await firstWeek.getByRole("button", { name: `Scheduled actions for ${secondDesign}` }).click()
   await page.getByRole("menuitem", { name: "Change week" }).click()
   const change = page.getByRole("dialog", { name: "Change featured week" })
   await change.getByLabel("Featured week").selectOption(secondDate)
@@ -588,7 +588,7 @@ test("owner arranges the featured lineup and the shop follows it", async ({ brow
   expect((await scheduling).status()).toBe(200)
   await expect(firstWeek.getByRole("listitem")).toHaveCount(1)
   await expect(secondWeek.getByRole("listitem")).toHaveCount(1)
-  await secondWeek.getByRole("button", { name: `Scheduled actions for ${wallBuddies}` }).click()
+  await secondWeek.getByRole("button", { name: `Scheduled actions for ${secondDesign}` }).click()
   scheduling = scheduleSaved("DELETE")
   await page.getByRole("menuitem", { name: "Remove from this week" }).click()
   expect((await scheduling).status()).toBe(200)
@@ -603,7 +603,7 @@ test("owner arranges the featured lineup and the shop follows it", async ({ brow
   expect((await context.request.get(`/shop/${lineup[1]!.id}`)).status()).toBe(404)
 
   // The real visibility action restores the product's original lineup slot immediately.
-  await page.getByRole("button", { name: `Actions for ${wallBuddies}` }).click()
+  await page.getByRole("button", { name: `Actions for ${secondDesign}` }).click()
   visibility = visibilitySaved()
   await page.getByRole("menuitem", { name: "Show in shop" }).click()
   expect((await visibility).status()).toBe(200)
@@ -643,12 +643,12 @@ test("owner arranges the featured lineup and the shop follows it", async ({ brow
   const currentWeek = page.getByRole("list", { name: "Design of the Week products" })
   await expect(page.getByRole("heading", { level: 2, name: "This week", exact: true })).toBeVisible()
   await expect(page.getByRole("heading", { level: 2, name: "Design of the Week", exact: true })).toHaveCount(1)
-  await expect(currentWeek.getByRole("link")).toHaveText([`View in shop: ${wallBuddies}`])
-  await expect(rows).toHaveText([freshBeta, goodHangs].map((title) => `View in shop: ${title}`))
+  await expect(currentWeek.getByRole("link")).toHaveText([`View in shop: ${secondDesign}`])
+  await expect(rows).toHaveText([newestDesign, firstDesign].map((title) => `View in shop: ${title}`))
   expect((await context.request.get(`/shop/${lineup[1]!.id}`)).status()).toBe(200)
   await page.goto("/#design-of-the-week")
   await expect(
-    page.getByRole("list", { name: "Design of the Week products" }).getByRole("article", { name: wallBuddies })
+    page.getByRole("list", { name: "Design of the Week products" }).getByRole("article", { name: secondDesign })
   ).toBeVisible()
   await page.goto("/admin/concepts/1")
   await expect(page.getByRole("link", { name: "Products", exact: true }).last()).toHaveAttribute(
@@ -662,7 +662,7 @@ test("owner arranges the featured lineup and the shop follows it", async ({ brow
   await page.goto("/admin/products")
   await expect(rows).toHaveCount(2)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
-  await page.getByRole("button", { name: `Reorder ${freshBeta}` }).focus()
+  await page.getByRole("button", { name: `Reorder ${newestDesign}` }).focus()
   expect(await page.locator(":focus").evaluate((element) => getComputedStyle(element).boxShadow !== "none")).toBe(true)
   await page.screenshot({ path: "test-results/admin/featured-order-narrow.png", fullPage: true })
   await context.close()
@@ -750,7 +750,7 @@ test("a tee on a garment nobody has set up stays off the wall until the owner fi
   await expect(card.getByRole("alert")).toContainText("Printify's catalog is not answering")
   await expect(card.getByLabel("Manufacturer", { exact: true })).toHaveValue("")
   await card.getByLabel("Manufacturer", { exact: true }).fill("Fixture Mill")
-  await card.getByLabel("Model", { exact: true }).fill("Crag Tee")
+  await card.getByLabel("Model", { exact: true }).fill("Sample Tee")
   await card.getByLabel("Shop category", { exact: true }).selectOption({ label: "T-shirts" })
   await card.getByLabel("Google product category", { exact: true }).fill("212")
   await card.getByLabel("Gender", { exact: true }).selectOption({ label: "Unisex" })
@@ -763,7 +763,7 @@ test("a tee on a garment nobody has set up stays off the wall until the owner fi
   expect((await garmentSaved).status()).toBe(200)
   // Finished, so the card moves to the other list under its new name, and focus follows it there.
   const readyCard = page.getByRole("list", { name: "Ready garments" }).locator("#garment-9999")
-  await expect(readyCard).toHaveAccessibleName(/Fixture Mill Crag Tee\s*Ready/)
+  await expect(readyCard).toHaveAccessibleName(/Fixture Mill Sample Tee\s*Ready/)
   await expect(readyCard).toBeFocused()
   // Complete is Postgres's answer (a generated column), not something the page worked out.
   expect(

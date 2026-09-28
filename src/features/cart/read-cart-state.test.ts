@@ -6,7 +6,7 @@ const entry = {
   entryId: "addition",
   productId: "aaaaaaaaaaaaaaaaaaaaaaaa",
   variantId: 1,
-  title: "Good hangs",
+  title: "Sample first design",
   variantTitle: "M",
   quantity: 2,
   unitAmount: 2800,

@@ -36,6 +36,66 @@
       "wordCount": 3,
       "length": 19,
       "sha256": "aa2a566d49b3aec84815680c5f4a7ab177076d16100688966e74910e8cf5e06d"
+    },
+    {
+      "kind": "source-design-title",
+      "wordCount": 3,
+      "length": 16,
+      "sha256": "dc54ee4d080a8ecc77c7d7b64f6eda4260989ef5cd2608f3ef8540d8771a25b4"
+    },
+    {
+      "kind": "source-design-title",
+      "wordCount": 5,
+      "length": 21,
+      "sha256": "0770275fb44ef4376611c8c880639d9b8f4a3b95efd198d26683b5bfbd3eb2ad"
+    },
+    {
+      "kind": "source-design-title",
+      "wordCount": 4,
+      "length": 16,
+      "sha256": "9a1a141993ea72f69063e4638cf2ec3af2ee8f7b204372b7717c5e9c4a3c88d9"
+    },
+    {
+      "kind": "source-design-title",
+      "wordCount": 2,
+      "length": 10,
+      "sha256": "cb3658589c99cc9d27fca6c69389ef0d51226bbcb01f8751573fe6a5e6bbf664"
+    },
+    {
+      "kind": "source-design-title",
+      "wordCount": 3,
+      "length": 24,
+      "sha256": "04bac2d51770b5eab6a58dbb7915ebb44e07a919e656825b18327e3f7da14cad"
+    },
+    {
+      "kind": "source-design-title",
+      "wordCount": 2,
+      "length": 14,
+      "sha256": "ef61279fd42eebd4b2088ffb140586bf3a910182f429cfa30d905ae36a62ccab"
+    },
+    {
+      "kind": "source-design-title",
+      "wordCount": 3,
+      "length": 14,
+      "sha256": "8b627d0dc37617352184799dd5b76f9d8392d9f2ea4fde13b28d5e177e9a5118"
+    },
+    {
+      "kind": "source-design-title",
+      "wordCount": 3,
+      "length": 15,
+      "sha256": "cd5404f2400864c1fd6535feb98557f8c9597d903ae353fc48fef07ea3c21fe6"
+    },
+    {
+      "kind": "source-product-copy",
+      "wordCount": 6,
+      "length": 28,
+      "sha256": "4fa862d5bdd8977accf0614d480c5f51002fecfc845a1250c80936d7e5dae1c8"
+    },
+    {
+      "kind": "source-tagline",
+      "wordCount": 6,
+      "length": 14,
+      "sha256": "e6af7bc27c39dd28a9c7708e72e8024db5b0a369cf14e01a3975231df8990185"
     }
   ],
   "forbiddenAssetSha256": [

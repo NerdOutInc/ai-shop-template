@@ -74,16 +74,18 @@ export function checkTemplate(root = process.cwd(), policy = defaultPolicy) {
   const files = [
     ...new Set(git(["ls-files", "--cached", "--others", "--exclude-standard", "-z"]).split("\0").filter(Boolean)),
   ]
-  const indexModes = new Map(
+  const indexEntries = new Map(
     git(["ls-files", "--stage", "-z"])
       .split("\0")
       .filter(Boolean)
       .map((entry) => {
         const tab = entry.indexOf("\t")
-        return [entry.slice(tab + 1), entry.slice(0, 6)]
+        const [mode, objectId] = entry.slice(0, tab).split(" ")
+        return [entry.slice(tab + 1), { mode, objectId }]
       })
   )
-  const differentFromIndex = new Set(git(["diff", "--name-only", "-z"]).split("\0").filter(Boolean))
+  const objectFormat = git(["rev-parse", "--show-object-format"]).trim()
+  const blobHash = (bytes) => createHash(objectFormat).update(`blob ${bytes.length}\0`).update(bytes).digest("hex")
   const failures = new Set()
   const report = (file, rule, location = "") => failures.add(`${JSON.stringify(file)}${location}: ${rule}`)
   const canonicalRoot = realpathSync(root)
@@ -129,15 +131,16 @@ export function checkTemplate(root = process.cwd(), policy = defaultPolicy) {
     }
   }
   for (const file of files) {
+    const indexEntry = indexEntries.get(file)
+    let matchesIndex = false
     if (privatePath(file)) report(file, "private setup state or print artifact must not be tracked")
     if (posixHomePath.test(file) || windowsHomePath.test(file)) report(file, "machine-local path")
     for (const kind of identifierKinds(file, policy)) report(file, kind)
-    if (indexModes.get(file) === "160000") report(file, "embedded repository in index")
-    if (indexModes.get(file) === "120000") {
+    if (indexEntry?.mode === "160000") report(file, "embedded repository in index")
+    if (indexEntry?.mode === "120000") {
       const target = git(["show", `:${file}`])
       if (!allowedSymlink(file, target)) report(file, "unapproved symlink in index")
     }
-    let missing = false
     let unsafe = false
     const parts = file.split("/")
     for (let i = 1; i <= parts.length; i++) {
@@ -154,21 +157,23 @@ export function checkTemplate(root = process.cwd(), policy = defaultPolicy) {
           unsafe = true
         }
       } catch (error) {
-        if (error.code === "ENOENT") missing = true
-        else report(file, "file metadata could not be read")
+        if (error.code !== "ENOENT") report(file, "file metadata could not be read")
         unsafe = true
         break
       }
     }
     if (!unsafe) {
       try {
-        scan(file, readFileSync(join(root, file)))
+        const bytes = readFileSync(join(root, file))
+        matchesIndex = indexEntry?.objectId === blobHash(bytes)
+        scan(file, bytes)
       } catch {
         report(file, "file content could not be read")
       }
     }
-    // A clean working copy cannot hide an already staged secret, nor can an unstaged deletion.
-    if ((differentFromIndex.has(file) || missing) && indexModes.get(file)?.startsWith("100")) {
+    // Git diff can hide edits behind assume-unchanged or skip-worktree. Compare
+    // raw blob bytes so those flags cannot conceal a different staged secret.
+    if (!matchesIndex && indexEntry?.mode.startsWith("100")) {
       try {
         scan(file, execFileSync("git", ["show", `:${file}`], { cwd: root, maxBuffer: 32 * 1024 * 1024 }), " (index)")
       } catch {

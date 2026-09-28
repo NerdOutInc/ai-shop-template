@@ -13,10 +13,10 @@ import { readProductDescription } from "./read-product-description"
 
 const sampleImage = (color: string, label: string) =>
   `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800"><rect width="800" height="800" fill="#eff3f0"/><path d="M270 180 160 260 230 370 280 340V620H520V340L570 370 640 260 530 180 460 210H340Z" fill="${color}"/><text x="400" y="710" text-anchor="middle" font-family="sans-serif" font-size="24" fill="#17262d">Illustrative test image: ${label}</text></svg>`)}`
-const sampleArtwork = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="700"><circle cx="300" cy="260" r="180" fill="#f7edce"/><text x="300" y="520" text-anchor="middle" font-family="sans-serif" font-size="70" font-weight="bold" fill="#f7edce">SMALL WINS</text></svg>')}`
+const sampleArtwork = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="700"><circle cx="300" cy="260" r="180" fill="#f7edce"/><text x="300" y="520" text-anchor="middle" font-family="sans-serif" font-size="70" font-weight="bold" fill="#f7edce">SAMPLE SCENE</text></svg>')}`
 const product: CatalogProduct = {
   id: "111111000000000000000002",
-  title: "Small Wins — Fixture Store | Next Level 6210",
+  title: "Sample Morning Scene — Fixture Store | Next Level 6210",
   garment: {
     manufacturer: "Next Level",
     model: "6210",
@@ -189,7 +189,7 @@ export const SelectAndAdd: Story = {
     addButton.focus()
     await userEvent.keyboard("{Enter}")
     const confirmation = within(await page.findByRole("dialog", { name: "Added to cart" }))
-    await waitFor(() => expect(confirmation.getByText("Small Wins", { exact: true })).toBeVisible())
+    await waitFor(() => expect(confirmation.getByText("Sample Morning Scene", { exact: true })).toBeVisible())
     await expect(confirmation.getByText("Heather Grey / M", { exact: true })).toBeVisible()
     await expect(confirmation.getByText("Quantity: 1", { exact: true })).toBeVisible()
     await expect(confirmation.getByText("$27.00", { exact: true })).toBeVisible()
@@ -211,7 +211,7 @@ export const FestivalCropTop: Story = {
   args: {
     product: {
       ...product,
-      title: "Braided Script and a Clip - Women's Festival Crop Top",
+      title: "Sample Abstract Lines - Women's Festival Crop Top",
       garment: {
         manufacturer: "Next Level",
         model: "5080",
@@ -262,7 +262,7 @@ export const GalleryAndSizeGuide: Story = {
   args: {
     product: {
       ...product,
-      artwork: { src: sampleArtwork, alt: "Illustrative Small Wins artwork", backgroundColor: "#222222" },
+      artwork: { src: sampleArtwork, alt: "Illustrative Sample Morning Scene artwork", backgroundColor: "#222222" },
       images: [
         { src: sampleImage("#222222", "Black front"), alt: "Black shirt front", variantIds: [1, 2] },
         { src: sampleImage("#222222", "Black back"), alt: "Black shirt back", variantIds: [1, 2] },
@@ -271,22 +271,26 @@ export const GalleryAndSizeGuide: Story = {
     },
   },
   play: async ({ canvas, canvasElement }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "View photo 2 of Small Wins" }))
+    await userEvent.click(canvas.getByRole("button", { name: "View photo 2 of Sample Morning Scene" }))
     await expect(canvas.getByRole("img", { name: "Black shirt back" })).toBeVisible()
     await userEvent.tab()
-    await expect(canvas.getByRole("button", { name: "View artwork of Small Wins" })).toHaveFocus()
+    await expect(canvas.getByRole("button", { name: "View artwork of Sample Morning Scene" })).toHaveFocus()
     await userEvent.keyboard("{Enter}")
-    await expect(canvas.getByRole("img", { name: "Illustrative Small Wins artwork" })).toBeVisible()
-    await expect(canvas.getByRole("img", { name: "Illustrative Small Wins artwork" }).parentElement).toHaveStyle({
+    await expect(canvas.getByRole("img", { name: "Illustrative Sample Morning Scene artwork" })).toBeVisible()
+    await expect(
+      canvas.getByRole("img", { name: "Illustrative Sample Morning Scene artwork" }).parentElement
+    ).toHaveStyle({
       backgroundColor: "#222222",
     })
     await userEvent.click(canvas.getByRole("button", { name: "Heather Grey" }))
-    await expect(canvas.getByRole("button", { name: "View artwork of Small Wins" })).toHaveAttribute(
+    await expect(canvas.getByRole("button", { name: "View artwork of Sample Morning Scene" })).toHaveAttribute(
       "aria-pressed",
       "true"
     )
-    await expect(canvas.getByRole("img", { name: "Illustrative Small Wins artwork" })).toBeVisible()
-    await expect(canvas.getByRole("img", { name: "Illustrative Small Wins artwork" }).parentElement).toHaveStyle({
+    await expect(canvas.getByRole("img", { name: "Illustrative Sample Morning Scene artwork" })).toBeVisible()
+    await expect(
+      canvas.getByRole("img", { name: "Illustrative Sample Morning Scene artwork" }).parentElement
+    ).toHaveStyle({
       backgroundColor: "#aaaaaa",
     })
     await userEvent.click(canvas.getByRole("button", { name: "Find your fit" }))
@@ -301,10 +305,10 @@ export const GalleryAndSizeGuide: Story = {
 export const CarouselNavigation: Story = {
   args: GalleryAndSizeGuide.args,
   play: async ({ canvas, canvasElement }) => {
-    const gallery = canvas.getByRole("region", { name: "Small Wins photos" })
-    const firstPhoto = canvas.getByRole("button", { name: "View photo 1 of Small Wins" })
-    const secondPhoto = canvas.getByRole("button", { name: "View photo 2 of Small Wins" })
-    const artwork = canvas.getByRole("button", { name: "View artwork of Small Wins" })
+    const gallery = canvas.getByRole("region", { name: "Sample Morning Scene photos" })
+    const firstPhoto = canvas.getByRole("button", { name: "View photo 1 of Sample Morning Scene" })
+    const secondPhoto = canvas.getByRole("button", { name: "View photo 2 of Sample Morning Scene" })
+    const artwork = canvas.getByRole("button", { name: "View artwork of Sample Morning Scene" })
     gallery.focus()
     await userEvent.keyboard("{ArrowRight}")
     await expect(gallery).toHaveFocus()
@@ -321,12 +325,14 @@ export const CarouselNavigation: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Next slide" }))
     await waitFor(() => expect(artwork).toHaveAttribute("aria-pressed", "true"))
     await userEvent.click(canvas.getByRole("button", { name: "Heather Grey" }))
-    await expect(canvas.getByRole("button", { name: "View artwork of Small Wins" })).toHaveAttribute(
+    await expect(canvas.getByRole("button", { name: "View artwork of Sample Morning Scene" })).toHaveAttribute(
       "aria-pressed",
       "true"
     )
-    await expect(canvas.getByRole("img", { name: "Illustrative Small Wins artwork" })).toBeVisible()
-    await expect(canvas.getByRole("img", { name: "Illustrative Small Wins artwork" }).parentElement).toHaveStyle({
+    await expect(canvas.getByRole("img", { name: "Illustrative Sample Morning Scene artwork" })).toBeVisible()
+    await expect(
+      canvas.getByRole("img", { name: "Illustrative Sample Morning Scene artwork" }).parentElement
+    ).toHaveStyle({
       backgroundColor: "#aaaaaa",
     })
     await waitForGalleryToSettle(canvasElement)
@@ -337,7 +343,7 @@ export const KeepSelectedViewAcrossColors: Story = {
   args: {
     product: {
       ...product,
-      artwork: { src: sampleArtwork, alt: "Illustrative Small Wins artwork", backgroundColor: "#222222" },
+      artwork: { src: sampleArtwork, alt: "Illustrative Sample Morning Scene artwork", backgroundColor: "#222222" },
       images: [
         {
           src: sampleImage("#222222", "Black front"),
@@ -373,7 +379,7 @@ export const KeepSelectedViewAcrossColors: Story = {
     },
   },
   play: async ({ canvas, canvasElement }) => {
-    const secondPhoto = canvas.getByRole("button", { name: "View photo 2 of Small Wins" })
+    const secondPhoto = canvas.getByRole("button", { name: "View photo 2 of Sample Morning Scene" })
     secondPhoto.focus()
     await userEvent.keyboard("{Enter}")
     await waitFor(() => expect(secondPhoto).toHaveAttribute("aria-pressed", "true"))
@@ -388,32 +394,34 @@ export const KeepSelectedViewAcrossColors: Story = {
     await userEvent.keyboard("{Enter}")
     await expect(grey).toHaveFocus()
     await expect(getComputedStyle(grey).outlineStyle).not.toBe("none")
-    await expect(canvas.getByRole("button", { name: "View photo 1 of Small Wins" })).toHaveAttribute(
+    await expect(canvas.getByRole("button", { name: "View photo 1 of Sample Morning Scene" })).toHaveAttribute(
       "aria-pressed",
       "true"
     )
     await expect(canvas.getByRole("img", { name: "Heather Grey shirt back" })).toBeVisible()
     await waitForGalleryToSettle(canvasElement)
 
-    await userEvent.click(canvas.getByRole("button", { name: "View artwork of Small Wins" }))
+    await userEvent.click(canvas.getByRole("button", { name: "View artwork of Sample Morning Scene" }))
     await userEvent.click(canvas.getByRole("button", { name: "Black" }))
-    await expect(canvas.getByRole("button", { name: "View artwork of Small Wins" })).toHaveAttribute(
+    await expect(canvas.getByRole("button", { name: "View artwork of Sample Morning Scene" })).toHaveAttribute(
       "aria-pressed",
       "true"
     )
-    await expect(canvas.getByRole("img", { name: "Illustrative Small Wins artwork" }).parentElement).toHaveStyle({
+    await expect(
+      canvas.getByRole("img", { name: "Illustrative Sample Morning Scene artwork" }).parentElement
+    ).toHaveStyle({
       backgroundColor: "#222222",
     })
     await waitForGalleryToSettle(canvasElement)
     await userEvent.click(grey)
-    await userEvent.click(canvas.getByRole("button", { name: "View photo 3 of Small Wins" }))
+    await userEvent.click(canvas.getByRole("button", { name: "View photo 3 of Sample Morning Scene" }))
     await expect(canvas.getByRole("img", { name: "Heather Grey shirt detail" })).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "Black" }))
     await expect(canvas.getByRole("img", { name: "Black shirt front" })).toBeVisible()
     // Clicking the already-visible fallback chooses front even though the carousel does not move.
-    await userEvent.click(canvas.getByRole("button", { name: "View photo 1 of Small Wins" }))
+    await userEvent.click(canvas.getByRole("button", { name: "View photo 1 of Sample Morning Scene" }))
     await userEvent.click(grey)
-    await expect(canvas.getByRole("button", { name: "View photo 2 of Small Wins" })).toHaveAttribute(
+    await expect(canvas.getByRole("button", { name: "View photo 2 of Sample Morning Scene" })).toHaveAttribute(
       "aria-pressed",
       "true"
     )
@@ -425,7 +433,7 @@ export const KeepSelectedViewAcrossColors: Story = {
 export const NewArrival: Story = {
   args: { ...GalleryAndSizeGuide.args, isNew: true },
   play: async ({ canvas, canvasElement }) => {
-    const gallery = canvas.getByRole("region", { name: "Small Wins photos" })
+    const gallery = canvas.getByRole("region", { name: "Sample Morning Scene photos" })
     const badge = canvas.getByText("New")
     await expect(canvas.getAllByText("New")).toHaveLength(1)
     await expect(badge).toBeVisible()
@@ -437,12 +445,15 @@ export const NewArrival: Story = {
     // The slides scroll under the badge; the badge itself does not move.
     await userEvent.click(canvas.getByRole("button", { name: "Next slide" }))
     await waitFor(() =>
-      expect(canvas.getByRole("button", { name: "View photo 2 of Small Wins" })).toHaveAttribute("aria-pressed", "true")
+      expect(canvas.getByRole("button", { name: "View photo 2 of Sample Morning Scene" })).toHaveAttribute(
+        "aria-pressed",
+        "true"
+      )
     )
     await waitForGalleryToSettle(canvasElement)
-    await userEvent.click(canvas.getByRole("button", { name: "View artwork of Small Wins" }))
+    await userEvent.click(canvas.getByRole("button", { name: "View artwork of Sample Morning Scene" }))
     await waitForGalleryToSettle(canvasElement)
-    await expect(canvas.getByRole("img", { name: "Illustrative Small Wins artwork" })).toBeVisible()
+    await expect(canvas.getByRole("img", { name: "Illustrative Sample Morning Scene artwork" })).toBeVisible()
     await expect(badge).toBeVisible()
     await expect(gallery).toContainElement(badge)
     const after = badge.getBoundingClientRect()
@@ -465,8 +476,8 @@ export const AdminPreview: Story = {
     await expect(canvas.getByRole("button", { name: "Add to cart" })).toHaveAccessibleDescription(
       "Purchasing is disabled in admin preview."
     )
-    await userEvent.click(canvas.getByRole("button", { name: "View artwork of Small Wins" }))
-    await expect(canvas.getByRole("img", { name: "Illustrative Small Wins artwork" })).toBeVisible()
+    await userEvent.click(canvas.getByRole("button", { name: "View artwork of Sample Morning Scene" }))
+    await expect(canvas.getByRole("img", { name: "Illustrative Sample Morning Scene artwork" })).toBeVisible()
     await userEvent.click(canvas.getByRole("button", { name: "Find your fit" }))
     await expect(canvas.getByText("Size guide")).toHaveFocus()
     await expect(canvas.getByRole("cell", { name: "20.50" })).toBeVisible()
@@ -480,7 +491,7 @@ export const FormattedDetails: Story = {
     product: {
       ...product,
       ...readProductDescription(
-        '<p><strong>The design</strong></p><p>A snack break with ambition. Small wins count, especially the edible ones.</p><p><strong>The tee</strong></p><p>Printed on the <strong>Next Level 6210</strong>, a soft crewneck for sessions and snacks.</p><ul><li>60% combed, ring-spun cotton, 40% polyester</li><li>Lightweight 4.3 oz/yd² fabric</li><li>Classic fit</li><li>Tear-away label</li></ul><p><strong>Care</strong></p><ol><li>Machine wash cold</li><li>Tumble dry low</li></ol><table id="size-guide"><tr><th></th><th>S</th><th>M</th></tr><tr><td>Width, in</td><td>19.00</td><td>20.50</td></tr></table>'
+        '<p><strong>The design</strong></p><p>A colorful garden with layered geometric shapes. Small details reward a closer look.</p><p><strong>The tee</strong></p><p>Printed on the <strong>Next Level 6210</strong>, a soft crewneck for everyday plans.</p><ul><li>60% combed, ring-spun cotton, 40% polyester</li><li>Lightweight 4.3 oz/yd² fabric</li><li>Classic fit</li><li>Tear-away label</li></ul><p><strong>Care</strong></p><ol><li>Machine wash cold</li><li>Tumble dry low</li></ol><table id="size-guide"><tr><th></th><th>S</th><th>M</th></tr><tr><td>Width, in</td><td>19.00</td><td>20.50</td></tr></table>'
       ),
     },
   },
@@ -496,7 +507,7 @@ export const FormattedDetails: Story = {
     await expect(garment.getAllByRole("listitem")).toHaveLength(4)
     for (const repeated of ["The design", "The tee", "Care", "Machine wash cold"])
       await expect(garment.queryByText(repeated)).not.toBeInTheDocument()
-    await expect(canvas.getAllByText(/^A snack break with ambition\./)).toHaveLength(1)
+    await expect(canvas.getAllByText(/^A colorful garden with layered geometric shapes\./)).toHaveLength(1)
     await userEvent.click(canvas.getByRole("button", { name: "Find your fit" }))
     await expect(canvas.getByText("Size guide")).toHaveFocus()
     await expect(canvas.getByRole("cell", { name: "20.50" })).toBeVisible()

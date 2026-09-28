@@ -16,7 +16,7 @@ function Bag() {
           cart.addItem({
             productId: "aaaaaaaaaaaaaaaaaaaaaaaa",
             variantId: 1,
-            title: "Good hangs",
+            title: "Sample first design",
             variantTitle: "M",
             unitAmount: 2800,
             quantity: 1,

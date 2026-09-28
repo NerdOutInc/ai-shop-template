@@ -1,10 +1,10 @@
 # Template hygiene
 
-Run `pnpm check:template` before distributing the template or committing setup work. It scans tracked and nonignored untracked files, including hidden files. It also checks staged content when it differs from the working copy, so cleaning a file after staging a secret does not hide the staged copy. Fix the index as well as the file. Diagnostics identify the file and rule without printing matched values.
+Run `pnpm check:template` before distributing the template or committing setup work. It scans tracked and nonignored untracked files, including hidden files. It also compares working-copy bytes with Git's staged blob hashes and checks staged content when they differ, so cleaning a file after staging a secret does not hide the staged copy. Git's `assume-unchanged` and `skip-worktree` flags do not bypass this comparison. Fix the index as well as the file. Diagnostics identify the file and rule without printing matched values.
 
 The policy in `scripts/template/check-template-policy.json` checks:
 
-- Known source-store identity, contact, shop, and browser-namespace fingerprints in paths and content. Normalization catches capitalization and word-separator variants without committing the original personal values as detector strings.
+- Known source-store identity, contact, shop, browser-namespace, design-title, and copied brand-text fingerprints in paths and content, including stories and test fixtures. Normalization catches capitalization and word-separator variants without committing the original personal values as detector strings.
 - Known source-store artwork and identity-asset byte hashes, including files copied under a different name.
 - Private environment/setup files, browser authentication state, operational print artifacts, machine-local paths, private keys, and recognizable provider/browser credential formats. Binary files are checked too; a NUL byte does not exempt metadata or UTF-16 exports.
 - Unexpected symlinks and embedded repositories, without following a link to read files outside the checkout.

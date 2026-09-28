@@ -15,7 +15,7 @@ vi.mock("@/lib/get-site-url", () => ({ getSiteUrl: () => new URL("https://store.
 
 function request(
   origin: string | null = "https://store.example",
-  body: unknown = { email: "climber@example.com", source: "design-of-the-week" },
+  body: unknown = { email: "shopper@example.com", source: "design-of-the-week" },
   contentType: string | null = "application/json"
 ) {
   return new Request("http://0.0.0.0:3000/api/drop-signup", {
@@ -36,7 +36,7 @@ describe("drop signup route", () => {
     const result = await POST(request())
     expect(result.status).toBe(200)
     expect(await result.json()).toEqual({ subscribed: true })
-    expect(subscribeToDrops).toHaveBeenCalledWith({ email: "climber@example.com", source: "design-of-the-week" })
+    expect(subscribeToDrops).toHaveBeenCalledWith({ email: "shopper@example.com", source: "design-of-the-week" })
     expect(result.headers.get("cache-control")).toContain("no-store")
     expect(result.headers.get("x-robots-tag")).toBeTruthy()
   })
@@ -67,8 +67,8 @@ describe("drop signup route", () => {
   it.each([
     ["no address", { source: "footer" }],
     ["a malformed address", { email: "not-an-address", source: "footer" }],
-    ["an unknown surface", { email: "climber@example.com", source: "billboard" }],
-    ["an unexpected field", { email: "climber@example.com", source: "footer", marketing: true }],
+    ["an unknown surface", { email: "shopper@example.com", source: "billboard" }],
+    ["an unexpected field", { email: "shopper@example.com", source: "footer", marketing: true }],
     ["nothing at all", null],
   ])("rejects %s before any write", async (_label, body) => {
     expect((await POST(request("https://store.example", body))).status).toBe(400)

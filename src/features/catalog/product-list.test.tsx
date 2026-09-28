@@ -36,8 +36,8 @@ beforeEach(() => {
 function catalogProductFixture(overrides: Partial<CatalogProduct> = {}): CatalogProduct {
   return {
     id: "sample-product",
-    title: "Sample climbing shirt",
-    description: "A shirt for climbing and snack breaks.",
+    title: "Sample graphic shirt",
+    description: "A shirt for everyday adventures and snack breaks.",
     addedToShopAt: "2026-09-01T12:00:00.000Z",
     salesCount: 2,
     image: null,
@@ -103,7 +103,7 @@ const categoryProducts = [
   }),
   catalogProductFixture({
     id: "tee",
-    title: "Climbing T-shirt",
+    title: "Graphic T-shirt",
     garment: {
       manufacturer: "Next Level",
       model: "6210",
@@ -185,25 +185,25 @@ describe("ProductList", () => {
     expect(tee).toHaveAttribute("aria-pressed", "false")
     expect(crop).toHaveAttribute("aria-pressed", "false")
     expect(screen.getByText("3 good things to wear")).toBeInTheDocument()
-    expect(titles()).toEqual(["Festival crop top", "Climbing T-shirt", "Unassigned garment"])
+    expect(titles()).toEqual(["Festival crop top", "Graphic T-shirt", "Unassigned garment"])
 
     await user.click(tee)
     expect(tee).toHaveAttribute("aria-pressed", "true")
     expect(crop).toHaveAttribute("aria-pressed", "false")
-    expect(titles()).toEqual(["Climbing T-shirt"])
+    expect(titles()).toEqual(["Graphic T-shirt"])
     expect(screen.getByText("1 good thing to wear")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Filters +" })).toBeInTheDocument()
 
     await user.click(crop)
     expect(tee).toHaveAttribute("aria-pressed", "true")
     expect(crop).toHaveAttribute("aria-pressed", "true")
-    expect(titles()).toEqual(["Festival crop top", "Climbing T-shirt"])
+    expect(titles()).toEqual(["Festival crop top", "Graphic T-shirt"])
     expect(screen.getByText("2 good things to wear")).toBeInTheDocument()
 
     await user.click(tee)
     expect(titles()).toEqual(["Festival crop top"])
     await user.click(crop)
-    expect(titles()).toEqual(["Festival crop top", "Climbing T-shirt", "Unassigned garment"])
+    expect(titles()).toEqual(["Festival crop top", "Graphic T-shirt", "Unassigned garment"])
     expect(screen.getByRole("button", { name: "Filters +" })).toBeInTheDocument()
   })
 
@@ -217,7 +217,7 @@ describe("ProductList", () => {
     await user.click(screen.getByRole("checkbox", { name: "S" }))
     await user.click(screen.getByRole("checkbox", { name: "Black" }))
     expect(screen.getAllByRole("article")).toHaveLength(1)
-    expect(screen.getByRole("article")).toHaveAccessibleName("Climbing T-shirt")
+    expect(screen.getByRole("article")).toHaveAccessibleName("Graphic T-shirt")
     expect(screen.getByRole("button", { name: "Filters (2) −" })).toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: "Clear all" }))
@@ -230,7 +230,7 @@ describe("ProductList", () => {
     expect(screen.getAllByRole("article").map((card) => within(card).getByRole("heading").textContent)).toEqual([
       "Unassigned garment",
       "Festival crop top",
-      "Climbing T-shirt",
+      "Graphic T-shirt",
     ])
     expect(screen.queryByRole("button", { name: "Clear all" })).not.toBeInTheDocument()
   })
@@ -311,14 +311,14 @@ describe("ProductList", () => {
       <ProductList
         catalog={{
           status: "ready",
-          products: [product, { ...product, id: "second-product", title: "Another climbing shirt" }],
+          products: [product, { ...product, id: "second-product", title: "Another graphic shirt" }],
         }}
       />
     )
 
     expect(screen.getAllByRole("heading").map((heading) => heading.textContent)).toEqual([
-      "Sample climbing shirt",
-      "Another climbing shirt",
+      "Sample graphic shirt",
+      "Another graphic shirt",
     ])
     expect(screen.queryByRole("status")).not.toBeInTheDocument()
   })

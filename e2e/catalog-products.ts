@@ -1,6 +1,6 @@
 import { selectedProductIds } from "./catalog-product-ids"
 
-const titles = ["Fixture Good Hangs", "Fixture Wall Buddies", "Fixture Fresh Beta"]
+const titles = ["Fixture First Design", "Fixture Second Design", "Fixture Newest Design"]
 // Reuse the last selected slot so a second garment does not alter catalog counts or weekly fixtures.
 const cropTopIndex = selectedProductIds.length - 1
 export const catalogProducts = selectedProductIds.map((id, index) => ({
@@ -33,8 +33,8 @@ export const catalogProducts = selectedProductIds.map((id, index) => ({
     : {}),
   description:
     index === cropTopIndex
-      ? '<p><strong>The design</strong></p><p>Good company, a shorter hem, and plenty of room for a rest day.</p><p><strong>The crop top</strong></p><ul><li>Next Level 5080 festival crop top</li><li>65% polyester, 35% cotton</li><li>Modest crop with a relaxed fit</li></ul><p><strong>Care</strong></p><ol><li>Wash cold</li><li>Dry low</li></ol><table id="size-guide"><thead><tr><th></th><th>M</th><th>XL</th></tr></thead><tbody><tr><td>Width, in</td><td>19</td><td>21</td></tr><tr><td>Length, in</td><td>18</td><td>19</td></tr></tbody></table>'
-      : '<p><strong>The design</strong></p><p>A soft everyday tee for good company.</p><p><strong>The tee</strong></p><p>Printed on the Next Level 6210 for sessions and rest days.</p><ul><li>60% cotton, 40% polyester</li><li>Lightweight fabric</li><li>Tear-away label</li></ul><p><strong>Care</strong></p><ol><li>Wash cold</li><li>Dry low</li></ol><table id="size-guide"><thead><tr><th></th><th>M</th><th>XL</th></tr></thead><tbody><tr><td>Width, in</td><td>20</td><td>24</td></tr><tr><td>Length, in</td><td>29</td><td>31</td></tr></tbody></table>',
+      ? '<p><strong>The design</strong></p><p>Good company, a shorter hem, and plenty of room for everyday plans.</p><p><strong>The crop top</strong></p><ul><li>Next Level 5080 festival crop top</li><li>65% polyester, 35% cotton</li><li>Modest crop with a relaxed fit</li></ul><p><strong>Care</strong></p><ol><li>Wash cold</li><li>Dry low</li></ol><table id="size-guide"><thead><tr><th></th><th>M</th><th>XL</th></tr></thead><tbody><tr><td>Width, in</td><td>19</td><td>21</td></tr><tr><td>Length, in</td><td>18</td><td>19</td></tr></tbody></table>'
+      : '<p><strong>The design</strong></p><p>A soft everyday tee for good company.</p><p><strong>The tee</strong></p><p>Printed on the Next Level 6210 for everyday wear.</p><ul><li>60% cotton, 40% polyester</li><li>Lightweight fabric</li><li>Tear-away label</li></ul><p><strong>Care</strong></p><ol><li>Wash cold</li><li>Dry low</li></ol><table id="size-guide"><thead><tr><th></th><th>M</th><th>XL</th></tr></thead><tbody><tr><td>Width, in</td><td>20</td><td>24</td></tr><tr><td>Length, in</td><td>29</td><td>31</td></tr></tbody></table>',
   created_at: index < 3 ? `${2024 + index}-01-01 12:00:00+00:00` : "2023-01-01 12:00:00+00:00",
   variants: [
     { id: 1001, price: 2800, title: "Black / M", is_enabled: true, is_available: true, options: [1, 10] },

@@ -4,7 +4,7 @@ export function createPublishingProduct(id: string) {
   return {
     id,
     shop_id: Number(config.shopId),
-    title: "Publishing Good Hangs",
+    title: "Publishing First Design",
     description: "<p>Published description for good company.</p>",
     is_locked: true,
     visible: true,

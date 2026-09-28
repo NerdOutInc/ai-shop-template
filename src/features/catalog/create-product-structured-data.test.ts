@@ -17,10 +17,10 @@ const policyReferences = {
 
 function productFixture(): CatalogProduct {
   return normalizeCatalogProduct({
-    id: "climb-shirt",
+    id: "sample-shirt",
     shop_id: 123,
-    title: "Small Wins — Fixture Store | Next Level 6210",
-    description: "A little progress counts.",
+    title: "Sample Morning Scene — Fixture Store | Next Level 6210",
+    description: "A colorful illustrated scene.",
     variants: [
       { id: 1, price: 2500, is_enabled: true, is_available: true, options: [10, 20] },
       { id: 2, price: 2850, is_enabled: true, is_available: false, options: [10, 21] },
@@ -63,11 +63,11 @@ describe("createProductStructuredData", () => {
 
     expect(group).toMatchObject({
       "@type": "ProductGroup",
-      "@id": "https://example.com/shop/climb-shirt#product",
-      url: "https://example.com/shop/climb-shirt",
-      name: "Small Wins",
-      description: "A little progress counts.",
-      productGroupID: "climb-shirt",
+      "@id": "https://example.com/shop/sample-shirt#product",
+      url: "https://example.com/shop/sample-shirt",
+      name: "Sample Morning Scene",
+      description: "A colorful illustrated scene.",
+      productGroupID: "sample-shirt",
       brand: { "@type": "Brand", name: "Fixture Store" },
       variesBy: ["https://schema.org/color", "https://schema.org/size"],
     })
@@ -82,13 +82,13 @@ describe("createProductStructuredData", () => {
       }))
     ).toEqual([
       {
-        sku: "climb-shirt-1",
+        sku: "sample-shirt-1",
         color: "Black",
         size: "S",
         images: ["https://images.printify.com/black-front.jpg", "https://images.printify.com/black-back.jpg"],
         offer: {
           "@type": "Offer",
-          url: "https://example.com/shop/climb-shirt?color=Black&size=S",
+          url: "https://example.com/shop/sample-shirt?color=Black&size=S",
           price: "25.00",
           priceCurrency: "USD",
           availability: "https://schema.org/InStock",
@@ -97,13 +97,13 @@ describe("createProductStructuredData", () => {
         },
       },
       {
-        sku: "climb-shirt-2",
+        sku: "sample-shirt-2",
         color: "Black",
         size: "2XL",
         images: ["https://images.printify.com/black-front.jpg", "https://images.printify.com/black-back.jpg"],
         offer: {
           "@type": "Offer",
-          url: "https://example.com/shop/climb-shirt?color=Black&size=2XL",
+          url: "https://example.com/shop/sample-shirt?color=Black&size=2XL",
           price: "28.50",
           priceCurrency: "USD",
           availability: "https://schema.org/OutOfStock",
@@ -112,13 +112,13 @@ describe("createProductStructuredData", () => {
         },
       },
       {
-        sku: "climb-shirt-3",
+        sku: "sample-shirt-3",
         color: "Heather Grey",
         size: "2XL",
         images: ["https://images.printify.com/grey-front.jpg"],
         offer: {
           "@type": "Offer",
-          url: "https://example.com/shop/climb-shirt?color=Heather+Grey&size=2XL",
+          url: "https://example.com/shop/sample-shirt?color=Heather+Grey&size=2XL",
           price: "27.95",
           priceCurrency: "USD",
           availability: "https://schema.org/InStock",
@@ -166,7 +166,10 @@ describe("createProductStructuredData", () => {
     product.images = product.images.filter((image) => !image.variantIds.includes(3))
     product.artwork = { src: "/artwork.png", alt: "Artwork", backgroundColor: null }
 
-    expect(productGroup(product)?.hasVariant.map((variant) => variant.sku)).toEqual(["climb-shirt-1", "climb-shirt-2"])
+    expect(productGroup(product)?.hasVariant.map((variant) => variant.sku)).toEqual([
+      "sample-shirt-1",
+      "sample-shirt-2",
+    ])
     product.images = []
     expect(productGroup(product)).toBeUndefined()
   })
@@ -175,7 +178,7 @@ describe("createProductStructuredData", () => {
     const product = productFixture()
     product.variants[0]!.color = null
     product.variants[1]!.size = null
-    expect(productGroup(product)?.hasVariant.map((variant) => variant.sku)).toEqual(["climb-shirt-3"])
+    expect(productGroup(product)?.hasVariant.map((variant) => variant.sku)).toEqual(["sample-shirt-3"])
 
     product.variants.push({ ...product.variants[2]!, id: 5 })
     expect(productGroup(product)).toBeUndefined()
@@ -184,13 +187,19 @@ describe("createProductStructuredData", () => {
   it("omits color values that the product's color control cannot recognize", () => {
     const product = productFixture()
     product.colors = product.colors.filter((color) => color.name === "Black")
-    expect(productGroup(product)?.hasVariant.map((variant) => variant.sku)).toEqual(["climb-shirt-1", "climb-shirt-2"])
+    expect(productGroup(product)?.hasVariant.map((variant) => variant.sku)).toEqual([
+      "sample-shirt-1",
+      "sample-shirt-2",
+    ])
   })
 
   it.each([Number.NaN, Number.POSITIVE_INFINITY, -1, 1.5])("does not publish an invalid price (%s)", (price) => {
     const product = productFixture()
     product.variants[0]!.price = price
-    expect(productGroup(product)?.hasVariant.map((variant) => variant.sku)).toEqual(["climb-shirt-2", "climb-shirt-3"])
+    expect(productGroup(product)?.hasVariant.map((variant) => variant.sku)).toEqual([
+      "sample-shirt-2",
+      "sample-shirt-3",
+    ])
   })
 
   it("uses safe absolute image URLs and discards unsafe sources", () => {
@@ -235,11 +244,16 @@ describe("createProductStructuredData", () => {
       "@graph": [
         {
           "@type": "BreadcrumbList",
-          "@id": "https://example.com/shop/climb-shirt#breadcrumbs",
+          "@id": "https://example.com/shop/sample-shirt#breadcrumbs",
           itemListElement: [
             { "@type": "ListItem", position: 1, name: "Home", item: "https://example.com/" },
             { "@type": "ListItem", position: 2, name: "Shop", item: "https://example.com/shop" },
-            { "@type": "ListItem", position: 3, name: "Small Wins", item: "https://example.com/shop/climb-shirt" },
+            {
+              "@type": "ListItem",
+              position: 3,
+              name: "Sample Morning Scene",
+              item: "https://example.com/shop/sample-shirt",
+            },
           ],
         },
       ],

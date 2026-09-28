@@ -20,7 +20,7 @@ it("removes a drop signup address, and its honeypot, from a URL that somehow car
   for (const type of ["pageview", "event"] as const) {
     const result = sanitizeAnalyticsEvent({
       type,
-      url: "https://example.com/design-of-the-week?email=climber%40example.com&%65mail=other%40example.com&company=&utm_source=instagram",
+      url: "https://example.com/design-of-the-week?email=shopper%40example.com&%65mail=other%40example.com&company=&utm_source=instagram",
     })
     expect(result?.url).toBe("https://example.com/design-of-the-week?utm_source=instagram")
   }

@@ -68,10 +68,10 @@ test("leads the shop under Featured only, and shares the New badge with every re
   const leading = await titles.allTextContents()
   expect(leading.slice(0, dropTitles.length).toSorted()).toEqual([...dropTitles].toSorted())
 
-  // Newest says when a tee reached the shop, so the drop is not pinned there. Fresh Beta was shown
+  // Newest says when a tee reached the shop, so the drop is not pinned there. Newest Design was shown
   // after this week began (e2e/prepare-catalog.ts), and it is the newest tee on the wall.
   await page.getByRole("combobox", { name: /Sort/ }).selectOption("newest")
-  await expect(titles.first()).toHaveText("Fixture Fresh Beta")
+  await expect(titles.first()).toHaveText("Fixture Newest Design")
 
   // Most Popular is the one sort that claims something about what other people bought.
   await page.getByRole("combobox", { name: /Sort/ }).selectOption("popular")
@@ -81,7 +81,7 @@ test("leads the shop under Featured only, and shares the New badge with every re
   // after them, and the withheld one whose reveal passed an hour ago. Everything else arrived a
   // month ago, so the page-wide count proves no other card carries it.
   await page.getByRole("combobox", { name: /Sort/ }).selectOption("featured")
-  const recent = [...dropTitles, "Fixture Fresh Beta", "Fixture Already Dropped"]
+  const recent = [...dropTitles, "Fixture Newest Design", "Fixture Already Dropped"]
   for (const title of recent)
     await expect(page.getByRole("article", { name: title }).getByText("New", { exact: true })).toBeVisible()
   await expect(page.getByText("New", { exact: true })).toHaveCount(recent.length)

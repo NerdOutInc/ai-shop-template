@@ -24,14 +24,14 @@ test("replaces catalog metadata during client navigation to a product and back",
   await page.goto("/shop", { waitUntil: "domcontentloaded" })
   const initialDocument = await page.evaluateHandle(() => document)
   const path = `/shop/${selectedProductIds[0]}`
-  await page.getByRole("link", { name: "Fixture Good Hangs", exact: true }).click()
+  await page.getByRole("link", { name: "Fixture First Design", exact: true }).click()
   await expect(page).toHaveURL((url) => url.pathname === path)
   expect(await page.evaluate((initial) => initial === document, initialDocument)).toBe(true)
   const canonical = page.locator('link[rel="canonical"]')
   await expect(canonical).toHaveCount(1)
   await expect(canonical).toHaveAttribute("href", `https://example.com${path}`)
   await expect(page.locator("title")).toHaveCount(1)
-  await expect(page).toHaveTitle("Fixture Good Hangs – T-Shirt | Fixture Store")
+  await expect(page).toHaveTitle("Fixture First Design – T-Shirt | Fixture Store")
   await expect(page.locator('meta[name="description"]')).toHaveCount(1)
   await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", /A soft everyday tee/)
   await page.goBack()
@@ -93,14 +93,14 @@ test("serves variant offers in the initial HTML with matching deep-linked produc
     })
   )
   await page.goto(`${path}?color=Clay&size=XL`)
-  await expect(page).toHaveTitle("Fixture Good Hangs – T-Shirt | Fixture Store")
+  await expect(page).toHaveTitle("Fixture First Design – T-Shirt | Fixture Store")
   await expect(page.locator('meta[name="description"]')).toHaveAttribute(
     "content",
     /A soft everyday tee for good company/
   )
   await expect(page.locator(".product-story")).toHaveText("A soft everyday tee for good company.")
   for (const selector of ['meta[property="og:title"]', 'meta[name="twitter:title"]']) {
-    await expect(page.locator(selector)).toHaveAttribute("content", "Fixture Good Hangs – T-Shirt | Fixture Store")
+    await expect(page.locator(selector)).toHaveAttribute("content", "Fixture First Design – T-Shirt | Fixture Store")
   }
   await expect(page.locator('meta[property="og:image"]')).toHaveAttribute("content", "https://e2e.test/clay-shirt.png")
   await expect(page.getByRole("button", { name: "Clay", exact: true })).toHaveAttribute("aria-pressed", "true")

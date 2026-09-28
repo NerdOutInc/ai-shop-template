@@ -5,7 +5,7 @@ import printifySizeGuideDescriptions from "../../../test/printify-size-guide-des
 import { getProductIntroduction } from "./get-product-introduction"
 import { readProductDescription } from "./read-product-description"
 
-const title = "Rest Restores Mana — Fixture Store | Next Level 6210"
+const title = "Sample Garden Illustration — Fixture Store | Next Level 6210"
 
 describe("getProductIntroduction", () => {
   it.each(printifySizeGuideDescriptions)(
@@ -19,30 +19,30 @@ describe("getProductIntroduction", () => {
     const product = {
       title,
       ...readProductDescription(
-        "<p><strong>The design</strong></p><p>A purple <strong>pixel-art chalk bag</strong> brings a little RPG logic to the climbing gym. <em>Rest is part of the quest.</em></p><p><strong>The tee</strong></p><p>Printed on the Next Level 6210.</p>"
+        "<p><strong>The design</strong></p><p>A purple <strong>geometric garden</strong> brings a little color to an everyday scene. <em>Small details tell the story.</em></p><p><strong>The tee</strong></p><p>Printed on the Next Level 6210.</p>"
       ),
     }
     expect(getProductIntroduction(product)).toBe(
-      "A purple pixel-art chalk bag brings a little RPG logic to the climbing gym. Rest is part of the quest."
+      "A purple geometric garden brings a little color to an everyday scene. Small details tell the story."
     )
   })
 
   it("keeps parsed paragraphs authoritative and does not choose a heading or garment list", () => {
     const description = readProductDescription(
-      "<h2>Rest Restores Mana</h2><ul><li>60% cotton</li></ul><p>Your forearms need a recharge, too.</p>"
+      "<h2>Sample Garden Illustration</h2><ul><li>60% cotton</li></ul><p>A bright illustration for everyday adventures.</p>"
     )
     expect(getProductIntroduction({ title, ...description, description: "Stale plain text" })).toBe(
-      "Your forearms need a recharge, too."
+      "A bright illustration for everyday adventures."
     )
   })
 
-  it.each(["Rest Restores Mana", title, "rest restores  mana"])(
+  it.each(["Sample Garden Illustration", title, "sample garden  illustration"])(
     "uses the design prose after a heading repeating the product title: %s",
     (heading) => {
       const description = readProductDescription(
-        `<h2>${heading}</h2><p>Your forearms need a recharge, too.</p><p><strong>The tee</strong></p><p>Soft.</p>`
+        `<h2>${heading}</h2><p>A bright illustration for everyday adventures.</p><p><strong>The tee</strong></p><p>Soft.</p>`
       )
-      expect(getProductIntroduction({ title, ...description })).toBe("Your forearms need a recharge, too.")
+      expect(getProductIntroduction({ title, ...description })).toBe("A bright illustration for everyday adventures.")
     }
   )
 
@@ -50,9 +50,10 @@ describe("getProductIntroduction", () => {
     expect(
       getProductIntroduction({
         title,
-        description: "Rest Restores Mana\n\nThe design\nYour forearms need a recharge, too.\nThe tee\n60% cotton",
+        description:
+          "Sample Garden Illustration\n\nThe design\nA bright illustration for everyday adventures.\nThe tee\n60% cotton",
       })
-    ).toBe("Your forearms need a recharge, too.")
+    ).toBe("A bright illustration for everyday adventures.")
   })
 
   it.each([

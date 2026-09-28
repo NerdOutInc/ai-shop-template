@@ -185,13 +185,13 @@ describe("readProductDescription", () => {
 
   it("extracts a size guide without passing provider HTML into storefront content", () => {
     const result = readProductDescription(
-      '<table id="size-guide"><tr><th></th><th>S</th><th>M</th></tr><tr><td>Width, in</td><td>19.00</td><td>20.50</td></tr></table><p>Soft &amp; sturdy.</p><p>Climb. Snack. Repeat.</p><script>alert(1)</script>'
+      '<table id="size-guide"><tr><th></th><th>S</th><th>M</th></tr><tr><td>Width, in</td><td>19.00</td><td>20.50</td></tr></table><p>Soft &amp; sturdy.</p><p>Wander. Snack. Repeat.</p><script>alert(1)</script>'
     )
     expect(result).toEqual({
-      description: "Soft & sturdy.\nClimb. Snack. Repeat.",
+      description: "Soft & sturdy.\nWander. Snack. Repeat.",
       descriptionBlocks: [
         { type: "paragraph", content: [{ text: "Soft & sturdy.", bold: false, italic: false }] },
-        { type: "paragraph", content: [{ text: "Climb. Snack. Repeat.", bold: false, italic: false }] },
+        { type: "paragraph", content: [{ text: "Wander. Snack. Repeat.", bold: false, italic: false }] },
       ],
       sizeGuide: { sizes: ["S", "M"], measurements: [{ label: "Width, in", values: ["19.00", "20.50"] }] },
     })

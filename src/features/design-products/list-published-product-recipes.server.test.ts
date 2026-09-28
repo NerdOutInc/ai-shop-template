@@ -9,12 +9,12 @@ vi.mock("server-only", () => ({}))
 vi.mock("@/features/publishing/list-published-products-for-admin.server", () => ({ listPublishedProducts }))
 
 const sizeGuide =
-  '<p><strong>The tee</strong></p><p>A soft climbing tee.</p><table id="size-guide"><thead><tr><th></th><th>M</th><th>XL</th></tr></thead><tbody><tr><td>Width, in</td><td>20</td><td>24</td></tr></tbody></table>'
+  '<p><strong>The tee</strong></p><p>A soft illustrated tee.</p><table id="size-guide"><thead><tr><th></th><th>M</th><th>XL</th></tr></thead><tbody><tr><td>Width, in</td><td>20</td><td>24</td></tr></tbody></table>'
 
 function product(overrides: Record<string, unknown> = {}) {
   return {
     id: "tee-a",
-    title: "Toast to Small Wins",
+    title: "Sample Morning Scene",
     description: sizeGuide,
     blueprint_id: 1317,
     print_provider_id: 99,
@@ -37,7 +37,7 @@ beforeEach(() => vi.clearAllMocks())
 
 describe("listPublishedProductRecipes", () => {
   it("offers one entry per published model, recovered from the products themselves", async () => {
-    listPublishedProducts.mockResolvedValue([product(), product({ id: "tee-b", title: "Crust Break" })])
+    listPublishedProducts.mockResolvedValue([product(), product({ id: "tee-b", title: "Sample Evening Scene" })])
     const result = await listPublishedProductRecipes()
 
     expect(result.productsRead).toBe(2)
@@ -47,7 +47,7 @@ describe("listPublishedProductRecipes", () => {
     expect(model!.variants).toEqual([{ id: 1001, price: 2800, color: "CVC Black", size: "M" }])
     expect(model!.placement).toEqual({ position: "front", x: 0.5, y: 0.1, scale: 0.63, angle: 0 })
     expect(model!.placementDonorProductId).toBe("tee-a")
-    expect(model!.placementDonorTitle).toBe("Toast to Small Wins")
+    expect(model!.placementDonorTitle).toBe("Sample Morning Scene")
     expect(model!.unverified).not.toContain("placement")
     expect(model!.blocked).toEqual([])
   })
@@ -64,7 +64,7 @@ describe("listPublishedProductRecipes", () => {
     // Its title travels with it, so the copy can tell a heading repeating it from the garment's own.
     expect((await listPublishedProductRecipes()).models[0]!.sizeGuideDonor).toMatchObject({
       productId: "tee-a",
-      title: "Toast to Small Wins",
+      title: "Sample Morning Scene",
       sizes: ["M", "XL"],
     })
   })
@@ -220,7 +220,7 @@ describe("listPublishedProductRecipes", () => {
     expect(result.models[0]).toMatchObject({
       placement: { position: "front", x: 0.5, y: 0.1, scale: 0.63, angle: 0 },
       placementDonorProductId: "tee-a",
-      placementDonorTitle: "Toast to Small Wins",
+      placementDonorTitle: "Sample Morning Scene",
       unverified: ["variants[].price", "placement"],
       blocked: [],
     })
@@ -231,10 +231,10 @@ describe("listPublishedProductRecipes", () => {
   it("keeps an untitled donor's identity separate from the other published titles", async () => {
     listPublishedProducts.mockResolvedValue([
       product({ title: undefined }),
-      product({ id: "tee-b", title: "Crust Break" }),
+      product({ id: "tee-b", title: "Sample Evening Scene" }),
     ])
     expect((await listPublishedProductRecipes()).models[0]).toMatchObject({
-      titles: ["Crust Break"],
+      titles: ["Sample Evening Scene"],
       placementDonorProductId: "tee-a",
       placementDonorTitle: null,
       unverified: ["variants[].price"],

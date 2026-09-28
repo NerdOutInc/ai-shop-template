@@ -24,7 +24,7 @@ function fixture(id = "shirt") {
     id,
     shop_id: 123,
     title: "Published tee",
-    description: "Published climbing story",
+    description: "Published illustration story",
     visible: true,
     blueprint_id: 1317,
     print_provider_id: 99,
@@ -150,7 +150,7 @@ it.each(["", ' id="size-guide"'])(
       const descriptions = [...document.querySelectorAll("item")].map(
         (item) => item.getElementsByTagNameNS("http://base.google.com/ns/1.0", "description")[0]?.textContent
       )
-      expect(descriptions).toEqual([expected, expected, "Published climbing story", "Published climbing story"])
+      expect(descriptions).toEqual([expected, expected, "Published illustration story", "Published illustration story"])
     }
     expect(products[0]?.product.description).toBe("")
     expect(products[0]?.product.descriptionBlocks).toEqual([])

@@ -9,8 +9,8 @@ import { catalogProducts } from "./catalog-products"
 import { designOfTheWeekDrop } from "./design-of-the-week-drop"
 import { withheldCatalogProducts } from "./withheld-catalog-products"
 
-/** "Fixture Fresh Beta", shown after this week's drop began. */
-const freshBetaIndex = 2
+/** "Fixture Newest Design", shown after this week's drop began. */
+const newestDesignIndex = 2
 
 const url = new URL(process.env.CATALOG_E2E_DATABASE_URL ?? "http://missing-database")
 if (
@@ -42,14 +42,14 @@ try {
   const currentWeek = recentSlots.filter((instant) => instant.getTime() <= now.getTime()).at(-1)
   if (!currentWeek) throw new Error("No current weekly slot for the catalog fixture")
   // When each public product entered the shop, which Newest sorts by and the New badge reads. The
-  // drop's tees arrived when their week began. Fresh Beta was shown after that, so it is the newest
+  // drop's tees arrived when their week began. Newest Design was shown after that, so it is the newest
   // tee in the shop and proves Newest is not pinned to the drop. Every other one arrived more than
   // two weeks ago, an hour apart in Featured order, so none is new and their Newest order is known.
-  // From the same `now` as the week, so Fresh Beta can never land before the drop it follows.
+  // From the same `now` as the week, so Newest Design can never land before the drop it follows.
   const arrivedAt = (index: number) =>
     designOfTheWeekDrop.productIndexes.includes(index)
       ? currentWeek
-      : index === freshBetaIndex
+      : index === newestDesignIndex
         ? now
         : new Date(now.getTime() - 30 * 86_400_000 - index * 3_600_000)
   const stock: Record<string, unknown> = {}

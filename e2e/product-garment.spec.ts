@@ -24,7 +24,7 @@ test("uses each product's configured garment for its header and search metadata"
       product: catalogProducts[0]!,
       model: "Next Level 6210",
       type: "Unisex tee",
-      title: "Fixture Good Hangs – T-Shirt | Fixture Store",
+      title: "Fixture First Design – T-Shirt | Fixture Store",
       description: /A unisex T-shirt from Fixture Store\.$/,
     },
     {

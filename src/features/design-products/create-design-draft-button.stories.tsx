@@ -16,8 +16,8 @@ const proposal = {
   skipped: [{ color: "CVC Espresso", size: "3XL", reason: "Printify cannot make it right now" }],
   blockers: [] as string[],
   placementDonor: {
-    productId: "68bb57f658815116fa058b40",
-    title: "Rest Restores Mana",
+    productId: "64a000000000000000000001",
+    title: "Sample Garden Illustration",
     placement: { position: "front", x: 0.5, y: 0.4, scale: 0.63, angle: 0 },
   },
   unverified: ["variants[].price"],
@@ -62,7 +62,7 @@ export const ReviewThenCreate: Story = {
     await userEvent.keyboard("{Enter}")
     await expect(await canvas.findByRole("heading", { name: "Sample Character on Next Level 6210" })).toHaveFocus()
     await expect(canvas.getByText("CVC Espresso, 3XL: Printify cannot make it right now")).toBeVisible()
-    await expect(canvas.getByText("Rest Restores Mana")).toBeVisible()
+    await expect(canvas.getByText("Sample Garden Illustration")).toBeVisible()
     await expect(canvas.queryByText("Review the placement")).not.toBeInTheDocument()
     await userEvent.tab()
     await expect(canvas.getByRole("button", { name: "Create draft" })).toHaveFocus()
@@ -74,15 +74,20 @@ export const ReviewThenCreate: Story = {
 export const DifferingPlacements: Story = {
   beforeEach: answering({
     ...proposal,
-    placementDonor: { ...proposal.placementDonor, title: "Rest Restores Mana — a climbing break for another attempt" },
+    placementDonor: {
+      ...proposal.placementDonor,
+      title: "Sample Garden Illustration — a colorful illustration for everyday adventures",
+    },
     unverified: ["variants[].price", "placement"],
   }),
   play: async ({ canvas }) => {
     await userEvent.tab()
     await userEvent.keyboard("{Enter}")
     await expect(await canvas.findByRole("heading", { name: "Sample Character on Next Level 6210" })).toHaveFocus()
-    await expect(canvas.getByText("Rest Restores Mana — a climbing break for another attempt")).toBeVisible()
-    await expect(canvas.getByText("Printify product 68bb57f658815116fa058b40")).toBeVisible()
+    await expect(
+      canvas.getByText("Sample Garden Illustration — a colorful illustration for everyday adventures")
+    ).toBeVisible()
+    await expect(canvas.getByText("Printify product 64a000000000000000000001")).toBeVisible()
     await expect(canvas.getByText(/Published tees of this model use different placements/)).toBeVisible()
     await userEvent.tab()
     await expect(canvas.getByRole("button", { name: "Create draft" })).toHaveFocus()

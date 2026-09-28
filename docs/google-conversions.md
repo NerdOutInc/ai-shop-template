@@ -1,6 +1,6 @@
 # Google Merchant Center purchase tracking
 
-Google's account setup and receipt of real website events are separate milestones. An Active source is ready to listen; it does not mean a purchase has reached the summit.
+Google's account setup and receipt of real website events are separate milestones. An Active source is ready to listen; it does not establish that a purchase event was received.
 
 ## Configure this store's own source
 

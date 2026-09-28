@@ -17,7 +17,7 @@ vi.mock("./read-checkout-product.server", () => ({ readCheckoutProduct: vi.fn() 
 beforeEach(() => {
   vi.mocked(readCheckoutProduct).mockResolvedValue({
     id: "111111000000000000000002",
-    title: "Toast to Small Wins",
+    title: "Sample Morning Scene",
     variants: [
       { id: 101, unitAmount: 3000, label: "Forest / M", available: true, fingerprint: `v2:${"a".repeat(64)}` },
     ],
@@ -417,7 +417,7 @@ describe("paid checkout fulfillment", () => {
         change === "unknown-version" ? `v3:${"a".repeat(64)}` : `v2:${"b".repeat(64)}`
       vi.mocked(readCheckoutProduct).mockResolvedValue({
         id: fixture.productId,
-        title: "Toast to Small Wins",
+        title: "Sample Morning Scene",
         variants: [
           {
             id: 101,
@@ -591,7 +591,7 @@ function checkoutFixture() {
         variantId: 101,
         quantity: 1,
         unitAmount: 3000,
-        title: "Toast to Small Wins",
+        title: "Sample Morning Scene",
         variantLabel: "Forest / M",
         productFingerprint: `v2:${"a".repeat(64)}`,
       },

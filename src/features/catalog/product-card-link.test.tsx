@@ -24,7 +24,7 @@ vi.mock("next/link", () => ({
 const product: CatalogProduct = {
   id: "touch-preview",
   title: "Touch preview shirt",
-  description: "A shirt for a touch of climbing.",
+  description: "A shirt with a colorful illustration.",
   addedToShopAt: null,
   salesCount: null,
   image: { src: "/shirt.jpg", alt: "Shirt mockup" },

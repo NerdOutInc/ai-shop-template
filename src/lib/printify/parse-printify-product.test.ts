@@ -10,7 +10,7 @@ function productFixture() {
   return {
     id: expected.productId,
     shop_id: 1234,
-    title: "Toast to Small Wins",
+    title: "Sample Morning Scene",
     blueprint_id: 1317,
     print_provider_id: 99,
     print_areas: [
@@ -266,7 +266,7 @@ describe("Printify production product parsing", () => {
     { height: 4800 },
     { flipX: true },
     { flipY: true },
-    { input_text: "Another climbing joke", font_family: "Roboto", font_size: 24 },
+    { input_text: "Another illustration caption", font_family: "Roboto", font_size: 24 },
     { font_color: "#ff0000", font_style: "italic", font_weight: "bold", text_align: "right" },
     { pattern: { spacing_x: 0.1, spacing_y: 0.2, angle: 30, offset: 0.5 } },
   ])("retains supported image, text, and pattern controls: %j", (control) => {

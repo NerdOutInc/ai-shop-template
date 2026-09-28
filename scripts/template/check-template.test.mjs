@@ -83,6 +83,46 @@ test("detects source identity in domains, filenames and browser storage namespac
   assert.ok(failures.some((failure) => failure.includes("source-domain")))
 })
 
+test("story, unit and browser fixtures do not exempt copied source design text", (t) => {
+  const { write, check } = fixture(t)
+  const sourceCopy = [
+    ["Cloud Otters Take a Breather", "source-design-title"],
+    ["Every little adventure deserves another snack", "source-product-copy"],
+    ["It's an otter's day off.", "source-tagline"],
+  ]
+  const sourcePolicy = {
+    ...policy,
+    forbiddenIdentifiers: sourceCopy.map(([value, kind]) => {
+      const words = value.toLowerCase().match(/[a-z0-9]+/g)
+      return { kind, length: words.join("").length, wordCount: words.length, sha256: sha256(words.join("")) }
+    }),
+  }
+  const files = [
+    "src/features/catalog/product.stories.tsx",
+    "src/features/catalog/product.test.ts",
+    "e2e/fixtures/product.ts",
+    "test/fixtures/product.json",
+  ]
+  for (const file of files) {
+    write(file, JSON.stringify({ title: sourceCopy[0][0], description: sourceCopy[1][0], tagline: sourceCopy[2][0] }))
+  }
+  const failures = check(sourcePolicy)
+  for (const file of files) {
+    for (const [, kind] of sourceCopy) {
+      assert.ok(failures.some((failure) => failure.startsWith(JSON.stringify(file)) && failure.includes(kind)))
+    }
+  }
+  for (const [value] of sourceCopy) assert.ok(!failures.join("\n").includes(value))
+  write(files[0], 'const product = { title: "cloud-otters-take-a-breather", tagline: "It’s an otter’s day off!" }')
+  assert.ok(
+    check(sourcePolicy).some(
+      (failure) => failure.startsWith(JSON.stringify(files[0])) && failure.includes("source-tagline")
+    )
+  )
+  for (const file of files) write(file, "An independent new design for climbing, resting and taking small steps.")
+  assert.deepEqual(check(sourcePolicy), [])
+})
+
 test("checks tracked and staged versions even when worktree edits or deletions hide a leak", (t) => {
   const { write, git, check, root } = fixture(t)
   write("config.json", JSON.stringify({ secret }))
@@ -94,6 +134,18 @@ test("checks tracked and staged versions even when worktree edits or deletions h
   git("rm", "--cached", "--quiet", "config.json")
   assert.deepEqual(check(), [])
 })
+
+for (const flag of ["assume-unchanged", "skip-worktree"]) {
+  test(`checks staged credentials hidden from Git diff by ${flag}`, (t) => {
+    const { write, git, check } = fixture(t)
+    write("config.json", JSON.stringify({ secret }))
+    git("add", "config.json")
+    git("update-index", `--${flag}`, "config.json")
+    write("config.json", "{}")
+    assert.equal(git("diff", "--name-only"), "")
+    assert.ok(check().some((failure) => failure.includes("(index): provider/browser key")))
+  })
+}
 
 test("rejects private env and provider state at any nesting level, including force-added ignored files", (t) => {
   const { write, git, check } = fixture(t)

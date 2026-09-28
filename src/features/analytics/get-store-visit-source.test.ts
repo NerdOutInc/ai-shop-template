@@ -15,11 +15,11 @@ describe("store visit attribution", () => {
   })
 
   it.each([
-    ["https://www.google.com/search?q=climbing+shirts", "organic_search"],
+    ["https://www.google.com/search?q=graphic+shirts", "organic_search"],
     ["https://www.google.co.uk/search?q=shirts", "organic_search"],
     ["https://www.bing.com/search?q=shirts", "organic_search"],
     ["https://l.instagram.com/", "social"],
-    ["https://climbing-gym.example/members?email=private@example.com", "referral"],
+    ["https://community.example/members?email=private@example.com", "referral"],
     ["https://checkout.stripe.com/c/pay/private", "direct"],
     ["", "direct"],
   ])("classifies %s without retaining its raw URL", async (referrer, expected) => {

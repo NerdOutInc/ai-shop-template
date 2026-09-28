@@ -879,7 +879,7 @@ function publishedFixture(id: string) {
   const product = productFixture(id)
   return {
     ...product,
-    description: "A climbing shirt with a published description.",
+    description: "An illustrated shirt with a published description.",
     variants: product.variants.map((variant) => ({ ...variant, options: [1, 2] })),
     options: [
       { name: "Size", type: "size", values: [{ id: 1, title: "M" }] },

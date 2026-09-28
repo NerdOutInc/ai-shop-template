@@ -9,7 +9,7 @@ const item = {
   entryId: "purchased",
   productId: "aaaaaaaaaaaaaaaaaaaaaaaa",
   variantId: 1,
-  title: "Good hangs",
+  title: "First design",
   variantTitle: "Black / M",
   unitAmount: 2800,
   quantity: 1,
@@ -60,7 +60,7 @@ test("edits and persists the bag with accessible keyboard controls and no narrow
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   await page.screenshot({ path: testInfo.outputPath("cart-320px.png"), fullPage: true })
   expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([])
-  await page.getByRole("button", { name: /Remove Good hangs/ }).click()
+  await page.getByRole("button", { name: /Remove First design/ }).click()
   await expect(page.getByRole("heading", { name: "Ready for your next favorite." })).toBeVisible()
 })
 

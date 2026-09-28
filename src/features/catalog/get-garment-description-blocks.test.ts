@@ -6,7 +6,7 @@ import type { CatalogDescriptionBlock } from "./catalog-product"
 import { getGarmentDescriptionBlocks } from "./get-garment-description-blocks"
 import { readProductDescription } from "./read-product-description"
 
-const title = "Baggage Welcome - Premium T-Shirt"
+const title = "Sample Travel Pattern - Premium T-Shirt"
 const chart = '<table id="size-guide"><tr><th></th><th>M</th></tr><tr><td>Width, in</td><td>20.50</td></tr></table>'
 
 function garmentText(description: string, productTitle = title) {
@@ -25,7 +25,7 @@ describe("getGarmentDescriptionBlocks", () => {
   it("keeps only the garment paragraph and fabric bullets from a published description", () => {
     expect(
       garmentText(
-        "<p>A hermit crab has moved into a chalk bucket.</p><p><strong>The tee</strong></p><p>Printed on the Next Level 6210, a soft, lightweight crewneck.</p><ul><li><p>60% combed ring-spun cotton and 40% polyester</p></li><li><p>Tear-away label</p></li></ul><p><strong>Care</strong></p><p>Wash cold, up to 30°C / 90°F.</p>" +
+        "<p>A colorful garden fills a geometric frame.</p><p><strong>The tee</strong></p><p>Printed on the Next Level 6210, a soft, lightweight crewneck.</p><ul><li><p>60% combed ring-spun cotton and 40% polyester</p></li><li><p>Tear-away label</p></li></ul><p><strong>Care</strong></p><p>Wash cold, up to 30°C / 90°F.</p>" +
           chart
       )
     ).toEqual([
@@ -62,19 +62,22 @@ describe("getGarmentDescriptionBlocks", () => {
     ])
   })
 
-  it.each(["Rest Restores Mana", "Rest Restores Mana — Fixture Store | Next Level 6210", "rest restores  mana"])(
-    "does not treat a heading repeating the product title as the garment section: %s",
-    (heading) => {
-      const productTitle = "Rest Restores Mana — Fixture Store | Next Level 6210"
-      expect(garmentText(`<h2>${heading}</h2><p>Your forearms need a recharge, too.</p>`, productTitle)).toEqual([])
-      expect(
-        garmentText(
-          `<h2>${heading}</h2><p>Your forearms need a recharge, too.</p><p><strong>The tee</strong></p><p>Garment facts.</p>`,
-          productTitle
-        )
-      ).toEqual(["Garment facts."])
-    }
-  )
+  it.each([
+    "Sample Garden Illustration",
+    "Sample Garden Illustration — Fixture Store | Next Level 6210",
+    "sample garden  illustration",
+  ])("does not treat a heading repeating the product title as the garment section: %s", (heading) => {
+    const productTitle = "Sample Garden Illustration — Fixture Store | Next Level 6210"
+    expect(
+      garmentText(`<h2>${heading}</h2><p>A bright illustration for everyday adventures.</p>`, productTitle)
+    ).toEqual([])
+    expect(
+      garmentText(
+        `<h2>${heading}</h2><p>A bright illustration for everyday adventures.</p><p><strong>The tee</strong></p><p>Garment facts.</p>`,
+        productTitle
+      )
+    ).toEqual(["Garment facts."])
+  })
 
   it.each(printifySizeGuideDescriptions)("finds no garment section in the design-only $name description", (fixture) => {
     expect(garmentText(fixture.description, fixture.title)).toEqual([])
