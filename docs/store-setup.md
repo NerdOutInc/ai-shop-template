@@ -57,6 +57,8 @@ Review `.github/workflows/` against the new remote and default branch. The basel
 
 Prepare the [repository security and required merge gate](launch-checklist.md#repository-security-and-merge-gate) for the owner: confirm Dependabot alerts, automatic security updates, secret scanning and push protection, recording any unavailable/off setting. Once the workflow is present and has run on the generated repository, require **Required checks** on its default branch using an applicable branch protection rule or ruleset. Verify the exact required context and bypass behavior; **Foundation checks** alone omits browser/admin/Storybook outcomes. Private-repository branch protection/rulesets require GitHub Pro, Team or Enterprise. Follow [repository security settings](dependency-maintenance.md#repository-security-settings) and the [CI merge gate](ci.md#required-merge-gate); paid plan changes and account prompts stay within owner authority.
 
+Dependabot alerts and security updates make vulnerabilities and blocked Next security fixes visible when the supported patch range needs review; template files do not establish the generated repository's settings.
+
 ## Local baseline and deployment
 
 Use the Node.js version in `.node-version` for development and validation, and the pnpm version pinned in `package.json`. The package `engines` field is the supported range, not a replacement for the pinned validation version:

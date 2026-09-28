@@ -6,7 +6,9 @@ updates:
       interval: weekly
       day: monday
     groups:
+      # Metadata patch verification: docs/dependency-maintenance.md.
       next:
+        applies-to: version-updates
         patterns:
           - next
           - "@next/*"
@@ -33,6 +35,13 @@ updates:
           - vitest
           - "@vitest/*"
     ignore:
+      # Minor/major Next-family upgrades require deliberate patch review.
+      - dependency-name: next
+        update-types: [version-update:semver-minor, version-update:semver-major]
+      - dependency-name: "@next/*"
+        update-types: [version-update:semver-minor, version-update:semver-major]
+      - dependency-name: eslint-config-next
+        update-types: [version-update:semver-minor, version-update:semver-major]
       - dependency-name: vitest
         update-types: [version-update:semver-major]
       - dependency-name: "@vitest/*"
