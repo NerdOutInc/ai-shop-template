@@ -1,8 +1,11 @@
+const port = Number(process.env.PUBLISHING_E2E_PORT ?? 3300)
+const providerPort = Number(process.env.PUBLISHING_E2E_PROVIDER_PORT ?? 3301)
+
 export const publishingTestConfig = {
-  port: 3300,
-  providerPort: 3301,
-  baseURL: "http://127.0.0.1:3300",
-  providerURL: "http://127.0.0.1:3301",
+  port,
+  providerPort,
+  baseURL: `http://127.0.0.1:${port}`,
+  providerURL: `http://127.0.0.1:${providerPort}`,
   canonicalURL: "https://example.com",
   shopId: "8675309",
   readToken: "publishing-e2e-read-token",

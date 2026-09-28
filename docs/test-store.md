@@ -9,3 +9,5 @@ Vitest and Storybook select the fixture through `test/store-config-plugin.ts`, r
 The fixture's brand name and email are deliberate assertions. Browser storage keys such as `your-store-cart-v1` are the existing runtime serialization protocol, not the merchant's editable name; keep their expectations consistent with production until a separately tested storage migration changes that protocol.
 
 After adding a required configuration field, update both merchant defaults and the complete test fixture. Preserve schema validation and explicit configured/unconfigured coverage. A test fixture should fit the schema like a well-sized shirt, without stretching the safety seams.
+
+For parallel local work, set `PLAYWRIGHT_PORT` and `PLAYWRIGHT_FIXTURE_PORT` for the public suites and `PUBLISHING_E2E_PORT` / `PUBLISHING_E2E_PROVIDER_PORT` for publishing. Keep each run on its own disposable Postgres container or server; the database-name guards remain in force.
