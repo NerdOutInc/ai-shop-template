@@ -20,10 +20,10 @@ CREATE SCHEMA private;
 CREATE SCHEMA IF NOT EXISTS public;
 
 -- Supabase installations can auto-grant ALL on public tables and sequences.
--- Future objects created by the migration role must opt in to browser access.
-ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+-- Future tables and sequences created by the migration role must opt in to browser access.
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
     REVOKE ALL ON TABLES FROM PUBLIC, anon, authenticated;
-ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
     REVOKE ALL ON SEQUENCES FROM PUBLIC, anon, authenticated;
 
 CREATE TABLE commerce.catalog_refreshes (
