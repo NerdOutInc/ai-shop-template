@@ -5,7 +5,10 @@ import react from "@vitejs/plugin-react"
 import { playwright } from "@vitest/browser-playwright"
 import { defineConfig } from "vitest/config"
 
+import { storeConfigPlugin } from "./test/store-config-plugin.ts"
+
 export default defineConfig({
+  plugins: [storeConfigPlugin()],
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
@@ -19,6 +22,7 @@ export default defineConfig({
         test: {
           name: "unit",
           environment: "jsdom",
+          globalSetup: ["./test/require-unit-test-databases.ts"],
           setupFiles: ["./test/setup.ts"],
           include: ["src/**/*.test.{ts,tsx}"],
           clearMocks: true,

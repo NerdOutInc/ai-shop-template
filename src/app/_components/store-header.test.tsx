@@ -5,7 +5,7 @@ import { StoreHeader } from "./store-header"
 
 vi.mock("next/navigation", () => ({ usePathname: vi.fn() }))
 vi.mock("@/features/cart/use-cart", () => ({ useCart: () => ({ count: 2 }) }))
-vi.mock("./brand-logo", () => ({ BrandLogo: () => <span>Your Store</span> }))
+vi.mock("./brand-logo", () => ({ BrandLogo: () => <span>Fixture Store</span> }))
 
 describe("store header admin navigation", () => {
   it.each(["/admin/setup", "/admin/sign-in"])("keeps %s focused on authentication", (pathname) => {
@@ -30,7 +30,7 @@ describe("store header admin navigation", () => {
     ])
     expect(navigation.getByRole("link", { name: "Products" })).toHaveAttribute("href", "/admin/products")
     expect(navigation.getByRole("link", { name: "Products" })).toHaveAttribute("aria-current", "page")
-    expect(screen.getByRole("link", { name: "Your Store home" })).toHaveAttribute("href", "/")
+    expect(screen.getByRole("link", { name: "Fixture Store home" })).toHaveAttribute("href", "/")
   })
 
   it("links to the implemented account page after sign-in", () => {

@@ -11,5 +11,5 @@ it("uses a second brand's name literally, including regular-expression character
   storeConfig.name = "Studio [A]+"
   expect(displayProductTitle("New Dawn — Studio [A]+ | Cotton tee")).toBe("New Dawn")
   expect(displayProductTitle("New Dawn — Studio A | Cotton tee")).toBe("New Dawn — Studio A | Cotton tee")
-  expect(displayProductTitle("New Dawn — Your Store | Cotton tee")).toBe("New Dawn — Your Store | Cotton tee")
+  expect(displayProductTitle("New Dawn — Fixture Store | Cotton tee")).toBe("New Dawn — Fixture Store | Cotton tee")
 })

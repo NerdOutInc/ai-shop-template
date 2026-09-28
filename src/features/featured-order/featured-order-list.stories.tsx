@@ -14,9 +14,9 @@ const hidden = { hiddenAt: "2026-09-19T09:00:00.000Z", revealAt: null, revealedA
 const now = Date.parse("2026-09-20T12:00:00.000Z")
 const savedOrders: string[][] = []
 const savedSchedules: { productIds: string[]; liveAt: string }[] = []
-const slots = [21, 28, 5, 12, 19, 26].map((day, index) => ({
-  value: `2026-${index < 2 ? "09" : "10"}-${String(day).padStart(2, "0")}T09:00:00.000Z`,
-  label: `${index < 2 ? "September" : "October"} ${day}, 2026`,
+const slots = [25, 2, 9, 16, 23, 30].map((day, index) => ({
+  value: `2026-${index === 0 ? "09" : "10"}-${String(day).padStart(2, "0")}T22:30:00.000Z`,
+  label: `${index === 0 ? "September" : "October"} ${day}, 2026`,
 }))
 const image = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><rect width="160" height="160" fill="#e4e8df"/><path d="m52 25-28 19 16 28 15-7v65h50V65l15 7 16-28-28-19-16 8H68Z" fill="#203f36"/><text x="80" y="82" text-anchor="middle" font-family="sans-serif" font-size="26" fill="#f5e6bf">K</text></svg>')}`
 
@@ -470,7 +470,7 @@ export const MoveBetweenPopulatedWeeksByKeyboard: Story = {
     await userEvent.keyboard("[ArrowUp]")
     await expect(
       await within(canvasElement.ownerDocument.body).findByText(
-        "Waiting for the Weekend is over the week of September 21, 2026."
+        "Waiting for the Weekend is over the week of September 25, 2026."
       )
     ).toBeInTheDocument()
     await userEvent.keyboard("[Space]")

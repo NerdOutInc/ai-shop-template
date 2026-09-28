@@ -26,7 +26,14 @@ test.beforeEach(async ({ page, browserName, baseURL }) => {
   }
   const manifest = z
     .object({ preview: z.object({ previewModeId: z.string().min(1) }) })
-    .parse(JSON.parse(await readFile(new URL("../.next/prerender-manifest.json", import.meta.url), "utf8")))
+    .parse(
+      JSON.parse(
+        await readFile(
+          new URL("../.tmp/unconfigured-storefront-e2e/.next/prerender-manifest.json", import.meta.url),
+          "utf8"
+        )
+      )
+    )
 
   // Home renders the weekly catalog dynamically. Regenerate the static pages instead,
   // including About as an initial document so its hoisted metadata must hydrate before navigation.
@@ -44,20 +51,20 @@ test.beforeEach(async ({ page, browserName, baseURL }) => {
 })
 
 for (const { from, path, navigation, label, title } of [
-  { from: "/", path: "/about", navigation: "Primary navigation", label: "About", title: "About | Your Store" },
+  { from: "/", path: "/about", navigation: "Primary navigation", label: "About", title: "About | Fixture Store" },
   {
     from: "/",
     path: "/returns",
     navigation: "Footer navigation",
     label: "Returns & order help",
-    title: "Returns & order help | Your Store",
+    title: "Returns & order help | Fixture Store",
   },
   {
     from: "/about",
     path: "/returns",
     navigation: "Footer navigation",
     label: "Returns & order help",
-    title: "Returns & order help | Your Store",
+    title: "Returns & order help | Fixture Store",
   },
 ]) {
   test(`replaces the canonical after fast client navigation from ${from} to ${path}`, async ({ page }) => {
@@ -101,7 +108,7 @@ for (const from of ["/", "/about"]) {
       .click()
     await expect(page).toHaveURL("/cart")
     expect(await page.evaluate((initial) => initial === document, initialDocument)).toBe(true)
-    await expect(page).toHaveTitle("Your cart | Your Store")
+    await expect(page).toHaveTitle("Your cart | Fixture Store")
     await expect(page.locator('link[rel="canonical"]')).toHaveCount(0)
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex, nofollow")
   })

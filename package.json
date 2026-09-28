@@ -38,7 +38,7 @@
     "setup:check": "node --conditions=react-server --import tsx scripts/template/setup-check.mjs",
     "check:template": "node scripts/template/check-template.mjs",
     "test:template": "node --conditions=react-server --import tsx --test scripts/template/*.test.mjs",
-    "test:database": "node --conditions=react-server --import tsx --test scripts/database/*.test.mjs",
+    "test:database": "node --import tsx scripts/database/run-tests.mjs",
     "test:e2e:prepare": "tsx e2e/prepare-storefront.ts"
   },
   "dependencies": {

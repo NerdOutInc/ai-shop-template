@@ -64,10 +64,10 @@ describe("getGarmentDescriptionBlocks", () => {
 
   it.each([
     "Sample Garden Illustration",
-    "Sample Garden Illustration — Your Store | Next Level 6210",
+    "Sample Garden Illustration — Fixture Store | Next Level 6210",
     "sample garden  illustration",
   ])("does not treat a heading repeating the product title as the garment section: %s", (heading) => {
-    const productTitle = "Sample Garden Illustration — Your Store | Next Level 6210"
+    const productTitle = "Sample Garden Illustration — Fixture Store | Next Level 6210"
     expect(
       garmentText(`<h2>${heading}</h2><p>A bright illustration for everyday adventures.</p>`, productTitle)
     ).toEqual([])

@@ -51,11 +51,15 @@ describe("createCheckout", () => {
     expect(original.order.shippingEstimate).toEqual({
       handlingBusinessDays: 10,
       calendar: "us-federal-v1",
-      timeZone: "UTC",
+      timeZone: "America/Chicago",
     })
     original.order.shippingEstimate = { handlingBusinessDays: 7, calendar: "us-federal-v1", timeZone: "UTC" }
     await createCheckout(fixture.services, fixture.request)
-    expect(fixture.getStored()?.order.shippingEstimate?.handlingBusinessDays).toBe(7)
+    expect(fixture.getStored()?.order.shippingEstimate).toEqual({
+      handlingBusinessDays: 7,
+      calendar: "us-federal-v1",
+      timeZone: "UTC",
+    })
   })
 
   it("freezes attribution before Stripe and preserves the original payload when a response is lost", async () => {
@@ -397,7 +401,7 @@ function checkoutFixture() {
     amount_total: 3499,
     expires_at: Math.floor(Date.now() / 1000) + 3600,
     total_details: { amount_shipping: 0, amount_discount: 0, amount_tax: 0 },
-    metadata: { storefront: "your-store", checkout_request_id: requestId, shop_id: "1234" },
+    metadata: { storefront: "fixture-store", checkout_request_id: requestId, shop_id: "1234" },
     client_reference_id: requestId,
     payment_intent: "pi_fixture",
   }

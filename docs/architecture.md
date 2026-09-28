@@ -123,6 +123,8 @@ Features may depend directly on other features when the responsibility calls for
 
 Production modules cannot import unit tests, stories, shared test setup/fixtures, or browser-test support. Tests and stories may import the production module they exercise and appropriate test support. Using a relative path instead of `@/` cannot bypass an ownership restriction.
 
+Browser journeys and helpers under `e2e/` must read brand configuration from `test/store-config.ts`, matching the fixture builds they exercise. Direct imports of the merchant's `src/lib/store-config.ts` are rejected, including aliases, relative paths and dynamic imports. See [testing a rebranded store](test-store.md) for the fixture contract.
+
 Dynamic application imports must use a string literal, for example `import("./product-dialog")`; computed paths and template strings are prohibited. They follow the same resolution, ownership, and runtime-cycle checks as static imports. This keeps lazy-loading dependencies visible to the checks.
 
 ## Server and client boundaries

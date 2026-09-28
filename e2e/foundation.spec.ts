@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright"
 import { expect, test } from "@playwright/test"
 
+import { storeConfig } from "../test/store-config"
 import { beginKeyboardNavigation } from "../test/begin-keyboard-navigation"
 
 test("shows the branded landing page without accessibility violations or horizontal overflow", async ({
@@ -13,15 +14,13 @@ test("shows the branded landing page without accessibility violations or horizon
   const response = await page.goto("/")
 
   expect(response?.status()).toBe(200)
-  await expect(
-    page.getByRole("heading", { name: "Your next favorite starts here.", exact: true, level: 1 })
-  ).toBeVisible()
+  await expect(page.getByRole("heading", { name: storeConfig.home.headline, exact: true, level: 1 })).toBeVisible()
   const shopLink = page.getByRole("link", { name: "Shop", exact: true })
   await expect(shopLink).toBeVisible()
   await expect(shopLink).toHaveAttribute("href", "/shop")
-  await expect(page).toHaveTitle(/Your Store/)
+  await expect(page).toHaveTitle(/Fixture Store/)
   await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", /\S+/)
-  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute("content", /Your Store/)
+  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute("content", /Fixture Store/)
 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
   expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([])
@@ -60,9 +59,7 @@ test("returns a real 404 and offers keyboard navigation home", async ({ page, br
   ).toBe(true)
   await page.keyboard.press("Enter")
   await expect(page).toHaveURL("/")
-  await expect(
-    page.getByRole("heading", { name: "Your next favorite starts here.", exact: true, level: 1 })
-  ).toBeVisible()
+  await expect(page.getByRole("heading", { name: storeConfig.home.headline, exact: true, level: 1 })).toBeVisible()
 })
 
 test("provides a lightweight health endpoint", async ({ request }) => {

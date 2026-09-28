@@ -14,7 +14,7 @@ const sampleImage = (color: string, label: string) =>
 const sampleArtwork = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="700"><circle cx="300" cy="260" r="180" fill="#f7edce"/><text x="300" y="520" text-anchor="middle" font-family="sans-serif" font-size="70" font-weight="bold" fill="#f7edce">SAMPLE SCENE</text></svg>')}`
 const product: CatalogProduct = {
   id: "111111000000000000000002",
-  title: "Sample Morning Scene — Your Store | Next Level 6210",
+  title: "Sample Morning Scene — Fixture Store | Next Level 6210",
   garment: {
     manufacturer: "Next Level",
     model: "6210",
