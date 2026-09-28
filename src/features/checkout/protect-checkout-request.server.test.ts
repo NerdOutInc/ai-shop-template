@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server"
 import { describe, expect, it, vi } from "vitest"
 
+import { checkoutRecoveryHistoryKey } from "./checkout-recovery-history-key"
 import { protectCheckoutRequest } from "./protect-checkout-request.server"
 
 vi.mock("server-only", () => ({}))
@@ -11,7 +12,7 @@ describe("checkout document boundary", () => {
       new NextRequest("https://example.com/checkout/success?%73ession_id=cs_live_browser1234567890")
     )
     expect(response.headers.get("content-type")).toBe("text/html; charset=utf-8")
-    expect(await response.text()).toContain("storeCheckoutRecovery")
+    expect(await response.text()).toContain(checkoutRecoveryHistoryKey)
   })
 
   it("leaves clean recovery pages to Next with no-referrer and no-store", () => {
