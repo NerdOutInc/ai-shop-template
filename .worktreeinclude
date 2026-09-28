@@ -1,0 +1,3 @@
+# Copy only non-secret setup progress into new Codex managed worktrees.
+# This is a snapshot, not synchronization. Reconcile progress at handoff.
+.store-setup.local.json

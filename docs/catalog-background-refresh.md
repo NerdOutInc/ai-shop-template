@@ -6,7 +6,7 @@ Publishing still controls listing membership, titles, prices, selected variants,
 
 ## Jobs and storage
 
-Merge the reviewed schedules from `scripts/vercel-crons.example.json` into `vercel.json` after verifying hosting-plan support and owner authorization. The template has no active schedules. Verify authenticated execution after deployment.
+Merge the reviewed schedules from `scripts/vercel-crons.example.json` into `vercel.json` after verifying hosting-plan support and owner authorization. The template has no active schedules. The supported commercial Vercel setup is **Pro or Enterprise**: [current cron limits](https://vercel.com/docs/cron-jobs/usage-and-pricing), checked **2026-09-27**, allow minute-level schedules there; Hobby permits only daily runs and is [restricted to noncommercial use](https://vercel.com/docs/plans/hobby). A daily stock refresh cannot satisfy this app's two-hour cutoff. Follow [hosting setup](store-setup.md#supported-hosting-and-scheduled-workers), then verify authenticated execution after deployment.
 
 | Job                                     | Example production schedule | Requests                   | Observation freshness |
 | --------------------------------------- | --------------------------- | -------------------------- | --------------------- |
@@ -15,9 +15,11 @@ Merge the reviewed schedules from `scripts/vercel-crons.example.json` into `verc
 
 Stock and popularity observations share Next.js data caches across requests, with five-minute fallback revalidation. Successful jobs invalidate their own observation cache; a recent-job retry also invalidates it to recover a missed invalidation after commit. Warm Shop/product requests need no catalog database reads. The original observation timestamp is checked outside the cache on every request, so cache reuse cannot extend either freshness limit. Checkout always reads current provider stock before creating a new payment session, even when browsing still shows an available option.
 
-After explicit configuration, these schedules allow delayed browsing availability while checkout verifies live stock. The freshness limits allow several missed refreshes before browsing availability or popularity becomes unavailable. The example publishing recovery worker runs every minute to process queued events; an idle run makes no Printify requests.
+After explicit configuration, these schedules allow delayed browsing availability while checkout verifies live stock. The freshness limits allow several missed refreshes before browsing availability or popularity becomes unavailable. With no stock worker, a previously initialized store loses browsing availability at the two-hour observation cutoff, and feeds fail with 503; publishing products does not replace the required complete stock scan. The example publishing recovery worker runs every minute to process queued events; an idle run makes no Printify requests.
 
 Both routes accept GET for Vercel cron and POST for an authenticated manual run. They require `Authorization: Bearer <CRON_SECRET>` before any database or provider access. Both use the existing `PRINTIFY_API_TOKEN`, `PRINTIFY_SHOP_ID`, `DATABASE_URL`, and verified database TLS. The token needs `products.read` and `orders.read`. Publishing and webhook credentials remain separate. Vercel runs schedules only on production deployments; preview verification must invoke the routes directly.
+
+Workers share Printify's account-level rate limits with drafts, publishing, checkout and any other shop on that account. Separate tokens do not add quota. Follow [token expiry/rotation and API limits](store-setup.md#printify-and-the-first-product), and consider aggregate load before increasing cadence or batch size.
 
 [Printify's products endpoint](https://developers.printify.com/#products) returns up to 50 products in one request. The stock job scans the shop with `limit=50`, including pages containing unrelated drafts, then retains only published-product variant IDs, enabled/in-stock flags, and production fingerprints. It never persists draft titles, prices, artwork URLs, or production payloads. Absent products receive an empty stock projection after a complete scan. The scan is limited to 20 pages and 45 seconds, with a fifteen-second per-page request deadline; exceeding a bound is a failed refresh, never a complete snapshot.
 
@@ -33,7 +35,7 @@ The authenticated publishing health endpoint reads observation timestamps direct
 
 ## Setup and verification
 
-1. Apply the [fresh database baseline](../supabase/migrations/20260928000354_storefront_baseline.sql) to the new empty store database and provision the runtime login. Configure the intended shop, tokens, canonical URL and cron secret through [store setup](store-setup.md).
+1. Apply the [fresh database baseline](../supabase/migrations/20260928000354_storefront_baseline.sql) to the new empty store database with [Supabase CLI `db push` and verify migration history](store-setup.md#database-and-tls), then provision the runtime login. Configure the intended shop, tokens, canonical URL and cron secret through [store setup](store-setup.md).
 2. Deploy the reviewed configuration within the owner's authorized scope, with publishing enabled only when the complete connection is ready. Configure worker schedules explicitly for the hosting plan.
 3. On the intended deployment, send authenticated **POST** requests to `/api/internal/catalog-sync/stock` and `/api/internal/catalog-sync/popularity`. Keep bearer and deployment-protection credentials out of logs. Require `result: "updated"`; `recent`, `busy` and `disabled` do not prove initialization. Retry `busy` after the active scan finishes. Both routes read Printify and save observations; neither publishes a draft.
 4. Verify fresh durable timestamps, Shop, a purchasable product, both merchant feeds, Most Popular and authenticated publishing health. An empty new shop can verify the connection but cannot establish a saleable product. Confirm recurring successful invocations after deployment; HTTP 200 from a skipped run is insufficient.
