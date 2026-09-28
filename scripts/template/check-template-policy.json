@@ -1,0 +1,193 @@
+{
+  "version": 1,
+  "forbiddenIdentifiers": [
+    {
+      "kind": "source-brand",
+      "wordCount": 3,
+      "length": 9,
+      "sha256": "ae29fff45c734261017a058b0c2d807057b9d6a4a51a81b60c61a58b96802966"
+    },
+    {
+      "kind": "source-owner",
+      "wordCount": 1,
+      "length": 13,
+      "sha256": "4fa1d347e17d59840e89d5e7fb4b4bafbb5c53bcbfbcc6908a4f5a71d73052d7"
+    },
+    {
+      "kind": "source-contact",
+      "wordCount": 3,
+      "length": 19,
+      "sha256": "f313bc1a64ccb00911749ef17ae7694060f80be2f3fab82531a7930919653b26"
+    },
+    {
+      "kind": "source-shop",
+      "wordCount": 1,
+      "length": 8,
+      "sha256": "8fe7b0855ce8fc52b50e583e45400313b3a9e44f72f50ab1b5b80c91acb0e91b"
+    },
+    {
+      "kind": "source-brand",
+      "wordCount": 1,
+      "length": 9,
+      "sha256": "ae29fff45c734261017a058b0c2d807057b9d6a4a51a81b60c61a58b96802966"
+    },
+    {
+      "kind": "source-browser-namespace",
+      "wordCount": 3,
+      "length": 19,
+      "sha256": "aa2a566d49b3aec84815680c5f4a7ab177076d16100688966e74910e8cf5e06d"
+    }
+  ],
+  "forbiddenAssetSha256": [
+    "00144c100744e1c978a5cfda407497a0eae10f4dd5907e8bfe02506a973e967c",
+    "04c0a6ca702ae40eea597fa002a1b66976eafd056dd4b58581e7a40da0c705db",
+    "09aba0303481ecea3d640df621a0e19877444535377140b8d28bf868f32c95fe",
+    "0c9789b89c42d8efb9cd599fddc7f8fad80904ad023d06cad4b681f7e6661e4d",
+    "0e81512da0a0181d9a957ef05517218d4acd690ddba7ad19b2564e52afa18385",
+    "0f3e5278f8c34dfe2ab7c661b9026f61362618306dc4bf947a071b021d5920bc",
+    "1112708376135d6b90a1220500c850985a083e1d0e706d819f3a9d9a42a63139",
+    "14dd8d5c71fe3ba080906581d2d4cdbb4c36340986cb55577badf2e75289b80a",
+    "14e603eda26336de74125c9d614d83c004a4d9164f7854e09d1fac876471725c",
+    "19de4ee53f0162ec0ac7f84120259a30394fd03cdefda0b62f4f62e625c98b46",
+    "1f25456e48bdfada1eb2516f724f3f96c9f2ab50140bdffe39d8091477412fa2",
+    "269ab5d7836fc1c796752da54e9e1258580ee3590ee9acaf02cdbaae271ddca7",
+    "26d218f332773de4d34b530825caccf54fbf4ed4ed8cc17f030ba5890eb12a0f",
+    "285e64fafecea83d055156e66beca83c94cd3fbd0c574ff19a1a99c593858a58",
+    "294223109b18061f45943c132334c1658a4162dd3d37ae34a328feb1bff44d1a",
+    "2b7610a9ba74e232aa08b21d7a87ced3bfe9e415dc2917235612f32b0a234fed",
+    "344c77523232a0582a742e297fa4b7242570b60b35e43f7672c40ae336d8ccf1",
+    "367ab7d46b75c0b3c090855780dc7a4aed044ce404d4a7721087b16675e8b1be",
+    "38eaaa0f536876f3c955bc59a10908db8d94c6456c13228c204a78db05681908",
+    "3917e2a8ab91004107994d17195019942c019d4cc86621bcb6e0a5f2dd6bedf8",
+    "3a4039d55ed01f83a366bf85320f7de7fc4ca8d9bf872d016d7fb05ecde17b4a",
+    "3e8d6b508a6d19542de5f55e88618028bfcce154acab28758fbfcffbbf8b762e",
+    "422db1920b0dfe7cd4c7101d4807b6fd90636850c386ee9ee0e2067207e4fa11",
+    "461168201c3b4b283f0ffb52f8d98a950925684b41375e158653cf9a75833963",
+    "476c2fe4c1c980e2653fb07458dc53e36cabecda26a2be0e785d6110d308283e",
+    "4975c60d32843cafe5e52c76a36815af6a0d829831901cbdff7737138b44450f",
+    "4bcca077d414e82085f9a10abe7f5b077382e11ce7b4a55d1075a1eb53ed7f3d",
+    "4d56afaedff26ac610c6154584b14d6fb0c789a58a9cb85303f414204edb5ea7",
+    "4f60f85ca8be1e4177b1dec0a9aba68d1f49dd6989d5c68ccbfbf3263cd313bf",
+    "500e78ece01b9501238a2f8d69dc46f2469f5c171414492f26325e93f842b60d",
+    "50f6e08a43c0f26b2c4cb86616dd4957e2991fc08488244f169b3a6c8397991f",
+    "5270669b206aca1967061cebee1d897587f9bdcea6df3db46c22838a76dec593",
+    "5d5d4f823784137f57c44da9a8228749b3d64436792602162d1a6e2484e1117f",
+    "6010a900f6222394aadd2a302aa567fd9bc5a26ebaf0b847a8390459cca383d3",
+    "67176942ea5dc1651ffd955e21ea111cfa7d5fef9075e9a37307bf776c7fe02d",
+    "681e863e5833e21cb92d1d8674d735b4bbff3df07e3a6aa782222f01c5a7f3ca",
+    "6bc3bc31b7299bb3b96218f585e4ec4aace5e567487883a89f5688378f9d4db2",
+    "6c4eb8429298622837243940db9e9d93e16d4950fb28ceadd8ca7d36783cf782",
+    "6c5e3d54295e0126fd296b3e375962555ad81195cef4ba2e5d2559a2c477678c",
+    "6deb0534950dc1a618ea5059fc61dd4173edf5dc48be078923fbb74626f72dc9",
+    "6f6188b91dc4689dc2f480d8ccea67bf982a16af579122ef75f22ea84adb6d95",
+    "7426fb8e3a299f035274509d00d2c2240f4930bc1360d2646e598948664b7475",
+    "748c570ef376b721ceab41f47e43d7c15e3a8c0bbb2025e6de5c129ab1553cbb",
+    "74afc438c9c88953e0d49f79c9b28234ad3096690ac958919abe9ce250da125f",
+    "7590cca093f925f296ea759f57dda5e45c24924930394615da47902104f9a8e2",
+    "7612c35018e179750962aea0ad06794100c48e26bdb665c87eb8d11ec7e30398",
+    "76acaeb83506f0366c44b9f414e0b985f515b769e659d11add259a47adcb6f61",
+    "76cec22a6921e30666bfd8f7a160e9c17308071bf7cab13b60b12041b52fe424",
+    "7a1e8e9d551fcbe6e2c5cdb8d794ac07f2bd38f28e2dbfa8a5be5124d153fc71",
+    "7bb1e66ed84d20b244022e728af9f5ba1404259dd9f893f3d0ca511a31c4710f",
+    "7be85b5c4a9dc59b4be2e1672178582e9fd4297b7f6dfaca2bb8dd9571e6a7df",
+    "7c20c345c8a1ce72a21ff4d0727dfa6dd760eb5998723175b7500345ecdc09a1",
+    "811f777c9203b75dcfad7f67c54b43feabda7c7dfe2204ba1ace1f7aa35de2ba",
+    "815d8ef8a3c3d8b96d6f279735483d54f02cc235598a92b0c8d1897788f6ef1f",
+    "86ccf23dfa7dfe34105acdae4c432ebff1c16de4c62a32152a6f6dd09724a513",
+    "86d94210e526247bfd94ae45d64536496270e47e97a9440320009cc2ddac30ad",
+    "87fde7c3a563e8b1a1b489e54fefb0ce99f8fb0b3a0762121ee46513d2300ae0",
+    "8b5faa467c6f2c827e8fa6104f26894a9a59e3b67eb4e061f5c55cefa6150004",
+    "8ecdd2250435aa1d3957469e5b982004a2fa1e6cb33ce9b98b0f5a4a1ad63eca",
+    "90dabfb16e7a04d32b96752b36b36359ae664b2df02b62091725190b4481b069",
+    "90fc5b58a8aa168276da9b0a3c7fbb3c284225558589a1b092d50f36030a8acf",
+    "93359fb9cb637792e5df9ff7dcd93e4cfe2c59f88ac1dc9dd708488eacb4850c",
+    "948afca2d6cd9a32b712dfc3424b29306f50374df26ee030d2cab353270afb68",
+    "95585e98951e7b163c3c55a2e1ddcacb440a928406113f69700c8fe747254f30",
+    "9791097a2d04dbc3e30e9282e2213832cf97faf5c8fbc7c1e012fba9e3a2fcbd",
+    "9c868a4a82c210f2ef8ee69296ffd7638883ea355b8abb6271973fea357a892c",
+    "9ceb8eae4c4c57889570d29f0e4f223204cb95147c63b0249b6771a307363261",
+    "9dc1df39ce561893e3786b202f97edfc8c58c8353d7ddf61c27d2f20eb07a542",
+    "9defb677b03a82eea7f46905e689ce7fddfe15456ffebd3cbc03cddc28845788",
+    "a76fa82d5a43c4d90705caa2c3497c32d9ee54db1b9e2fa3968d9d6c250d4cf4",
+    "af1cd4fd9682d4edfadfd9105c9df0877acc12ae23f57f4a12085c9c0e425e37",
+    "b11e84d625cbc7c01a7aff6ec02a401e8317910f5a2000b43c68984dc3f29309",
+    "b9fa13a045894b1702ec487521557519a0cfe4ec8895c039fd7f59d68a54a976",
+    "ba1aa4175d40029a605cbd5d84b28d9a0f20bf7cb6c825123f7cf8390edd8700",
+    "bc68c485e2078d9b45e9d90fa37b93840c5a69fb5c18f94f2eb53201b585ccb8",
+    "bd3554b74de4b4df611a993a1dbc3f50366fca58627df1ccfd8ffa544ea2c769",
+    "bd498c0fd3445c7399a71d8297ea653ccb5b71e66222eb71a8f0420cdcbe5a91",
+    "c009eb2d314215d9b39be7076efe2b940e71a60793eb2e2cc5e472b005b5e646",
+    "c372446a4f08cfe2107114165a460398db0e13668559e8ffb902ca2819552c49",
+    "c58d7ed3e7e1eec879eb893a396ce8557e51d12cd741e682389bad2281fec94a",
+    "c87a7041f2d9ed69dad198bb9fd2895fd92d880f2791f1f676a6c5d9979ba08b",
+    "c93ee7244ffa69fb943a84c5d88e3d538c884a37b693fe2af1ff3f877bf2624c",
+    "c93f6da235cc07e07215f52a752d66cb0e31e6beb55add9e0094721b86b8b407",
+    "c9dd642ad7c5525f93af6bd2040109383e014e004965ac96f26039bb89a3b6f6",
+    "caa0bbd61f3e4d6a6240c6bfa57e2f1e4be36e2e96273f5cff4267ff95776181",
+    "cd03956f1a49801b5c27d86e180c79aaffb8d309d2e53e1b3f67bfb0ebfbc1c8",
+    "cf1452e529561ea945e494b5f9b9713cf4ed6f9184098bb79c2222a01add5b0f",
+    "d15867f3b8630f7a5eb685911b50d48364bd28e653bc01f5c6b4ea618b4e0871",
+    "d4563f7c6e3f964dd02cc751976991d8d03af1a9b33b71e4293ad0bcacb56fc4",
+    "dce8bb33f7c3e71f467e5d6b34a994b341b935cb1a6c84cffff8516431da6509",
+    "def9910e1c311f1468dce32da06bea14d502a94f1fcff86e0b2fd0d6cddd112d",
+    "dfa04e97584500a0672b49a00072abe1f45acb7f5835602b8971d4a4d7997545",
+    "e01a486ff1f9cc946be3ec0d447367af2da728015f3e9e5b22ca14ad792b8433",
+    "e15ea71dece31332a035cc862c17100dc94d3409fc954f00b1ad9f860a57bfce",
+    "e370662e6d84f3f302da81529693c73f97d95843ecfd879d3df6a80ff8fff5a6",
+    "e692f9698985c81dd667c7194f5084b2eba3bf02507e3e77f6afa53265b86553",
+    "e8999a3ed83f9bc19692ecdff4fcb45100ad1ce36f99f8be5a0434685e226fb4",
+    "e8fbeb2f5c6faeae1814e1f79f4cbd6d69276216dbd5f7e8345ba12c2e37984b",
+    "effd8bdf8267e9aacd74f8b1176f2f312b25ae23c6eafbaaa4fe6a27516df7a6",
+    "f125e2129317c53b94bcedfb7e108fc67e473249722133a29b8bb389b727cce6",
+    "f646bb21765d11920906951f3abb052d35679d03f0179d6b62022d3211777486",
+    "f666a46d0014144ccc28b85c72f42dd5db435536382edb83e70285ecf90a7b36"
+  ],
+  "allowedFiles": [
+    {
+      "path": "test/tls/localhost-key.pem",
+      "rule": "private-key",
+      "sha256": "bf4cf2a785598fd30d7b8f3fd1600c8cec35112a052e56f1e3ab8d77b55059cc",
+      "reason": "Public loopback-only TLS fixture; see test/tls/readme.md."
+    },
+    {
+      "path": "test/tls/wrong-host-key.pem",
+      "rule": "private-key",
+      "sha256": "533028cc4b62e382b84c03eb5d20ddef858f2d41139d0cdebfa94af289811e6d",
+      "reason": "Public loopback-only TLS fixture; see test/tls/readme.md."
+    }
+  ],
+  "allowedIdentifierLines": [
+    {
+      "path": "LICENSE",
+      "sha256": "325ea81af4e47c40dcd7460df9fadfc76556fdd9ed578a5d055fb3d02cabc39b",
+      "reason": "Required upstream MIT attribution; never exempt the whole license file."
+    }
+  ],
+  "allowedMatches": [
+    {
+      "path": "e2e/admin/browser-config.ts",
+      "rule": "provider-key",
+      "sha256": "bab75a417d70589d5cc6d2f28ce8ee0be5f8e5e146f49b55337fc5f995181b6b",
+      "reason": "Synthetic local Blob credential used only by the offline provider fixture."
+    },
+    {
+      "path": "e2e/admin/mock-private-blob.ts",
+      "rule": "provider-key",
+      "sha256": "bab75a417d70589d5cc6d2f28ce8ee0be5f8e5e146f49b55337fc5f995181b6b",
+      "reason": "Synthetic local Blob credential used only by the offline provider fixture."
+    },
+    {
+      "path": "e2e/publishing/publishing-test-config.ts",
+      "rule": "provider-key",
+      "sha256": "770a5bfbb069dd76e9571983637c06225c0026c3d321d90b38356ac7c6fa518c",
+      "reason": "Synthetic local Blob credential used only by the offline provider fixture."
+    }
+  ],
+  "allowedSymlinks": [
+    {
+      "path": ".claude/skills",
+      "target": "../.agents/skills",
+      "reason": "Claude and Codex share the same repository-owned skills; target must stay internal and present."
+    }
+  ]
+}

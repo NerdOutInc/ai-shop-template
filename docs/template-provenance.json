@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "initialExport": {
+    "commit": "dced8c485df97cfa420ff8961978af6ce836c876",
+    "tree": "51bf47add0c0990b597db5981e58f72d45cd91da",
+    "confidence": "inferred",
+    "evidence": "The contemporaneous creation-session record says current main was exported; this commit preceded that export in source history. The exact archive command was not recovered."
+  },
+  "incorporatedChanges": [
+    {
+      "commit": "b32ab30dd7c74f3d17cb88b9dbf4111224cafe54",
+      "tree": "94c331c4ed35e32610cff1dad2c44386d0c899af",
+      "scope": "Source PR131 garment-description section parsing and draft-copy behavior",
+      "evidence": "The contemporaneous creation record confirms this merged change was incorporated before template publication; the commit and tree were verified in the read-only source history. Three section-parsing implementation files match that commit apart from a neutralized brand example in one comment."
+    }
+  ],
+  "templateBaseline": {
+    "commit": "d498dd3fb8b0e1c84b980b9cf35a42007ec7e04f",
+    "tree": "9c8ec83fc7049bc9ef2824834e27cf33df5cb578"
+  },
+  "derivation": {
+    "method": "Exported source files into a new repository, incorporated the recorded follow-up change, and generalized the application for new stores.",
+    "historyIncluded": false,
+    "privateStateIncluded": false
+  }
+}
