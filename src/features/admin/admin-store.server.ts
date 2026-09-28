@@ -34,6 +34,30 @@ export class AdminStore {
     return result.rows[0]?.claimed === true
   }
 
+  async reserveOwner(email: string): Promise<string | null> {
+    // Save the ID before contacting Auth so retries never have to adopt an account by email.
+    const result = await this.database.query<{ user_id: string }>(
+      `update private.admin_setup_state
+       set enrollment_user_id = coalesce(enrollment_user_id, gen_random_uuid()),
+           enrollment_email = coalesce(enrollment_email, lower($1))
+       where singleton and consumed_at is null
+         and (enrollment_email is null or enrollment_email = lower($1))
+         and not exists(select 1 from public.admin_memberships where active)
+       returning enrollment_user_id as user_id`,
+      [email]
+    )
+    return result.rows[0]?.user_id ?? null
+  }
+
+  async ownerEnrollment(email: string): Promise<string | null> {
+    const result = await this.database.query<{ user_id: string }>(
+      `select enrollment_user_id as user_id from private.admin_setup_state
+       where singleton and enrollment_email = lower($1) and consumed_at is null`,
+      [email]
+    )
+    return result.rows[0]?.user_id ?? null
+  }
+
   async allowAuthAttempt(subject: string, limit = 5): Promise<boolean> {
     if (!Number.isInteger(limit) || limit < 1 || limit > 100) throw new Error("Invalid authentication attempt limit")
     const key = createHash("sha256").update(subject).digest("hex")

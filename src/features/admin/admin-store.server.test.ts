@@ -30,14 +30,39 @@ describe.skipIf(!databaseUrl)("admin bootstrap and membership database boundarie
   })
   beforeEach(async () => {
     await database.query(
-      "truncate public.admin_memberships, private.admin_auth_attempts; update private.admin_setup_state set consumed_at = null, claimed_by = null"
+      "truncate public.admin_memberships, private.admin_auth_attempts; update private.admin_setup_state set consumed_at = null, claimed_by = null, enrollment_user_id = null, enrollment_email = null"
     )
-    ownerId = randomUUID()
+    ownerId = (await store.reserveOwner("owner@example.test"))!
     otherId = randomUUID()
     await database.query(
       "insert into auth.users(id,email,email_confirmed_at) values($1,'owner@example.test',now()),($2,'other@example.test',now())",
       [ownerId, otherId]
     )
+  })
+
+  it("pins one identity across concurrent retries and rejects a changed configured email", async () => {
+    const reservations = await Promise.all(Array.from({ length: 8 }, () => store.reserveOwner("OWNER@example.test")))
+    expect(new Set(reservations)).toEqual(new Set([ownerId]))
+    expect(await store.ownerEnrollment("owner@example.test")).toBe(ownerId)
+    expect(await store.reserveOwner("other@example.test")).toBeNull()
+    expect(await store.ownerEnrollment("other@example.test")).toBeNull()
+    expect(await store.claimOwner(ownerId, "owner@example.test")).toBe(true)
+    expect(await store.reserveOwner("owner@example.test")).toBeNull()
+    expect(await store.ownerEnrollment("owner@example.test")).toBeNull()
+  })
+
+  it("refuses a previously verified account with the right email but no enrollment", async () => {
+    await database.query("update private.admin_setup_state set enrollment_user_id=null,enrollment_email=null")
+    expect(await store.claimOwner(ownerId, "owner@example.test")).toBe(false)
+    expect(await store.isActiveMember(ownerId)).toBe(false)
+    expect(await store.setupStatus()).toBe("available")
+  })
+
+  it("refuses another account with the exact owner email instead of replacing the reserved identity", async () => {
+    await database.query("update auth.users set email='owner@example.test' where id=$1", [otherId])
+    expect(await store.claimOwner(otherId, "owner@example.test")).toBe(false)
+    expect(await store.isActiveMember(otherId)).toBe(false)
+    expect(await store.ownerEnrollment("owner@example.test")).toBe(ownerId)
   })
 
   it("allows the confirmed configured owner once and never reopens after removal", async () => {

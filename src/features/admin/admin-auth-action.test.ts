@@ -7,7 +7,10 @@ const mocks = vi.hoisted(() => ({
   signOut: vi.fn(),
   signInWithOtp: vi.fn(),
   verifyOtp: vi.fn(),
-  inviteUserByEmail: vi.fn(),
+  createUser: vi.fn(),
+  getUserById: vi.fn(),
+  reserveOwner: vi.fn(),
+  ownerEnrollment: vi.fn(),
   setupStatus: vi.fn(),
   allowAuthAttempt: vi.fn(),
   claimOwner: vi.fn(),
@@ -42,11 +45,13 @@ vi.mock("./create-admin-server-client.server", () => ({
   }),
 }))
 vi.mock("@supabase/supabase-js", () => ({
-  createClient: () => ({ auth: { admin: { inviteUserByEmail: mocks.inviteUserByEmail } } }),
+  createClient: () => ({ auth: { admin: { createUser: mocks.createUser, getUserById: mocks.getUserById } } }),
 }))
 vi.mock("./get-admin-actor.server", () => ({ getAdminActor: mocks.getActor }))
 vi.mock("./admin-store.server", () => ({
   AdminStore: class {
+    reserveOwner = mocks.reserveOwner
+    ownerEnrollment = mocks.ownerEnrollment
     setupStatus = mocks.setupStatus
     allowAuthAttempt = mocks.allowAuthAttempt
     claimOwner = mocks.claimOwner
@@ -62,10 +67,16 @@ beforeEach(() => {
   mocks.claimOwner.mockResolvedValue(true)
   mocks.isActiveMember.mockResolvedValue(false)
   mocks.getActor.mockResolvedValue({ userId: "verified-owner" })
-  mocks.inviteUserByEmail.mockResolvedValue({ error: null })
+  mocks.reserveOwner.mockResolvedValue("verified-owner")
+  mocks.ownerEnrollment.mockResolvedValue("verified-owner")
+  mocks.getUserById.mockResolvedValue({ data: { user: null }, error: { code: "user_not_found" } })
+  mocks.createUser.mockResolvedValue({
+    data: { user: { id: "verified-owner", email: "owner@example.test", email_confirmed_at: "2026-09-28T00:00:00Z" } },
+    error: null,
+  })
   mocks.signOut.mockResolvedValue({ error: null })
   mocks.signInWithOtp.mockResolvedValue({ error: null })
-  mocks.verifyOtp.mockResolvedValue({ data: { user: { id: "otp-user" } }, error: null })
+  mocks.verifyOtp.mockResolvedValue({ data: { user: { id: "verified-owner" } }, error: null })
   mocks.getUser.mockResolvedValue({
     data: {
       user: {
@@ -85,7 +96,7 @@ describe("admin authentication server actions", () => {
     async (input) => {
       expect((await adminAuthAction(input)).ok).toBe(false)
       expect(mocks.verifyOtp).not.toHaveBeenCalled()
-      expect(mocks.inviteUserByEmail).not.toHaveBeenCalled()
+      expect(mocks.createUser).not.toHaveBeenCalled()
     }
   )
 
@@ -97,7 +108,7 @@ describe("admin authentication server actions", () => {
     })
     mocks.signInWithOtp.mockResolvedValueOnce({ error: { code: "user_not_found" } })
     expect(await adminAuthAction({ operation: "request-email", email: "stranger@example.test" })).toEqual(valid)
-    expect(mocks.inviteUserByEmail).not.toHaveBeenCalled()
+    expect(mocks.createUser).not.toHaveBeenCalled()
   })
 
   it("rejects a wrong setup key or a different email without provisioning or sending mail", async () => {
@@ -110,35 +121,148 @@ describe("admin authentication server actions", () => {
       { operation: "request-setup", email: "stranger@example.test", proof: mocks.secret },
     ])
       expect((await adminAuthAction(input)).ok).toBe(false)
-    expect(mocks.inviteUserByEmail).not.toHaveBeenCalled()
+    expect(mocks.createUser).not.toHaveBeenCalled()
     expect(mocks.signInWithOtp).not.toHaveBeenCalled()
   })
 
-  it("invites only the configured owner without auto-confirming email or sending a second code", async () => {
+  it("provisions the reserved owner identity and requires a separate mailbox verification", async () => {
     expect(
       (await adminAuthAction({ operation: "request-setup", email: "OWNER@example.test", proof: mocks.secret })).ok
     ).toBe(true)
-    expect(mocks.inviteUserByEmail).toHaveBeenCalledWith("owner@example.test")
-    expect(mocks.signInWithOtp).not.toHaveBeenCalled()
-  })
-
-  it("sends a regular OTP when the configured owner already has a confirmed account", async () => {
-    mocks.inviteUserByEmail.mockResolvedValueOnce({ error: { code: "email_exists" } })
-    expect(
-      (await adminAuthAction({ operation: "request-setup", email: "owner@example.test", proof: mocks.secret })).ok
-    ).toBe(true)
+    expect(mocks.reserveOwner).toHaveBeenCalledWith("owner@example.test")
+    expect(mocks.createUser).toHaveBeenCalledWith({
+      id: "verified-owner",
+      email: "owner@example.test",
+      email_confirm: true,
+    })
     expect(mocks.signInWithOtp).toHaveBeenCalledWith({
       email: "owner@example.test",
       options: { shouldCreateUser: false },
     })
+    expect(mocks.claimOwner).not.toHaveBeenCalled()
   })
 
-  it("reports invitation delivery failures without claiming a code was sent", async () => {
-    mocks.inviteUserByEmail.mockResolvedValueOnce({ error: { code: "unexpected_failure" } })
+  it("rejects an unexpected existing owner account instead of sending a setup code", async () => {
+    mocks.createUser.mockResolvedValueOnce({ error: { code: "email_exists" } })
     expect(
       (await adminAuthAction({ operation: "request-setup", email: "owner@example.test", proof: mocks.secret })).ok
     ).toBe(false)
     expect(mocks.signInWithOtp).not.toHaveBeenCalled()
+  })
+
+  it("reports provisioning failures without claiming a code was sent", async () => {
+    mocks.createUser.mockResolvedValueOnce({ error: { code: "unexpected_failure" } })
+    expect(
+      (await adminAuthAction({ operation: "request-setup", email: "owner@example.test", proof: mocks.secret })).ok
+    ).toBe(false)
+    expect(mocks.signInWithOtp).not.toHaveBeenCalled()
+  })
+
+  it("resumes only the exact reserved account after a duplicate-create response", async () => {
+    mocks.createUser.mockResolvedValueOnce({ error: { code: "email_exists" } })
+    mocks.getUserById.mockResolvedValueOnce({
+      data: { user: { id: "verified-owner", email: "owner@example.test", email_confirmed_at: "2026-09-28T00:00:00Z" } },
+      error: null,
+    })
+    expect(
+      (await adminAuthAction({ operation: "request-setup", email: "owner@example.test", proof: mocks.secret })).ok
+    ).toBe(true)
+    expect(mocks.getUserById).toHaveBeenCalledWith("verified-owner")
+    expect(mocks.signInWithOtp).toHaveBeenCalledOnce()
+  })
+
+  it.each([
+    { id: "another-account" },
+    { email: "other@example.test" },
+    { email_confirmed_at: null },
+    { is_anonymous: true },
+    { banned_until: "2999-01-01T00:00:00Z" },
+  ])("refuses a provisioning response that does not establish the reserved identity: %j", async (override) => {
+    mocks.createUser.mockResolvedValueOnce({
+      data: {
+        user: {
+          id: "verified-owner",
+          email: "owner@example.test",
+          email_confirmed_at: "2026-09-28T00:00:00Z",
+          ...override,
+        },
+      },
+      error: null,
+    })
+    expect(
+      (await adminAuthAction({ operation: "request-setup", email: "owner@example.test", proof: mocks.secret })).ok
+    ).toBe(false)
+    expect(mocks.signInWithOtp).not.toHaveBeenCalled()
+    expect(mocks.claimOwner).not.toHaveBeenCalled()
+  })
+
+  it("does not provision when enrollment is bound to another email or setup was consumed concurrently", async () => {
+    mocks.reserveOwner.mockResolvedValue(null)
+    expect(
+      (await adminAuthAction({ operation: "request-setup", email: "owner@example.test", proof: mocks.secret })).ok
+    ).toBe(false)
+    expect(mocks.createUser).not.toHaveBeenCalled()
+    expect(mocks.signInWithOtp).not.toHaveBeenCalled()
+  })
+
+  it("requires an enrollment before accepting a setup code", async () => {
+    mocks.ownerEnrollment.mockResolvedValue(null)
+    expect(
+      (
+        await adminAuthAction({
+          operation: "verify-setup",
+          email: "owner@example.test",
+          proof: mocks.secret,
+          token: "123456",
+        })
+      ).ok
+    ).toBe(false)
+    expect(mocks.verifyOtp).not.toHaveBeenCalled()
+    expect(mocks.claimOwner).not.toHaveBeenCalled()
+  })
+
+  it("rejects a valid mailbox code for a different account with the same owner email", async () => {
+    mocks.ownerEnrollment.mockResolvedValue("reserved-new-owner")
+    expect(
+      (
+        await adminAuthAction({
+          operation: "verify-setup",
+          email: "owner@example.test",
+          proof: mocks.secret,
+          token: "123456",
+        })
+      ).ok
+    ).toBe(false)
+    expect(mocks.claimOwner).not.toHaveBeenCalled()
+    expect(mocks.signOut).toHaveBeenCalledWith({ scope: "local" })
+  })
+
+  it("requires the OTP result and current user to identify the same reserved account", async () => {
+    mocks.verifyOtp.mockResolvedValueOnce({ data: { user: { id: "different-otp-user" } }, error: null })
+    expect(
+      (
+        await adminAuthAction({
+          operation: "verify-setup",
+          email: "owner@example.test",
+          proof: mocks.secret,
+          token: "123456",
+        })
+      ).ok
+    ).toBe(false)
+    expect(mocks.claimOwner).not.toHaveBeenCalled()
+    expect(mocks.signOut).toHaveBeenCalledWith({ scope: "local" })
+  })
+
+  it("reports mail failure without consuming the enrollment", async () => {
+    mocks.signInWithOtp.mockResolvedValueOnce({ error: { code: "unexpected_failure" } })
+    const result = await adminAuthAction({
+      operation: "request-setup",
+      email: "owner@example.test",
+      proof: mocks.secret,
+    })
+    expect(result.ok).toBe(false)
+    expect(result.message).toContain("email delivery")
+    expect(mocks.claimOwner).not.toHaveBeenCalled()
   })
 
   it("does not reopen consumed setup even with correct credentials", async () => {
@@ -219,7 +343,7 @@ describe("admin authentication server actions", () => {
     expect(mocks.setupStatus).not.toHaveBeenCalled()
     mocks.allowAuthAttempt.mockResolvedValueOnce(false)
     expect(await adminAuthAction({ ...command, proof: mocks.secret })).toEqual(wrong)
-    expect(mocks.inviteUserByEmail).not.toHaveBeenCalled()
+    expect(mocks.createUser).not.toHaveBeenCalled()
   })
 
   it("bounds rotating send addresses without locking the same email out on another source", async () => {

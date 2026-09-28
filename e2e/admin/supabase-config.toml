@@ -38,12 +38,14 @@ enabled = true
 site_url = "http://localhost:3300"
 additional_redirect_urls = []
 jwt_expiry = 3600
-enable_signup = false
+# Deliberately enabled in this disposable fixture: owner enrollment must remain safe
+# even if a merchant forgets the production recommendation to disable signup.
+enable_signup = true
 enable_anonymous_sign_ins = false
 minimum_password_length = 8
 
 [auth.email]
-# This enables the email provider; global auth.enable_signup still blocks registration.
+# Keep email confirmation enabled so pre-existing unconfirmed registrations are tested.
 enable_signup = true
 enable_confirmations = true
 double_confirm_changes = true

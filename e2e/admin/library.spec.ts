@@ -142,6 +142,51 @@ test("visitors cannot read gallery data or artwork", async ({ page, request }) =
   expect(draft.status()).toBe(401)
 })
 
+test("setup refuses both unconfirmed and confirmed accounts created outside enrollment", async ({ page }) => {
+  const registration = createClient(config.authURL, config.publishableKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
+  const { data, error } = await registration.auth.signUp({
+    email: config.ownerEmail,
+    password: "disposable-preexisting-account-password-123!",
+  })
+  if (error || !data.user) throw error ?? new Error("Missing disposable registration")
+  expect(data.user.email_confirmed_at).toBeFalsy()
+  const existingId = data.user.id
+  try {
+    for (const confirmed of [false, true]) {
+      if (confirmed) {
+        const result = await auth.auth.admin.updateUserById(existingId, { email_confirm: true })
+        if (result.error) throw result.error
+      }
+      await fetch(`${config.mailURL}/api/v1/messages`, { method: "DELETE" })
+      await page.goto("/admin/setup")
+      await page.getByLabel("Owner email").fill(config.ownerEmail)
+      await page.getByLabel("One-time setup key").fill(config.setupSecret)
+      await page.getByRole("button", { name: "Send an email code" }).click()
+      await expect(page.getByRole("status")).toContainText("Could not prepare a dedicated owner account")
+      await expect(page.getByLabel("Email verification code")).toHaveCount(0)
+      const state = (await pool.query("select enrollment_user_id,consumed_at from private.admin_setup_state")).rows[0]
+      expect(state.enrollment_user_id).not.toBe(existingId)
+      expect(state.consumed_at).toBeNull()
+      expect((await pool.query("select * from public.admin_memberships")).rows).toHaveLength(0)
+      const messages = (await (await fetch(`${config.mailURL}/api/v1/messages`)).json()) as { total: number }
+      expect(messages.total).toBe(0)
+    }
+    await page.setViewportSize({ width: 390, height: 844 })
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+    await page.getByLabel("Owner email").focus()
+    await page.keyboard.press("Tab")
+    await expect(page.getByLabel("One-time setup key")).toBeFocused()
+    await page.screenshot({ path: "test-results/admin/owner-enrollment-conflict.png", fullPage: true })
+  } finally {
+    // Remove only this disposable registration. Keep the reserved ID to verify a fresh retry next.
+    const removed = await auth.auth.admin.deleteUser(existingId)
+    if (removed.error) throw removed.error
+    await pool.query("truncate private.admin_auth_attempts")
+  }
+})
+
 test("owner setup, passkeys, exact private downloads, personal favorites and revocation work together", async ({
   page,
   context,
@@ -163,6 +208,22 @@ test("owner setup, passkeys, exact private downloads, personal favorites and rev
   await page.getByLabel("Owner email").fill(config.ownerEmail)
   await page.getByLabel("One-time setup key").fill(config.setupSecret)
   await page.getByRole("button", { name: "Send an email code" }).click()
+  await expect(page.getByLabel("Email verification code")).toBeVisible()
+  const enrollment = (await pool.query("select enrollment_user_id,consumed_at from private.admin_setup_state")).rows[0]
+  expect(enrollment.consumed_at).toBeNull()
+  expect((await pool.query("select * from public.admin_memberships")).rows).toHaveLength(0)
+  // Public signup cannot attach a known password between provisioning and mailbox verification.
+  const registration = createClient(config.authURL, config.publishableKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
+  const attemptedPassword = "disposable-new-registration-password-123!"
+  await registration.auth.signUp({ email: config.ownerEmail, password: attemptedPassword })
+  expect(
+    (await registration.auth.signInWithPassword({ email: config.ownerEmail, password: attemptedPassword })).error
+  ).not.toBeNull()
+  const provisioned = await auth.auth.admin.getUserById(enrollment.enrollment_user_id)
+  expect(provisioned.error).toBeNull()
+  expect(provisioned.data.user?.email).toBe(config.ownerEmail)
   await page.getByLabel("Email verification code").fill(await emailCode(config.ownerEmail))
   await page.getByRole("button", { name: "Verify and finish setup" }).click()
   await expect(page).toHaveURL(/\/admin\/account$/)
