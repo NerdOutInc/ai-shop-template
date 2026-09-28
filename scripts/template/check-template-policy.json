@@ -137,6 +137,76 @@
       "wordCount": 3,
       "length": 13,
       "sha256": "9a48e037aec6310499d08f4174c88d4ebd67b98f92cd804d6c23c082c55ce135"
+    },
+    {
+      "kind": "source-product-copy",
+      "scope": "template",
+      "wordCount": 10,
+      "length": 45,
+      "sha256": "e18d7f488c0a4d8db4bf9edabeb0e51f5aa5de84f3398af67b413e38d447d25e"
+    },
+    {
+      "kind": "source-product-copy",
+      "scope": "template",
+      "wordCount": 10,
+      "length": 42,
+      "sha256": "77713507782c50cf15e3a1a23c17e917031cc3a0e64f505c45a235d9f4e885a9"
+    },
+    {
+      "kind": "source-product-copy",
+      "scope": "template",
+      "wordCount": 11,
+      "length": 51,
+      "sha256": "db2b23974784234ed6789b1a6bd4bc2f1b1a181ad1a64f87097c20811a6cbab5"
+    },
+    {
+      "kind": "source-product-copy",
+      "scope": "template",
+      "wordCount": 7,
+      "length": 27,
+      "sha256": "9680789f87ef2809b6945fe4e7fa86d042d37d4244983999974e39d9272b3709"
+    },
+    {
+      "kind": "source-product-copy",
+      "scope": "template",
+      "wordCount": 11,
+      "length": 50,
+      "sha256": "dc7a5a0bb3f2e493a87808b16bb3cf4b92b9ab64a1a5fd6a161cf910a2914fba"
+    },
+    {
+      "kind": "source-product-copy",
+      "scope": "template",
+      "wordCount": 11,
+      "length": 48,
+      "sha256": "70089ae87394360e4eff85cd38205e663ea350219de07da83b9559ecc9d79716"
+    },
+    {
+      "kind": "source-product-copy",
+      "scope": "template",
+      "wordCount": 3,
+      "length": 17,
+      "sha256": "00aa8f4033ec5fbe6089bc9fa1b192f7f7363abd1b6bf7ed075c965e8c852836"
+    },
+    {
+      "kind": "source-product-copy",
+      "scope": "template",
+      "wordCount": 5,
+      "length": 23,
+      "sha256": "f98fea1e1671f88f4f189ce32626b66dd5d75161e1fa12faa0a3e319ad82a0f2"
+    },
+    {
+      "kind": "source-product-copy",
+      "scope": "template",
+      "wordCount": 8,
+      "length": 27,
+      "sha256": "452c2efbd1b44ef947350c4525c37ec34ff1d2ed6b90859834e4e096cc047387"
+    },
+    {
+      "kind": "source-product-copy",
+      "scope": "template",
+      "wordCount": 10,
+      "length": 44,
+      "sha256": "a652fc8762eec573b1d7555f7c7fd8606eac46af31d71d61c73753647352c67f"
     }
   ],
   "forbiddenAssetSha256": [
