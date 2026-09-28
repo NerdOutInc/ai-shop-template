@@ -9,11 +9,11 @@ import { FeaturedOrderList } from "./featured-order-list"
 
 const { refresh, cadence } = vi.hoisted(() => ({
   refresh: vi.fn(),
-  cadence: { weekday: 1, hour: 9, minute: 0, timeZone: "UTC" },
+  cadence: { weekday: 5, hour: 17, minute: 30, timeZone: "America/Chicago" },
 }))
 vi.mock("@/features/publishing/dotw-cadence", () => ({ DOTW_CADENCE: cadence }))
 beforeEach(() => {
-  Object.assign(cadence, { weekday: 1, hour: 9, minute: 0, timeZone: "UTC" })
+  Object.assign(cadence, { weekday: 5, hour: 17, minute: 30, timeZone: "America/Chicago" })
 })
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }))
 afterEach(() => {
