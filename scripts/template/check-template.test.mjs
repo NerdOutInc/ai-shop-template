@@ -634,3 +634,31 @@ test("committed policy records rationale for narrow exceptions and opaque source
   for (const item of saved.forbiddenIdentifiers) assert.match(item.sha256, /^[a-f0-9]{64}$/)
   for (const fingerprint of saved.forbiddenAssetSha256) assert.match(fingerprint, /^[a-f0-9]{64}$/)
 })
+
+test("a synthetic database exception allows only its exact bytes and path in both file and index", (t) => {
+  const { write, git, check } = fixture(t)
+  const value = ["postgresql", "://fixture_user:synthetic-password@db.company.dev/app"].join("")
+  const path = "test/database-fixture.ts"
+  const exception = { path, rule: "database-url", sha256: sha256(value), reason: "Synthetic fixture only" }
+  const specific = { ...policy, allowedMatches: [exception] }
+  write(path, value)
+  assert.deepEqual(check(specific), [])
+  git("add", path)
+  write(path, value.replace("synthetic-password", "another-password"))
+  assert.ok(check(specific).some((failure) => failure.includes("credentialed database URL")))
+  git("add", path)
+  write(path, value)
+  assert.ok(
+    check(specific).some((failure) => failure.includes(" (index)") && failure.includes("credentialed database URL"))
+  )
+  git("add", path)
+  write(path, `${value}?password=changed-value`)
+  assert.ok(check(specific).some((failure) => failure.includes("credentialed database URL")))
+  write(path, value)
+  write("test/other.ts", value)
+  assert.ok(
+    check(specific).some(
+      (failure) => failure.includes("test/other.ts") && failure.includes("credentialed database URL")
+    )
+  )
+})
