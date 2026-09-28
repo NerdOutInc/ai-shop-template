@@ -6,10 +6,11 @@ import { test } from "node:test"
 import { setTimeout } from "node:timers/promises"
 
 // Keep provider defaults intact: applyAllMigrations drops public, which also drops its default ACLs.
-// Opt in with SUPABASE_PRIVILEGES_TEST=true; this owns a disposable container with no network or ports.
+// Required in CI; locally opt in with SUPABASE_PRIVILEGES_TEST=true.
+// This owns a disposable container with no network or ports.
 test(
   "Supabase defaults cannot widen the store's browser permissions",
-  { skip: process.env.SUPABASE_PRIVILEGES_TEST !== "true", timeout: 180_000 },
+  { skip: !process.env.CI && process.env.SUPABASE_PRIVILEGES_TEST !== "true", timeout: 180_000 },
   async (t) => {
     const container = `store-privileges-${randomUUID()}`
     const docker = (args, input) =>
@@ -59,9 +60,14 @@ test(
       "t",
       "The control must start with Supabase's permissive table and sequence defaults"
     )
-    for (const file of (await readdir("supabase/migrations")).filter((name) => name.endsWith(".sql")).sort()) {
-      sql(await readFile(`supabase/migrations/${file}`, "utf8"))
-    }
+    const migrations = await Promise.all(
+      (await readdir("supabase/migrations"))
+        .filter((name) => name.endsWith(".sql"))
+        .sort()
+        .map((file) => readFile(`supabase/migrations/${file}`, "utf8"))
+    )
+    for (const migration of migrations) sql(migration)
+    const audit = await readFile("scripts/database/audit-browser-privileges.sql", "utf8")
 
     await t.test("browser grants match the explicit read and favorite policies", () => {
       const actual = JSON.parse(
@@ -102,6 +108,20 @@ test(
             and has_sequence_privilege(role_name,c.oid,'USAGE,SELECT,UPDATE');`),
         "0"
       )
+    })
+
+    await t.test("the operator audit detects table and sequence privilege regressions", () => {
+      assert.equal(sql(audit), "")
+      const rows = sql(`begin;
+        grant all on public.library_designs to anon;
+        grant truncate, update, delete on public.admin_memberships to authenticated;
+        grant usage, update on sequence public.library_designs_display_number_seq to anon;
+        ${audit}
+        rollback;`)
+      assert.match(rows, /anon\|public\.library_designs\|TRUNCATE/)
+      assert.match(rows, /authenticated\|public\.admin_memberships\|DELETE/)
+      assert.match(rows, /anon\|public\.library_designs_display_number_seq\|UPDATE/)
+      assert.equal(sql(audit), "")
     })
 
     await t.test("RLS cannot be bypassed by truncation or sequence mutation", () => {
@@ -183,6 +203,22 @@ test(
           ),
         /row-level security/
       )
+    })
+    await t.test("explicit revokes remove global grants that schema defaults cannot revoke", () => {
+      sql(`drop schema private cascade; drop schema commerce cascade;
+        drop schema public cascade; create schema public;
+        grant usage on schema public to anon, authenticated, service_role;
+        alter default privileges grant all on tables to anon, authenticated;
+        alter default privileges grant all on sequences to anon, authenticated;
+        create table public.global_control(id bigint generated always as identity);`)
+      assert.equal(
+        sql(`select has_table_privilege('anon','public.global_control','TRUNCATE')
+        and has_sequence_privilege('authenticated','public.global_control_id_seq','UPDATE');`),
+        "t"
+      )
+      sql("drop table public.global_control")
+      for (const migration of migrations) sql(migration)
+      assert.equal(sql(audit), "", "Existing objects must lose grants inherited from global defaults")
     })
   }
 )
