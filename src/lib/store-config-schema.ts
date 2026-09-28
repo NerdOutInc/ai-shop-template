@@ -127,12 +127,15 @@ export const storeConfigSchema = z
     if (
       store.configured &&
       (store.id === "your-store" ||
+        store.name === "Your Store" ||
+        store.shortName === "Your Store" ||
         store.commerce.identity === "your-store" ||
         store.supportEmail.endsWith("@example.com"))
     ) {
       context.addIssue({
         code: "custom",
-        message: "Replace the placeholder store ID, commerce identity, and support email before launch",
+        message:
+          "Replace the placeholder store ID, name, short name, commerce identity, and support email before launch",
       })
     }
     if (
