@@ -99,7 +99,7 @@ jobs:
           pnpm exec playwright install --with-deps chromium webkit
       - name: Test component stories
         run: pnpm test:stories
-      - uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3
+      - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3
         id: setup-supabase
         with:
           version: 2.114.0

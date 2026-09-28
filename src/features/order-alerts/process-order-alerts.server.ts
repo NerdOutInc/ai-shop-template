@@ -2,6 +2,8 @@ import "server-only"
 
 import type { Pool } from "pg"
 import { getShippingSchedule } from "@/features/store-policies/get-shipping-schedule"
+import { instantForLocalTime } from "@/lib/instant-for-local-time"
+import { localCalendarDate } from "@/lib/local-calendar-date"
 import { storeTimeZone } from "@/lib/store-time-zone"
 import { buildOrderAlertEmail } from "./build-order-alert-email"
 import type { AlertOrder, OwnerEmail, PaymentCheck, ShipmentCheck } from "./order-alert"
@@ -11,7 +13,6 @@ type AlertRow = AlertOrder & {
   email_payload: OwnerEmail | null
   attempt_started_at: Date | null
   sent_at: Date | null
-  sent_day: string | null
 }
 
 export async function processOrderAlerts(deps: {
@@ -46,8 +47,7 @@ export async function processOrderAlerts(deps: {
     const candidates = await client.query<AlertRow>(
       `
       select o.request_id, o.snapshot, o.payment, o.session_id, o.printify_order_id, o.state, o.failure_code,
-             a.email_day, a.email_payload, a.attempt_started_at, a.sent_at,
-             to_char(a.sent_at at time zone (o.snapshot->'shippingEstimate'->>'timeZone'), 'YYYY-MM-DD') as sent_day
+             a.email_day, a.email_payload, a.attempt_started_at, a.sent_at
         from commerce.checkout_orders o
         left join commerce.order_shipping_alerts a on a.request_id = o.request_id
        where o.snapshot->>'shopId' = $1 and o.payment->>'status' = 'paid'
@@ -77,11 +77,13 @@ export async function processOrderAlerts(deps: {
           estimate.timeZone
         )
         if (schedule.today < schedule.alertDate) {
-          await client.query(
-            `update commerce.order_shipping_alerts
-            set next_check_at=($2::date + time '09:00') at time zone $3 where request_id=$1`,
-            [order.request_id, schedule.alertDate, estimate.timeZone]
-          )
+          const [year, month, day] = schedule.alertDate.split("-").map(Number)
+          // Solve with Intl as the storefront does; database tzdata may differ or lack this name.
+          const nextCheck = instantForLocalTime(year!, month! - 1, day!, 9, 0, estimate.timeZone)
+          await client.query("update commerce.order_shipping_alerts set next_check_at=$2 where request_id=$1", [
+            order.request_id,
+            nextCheck,
+          ])
           continue
         }
         const [shipment, payment] = await Promise.all([deps.checkShipment(order), deps.checkPayment(order)])
@@ -93,7 +95,7 @@ export async function processOrderAlerts(deps: {
           )
           continue
         }
-        if (order.sent_day === schedule.today) continue
+        if (order.sent_at && localCalendarDate(order.sent_at, estimate.timeZone) === schedule.today) continue
         // Persist exact payload BEFORE send. Retrying a lost response must keep Resend's key AND body.
         // Its deduplication lasts 24h: never retry an old payload beyond our conservative 23h cutoff.
         const retry =

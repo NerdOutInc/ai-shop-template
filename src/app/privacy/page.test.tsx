@@ -6,12 +6,16 @@ import { storeConfig } from "@/lib/store-config"
 
 import PrivacyPage from "./page"
 
+vi.mock("server-only", () => ({}))
+vi.mock("@/lib/env", () => ({ env: { ORDER_ALERTS_ENABLED: "false" } }))
+
 vi.mock("@/lib/store-config", () => ({
   storeConfig: {
     name: "Sample Store",
     configured: true,
     policies: { published: true, privacyText: ["Owner-reviewed additional privacy information."] },
     features: { dropSignup: true },
+    privacy: { retainedDropSubscribers: false },
     supportEmail: "help@sample.test",
   },
 }))
@@ -22,6 +26,7 @@ beforeEach(() => {
   storeConfig.configured = true
   storeConfig.policies.published = true
   storeConfig.features.dropSignup = true
+  storeConfig.privacy.retainedDropSubscribers = false
   storeConfig.supportEmail = "help@sample.test"
 })
 
@@ -35,21 +40,50 @@ describe("privacy disclosures", () => {
     expect(screen.getByText(/bounded campaign labels/)).toBeVisible()
     expect(screen.getByText(/do not switch off the separate Vercel measurement/)).toBeVisible()
     expect(screen.getByText(/signup IP address/)).toBeVisible()
+    expect(screen.getByText(/Signing up again renews consent/)).toBeVisible()
     expect(screen.getByText(`The signup form’s current consent wording is: “${dropConsentCopy.text}”`)).toBeVisible()
   })
 
   it("keeps the manual removal path available after new signups are disabled", () => {
     storeConfig.features.dropSignup = false
+    storeConfig.privacy.retainedDropSubscribers = true
     storeConfig.supportEmail = "support@another-brand.test"
     render(<PrivacyPage />)
     expect(screen.getByText(/New signups are currently closed/)).toBeVisible()
     expect(screen.getByText(/signup IP address/)).toBeVisible()
     expect(screen.queryByText(/current consent wording/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Signing up again renews consent/)).not.toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Email support@another-brand.test to request removal" })).toHaveAttribute(
       "href",
       "mailto:support@another-brand.test?subject=Remove%20me%20from%20design-drop%20emails"
     )
     expect(screen.getByText(/opening the email link does not remove an address automatically/)).toBeVisible()
+  })
+
+  it("omits signup disclosures and removal claims for a never-enabled list", () => {
+    storeConfig.features.dropSignup = false
+    render(<PrivacyPage />)
+    expect(screen.queryByRole("heading", { name: "Design-drop emails" })).not.toBeInTheDocument()
+    expect(screen.queryByText(/signup IP address/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Existing subscribers/)).not.toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: /request removal/ })).not.toBeInTheDocument()
+  })
+
+  it("does not describe a list when the form has never opened because policies are unpublished", () => {
+    storeConfig.policies.published = false
+    render(<PrivacyPage />)
+    expect(screen.queryByRole("heading", { name: "Design-drop emails" })).not.toBeInTheDocument()
+    expect(screen.queryByText(/signup IP/)).not.toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: /request removal/ })).not.toBeInTheDocument()
+  })
+
+  it("does not describe re-signup while policy publication closes the form", () => {
+    storeConfig.policies.published = false
+    storeConfig.privacy.retainedDropSubscribers = true
+    render(<PrivacyPage />)
+    expect(screen.getByText(/New signups are currently closed/)).toBeVisible()
+    expect(screen.queryByText(/Signing up again renews consent/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/current consent wording/)).not.toBeInTheDocument()
   })
 
   it("does not publish placeholder signup contacts before the store is configured", () => {

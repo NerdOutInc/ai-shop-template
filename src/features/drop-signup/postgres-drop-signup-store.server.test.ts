@@ -1,5 +1,7 @@
 // @vitest-environment node
 
+import { spawn } from "node:child_process"
+import { fileURLToPath } from "node:url"
 import { Pool } from "pg"
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -88,36 +90,77 @@ describe.skipIf(!databaseUrl)("drop signups", () => {
   it("honors the documented support-removal procedure without changing another subscriber", async () => {
     await store.subscribe("customer@example.com", "footer", "203.0.113.7")
     await store.subscribe("other@example.com", "footer", "203.0.113.8")
-    const remove = async (requestedEmail: string) => {
-      const email = requestedEmail.trim().toLowerCase()
-      const result = await runtime.query(
-        `update commerce.drop_subscribers
-         set unsubscribed_at = coalesce(unsubscribed_at, now()), updated_at = now()
-         where email = $1
-         returning unsubscribed_at`,
-        [email]
-      )
-      const verification = await runtime.query(
-        "select unsubscribed_at from commerce.drop_subscribers where email = $1",
-        [email]
-      )
-      expect(verification.rows).toEqual(result.rows)
-      return result.rows[0]?.unsubscribed_at as Date | undefined
-    }
+    const script = fileURLToPath(new URL("../../../scripts/database/remove-drop-subscriber.psql", import.meta.url))
+    const runOperator = (address: string) =>
+      new Promise<{ code: number | null; output: string }>((resolve, reject) => {
+        const connection = new URL(runtimeConnection)
+        const child = spawn(
+          process.env.PSQL_BIN ?? "psql",
+          ["-X", "--no-readline", "--no-password", "--file", script],
+          {
+            env: {
+              // Do not let a developer's libpq service or host override redirect this local test.
+              ...Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("PG"))),
+              NODE_ENV: process.env.NODE_ENV,
+              PGHOST: connection.hostname,
+              PGPORT: connection.port,
+              PGDATABASE: connection.pathname.slice(1),
+              PGUSER: decodeURIComponent(connection.username),
+              PGPASSWORD: decodeURIComponent(connection.password),
+            },
+            stdio: ["pipe", "pipe", "pipe"],
+          }
+        )
+        let output = ""
+        child.stdout.on("data", (data: Buffer) => {
+          output += data.toString()
+        })
+        child.stderr.on("data", (data: Buffer) => {
+          output += data.toString()
+        })
+        child.on("error", reject)
+        child.on("close", (code) => resolve({ code, output }))
+        child.stdin.end(`${address}\n`)
+      })
+    const readSubscriber = async (email: string) =>
+      (await runtime.query("select * from commerce.drop_subscribers where email = $1", [email])).rows[0]
+    const otherBefore = await readSubscriber("other@example.com")
 
-    // Unknown and maliciously shaped inputs stay parameters, never a new row or a broader update.
-    expect(await remove("missing@example.com")).toBeUndefined()
-    expect(await remove("customer@example.com' OR true--")).toBeUndefined()
+    // Exercise the checked-in prompt and psql literal quoting, not a second copy of its SQL.
+    for (const address of ["missing@example.com", "customer@example.com' OR true--", ""]) {
+      const result = await runOperator(address)
+      expect(result.code, result.output).toBe(0)
+      expect(result.output).toContain("No matching subscriber")
+      if (address) expect(result.output).not.toContain(address)
+    }
     expect(
       (await runtime.query("select email from commerce.drop_subscribers where unsubscribed_at is null")).rows
     ).toHaveLength(2)
-    const timestamp = await remove("  CUSTOMER@example.com  ")
+    const removal = await runOperator("  CUSTOMER@example.com  ")
+    expect(removal.code, removal.output).toBe(0)
+    expect(removal.output).toContain("Removal verified")
+    expect(removal.output).not.toContain("CUSTOMER@example.com")
+    const timestamp = (await readSubscriber("customer@example.com")).unsubscribed_at
     expect(timestamp).toBeInstanceOf(Date)
-    expect(await remove("customer@example.com")).toEqual(timestamp)
+    const repeat = await runOperator("customer@example.com")
+    expect(repeat.code, repeat.output).toBe(0)
+    expect(repeat.output).toContain("Removal verified")
+    expect((await readSubscriber("customer@example.com")).unsubscribed_at).toEqual(timestamp)
+    expect(await readSubscriber("other@example.com")).toEqual(otherBefore)
     expect(
       (await runtime.query("select email from commerce.drop_subscribers where unsubscribed_at is null")).rows
     ).toEqual([{ email: "other@example.com" }])
     expect((await runtime.query("select count(*) from commerce.drop_subscribers")).rows[0].count).toBe("2")
+
+    await pool.query("revoke update on commerce.drop_subscribers from store_app_runtime")
+    try {
+      const failure = await runOperator("other@example.com")
+      expect(failure.code).not.toBe(0)
+      expect(failure.output).not.toContain("Removal verified")
+      expect(await readSubscriber("other@example.com")).toEqual(otherBefore)
+    } finally {
+      await pool.query("grant update on commerce.drop_subscribers to store_app_runtime")
+    }
   })
 
   // The owner's call: signing up again does put you back on the list, but the earlier "no" stays on

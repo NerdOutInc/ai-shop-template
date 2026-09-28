@@ -40,6 +40,7 @@ function createServices() {
       secret: env.CHECKOUT_RATE_LIMIT_SECRET,
       vercel: env.VERCEL === "1",
       certificate: env.DATABASE_SSL_CA,
+      limits: env.CHECKOUT_CAPACITY_LIMITS,
     }),
     printify: new PrintifyClient({ apiToken: env.PRINTIFY_API_TOKEN, shopId: env.PRINTIFY_SHOP_ID }),
     webhookSecret: env.STRIPE_WEBHOOK_SECRET,

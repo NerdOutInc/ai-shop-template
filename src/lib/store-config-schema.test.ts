@@ -13,10 +13,16 @@ describe("storeConfigSchema", () => {
       configured: false,
       commerce: { shippingConfirmed: false },
       policies: { published: false },
+      privacy: { retainedDropSubscribers: false },
     })
   })
 
   it.each([
+    {
+      field: "retained subscriber disclosure",
+      change: { privacy: { retainedDropSubscribers: "false" } },
+      path: ["privacy", "retainedDropSubscribers"],
+    },
     { field: "id", change: { id: "Brand With Spaces" }, path: ["id"] },
     { field: "name", change: { name: "   " }, path: ["name"] },
     { field: "launcher name", change: { shortName: "A much longer launcher label" }, path: ["shortName"] },
@@ -34,6 +40,9 @@ describe("storeConfigSchema", () => {
       change: { fonts: { ...storeConfig.fonts, heading: "url(https://font.example)" } },
       path: ["fonts", "heading"],
     },
+    { field: "offset time zone", change: { timeZone: "-05:00" }, path: ["timeZone"] },
+    { field: "abbreviated time zone", change: { timeZone: "CST" }, path: ["timeZone"] },
+    { field: "reversed offset time zone", change: { timeZone: "Etc/GMT+5" }, path: ["timeZone"] },
     { field: "time zone", change: { timeZone: "Not/A_Zone" }, path: ["timeZone"] },
     {
       field: "weekly weekday",
@@ -213,13 +222,20 @@ describe("storeConfigSchema", () => {
     ).toBe(false)
   })
 
-  it.each([{ id: "your-store" }, { supportEmail: "support@example.com" }])(
-    "allows unfinished placeholder %j only while unconfigured",
-    (placeholder) => {
-      expect(storeConfigSchema.safeParse({ ...storeConfig, ...placeholder, configured: false }).success).toBe(true)
-      expect(storeConfigSchema.safeParse({ ...storeConfig, ...placeholder, configured: true }).success).toBe(false)
-    }
-  )
+  it("accepts a completed brand when configured", () => {
+    expect(storeConfigSchema.safeParse({ ...storeConfig, configured: true }).success).toBe(true)
+  })
+
+  it.each([
+    { id: "your-store" },
+    { name: "Your Store" },
+    { shortName: "Your Store" },
+    { commerce: { ...storeConfig.commerce, identity: "your-store" } },
+    { supportEmail: "support@example.com" },
+  ])("allows unfinished placeholder %j only while unconfigured", (placeholder) => {
+    expect(storeConfigSchema.safeParse({ ...storeConfig, ...placeholder, configured: false }).success).toBe(true)
+    expect(storeConfigSchema.safeParse({ ...storeConfig, ...placeholder, configured: true }).success).toBe(false)
+  })
 
   it.each(["shippingText", "returnsText", "privacyText"] as const)(
     "requires owner-approved %s before publishing policies",

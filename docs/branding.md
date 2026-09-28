@@ -21,7 +21,9 @@ Font stacks support a deliberately small ASCII subset: family identifiers separa
 
 For a custom font, retain a licensed font file, load it through an explicit `@font-face` in `src/app/globals.css` or Next's local font support, and reference its family in these stacks. Verify the font loads and test the fallback. Keep normal and bold weights available when the UI uses them. The generated Open Graph card uses its own bundled regular font; changing website fonts does not embed a font in social images.
 
-The contrast check covers configured text pairs. Inspect hover, focus, disabled states, overlays and images in the actual browser too. In particular, a valid palette does not by itself prove every control is accessible.
+The contrast check covers configured text pairs. The active navigation underline and header focus outline use `primaryForeground` against `primary`, so those state indicators share the validated contrast pair. Decorative colors are not a substitute for a visible state indicator. Inspect hover, focus, disabled states, overlays and images in the actual browser too. In particular, a valid palette does not by itself prove every control is accessible.
+
+Replace both the full `name` and launcher `shortName` before setting `configured: true`. The schema rejects the default `Your Store` in either field, alongside the placeholder store ID, commerce identity and support email.
 
 ## Generate all browser and launcher icons
 

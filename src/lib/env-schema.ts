@@ -18,6 +18,7 @@ export const envSchema = {
     DATABASE_URL: z.string().optional(),
     DATABASE_SSL_CA: z.string().optional(),
     CHECKOUT_RATE_LIMIT_SECRET: z.string().min(32).max(256).optional(),
+    CHECKOUT_CAPACITY_LIMITS: z.string().optional(),
     STRIPE_SECRET_KEY: singleLineCredential.optional(),
     STRIPE_WEBHOOK_SECRET: z.string().optional(),
     STRIPE_TAX_ENABLED: z.enum(["true", "false"]).optional(),

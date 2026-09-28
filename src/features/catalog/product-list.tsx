@@ -214,9 +214,7 @@ export function ProductList({ catalog, initialSort = "featured" }: ProductListPr
               </div>
             </fieldset>
           ) : null}
-          <p className="mt-9 max-w-44 text-xs leading-relaxed text-muted-foreground">
-            Find your next favorite. Snack breaks welcome.
-          </p>
+          <p className="mt-9 max-w-44 text-xs leading-relaxed text-muted-foreground">{storeConfig.tagline}</p>
         </aside>
         <div className="min-w-0">
           {sort === "popular" && popularityUnavailable ? (

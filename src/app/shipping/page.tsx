@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 
+import { getShippingPolicySummary } from "@/features/store-policies/get-shipping-policy-summary"
 import { ShippingPolicyDetails } from "@/features/store-policies/shipping-policy-details"
 import { storeConfig } from "@/lib/store-config"
 
@@ -13,13 +14,14 @@ export const metadata: Metadata = {
 }
 
 export default function ShippingPage() {
+  const shipping = getShippingPolicySummary()
   return (
     <main id="main-content" tabIndex={-1} className="page-width prose-page">
       <ShippingStructuredData />
       <h1 className="display-heading">Shipping & care</h1>
       <ShippingPolicyDetails />
       {storeConfig.policies.published && <h2>Additional shipping & care information</h2>}
-      {storeConfig.policies.published && (
+      {shipping.available && (
         <p>
           These notes supplement the shipping rates, destinations, and estimates above. They do not change checkout
           charges.

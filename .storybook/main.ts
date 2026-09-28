@@ -1,6 +1,6 @@
 import type { StorybookConfig } from "@storybook/nextjs-vite"
 
-import { storeConfigPlugin } from "../test/store-config-plugin"
+import { storeConfigPlugin } from "../test/store-config-plugin.ts"
 
 const config: StorybookConfig = {
   stories: ["../src/**/*.stories.@(ts|tsx)"],

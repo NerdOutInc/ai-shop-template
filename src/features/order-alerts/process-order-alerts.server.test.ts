@@ -156,17 +156,17 @@ describe.skipIf(!databaseUrl)("durable owner reminder outbox", () => {
       transition: "spring",
       paidAt: "2026-03-06T15:00:00.000Z",
       firstCheck: "2026-03-06T16:00:00Z",
-      scheduled: "2026-03-09T13:00:00.000Z",
+      scheduled: "2026-03-09T14:00:00.000Z",
     },
     {
       transition: "fall",
       paidAt: "2026-10-30T15:00:00.000Z",
       firstCheck: "2026-10-30T16:00:00Z",
-      scheduled: "2026-11-02T14:00:00.000Z",
+      scheduled: "2026-11-02T15:00:00.000Z",
     },
   ])("schedules 09:00 in the saved named zone after the $transition DST transition", async (example) => {
     const order = await seed((o) => {
-      o.snapshot.shippingEstimate = { handlingBusinessDays: 3, calendar: "us-federal-v1", timeZone: "America/New_York" }
+      o.snapshot.shippingEstimate = { handlingBusinessDays: 3, calendar: "us-federal-v1", timeZone: "America/Chicago" }
       o.payment.paidAt = example.paidAt
     })
     expect(await run(new Date(example.firstCheck))).toMatchObject({ checked: 1, sent: 0 })
@@ -180,6 +180,34 @@ describe.skipIf(!databaseUrl)("durable owner reminder outbox", () => {
     expect(await run(new Date(example.scheduled))).toMatchObject({ checked: 1, sent: 1 })
     expect(send).toHaveBeenCalledTimes(1)
   })
+  it.each(["US/Pacific-New", "Canada/East-Saskatchewan", "US/Central", "America/Vancouver", "America/Edmonton"])(
+    "uses Intl for %s even when Postgres has different zone names or rules",
+    async (timeZone) => {
+      const order = await seed((o) => {
+        o.snapshot.shippingEstimate = { handlingBusinessDays: 3, calendar: "us-federal-v1", timeZone }
+        o.payment.paidAt = "2026-10-30T15:00:00.000Z"
+      })
+      expect(await run(new Date("2026-10-30T18:00:00Z"))).toMatchObject({ checked: 1, sent: 0, errors: 0 })
+      const stored = await database.query(
+        "select next_check_at from commerce.order_shipping_alerts where request_id=$1",
+        [order.request_id]
+      )
+      const scheduled: Date = stored.rows[0].next_check_at
+      expect(
+        new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(
+          scheduled
+        )
+      ).toBe("2026-11-02")
+      expect(
+        new Intl.DateTimeFormat("en-GB", { timeZone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(
+          scheduled
+        )
+      ).toBe("09:00")
+      expect(await run(scheduled)).toMatchObject({ checked: 1, sent: 1, errors: 0 })
+      expect(await run(new Date(scheduled.getTime() + 3_600_000))).toMatchObject({ checked: 1, sent: 0, errors: 0 })
+      expect(send).toHaveBeenCalledTimes(1)
+    }
+  )
   it("does not retry a stale key after Resend's deduplication window", async () => {
     await seed()
     send.mockRejectedValueOnce(new Error("connection lost"))

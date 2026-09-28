@@ -39,6 +39,25 @@ try {
     from: new Date(now.getTime() - 15 * 86_400_000),
     count: 3,
   })
+  // A merchant-default week can overlap the fixture week and hide an incorrect seed.
+  // Check the wall clock independently before any browser test relies on membership.
+  const fixtureClock = new Intl.DateTimeFormat("en-US", {
+    timeZone: storeConfig.timeZone,
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  })
+  for (const slot of recentSlots) {
+    const parts = fixtureClock.formatToParts(slot)
+    const read = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value
+    if (
+      read("weekday") !== ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][storeConfig.weeklyFeature.weekday] ||
+      Number(read("hour")) !== storeConfig.weeklyFeature.hour ||
+      Number(read("minute")) !== storeConfig.weeklyFeature.minute
+    )
+      throw new Error("Catalog seed must match the test store's weekly cadence")
+  }
   const currentWeek = recentSlots.filter((instant) => instant.getTime() <= now.getTime()).at(-1)
   if (!currentWeek) throw new Error("No current weekly slot for the catalog fixture")
   // When each public product entered the shop, which Newest sorts by and the New badge reads. The

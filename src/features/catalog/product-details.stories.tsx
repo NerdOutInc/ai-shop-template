@@ -597,10 +597,14 @@ export const ShippingConfirmed: Story = {
 
 export const ShippingPreparing: Story = {
   beforeEach: () => {
-    const previous = storeConfig.commerce.shippingConfirmed
+    const previous = structuredClone(storeConfig)
+    storeConfig.configured = true
+    storeConfig.policies.published = true
     storeConfig.commerce.shippingConfirmed = false
+    storeConfig.commerce.firstItemShippingCents = 0
+    storeConfig.commerce.additionalItemShippingCents = 0
     return () => {
-      storeConfig.commerce.shippingConfirmed = previous
+      Object.assign(storeConfig, previous)
     }
   },
   play: async ({ canvas }) => {
@@ -608,6 +612,7 @@ export const ShippingPreparing: Story = {
     await userEvent.click(disclosure)
     await expect(canvas.getByText(/Shipping rates and delivery estimates are being confirmed/)).toBeVisible()
     await expect(canvas.queryByText(/for the first shirt/)).not.toBeInTheDocument()
+    await expect(canvas.queryByText(/Estimated delivery, including printing/)).not.toBeInTheDocument()
   },
 }
 

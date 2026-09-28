@@ -13,6 +13,7 @@ export const offlineStoreEnvironment = {
   PRINTIFY_MONITOR_SECRET: "",
   VERCEL: "",
   CHECKOUT_RATE_LIMIT_SECRET: "",
+  CHECKOUT_CAPACITY_LIMITS: "",
   VERCEL_ENV: "",
   VERCEL_URL: "",
   GOOGLE_TAG_ENABLED: "false",

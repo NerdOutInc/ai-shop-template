@@ -2,6 +2,8 @@ import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
+import { checkoutRecoveryHistoryKey } from "@/features/checkout/checkout-recovery-history-key"
+
 import { MetaCheckoutRecovery } from "./meta-checkout-recovery"
 
 vi.mock("./meta-checkout-content", () => ({
@@ -10,7 +12,7 @@ vi.mock("./meta-checkout-content", () => ({
 
 beforeEach(() => {
   window.history.replaceState(
-    { storeCheckoutRecovery: { kind: "meta", selector: "a".repeat(32) } },
+    { [checkoutRecoveryHistoryKey]: { kind: "meta", selector: "a".repeat(32) } },
     "",
     "/checkout/meta"
   )

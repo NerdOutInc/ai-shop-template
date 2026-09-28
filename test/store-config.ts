@@ -6,12 +6,13 @@ export const storeConfig = storeConfigSchema.parse({
   id: "fixture-store",
   name: "Fixture Store",
   shortName: "Fixture",
-  description: "A new home for original apparel. Our first collection is on its way.",
-  tagline: "Make room for your next favorite.",
+  description: "Original shirts for good company and the weekend ahead.",
+  tagline: "Wear your Friday feeling.",
   locale: "en-US",
-  timeZone: "UTC",
+  timeZone: "America/Chicago",
   features: { designOfTheWeek: true, dropSignup: true, about: true },
-  weeklyFeature: { weekday: 1, hour: 9, minute: 0 },
+  privacy: { retainedDropSubscribers: false },
+  weeklyFeature: { weekday: 5, hour: 17, minute: 30 },
   supportEmail: "support@fixture.example",
   logo: { src: "/images/store-mark.svg", width: 48, height: 48, showName: true },
   fonts: {
@@ -32,15 +33,13 @@ export const storeConfig = storeConfigSchema.parse({
     border: "#cad2dd",
   },
   home: {
-    headline: "Your next favorite starts here.",
-    introduction: "Something new is taking shape. Explore the store as we prepare our first collection.",
-    shopLabel: "Explore the shop",
+    headline: "Fresh shirts. Friday energy.",
+    introduction: "Made for the plans that start when the workweek ends. Discover a collection worth staying out for.",
+    shopLabel: "Find your Friday shirt",
   },
   about: {
-    heading: "A brand in the making.",
-    paragraphs: [
-      "We’re getting ready to share our first collection. Come back soon to discover our story and designs.",
-    ],
+    heading: "Built for good company.",
+    paragraphs: ["Our Chicago studio turns everyday moments into apparel with a little extra personality."],
   },
   commerce: {
     identity: "fixture-store-commerce",
