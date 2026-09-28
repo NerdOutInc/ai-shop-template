@@ -2,6 +2,8 @@
 -- Supabase owns auth.users/auth.sessions and anon/authenticated/service_role.
 -- Apply as the database owner; the application uses store_app_runtime instead.
 -- Provision its password separately. Never place credentials or shop data here.
+-- One store owns this database. Runtime policies admit the application's tables;
+-- server code scopes queries to the configured shop and authorizes admin operations.
 do $$
 begin
   if not exists (select 1 from pg_roles where rolname = 'store_app_runtime') then
@@ -53,6 +55,12 @@ END), false))),
     CONSTRAINT checkout_orders_state_check CHECK ((state = ANY (ARRAY['pending'::text, 'creating'::text, 'created'::text, 'submitting'::text, 'submitted'::text, 'simulated'::text])))
 );
 
+COMMENT ON TABLE commerce.checkout_orders IS
+    'Server-only checkout snapshots. Never delete fulfillment claims while Stripe events can be replayed.';
+
+COMMENT ON COLUMN commerce.checkout_orders.payment IS
+    'Immutable first verified Stripe capture. Null means no saved verification. Refunds and disputes remain authoritative in Stripe.';
+
 CREATE TABLE commerce.design_product_artwork (
     shop_id text NOT NULL,
     product_id text NOT NULL,
@@ -84,6 +92,21 @@ CREATE TABLE commerce.drop_subscribers (
     CONSTRAINT drop_subscribers_source_check CHECK (((source <> ''::text) AND (length(source) <= 64)))
 );
 
+COMMENT ON TABLE commerce.drop_subscribers IS
+    'Drop-notification opt-ins. consented_at and consent_copy_version record the submitted consent; confirmed_at is not populated by the current signup flow. Retain the signup address and unsubscribe history as consent evidence.';
+
+COMMENT ON COLUMN commerce.drop_subscribers.consent_copy_version IS
+    'Version of the wording shown at signup, defined in src/features/drop-signup/drop-consent-copy.ts. Keep the wording associated with each recorded version.';
+
+COMMENT ON COLUMN commerce.drop_subscribers.unsubscribed_at IS
+    'Set on unsubscribe. Only a new signup clears it, after copying the timestamp to last_unsubscribed_at. Unsubscribe does not delete the consent record.';
+
+COMMENT ON COLUMN commerce.drop_subscribers.last_unsubscribed_at IS
+    'Most recent unsubscribe lifted by a later signup. Preserves the earlier refusal when unsubscribed_at is cleared by renewed consent.';
+
+-- Garment facts belong to a blueprint, not each product. An unknown blueprint is
+-- valid intake: no product-to-garment foreign key blocks publication before setup.
+-- Visibility writers lock the product and complete garment before showing it.
 CREATE TABLE commerce.garment_models (
     shop_id text NOT NULL,
     blueprint_id integer NOT NULL,
@@ -106,6 +129,18 @@ CREATE TABLE commerce.garment_models (
     CONSTRAINT garment_models_shop_id_check CHECK ((shop_id <> ''::text)),
     CONSTRAINT garment_models_size_system_check CHECK ((size_system = ANY (ARRAY['US'::text, 'UK'::text, 'EU'::text, 'DE'::text, 'FR'::text, 'IT'::text, 'JP'::text, 'CN'::text, 'BR'::text, 'MEX'::text, 'AU'::text])))
 );
+
+COMMENT ON TABLE commerce.garment_models IS
+    'One row per Printify blueprint configured for this shop. No row means incomplete; the admin garment list also discovers unknown blueprints from published snapshots.';
+
+COMMENT ON COLUMN commerce.garment_models.category_slug IS
+    'The category inherited by every product on this blueprint. Null until the owner chooses one.';
+
+COMMENT ON COLUMN commerce.garment_models.google_product_category IS
+    'Google product taxonomy id, shared with Meta.';
+
+COMMENT ON COLUMN commerce.garment_models.complete IS
+    'Generated from category_slug, google_product_category, gender, age_group and size_system. Writers require completeness before showing or scheduling a product and prevent removing it while a product is shown or scheduled. Feed profiles also require completeness.';
 
 CREATE TABLE commerce.order_shipping_alerts (
     request_id uuid NOT NULL,
@@ -155,6 +190,21 @@ END) STORED,
     CONSTRAINT printify_products_snapshot_check CHECK (((snapshot IS NULL) OR (jsonb_typeof(snapshot) = 'object'::text)))
 );
 
+COMMENT ON COLUMN commerce.printify_products.hidden_at IS
+    'Owner visibility state, independent of provider publication. New products start hidden. Null permits visibility when active; a due reveal_at can also make a hidden active product visible.';
+
+COMMENT ON COLUMN commerce.printify_products.reveal_at IS
+    'Time a hidden active product becomes visible without a write. Set only while hidden_at is set; clearing hidden_at also clears reveal_at.';
+
+COMMENT ON COLUMN commerce.printify_products.revealed_at IS
+    'First time shoppers could see this product. Written once and never cleared; the next hide or show settles a timed reveal from reveal_at. The visibility gate does not read this field.';
+
+COMMENT ON COLUMN commerce.printify_products.blueprint_id IS
+    'Blueprint derived from the published snapshot, joining this product to commerce.garment_models. Missing or unreadable values become null and count as incomplete garment setup.';
+
+COMMENT ON COLUMN commerce.printify_products.added_to_shop_at IS
+    'Most recent entry into the shop. Show stamps a newly visible product; the next hide or show settles an elapsed timed reveal from reveal_at. Hiding preserves it. Drives Newest sorting and the New badge.';
+
 ALTER TABLE commerce.printify_products ALTER COLUMN sort_position ADD GENERATED BY DEFAULT AS IDENTITY (
     SEQUENCE NAME commerce.printify_products_sort_position_seq
     START WITH 1
@@ -197,6 +247,9 @@ CREATE TABLE commerce.product_week_schedule (
     CONSTRAINT product_week_schedule_live_at_check CHECK (isfinite(live_at))
 );
 
+COMMENT ON TABLE commerce.product_week_schedule IS
+    'Weekly features of published products. Multiple products may share a date. Writers lock product rows to keep one upcoming slot per product; past features remain as history.';
+
 CREATE TABLE commerce.public_request_attempts (
     subject_hash text NOT NULL,
     window_start timestamp with time zone NOT NULL,
@@ -204,6 +257,9 @@ CREATE TABLE commerce.public_request_attempts (
     CONSTRAINT public_request_attempts_attempts_check CHECK ((attempts > 0)),
     CONSTRAINT public_request_attempts_subject_hash_check CHECK ((subject_hash ~ '^[a-f0-9]{64}$'::text))
 );
+
+COMMENT ON TABLE commerce.public_request_attempts IS
+    'Rate-limit counters for public forms. Subjects are SHA-256 hashes; the application opportunistically removes rows older than a day. Do not store raw request identities here.';
 
 CREATE TABLE commerce.published_image_uploads (
     shop_id text NOT NULL,
@@ -228,6 +284,15 @@ CREATE TABLE commerce.shop_categories (
     CONSTRAINT shop_categories_sort_position_check CHECK ((sort_position > 0))
 );
 
+COMMENT ON TABLE commerce.shop_categories IS
+    'Garment categories in the owner-selected order. Slugs are stable identities; a category referenced by a garment cannot be deleted.';
+
+COMMENT ON COLUMN commerce.shop_categories.slug IS
+    'Fixed at creation because it becomes URL state. Renaming a category changes name only.';
+
+COMMENT ON COLUMN commerce.shop_categories.sort_position IS
+    'Owner-selected order, not a unique identity. Readers break ties by slug and reordering locks the category rows first.';
+
 CREATE TABLE private.admin_auth_attempts (
     subject_hash text NOT NULL,
     window_start timestamp with time zone NOT NULL,
@@ -243,6 +308,8 @@ CREATE TABLE private.admin_setup_state (
     CONSTRAINT admin_setup_state_singleton_check CHECK (singleton)
 );
 
+-- Supabase owns auth. These owner-privileged views expose only the identity
+-- fields server authorization needs; browsers receive no access to either view.
 CREATE VIEW private.auth_session_identity AS
  SELECT id,
     user_id,
@@ -1289,6 +1356,11 @@ GRANT USAGE ON SCHEMA private TO authenticated;
 GRANT USAGE ON SCHEMA private TO service_role;
 GRANT USAGE ON SCHEMA private TO store_app_runtime;
 
+-- Deliberately restrict schema lookup to the application and Data API roles below.
+-- PostgREST assumes anon/authenticated/service_role for requests; schema USAGE alone
+-- grants no table access. Other integrations must receive their own narrow grants.
+-- For example, an Auth hook needs explicit USAGE for supabase_auth_admin plus its
+-- function/table permissions; do not restore all-role USAGE to enable an integration.
 REVOKE USAGE ON SCHEMA public FROM PUBLIC;
 GRANT USAGE ON SCHEMA public TO anon;
 GRANT USAGE ON SCHEMA public TO authenticated;
@@ -1309,6 +1381,9 @@ GRANT ALL ON FUNCTION private.is_active_admin() TO service_role;
 
 REVOKE ALL ON FUNCTION private.protect_design_artwork_receipt() FROM PUBLIC;
 
+-- Runtime verbs follow application operations. Row locks require UPDATE as well
+-- as SELECT; missing DELETE grants protect fulfillment, consent and artwork records.
+-- Runtime base tables pair grants with RLS policies because the login cannot bypass RLS.
 GRANT SELECT,INSERT,UPDATE ON TABLE commerce.catalog_refreshes TO store_app_runtime;
 
 GRANT SELECT,INSERT,UPDATE ON TABLE commerce.checkout_orders TO store_app_runtime;
