@@ -5,6 +5,7 @@ export const storeConfig = storeConfigSchema.parse({
   configured: false,
   id: "your-store",
   name: "Your Store",
+  shortName: "Your Store",
   description: "A new home for original apparel. Our first collection is on its way.",
   tagline: "Make room for your next favorite.",
   locale: "en-US",
@@ -12,7 +13,12 @@ export const storeConfig = storeConfigSchema.parse({
   features: { designOfTheWeek: false, dropSignup: false, about: false },
   weeklyFeature: { weekday: 1, hour: 9, minute: 0 },
   supportEmail: "support@example.com",
-  logo: { src: "/images/store-mark.svg", width: 48, height: 48 },
+  logo: { src: "/images/store-mark.svg", width: 48, height: 48, showName: true },
+  fonts: {
+    body: '"Helvetica Neue", Arial, sans-serif',
+    heading: '"Helvetica Neue", Arial, sans-serif',
+    label: '"Helvetica Neue", Arial, sans-serif',
+  },
   socialLinks: [],
   theme: {
     background: "#fafbfc",

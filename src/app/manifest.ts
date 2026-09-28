@@ -5,7 +5,8 @@ import { storeConfig } from "@/lib/store-config"
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: storeConfig.name,
-    short_name: storeConfig.name,
+    short_name: storeConfig.shortName,
+    lang: storeConfig.locale,
     id: "/",
     start_url: "/",
     scope: "/",

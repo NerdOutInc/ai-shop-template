@@ -108,7 +108,7 @@ export function ProductList({ catalog, initialSort = "featured" }: ProductListPr
                 type="button"
                 aria-pressed={categories.includes(category.slug)}
                 onClick={() => toggle(category.slug, categories, setCategories)}
-                className="inline-flex min-h-11 items-center justify-center gap-1 rounded border border-input bg-secondary py-1.5 pr-1 pl-3 text-sm text-foreground select-none hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-4 aria-pressed:border-foreground aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary/90 sm:min-h-0"
+                className="inline-flex min-h-11 items-center justify-center gap-1 rounded border border-input bg-secondary py-1.5 pr-1 pl-3 text-sm text-foreground select-none hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-offset-4 aria-pressed:border-foreground aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary/90 aria-pressed:hover:text-primary-foreground sm:min-h-0"
               >
                 {category.name}
                 <Check
