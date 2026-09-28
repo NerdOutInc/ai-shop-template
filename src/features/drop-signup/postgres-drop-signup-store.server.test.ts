@@ -101,6 +101,7 @@ describe.skipIf(!databaseUrl)("drop signups", () => {
             env: {
               // Do not let a developer's libpq service or host override redirect this local test.
               ...Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("PG"))),
+              NODE_ENV: process.env.NODE_ENV,
               PGHOST: connection.hostname,
               PGPORT: connection.port,
               PGDATABASE: connection.pathname.slice(1),
