@@ -55,7 +55,7 @@ describe("createCheckout", () => {
     const calls = vi.mocked(fixture.stripe.checkout.sessions.create).mock.calls
     expect(calls[1]).toEqual(calls[0])
     expect(fixture.getStored()?.order.commerceIdentity).toBe("fixture-store-commerce")
-    expect(fixture.ensureCommerceIdentity).toHaveBeenCalledExactlyOnceWith("your-store")
+    expect(fixture.ensureCommerceIdentity).toHaveBeenCalledExactlyOnceWith("fixture-store-commerce")
   })
 
   it("rejects changed commerce identity before catalog reads or Stripe creation", async () => {
