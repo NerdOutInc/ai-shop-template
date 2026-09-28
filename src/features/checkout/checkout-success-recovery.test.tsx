@@ -10,7 +10,7 @@ vi.mock("@/features/cart/checkout-status", () => ({
 
 beforeEach(() => {
   window.history.replaceState(
-    { kagCheckoutRecovery: { kind: "success", selector: "a".repeat(32) } },
+    { storeCheckoutRecovery: { kind: "success", selector: "a".repeat(32) } },
     "",
     "/checkout/success"
   )

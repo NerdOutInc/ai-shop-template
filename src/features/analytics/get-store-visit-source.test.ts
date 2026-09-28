@@ -137,7 +137,7 @@ describe("store visit attribution", () => {
   it("preserves a handoff's coarse source after URL cleanup when tab storage is blocked", async () => {
     const createdAt = Date.now() - 1000
     window.history.replaceState(
-      { kagCheckoutRecovery: { kind: "meta", selector: "a".repeat(32), visit: { source: "social", createdAt } } },
+      { storeCheckoutRecovery: { kind: "meta", selector: "a".repeat(32), visit: { source: "social", createdAt } } },
       "",
       "/checkout/meta"
     )
@@ -156,7 +156,7 @@ describe("store visit attribution", () => {
   it("replaces malformed tab storage with the handoff's bounded coarse source", async () => {
     const visit = { source: "social", createdAt: Date.now() - 1000 }
     window.history.replaceState(
-      { kagCheckoutRecovery: { kind: "meta", selector: "a".repeat(32), visit } },
+      { storeCheckoutRecovery: { kind: "meta", selector: "a".repeat(32), visit } },
       "",
       "/checkout/meta"
     )
@@ -168,7 +168,7 @@ describe("store visit attribution", () => {
   it("keeps a valid prior tab source ahead of the handoff fallback and ignores expired fallback", async () => {
     const createdAt = Date.now()
     window.history.replaceState(
-      { kagCheckoutRecovery: { kind: "meta", selector: "a".repeat(32), visit: { source: "social", createdAt } } },
+      { storeCheckoutRecovery: { kind: "meta", selector: "a".repeat(32), visit: { source: "social", createdAt } } },
       "",
       "/checkout/meta"
     )
@@ -177,7 +177,7 @@ describe("store visit attribution", () => {
     vi.resetModules()
     sessionStorage.clear()
     window.history.replaceState(
-      { kagCheckoutRecovery: { visit: { source: "social", createdAt: createdAt - 25 * 60 * 60 * 1000 } } },
+      { storeCheckoutRecovery: { visit: { source: "social", createdAt: createdAt - 25 * 60 * 60 * 1000 } } },
       "",
       "/checkout/meta"
     )

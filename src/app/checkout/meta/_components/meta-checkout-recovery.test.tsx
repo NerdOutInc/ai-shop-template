@@ -9,7 +9,7 @@ vi.mock("./meta-checkout-content", () => ({
 }))
 
 beforeEach(() => {
-  window.history.replaceState({ kagCheckoutRecovery: { kind: "meta", selector: "a".repeat(32) } }, "", "/checkout/meta")
+  window.history.replaceState({ storeCheckoutRecovery: { kind: "meta", selector: "a".repeat(32) } }, "", "/checkout/meta")
 })
 
 afterEach(() => vi.unstubAllGlobals())

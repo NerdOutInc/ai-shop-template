@@ -432,8 +432,8 @@ test("distinct checkout tabs retain their own recovery through clean reloads wit
   }
   await expect.poll(() => latestSession.get(page)).toBe(sessionId)
   await expect.poll(() => latestSession.get(other)).toBe(secondSession)
-  const firstReference = await page.evaluate(() => history.state.kagCheckoutRecovery)
-  const secondReference = await other.evaluate(() => history.state.kagCheckoutRecovery)
+  const firstReference = await page.evaluate(() => history.state.storeCheckoutRecovery)
+  const secondReference = await other.evaluate(() => history.state.storeCheckoutRecovery)
   expect(firstReference.selector).not.toBe(secondReference.selector)
   latestSession.clear()
   await Promise.all([page.reload(), other.reload()])
@@ -448,7 +448,7 @@ test("distinct checkout tabs retain their own recovery through clean reloads wit
   await expect(page.getByRole("status")).toContainText(
     "Your payment is confirmed and your order is with our printing partner."
   )
-  expect(await page.evaluate(() => history.state.kagCheckoutRecovery)).toEqual(firstReference)
+  expect(await page.evaluate(() => history.state.storeCheckoutRecovery)).toEqual(firstReference)
   latestSession.delete(page)
   await page.reload()
   await expect.poll(() => latestSession.get(page)).toBe(sessionId)
