@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { storeConfig } from "@/lib/store-config"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { listCadenceSlots } from "@/features/publishing/list-cadence-slots"
@@ -34,6 +35,7 @@ function request(
   })
 }
 beforeEach(() => {
+  storeConfig.features.designOfTheWeek = true
   vi.clearAllMocks()
   env.VERCEL_ENV = "production"
   getAdminActor.mockResolvedValue({ userId: "owner" })
@@ -132,4 +134,13 @@ describe("product schedule route", () => {
     expect(result.status).toBe(503)
     expect(await result.text()).not.toContain("private database host")
   })
+})
+
+it("returns 404 for disabled weekly scheduling before auth or storage", async () => {
+  storeConfig.features.designOfTheWeek = false
+  expect((await PUT(request())).status).toBe(404)
+  expect((await DELETE(request({ productId: "tee-a" }))).status).toBe(404)
+  expect(getAdminActor).not.toHaveBeenCalled()
+  expect(schedule).not.toHaveBeenCalled()
+  expect(remove).not.toHaveBeenCalled()
 })

@@ -66,10 +66,10 @@ describe("private agent grant controls", () => {
     expect(action).toHaveBeenCalledWith(
       expect.objectContaining({ scopes: ["library:read", "library:write", "drafts:create"] })
     )
-    const note = screen.getByText(/Choose individual published products/)
+    const note = screen.getByText(/Manage published products from Products/)
     expect(note).toHaveTextContent(
       "Grants cannot publish products: drafts they create stay unpublished in Printify until you publish them."
     )
-    expect(note).toHaveTextContent("Choose individual published products for Design of the Week from Products.")
+    expect(note).toHaveTextContent("Manage published products from Products.")
   })
 })

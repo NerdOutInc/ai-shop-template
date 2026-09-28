@@ -4,6 +4,7 @@ import type { CSSProperties } from "react"
 import { CartProvider } from "@/features/cart/cart-provider"
 import { GoogleTagProvider } from "@/features/analytics/google-tag-provider"
 import { MetaPixelProvider } from "@/features/analytics/meta-pixel-provider"
+import { env } from "@/lib/env"
 import { getSiteUrl } from "@/lib/get-site-url"
 import { isIndexableSite } from "@/lib/is-indexable-site"
 import { storeConfig } from "@/lib/store-config"
@@ -66,7 +67,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           Skip to content
         </a>
         <CartProvider>
-          <StoreHeader />
+          <StoreHeader adminEnabled={env.ADMIN_LIBRARY_ENABLED} />
           {children}
           <StoreFooter />
         </CartProvider>

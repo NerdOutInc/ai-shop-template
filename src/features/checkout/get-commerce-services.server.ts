@@ -18,7 +18,7 @@ function createServices() {
     !env.STRIPE_WEBHOOK_SECRET ||
     !env.DATABASE_URL
   ) {
-    throw new CheckoutError("NOT_CONFIGURED", "Checkout is still getting its shoes on. Please try again later.")
+    throw new CheckoutError("NOT_CONFIGURED", "Checkout is not available yet. Please try again later.")
   }
   const rawUrl = env.NEXT_PUBLIC_SITE_URL ?? (env.VERCEL_URL ? `https://${env.VERCEL_URL}` : "http://localhost:3000")
   const url = new URL(rawUrl)

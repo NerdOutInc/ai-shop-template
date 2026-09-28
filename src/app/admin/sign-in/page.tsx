@@ -23,7 +23,7 @@ export default async function AdminSignInPage({
       <div className="space-y-2">
         <p className="font-label text-sm tracking-widest uppercase">Store studio</p>
         <h1 className="font-display text-3xl">Sign in to your design library</h1>
-        <p>Passkeys for the quick route. Email codes for the backup hold.</p>
+        <p>Sign in with a passkey or an email code.</p>
       </div>
       {configured ? (
         <AdminSignInForm returnTo={destination} />

@@ -1,4 +1,5 @@
 import { render, screen, within } from "@testing-library/react"
+import { storeConfig } from "@/lib/store-config"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -40,6 +41,7 @@ const products: FeaturedOrderProduct[] = [
 ]
 
 beforeEach(() => {
+  storeConfig.features.designOfTheWeek = true
   mocks.requireAdmin.mockResolvedValue({ userId: "owner" })
   mocks.listFeaturedOrder.mockResolvedValue({ status: "ready", products, now })
   mocks.readAdminProductSchedule.mockResolvedValue({ status: "ready", entries: [], now })
@@ -235,4 +237,17 @@ describe("admin products page", () => {
     expect(screen.getAllByRole("region", { name: /^Week of / })).toHaveLength(6)
     expect(screen.getByText("No published products yet")).toBeVisible()
   })
+})
+
+it("keeps lineup management while removing disabled scheduling and its data read", async () => {
+  storeConfig.features.designOfTheWeek = false
+  render(await AdminProductsPage())
+  expect(mocks.readAdminProductSchedule).not.toHaveBeenCalled()
+  expect(screen.getByText(/^2 products are waiting on garment setup/)).not.toHaveTextContent("scheduled")
+  expect(screen.getByRole("list", { name: "Available products" })).toBeVisible()
+  expect(screen.queryByRole("region", { name: /^Week of / })).not.toBeInTheDocument()
+  const user = userEvent.setup()
+  await user.click(screen.getByRole("button", { name: "Actions for Everyday Type" }))
+  expect(await screen.findByRole("menuitem", { name: "Hide from shop" })).toBeVisible()
+  expect(screen.queryByRole("menuitem", { name: /Schedule/ })).not.toBeInTheDocument()
 })

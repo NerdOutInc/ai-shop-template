@@ -19,8 +19,8 @@ export default async function AdminOrdersPage({
       <header className="max-w-2xl">
         <h1 className="display-heading">Orders</h1>
         <p className="mt-4 text-muted-foreground">
-          See who ordered, where they found us, and whether their tees made it to Printify. Follow the rope back to the
-          start.
+          See who ordered, where they found us, and whether their tees made it to Printify. Follow each order from hello
+          to delivery.
         </p>
       </header>
       <AdminOrders filters={filters} result={result} />

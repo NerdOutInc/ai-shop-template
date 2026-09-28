@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
+import { storeConfig } from "@/lib/store-config"
 import { readProductWeek } from "@/features/design-of-the-week/read-product-week.server"
 
 import { listStorefrontProductIds } from "./list-storefront-product-ids.server"
@@ -23,6 +24,7 @@ vi.mock("./read-popularity.server", () => ({ readPopularity: vi.fn() }))
 vi.mock("@/features/design-of-the-week/read-product-week.server", () => ({ readProductWeek: vi.fn() }))
 
 beforeEach(() => {
+  storeConfig.features.designOfTheWeek = true
   vi.clearAllMocks()
   testEnv.PRINTIFY_PUBLISHING_ENABLED = true
   vi.mocked(readPopularity).mockResolvedValue({ status: "ready", counts: {} })
@@ -187,4 +189,16 @@ describe("getCatalog", () => {
     expect(readPublishedCatalog).not.toHaveBeenCalled()
     expect(readPopularity).not.toHaveBeenCalled()
   })
+})
+
+it("keeps the catalog available without reading or using a disabled weekly schedule", async () => {
+  storeConfig.features.designOfTheWeek = false
+  vi.mocked(listStorefrontProductIds).mockResolvedValue(["tee-a"])
+  vi.mocked(readStorefrontProduct).mockResolvedValue({ id: "tee-a" })
+  vi.mocked(readPublishedCatalog).mockResolvedValue({ status: "ready", products: [] })
+  const catalog = await getCatalog({ productWeek: { liveAt: "2026-09-21T09:00:00.000Z", productIds: ["tee-a"] } })
+  expect(catalog.status).toBe("ready")
+  expect(catalog).not.toHaveProperty("designOfTheWeekProductIds")
+  await getCatalog()
+  expect(readProductWeek).not.toHaveBeenCalled()
 })

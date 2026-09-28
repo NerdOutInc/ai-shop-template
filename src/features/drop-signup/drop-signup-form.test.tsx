@@ -1,8 +1,27 @@
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
+import { storeConfig } from "@/lib/store-config"
+
+import { dropConsentCopy } from "./drop-consent-copy"
 import { DropSignupForm } from "./drop-signup-form"
+
+vi.mock("@/lib/store-config", () => ({
+  storeConfig: {
+    configured: true,
+    policies: { published: true },
+    features: { dropSignup: true },
+    supportEmail: "help@sample.test",
+  },
+}))
+
+beforeEach(() => {
+  storeConfig.configured = true
+  storeConfig.policies.published = true
+  storeConfig.features.dropSignup = true
+  storeConfig.supportEmail = "help@sample.test"
+})
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -75,9 +94,31 @@ describe("DropSignupForm", () => {
 
   it("tells the visitor exactly what they are agreeing to, beside the field", () => {
     render(<DropSignupForm source="design-of-the-week" />)
-    expect(
-      screen.getByText("We'll email you when a new design drops. Nothing else, and you can stop any time.")
-    ).toBeVisible()
+    expect(dropConsentCopy.version).toBe("v2")
+    expect(field()).toHaveAccessibleDescription(expect.stringContaining(dropConsentCopy.text))
+    expect(screen.getByRole("link", { name: "Email help@sample.test to request removal" })).toHaveAttribute(
+      "href",
+      "mailto:help@sample.test?subject=Remove%20me%20from%20design-drop%20emails"
+    )
+    expect(screen.getByRole("link", { name: "privacy policy" })).toHaveAttribute("href", "/privacy")
+    expect(screen.queryByText(/you can stop any time/)).not.toBeInTheDocument()
+  })
+
+  it("uses the current store's removal contact", () => {
+    storeConfig.supportEmail = "hello@another-brand.test"
+    render(<DropSignupForm source="footer" />)
+    expect(screen.getByRole("link", { name: "Email hello@another-brand.test to request removal" })).toHaveAttribute(
+      "href",
+      "mailto:hello@another-brand.test?subject=Remove%20me%20from%20design-drop%20emails"
+    )
+  })
+
+  it.each(["unconfigured", "unreviewed policies", "disabled feature"])("does not invite signups for %s", (state) => {
+    if (state === "unconfigured") storeConfig.configured = false
+    if (state === "unreviewed policies") storeConfig.policies.published = false
+    if (state === "disabled feature") storeConfig.features.dropSignup = false
+    const { container } = render(<DropSignupForm source="footer" />)
+    expect(container).toBeEmptyDOMElement()
   })
 
   it("does not send twice while a send is in flight", async () => {

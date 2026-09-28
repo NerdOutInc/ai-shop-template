@@ -84,7 +84,7 @@ export function AddToCartConfirmation({
               Your cart is available for this visit, but this browser couldn’t save it for later.
             </p>
           )}
-          <Link ref={cartLink} className="button button-coral w-full" href="/cart" onClick={() => onOpenChange(false)}>
+          <Link ref={cartLink} className="button button-accent w-full" href="/cart" onClick={() => onOpenChange(false)}>
             View cart ({count})
           </Link>
           <Dialog.Close className="cart-confirmation-continue">Continue shopping</Dialog.Close>

@@ -1,4 +1,3 @@
-import { storeConfig } from "@/lib/store-config"
 import "server-only"
 
 import { randomBytes } from "node:crypto"
@@ -6,15 +5,24 @@ import { NextResponse, type NextRequest } from "next/server"
 
 import { classifyStoreVisitSource } from "@/features/analytics/classify-store-visit-source"
 import { marketingPreferences } from "@/features/analytics/marketing-preferences"
+import { storeConfig } from "@/lib/store-config"
 
 import { checkoutRecoveryCookie } from "./checkout-recovery-cookie.server"
 
-export function createCheckoutIngress(request: NextRequest) {
-  const brandName = storeConfig.name
+function escapeHtml(value: string) {
+  return value
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;")
+}
+
+export function createCheckoutIngress(request: NextRequest) {
+  const brandName = escapeHtml(storeConfig.name)
+  const locale = escapeHtml(storeConfig.locale)
+  // storeConfig validates every theme color as a six-digit hex value before CSS interpolation.
+  const { theme } = storeConfig
   const url = request.nextUrl
   const selector = randomBytes(16).toString("hex")
   const nonce = randomBytes(24).toString("base64")
@@ -29,11 +37,7 @@ export function createCheckoutIngress(request: NextRequest) {
   const metaSource = cartOrigin && ["facebook", "instagram", "meta_shops"].includes(cartOrigin) ? cartOrigin : null
   const fallbackUrl = new URL(url)
   fallbackUrl.searchParams.set("recovery_unavailable", "1")
-  const fallback = `${fallbackUrl.pathname}${fallbackUrl.search}`
-    .replaceAll("&", "&amp;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
+  const fallback = escapeHtml(`${fallbackUrl.pathname}${fallbackUrl.search}`)
   const script = `(() => {
     const kind = ${JSON.stringify(data.kind)}, selector = ${JSON.stringify(selector)};
     const originalUrl = location.href;
@@ -88,17 +92,17 @@ export function createCheckoutIngress(request: NextRequest) {
   const title = data.kind === "success" ? "Reopening your checkout." : "Getting your selection ready."
   const style = `
     * { box-sizing: border-box; }
-    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #fffdf6; color: #17262d; font-family: Arial, Helvetica, sans-serif; }
-    main { width: 100%; max-width: 40rem; padding: clamp(24px, 6vw, 64px); border: 1px solid #17262d26; border-radius: 24px; background: #fff; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: ${theme.background}; color: ${theme.foreground}; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    main { width: 100%; max-width: 40rem; padding: clamp(24px, 6vw, 64px); border: 1px solid ${theme.border}; border-radius: 24px; background: ${theme.secondary}; }
     .brand { margin: 0; font-weight: 800; font-size: 18px; }
     h1 { margin: 28px 0 16px; font-size: clamp(32px, 8vw, 48px); font-weight: 800; line-height: 1.08; letter-spacing: -.04em; }
     p { font-size: 16px; line-height: 1.6; }
-    a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; margin-top: 20px; padding: 12px 18px; border: 2px solid #17262d; border-radius: 999px; color: #17262d; font-size: 14px; font-weight: 700; line-height: 1.4; text-align: center; text-underline-offset: 3px; }
-    a:hover { background: #f36a5020; }
-    a:focus-visible { outline: 3px solid #17262d; outline-offset: 5px; }
+    a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; margin-top: 20px; padding: 12px 18px; border: 2px solid ${theme.primary}; border-radius: 999px; background: ${theme.primary}; color: ${theme.primaryForeground}; font-size: 14px; font-weight: 700; line-height: 1.4; text-align: center; text-underline-offset: 3px; }
+    a:hover { background: ${theme.accent}; border-color: ${theme.accent}; color: ${theme.accentForeground}; }
+    a:focus-visible { outline: 3px solid ${theme.primary}; outline-offset: 5px; }
   `
   const response = new NextResponse(
-    `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>Returning to ${brandName}</title><style nonce="${nonce}">${style}</style></head><body><main><p class="brand">${brandName}</p><h1>${title}</h1><p role="status">This should only take a moment.</p><a href="${fallback}">Continue without marketing tracking</a></main><script nonce="${nonce}">${script}</script></body></html>`,
+    `<!doctype html><html lang="${locale}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>Returning to ${brandName}</title><style nonce="${nonce}">${style}</style></head><body><main><p class="brand">${brandName}</p><h1>${title}</h1><p role="status">This should only take a moment.</p><a href="${fallback}">Continue without marketing tracking</a></main><script nonce="${nonce}">${script}</script></body></html>`,
     {
       headers: {
         "Content-Type": "text/html; charset=utf-8",

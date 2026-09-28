@@ -19,13 +19,13 @@ export function MetaCheckoutRecovery() {
             : "Reopening your selection. One moment."}
       </p>
       {recovery.error ? (
-        <button type="button" className="button button-coral mt-6" onClick={recovery.retry}>
+        <button type="button" className="button button-accent mt-6" onClick={recovery.retry}>
           Try again
         </button>
       ) : null}
       {recovery.gone ? (
         <div className="mt-6 flex flex-wrap items-center gap-5">
-          <Link href="/shop" className="button button-coral">
+          <Link href="/shop" className="button button-accent">
             Browse the shirts
           </Link>
           <Link href="/cart" className="inline-flex min-h-11 items-center text-sm underline underline-offset-4">

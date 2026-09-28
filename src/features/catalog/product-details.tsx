@@ -242,7 +242,7 @@ export function ProductDetails({
         <button
           ref={addButton}
           type="button"
-          className="button button-coral w-full"
+          className="button button-accent w-full"
           disabled={preview || !variant}
           aria-describedby={preview ? "preview-purchase-note" : undefined}
           onClick={addToCart}
@@ -335,13 +335,19 @@ export function ProductDetails({
         </details>
         <details className="product-detail-disclosure">
           <summary>Shipping & care</summary>
-          <p>
-            Each item is printed to order. US shipping is {shippingPolicy.rate}, shown in your cart. Enter your delivery
-            details at secure checkout.
-          </p>
-          <p>
-            <ShippingEstimateText>{shippingPolicy.delivery}</ShippingEstimateText> Arrival dates are estimates.
-          </p>
+          {shippingPolicy.available ? (
+            <>
+              <p>
+                Each item is printed to order. Shipping to {shippingPolicy.destination} is {shippingPolicy.rate}, shown
+                in your cart. Enter your delivery details at secure checkout.
+              </p>
+              <p>
+                <ShippingEstimateText>{shippingPolicy.delivery}</ShippingEstimateText> Arrival dates are estimates.
+              </p>
+            </>
+          ) : (
+            <p>Shipping rates and delivery estimates are being confirmed. Checkout is not open yet.</p>
+          )}
           <p>
             Machine wash cold, inside out, with similar colors. Tumble dry low. Keep the iron off the print—it’s already
             had its warm-up.

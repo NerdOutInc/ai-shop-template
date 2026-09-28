@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect, userEvent, waitFor, within } from "storybook/test"
 
+import { formatWeeklyCadence } from "@/features/publishing/format-weekly-cadence"
+
 import { FeaturedOrderList } from "./featured-order-list"
 
 // In the shop since Sep 1, well past the two weeks that earn the New badge.
@@ -396,10 +398,18 @@ export const ScheduleTogether: Story = {
   parameters: { viewport: { defaultViewport: "mobile1" } },
   play: async ({ canvas, canvasElement, userEvent }) => {
     const page = within(canvasElement.ownerDocument.body)
+    await expect(
+      canvas.getByText(`Every ${formatWeeklyCadence()}. Hidden products appear when their week begins.`)
+    ).toBeVisible()
     const week = within(canvas.getByRole("region", { name: `Week of ${slots[0]!.label}` }))
     const add = week.getByRole("button", { name: "Add the first product" })
     await userEvent.click(add)
     const dialog = within(await page.findByRole("dialog", { name: "Add products to this week" }))
+    await expect(
+      dialog.getByText(
+        `Hidden products appear in the shop on ${formatWeeklyCadence()}. Removing a product from a future week leaves its shop visibility unchanged. Products stay for sale after their featured week ends.`
+      )
+    ).toBeVisible()
     await userEvent.click(dialog.getByRole("checkbox", { name: /Everyday Type/ }))
     await userEvent.click(dialog.getByRole("checkbox", { name: /Waiting for the Weekend/ }))
     await userEvent.click(dialog.getByRole("button", { name: "Add 2 products" }))

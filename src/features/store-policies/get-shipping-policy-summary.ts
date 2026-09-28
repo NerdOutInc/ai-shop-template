@@ -1,3 +1,5 @@
+import { storeConfig } from "@/lib/store-config"
+
 import { calculateCartShipping } from "@/features/checkout/calculate-cart-shipping"
 import { usShippingRegions } from "@/features/checkout/us-shipping-regions"
 
@@ -21,6 +23,7 @@ function describeRegions(regions: string[]) {
 }
 
 export function getShippingPolicySummary() {
+  const available = storeConfig.configured && storeConfig.policies.published && storeConfig.commerce.shippingConfirmed
   const firstShirtAmount = calculateCartShipping([{ quantity: 1 }])
   const additionalShirtAmount = calculateCartShipping([{ quantity: 2 }]) - firstShirtAmount
   const destinations = new Set(usShippingRegions)
@@ -45,6 +48,7 @@ export function getShippingPolicySummary() {
       : `these US destinations: ${[...destinations].join(", ")}`
 
   return {
+    available,
     firstShirtAmount,
     destination,
     productionTime,

@@ -69,7 +69,7 @@ describe("createShippingService", () => {
       usShippingRegions.splice(0, usShippingRegions.length, ...regions)
       deliveryEstimates.extendedRegions = extendedRegions
 
-      const service = createShippingService(new URL("https://example.com"))
+      const service = createShippingService(new URL("https://example.com"))!
 
       expect(getShippingPolicySummary().delivery).toBe(wording)
       expect(service.description).toContain(wording)
@@ -84,7 +84,7 @@ describe("createShippingService", () => {
   )
 
   it("limits the checkout-derived shipping rate to one shirt in both delivery regions", () => {
-    const service = createShippingService(new URL("https://example.com"))
+    const service = createShippingService(new URL("https://example.com"))!
     const conditions = service.shippingConditions[0]!
     const extendedConditions = service.shippingConditions[1]!
 
@@ -101,14 +101,14 @@ describe("createShippingService", () => {
   it("keeps the advertised amount and description aligned for a 435-cent checkout rate", () => {
     vi.spyOn(shipping, "calculateCartShipping").mockImplementation(([item]) => (item?.quantity === 1 ? 435 : 635))
 
-    const service = createShippingService(new URL("https://example.com"))
+    const service = createShippingService(new URL("https://example.com"))!
 
     expect(service.shippingConditions.every((condition) => condition.shippingRate.value === 4.35)).toBe(true)
     expect(service.description).toContain("$4.35 for the first shirt, plus $2.00 for each additional shirt")
   })
 
   it("advertises exactly the regions accepted at checkout, including Alaska, Hawaii, and DC", () => {
-    const conditions = createShippingService(new URL("https://example.com")).shippingConditions
+    const conditions = createShippingService(new URL("https://example.com"))!.shippingConditions
     const regions = conditions.flatMap((condition) => condition.shippingDestination.addressRegion)
     const regionSchema = shippingAddressSchema.shape.region
 
@@ -124,7 +124,7 @@ describe("createShippingService", () => {
   })
 
   it("counts printing separately and gives Alaska and Hawaii the longer transit estimate", () => {
-    const service = createShippingService(new URL("https://example.com"))
+    const service = createShippingService(new URL("https://example.com"))!
     const contiguous = service.shippingConditions[0]!
     const extended = service.shippingConditions[1]!
 

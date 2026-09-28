@@ -3,7 +3,8 @@ import { getShippingPolicySummary } from "./get-shipping-policy-summary"
 import { getStorePolicyIds } from "./get-store-policy-ids"
 
 export function createShippingService(siteUrl: URL) {
-  const { firstShirtAmount, destination, rate, delivery, deliveryRegions } = getShippingPolicySummary()
+  const { available, firstShirtAmount, destination, rate, delivery, deliveryRegions } = getShippingPolicySummary()
+  if (!available) return null
   const { handling, businessDays } = deliveryEstimates
   const period = ({ min, max }: { min: number; max: number }) => ({
     "@type": "ServicePeriod" as const,

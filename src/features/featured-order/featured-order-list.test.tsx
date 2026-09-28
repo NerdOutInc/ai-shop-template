@@ -7,7 +7,14 @@ import type { ProductScheduleReceipt } from "@/features/publishing/product-sched
 import type { FeaturedOrderProduct } from "./featured-order-product"
 import { FeaturedOrderList } from "./featured-order-list"
 
-const { refresh } = vi.hoisted(() => ({ refresh: vi.fn() }))
+const { refresh, cadence } = vi.hoisted(() => ({
+  refresh: vi.fn(),
+  cadence: { weekday: 1, hour: 9, minute: 0, timeZone: "UTC" },
+}))
+vi.mock("@/features/publishing/dotw-cadence", () => ({ DOTW_CADENCE: cadence }))
+beforeEach(() => {
+  Object.assign(cadence, { weekday: 1, hour: 9, minute: 0, timeZone: "UTC" })
+})
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }))
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -742,6 +749,18 @@ async function openWeek(index: number) {
 }
 
 describe("product scheduling from the shop lineup", () => {
+  it("uses the configured day, clock time and zone in the weekly list and scheduling dialog", async () => {
+    Object.assign(cadence, { weekday: 4, hour: 18, minute: 15, timeZone: "Asia/Kathmandu" })
+    render(<FeaturedOrderList products={scheduleProducts} now={now} schedule={{ entries: [], slots }} />)
+    expect(
+      screen.getByText("Every Thursday at 6:15 PM (Asia/Kathmandu). Hidden products appear when their week begins.")
+    ).toBeVisible()
+    const dialog = await openWeek(0)
+    expect(
+      dialog.getByText(/^Hidden products appear in the shop on Thursday at 6:15 PM \(Asia\/Kathmandu\)/)
+    ).toBeVisible()
+  })
+
   it("renders six dated weeks and previews hidden published products through the private route", () => {
     render(<FeaturedOrderList products={scheduleProducts} now={now} schedule={{ entries: [], slots }} />)
     expect(screen.getAllByRole("region", { name: /^Week of / })).toHaveLength(6)

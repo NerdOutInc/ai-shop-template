@@ -215,7 +215,7 @@ export function ProductList({ catalog, initialSort = "featured" }: ProductListPr
             </fieldset>
           ) : null}
           <p className="mt-9 max-w-44 text-xs leading-relaxed text-muted-foreground">
-            For the send, the snack break, and everything in between.
+            Find your next favorite. Snack breaks welcome.
           </p>
         </aside>
         <div className="min-w-0">

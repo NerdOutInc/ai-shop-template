@@ -1,3 +1,4 @@
+import { storeConfig } from "@/lib/store-config"
 import { act, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { StrictMode } from "react"
@@ -992,4 +993,17 @@ describe("ProductDetails", () => {
     expect(screen.queryByText(/^\$\d/)).not.toBeInTheDocument()
     expect(addItem).not.toHaveBeenCalled()
   })
+})
+
+it("does not advertise placeholder zero shipping or draft delivery estimates", () => {
+  const original = storeConfig.commerce.shippingConfirmed
+  storeConfig.commerce.shippingConfirmed = false
+  try {
+    render(<ProductDetails product={product} />)
+    expect(screen.getByText(/Shipping rates and delivery estimates are being confirmed/)).toBeInTheDocument()
+    expect(screen.queryByText(/\$0\.00 for the first shirt/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Estimated delivery, including printing/)).not.toBeInTheDocument()
+  } finally {
+    storeConfig.commerce.shippingConfirmed = original
+  }
 })

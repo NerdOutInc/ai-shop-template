@@ -26,6 +26,7 @@ const config = vi.hoisted(() => ({
 vi.mock("@/lib/store-config", () => ({ storeConfig: config }))
 beforeEach(() => {
   config.configured = true
+  config.commerce.shippingConfirmed = true
   config.policies.published = true
 })
 
@@ -54,5 +55,10 @@ it("does not advertise the unconfigured template as a merchant", () => {
 
 it("does not publish an unapproved policy", () => {
   config.policies.published = false
+  expect(renderToStaticMarkup(<ShippingStructuredData />)).toBe("")
+})
+
+it("does not publish unconfirmed placeholder shipping rates", () => {
+  config.commerce.shippingConfirmed = false
   expect(renderToStaticMarkup(<ShippingStructuredData />)).toBe("")
 })

@@ -90,8 +90,8 @@ export function AgentGrantControls({ grants }: { grants: DesignAgentGrant[] }) {
         </fieldset>
         <p className="text-sm text-muted-foreground">
           Agents act on your behalf and stop working if your admin access is removed. Grants cannot publish products:
-          drafts they create stay unpublished in Printify until you publish them. Choose individual published products
-          for Design of the Week from Products.
+          drafts they create stay unpublished in Printify until you publish them. Manage published products from
+          Products.
         </p>
         <Button type="submit" className="min-h-12" disabled={pending || !!credential}>
           Create agent access

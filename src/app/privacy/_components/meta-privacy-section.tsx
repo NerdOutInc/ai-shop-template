@@ -25,18 +25,20 @@ export function MetaPrivacySection() {
         .
       </p>
       <p>
-        Meta stays off until you choose Allow Meta marketing cookies. Declining does not affect shopping. We remember
-        your choice in this browser for 180 days, then ask again. Use Privacy choices in the footer to change it at any
-        time. We treat your browser’s Global Privacy Control signal as a denial. Withdrawing permission stops future
-        Meta events, discards unsent events, and attempts to remove the Meta cookies set on this website. It does not
-        erase information Meta has already received.
+        Meta stays off until you choose Allow Meta marketing cookies. Declining does not affect shopping. We honor your
+        choice in this browser for 180 days, then ask again. Use Privacy choices in the footer to change it at any time.
+        We treat your browser’s Global Privacy Control signal as a denial. Withdrawing permission stops future Meta
+        events, discards unsent events, and attempts to remove the Meta cookies set on this website. It does not erase
+        information Meta has already received.
       </p>
       <p>
         Meta may set advertising cookies such as _fbp and _fbc under its cookie policy. We do not send your name, email,
         phone, delivery address, card details, or raw checkout references in Pixel event parameters, and automatic
-        advanced matching is disabled. We keep a separate set of up to 100 local purchase-attempt markers for Meta for
-        up to 90 days to limit duplicate events after a refresh. They are not sent to Meta. Clearing browser data or
-        using another device can allow another event; blocking scripts or declining marketing can prevent measurement.
+        advanced matching is disabled. We use a separate set of up to 100 local purchase-attempt markers for Meta,
+        treating them as current for 90 days to limit duplicate events after a refresh. Saved choices and attempt
+        markers can remain beyond their eligibility windows until replaced or cleared. The markers are not sent to Meta.
+        Clearing browser data or using another device can allow another event; blocking scripts or declining marketing
+        can prevent measurement.
       </p>
     </>
   )

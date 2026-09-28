@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect, userEvent, waitFor, within } from "storybook/test"
 
+import { storeConfig } from "@/lib/store-config"
+
 import { CartProvider } from "@/features/cart/cart-provider"
 
 import printifySizeGuideDescriptions from "../../../test/printify-size-guide-descriptions.json"
@@ -569,5 +571,42 @@ export const Unavailable: Story = {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("button", { name: "Currently unavailable" })).toBeDisabled()
     await expect(canvas.queryByText(/^\$\d/)).not.toBeInTheDocument()
+  },
+}
+
+export const ShippingConfirmed: Story = {
+  beforeEach: () => {
+    const previous = structuredClone(storeConfig)
+    storeConfig.configured = true
+    storeConfig.policies.published = true
+    storeConfig.commerce.shippingConfirmed = true
+    storeConfig.commerce.firstItemShippingCents = 435
+    storeConfig.commerce.additionalItemShippingCents = 200
+    return () => {
+      Object.assign(storeConfig, previous)
+    }
+  },
+  play: async ({ canvas }) => {
+    const disclosure = canvas.getByText("Shipping & care", { exact: true })
+    await userEvent.click(disclosure)
+    await expect(disclosure).toHaveFocus()
+    await expect(canvas.getByText(/\$4\.35 for the first shirt, plus \$2\.00 for each additional shirt/)).toBeVisible()
+    await expect(canvas.getByText(/Arrival dates are estimates/)).toBeVisible()
+  },
+}
+
+export const ShippingPreparing: Story = {
+  beforeEach: () => {
+    const previous = storeConfig.commerce.shippingConfirmed
+    storeConfig.commerce.shippingConfirmed = false
+    return () => {
+      storeConfig.commerce.shippingConfirmed = previous
+    }
+  },
+  play: async ({ canvas }) => {
+    const disclosure = canvas.getByText("Shipping & care", { exact: true })
+    await userEvent.click(disclosure)
+    await expect(canvas.getByText(/Shipping rates and delivery estimates are being confirmed/)).toBeVisible()
+    await expect(canvas.queryByText(/for the first shirt/)).not.toBeInTheDocument()
   },
 }

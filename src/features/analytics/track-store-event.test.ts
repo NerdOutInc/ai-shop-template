@@ -1,8 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
+const config = vi.hoisted(() => ({
+  configured: true,
+  policies: { published: true },
+  commerce: { shippingConfirmed: true },
+}))
+vi.mock("@/lib/store-config", () => ({ storeConfig: config }))
+
 describe("store event delivery preparation", () => {
   beforeEach(() => {
     vi.resetModules()
+    config.configured = true
+    config.policies.published = true
+    config.commerce.shippingConfirmed = true
     delete window.va
     delete window.vaq
     sessionStorage.clear()
@@ -14,6 +24,20 @@ describe("store event delivery preparation", () => {
     delete window.va
     delete window.vaq
   })
+
+  it.each(["brand", "policies", "shipping"])(
+    "does not initialize events or attribution before %s is ready",
+    async (missing) => {
+      if (missing === "brand") config.configured = false
+      if (missing === "policies") config.policies.published = false
+      if (missing === "shipping") config.commerce.shippingConfirmed = false
+      const { trackStoreEvent } = await import("./track-store-event")
+      expect(trackStoreEvent({ name: "product_viewed", productId: "preparation-product" })).toBe(false)
+      expect(window.va).toBeUndefined()
+      expect(window.vaq).toBeUndefined()
+      expect(sessionStorage.length).toBe(0)
+    }
+  )
 
   it("initializes the official queue and sanitizer before the lazy analytics adapter is ready", async () => {
     const { trackStoreEvent } = await import("./track-store-event")

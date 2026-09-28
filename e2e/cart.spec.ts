@@ -61,7 +61,7 @@ test("edits and persists the bag with accessible keyboard controls and no narrow
   await page.screenshot({ path: testInfo.outputPath("cart-320px.png"), fullPage: true })
   expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([])
   await page.getByRole("button", { name: /Remove First design/ }).click()
-  await expect(page.getByRole("heading", { name: "A little room for adventure." })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Ready for your next favorite." })).toBeVisible()
 })
 
 test("explains the same US shipping rate on the public shipping page", async ({ page }) => {

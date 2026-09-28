@@ -190,15 +190,13 @@ export function CartCheckout() {
           </p>
         ) : null}
         <button
-          className="button button-coral mt-6 w-full disabled:cursor-wait disabled:opacity-60"
+          className="button button-accent mt-6 w-full disabled:cursor-wait disabled:opacity-60"
           type="submit"
           disabled={busy}
         >
           {busy ? "Opening secure checkout…" : "Checkout"}
         </button>
-        <p className="mt-4 text-center text-xs text-foreground/70">
-          Your card details stay with Stripe. We stick to shirts.
-        </p>
+        <p className="mt-4 text-center text-xs text-foreground/70">Your card details are handled by Stripe.</p>
       </form>
     </section>
   )

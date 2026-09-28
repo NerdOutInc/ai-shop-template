@@ -7,6 +7,6 @@
  * the privacy page.
  */
 export const dropConsentCopy = {
-  version: "v1",
-  text: "We'll email you when a new design drops. Nothing else, and you can stop any time.",
+  version: "v2",
+  text: "We'll email you about new design drops. To request removal from the list, email our support team.",
 }
