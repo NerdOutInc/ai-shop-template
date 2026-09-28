@@ -11,7 +11,7 @@ describe("Merchant feed failure diagnostics", () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => undefined)
     logMerchantFeedFailure(new MerchantFeedError("INVALID_DESCRIPTION", "shirt-a"), "publishing-health")
     logMerchantFeedFailure(new MerchantFeedError("SNAPSHOT_DISPLAY_INVALID", "private\nprovider-token"), "route")
-    logMerchantFeedFailure(new Error("postgres://user:private-password@host/database"), "route")
+    logMerchantFeedFailure(new Error("postgres://user:private-password@host.test/database"), "route")
     expect(log.mock.calls).toEqual([
       ["Merchant feed unavailable", { source: "publishing-health", code: "INVALID_DESCRIPTION", productId: "shirt-a" }],
       ["Merchant feed unavailable", { source: "route", code: "SNAPSHOT_DISPLAY_INVALID" }],

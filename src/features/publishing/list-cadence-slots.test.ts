@@ -20,7 +20,7 @@ describe("listCadenceSlots", () => {
   it("offers the next four drops, always on the cadence weekday at the cadence hour", () => {
     const slots = listCadenceSlots({ from: new Date("2026-09-21T15:00:00.000Z") })
     expect(slots).toHaveLength(4)
-    for (const slot of slots) expect(localWallClock(slot)).toBe("Mon 09:00")
+    for (const slot of slots) expect(localWallClock(slot)).toBe("Fri 17:30")
     expect(slots.map((slot) => slot.getTime())).toEqual([...slots.map((slot) => slot.getTime())].toSorted())
   })
 
@@ -37,11 +37,11 @@ describe("listCadenceSlots", () => {
   })
 
   it("never offers a moment that has already passed, including the cadence day itself", () => {
-    // Monday 10:00 UTC: this week's slot is an hour gone, so the next one is next Monday.
-    const afterThisWeeksSlot = new Date("2026-09-21T10:00:00.000Z")
+    // Friday 18:30 in Chicago: this week's slot is an hour gone, so use next Friday.
+    const afterThisWeeksSlot = new Date("2026-09-25T23:30:00.000Z")
     const [first] = listCadenceSlots({ from: afterThisWeeksSlot, count: 1 })
     expect(first!.getTime()).toBeGreaterThan(afterThisWeeksSlot.getTime())
-    expect(localWallClock(first!)).toBe("Mon 09:00")
+    expect(localWallClock(first!)).toBe("Fri 17:30")
     expect(first!.getTime() - afterThisWeeksSlot.getTime()).toBeGreaterThan(6 * 86_400_000)
   })
 
@@ -58,10 +58,10 @@ describe("listCadenceSlots", () => {
   })
 
   it("honours a different cadence without touching the stored dates of anything already queued", () => {
-    const friday = { weekday: 5, hour: 17, minute: 30, timeZone: "America/Chicago" }
-    const slots = listCadenceSlots({ from: new Date("2026-09-21T15:00:00.000Z"), count: 2, cadence: friday })
+    const monday = { weekday: 1, hour: 9, minute: 0, timeZone: "UTC" }
+    const slots = listCadenceSlots({ from: new Date("2026-09-21T15:00:00.000Z"), count: 2, cadence: monday })
     for (const slot of slots) {
-      expect(localWallClock(slot, friday.timeZone)).toBe("Fri 17:30")
+      expect(localWallClock(slot, monday.timeZone)).toBe("Mon 09:00")
     }
   })
 })

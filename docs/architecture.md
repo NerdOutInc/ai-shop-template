@@ -16,7 +16,7 @@ Paths below are relative to the repository root. They describe where code belong
 | `src/hooks/`              | Hooks with demonstrated use across features                             |
 | `src/lib/`                | Shared utilities and infrastructure                                     |
 | `public/`                 | Assets deliberately served by the website                               |
-| `assets/print/`           | Artwork masters, derivatives, and production references                 |
+| `assets/print/`           | README-only pointer to private artwork and production storage           |
 | `scripts/artwork/`        | Existing Python artwork tools                                           |
 | `test/`                   | Shared test setup, fixtures, and support; never production dependencies |
 | `e2e/`                    | Browser journeys and their support                                      |
@@ -120,6 +120,8 @@ import { Button } from "@/components/ui/button"
 Features may depend directly on other features when the responsibility calls for it, but no runtime dependency cycle is allowed. Type-only cycles are permitted; they do not permit a shared utility to depend on a feature. Prefer `import type` for type-only dependencies so the graph reflects their actual role.
 
 Production modules cannot import unit tests, stories, shared test setup/fixtures, or browser-test support. Tests and stories may import the production module they exercise and appropriate test support. Using a relative path instead of `@/` cannot bypass an ownership restriction.
+
+Browser journeys and helpers under `e2e/` must read brand configuration from `test/store-config.ts`, matching the fixture builds they exercise. Direct imports of the merchant's `src/lib/store-config.ts` are rejected, including aliases, relative paths and dynamic imports. See [testing a rebranded store](test-store.md) for the fixture contract.
 
 Dynamic application imports must use a string literal, for example `import("./product-dialog")`; computed paths and template strings are prohibited. They follow the same resolution, ownership, and runtime-cycle checks as static imports. This keeps lazy-loading dependencies visible to the checks.
 

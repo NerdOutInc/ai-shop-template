@@ -20,6 +20,9 @@ describe("storeConfigSchema", () => {
     { field: "id", change: { id: "Brand With Spaces" }, path: ["id"] },
     { field: "name", change: { name: "   " }, path: ["name"] },
     { field: "support email", change: { supportEmail: "ask us on social" }, path: ["supportEmail"] },
+    { field: "offset time zone", change: { timeZone: "-05:00" }, path: ["timeZone"] },
+    { field: "abbreviated time zone", change: { timeZone: "CST" }, path: ["timeZone"] },
+    { field: "reversed offset time zone", change: { timeZone: "Etc/GMT+5" }, path: ["timeZone"] },
     { field: "time zone", change: { timeZone: "Not/A_Zone" }, path: ["timeZone"] },
     {
       field: "weekly weekday",

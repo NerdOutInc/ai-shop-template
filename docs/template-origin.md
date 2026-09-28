@@ -10,7 +10,9 @@ The published starting baseline is template commit `d498dd3fb8b0e1c84b980b9cf35a
 
 This application starts from [Blazity's Next.js Enterprise Boilerplate](https://github.com/Blazity/next-enterprise), selected from the [Vercel template directory](https://vercel.com/templates/next.js/nextjs-enterprise-boilerplate).
 
-The imported foundation baseline is commit [`97c4f3ed6be0a5b255d0e71606c7b355138281a9`](https://github.com/Blazity/next-enterprise/tree/97c4f3ed6be0a5b255d0e71606c7b355138281a9). Its copyright notice and MIT terms are retained in the repository root alongside attribution for the template contributors. Preserve both notices when personalizing or distributing a generated store.
+The imported foundation baseline is commit [`97c4f3ed6be0a5b255d0e71606c7b355138281a9`](https://github.com/Blazity/next-enterprise/tree/97c4f3ed6be0a5b255d0e71606c7b355138281a9). Its copyright notice and MIT text are retained unchanged in the repository root. Preserve that upstream notice when personalizing or distributing a generated store.
+
+The copyright holder and any additional licensing notice for the store-specific and template-specific additions remain an explicit owner decision. This extraction has no recorded assignment establishing either the company or a collective contributor label as that holder. No new ownership assertion is added to `LICENSE`; repository visibility and Git authorship do not settle that decision.
 
 The foundation adapts its strict TypeScript configuration, formatting, Tailwind/PostCSS setup, environment validation, and testing approach. Application code moves into `src/`; Next.js uses Turbopack, and Storybook uses the Next.js Vite framework. Configuration and dependency versions are maintained in this repository rather than following the template automatically.
 

@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright"
 import { expect, test } from "@playwright/test"
 
+import { storeConfig } from "../test/store-config"
 import { beginKeyboardNavigation } from "../test/begin-keyboard-navigation"
 
 test.describe("About social previews", () => {
@@ -60,7 +61,7 @@ test("opens About from the header by keyboard and connects the story to the shop
   await expect(main.getByRole("heading", { level: 1, name: "About Fixture Store" })).toBeVisible()
   await expect(main.getByRole("link", { name: "support@fixture.example" })).toHaveCount(0)
   expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([])
-  await main.getByRole("link", { name: "Explore the shop" }).click()
+  await main.getByRole("link", { name: storeConfig.home.shopLabel }).click()
   await expect(page).toHaveURL("/shop")
 })
 
