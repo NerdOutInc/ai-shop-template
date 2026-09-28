@@ -1,5 +1,6 @@
 import { getSitemapProductIds } from "@/features/catalog/get-sitemap-product-ids.server"
 import { getSiteUrl } from "@/lib/get-site-url"
+import { storeConfig } from "@/lib/store-config"
 import { isIndexableSite } from "@/lib/is-indexable-site"
 
 function escapeXml(value: string) {
@@ -19,7 +20,7 @@ export async function GET() {
     const productIds = await getSitemapProductIds()
     const paths = [
       "/",
-      "/about",
+      ...(storeConfig.features.about ? ["/about"] : []),
       "/shop",
       "/shipping",
       "/returns",

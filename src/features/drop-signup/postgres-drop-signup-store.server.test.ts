@@ -63,7 +63,7 @@ describe.skipIf(!databaseUrl)("drop signups", () => {
       )
     ).rows[0]
     // Consent evidence has to say what the wording was, not merely that somebody submitted.
-    expect(row).toMatchObject({ source: "design-of-the-week", consent_copy_version: "v1" })
+    expect(row).toMatchObject({ source: "design-of-the-week", consent_copy_version: "v2" })
     // Nothing in this change sends anything, so nothing may claim a confirmation.
     expect(row.confirmed_at).toBeNull()
     expect(row.unsubscribed_at).toBeNull()
@@ -83,6 +83,41 @@ describe.skipIf(!databaseUrl)("drop signups", () => {
     expect(after.source).toBe("design-of-the-week")
     expect(after.unsubscribed_at).toBeNull()
     expect(after.consented_at.getTime()).toBeGreaterThan(before.getTime())
+  })
+
+  it("honors the documented support-removal procedure without changing another subscriber", async () => {
+    await store.subscribe("customer@example.com", "footer", "203.0.113.7")
+    await store.subscribe("other@example.com", "footer", "203.0.113.8")
+    const remove = async (requestedEmail: string) => {
+      const email = requestedEmail.trim().toLowerCase()
+      const result = await runtime.query(
+        `update commerce.drop_subscribers
+         set unsubscribed_at = coalesce(unsubscribed_at, now()), updated_at = now()
+         where email = $1
+         returning unsubscribed_at`,
+        [email]
+      )
+      const verification = await runtime.query(
+        "select unsubscribed_at from commerce.drop_subscribers where email = $1",
+        [email]
+      )
+      expect(verification.rows).toEqual(result.rows)
+      return result.rows[0]?.unsubscribed_at as Date | undefined
+    }
+
+    // Unknown and maliciously shaped inputs stay parameters, never a new row or a broader update.
+    expect(await remove("missing@example.com")).toBeUndefined()
+    expect(await remove("customer@example.com' OR true--")).toBeUndefined()
+    expect(
+      (await runtime.query("select email from commerce.drop_subscribers where unsubscribed_at is null")).rows
+    ).toHaveLength(2)
+    const timestamp = await remove("  CUSTOMER@example.com  ")
+    expect(timestamp).toBeInstanceOf(Date)
+    expect(await remove("customer@example.com")).toEqual(timestamp)
+    expect(
+      (await runtime.query("select email from commerce.drop_subscribers where unsubscribed_at is null")).rows
+    ).toEqual([{ email: "other@example.com" }])
+    expect((await runtime.query("select count(*) from commerce.drop_subscribers")).rows[0].count).toBe("2")
   })
 
   // The owner's call: signing up again does put you back on the list, but the earlier "no" stays on

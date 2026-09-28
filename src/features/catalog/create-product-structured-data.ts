@@ -27,12 +27,18 @@ export function createProductStructuredData(product: CatalogProduct, siteUrl: UR
       priceCurrency: variant.currency,
       availability: variant.available ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       itemCondition: "https://schema.org/NewCondition",
-      hasMerchantReturnPolicy: { "@id": policyIds.merchantReturnPolicy },
-      // Keep every offer tied to the same regional rates and delivery estimates.
-      shippingDetails: {
-        "@type": "OfferShippingDetails" as const,
-        hasShippingService: { "@id": policyIds.shippingService },
-      },
+      ...(storeConfig.configured && storeConfig.policies.published
+        ? { hasMerchantReturnPolicy: { "@id": policyIds.merchantReturnPolicy } }
+        : {}),
+      // Do not link offers to a shipping service that is still awaiting owner confirmation.
+      ...(storeConfig.configured && storeConfig.policies.published && storeConfig.commerce.shippingConfirmed
+        ? {
+            shippingDetails: {
+              "@type": "OfferShippingDetails" as const,
+              hasShippingService: { "@id": policyIds.shippingService },
+            },
+          }
+        : {}),
     },
   }))
 

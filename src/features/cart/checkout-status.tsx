@@ -162,12 +162,12 @@ export function CheckoutStatus({ sessionId }: { sessionId: string | null }) {
       {validSession &&
       !polling &&
       (error || status?.paymentStatus === "pending" || (paid && status.fulfillmentStatus === "pending")) ? (
-        <button type="button" onClick={retry} className="button button-coral mt-8">
+        <button type="button" onClick={retry} className="button button-accent mt-8">
           Check order status
         </button>
       ) : null}
       <div className="mt-8 flex flex-wrap justify-center gap-4">
-        <Link href="/shop" className="button button-coral">
+        <Link href="/shop" className="button button-accent">
           Keep shopping
         </Link>
         {!paid ? (

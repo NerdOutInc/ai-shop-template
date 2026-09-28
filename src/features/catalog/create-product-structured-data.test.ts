@@ -1,3 +1,5 @@
+import "../../../test/configured-store"
+import { storeConfig } from "@/lib/store-config"
 import { describe, expect, it } from "vitest"
 
 import type { CatalogProduct } from "./catalog-product"
@@ -243,4 +245,14 @@ describe("createProductStructuredData", () => {
       ],
     })
   })
+})
+
+it("omits unconfirmed shipping policy references from product offers", () => {
+  storeConfig.commerce.shippingConfirmed = false
+  const variants = productGroup(productFixture())?.hasVariant ?? []
+  expect(variants.length).toBeGreaterThan(0)
+  for (const variant of variants) {
+    expect(variant.offers).not.toHaveProperty("shippingDetails")
+    expect(variant.offers).toHaveProperty("hasMerchantReturnPolicy")
+  }
 })

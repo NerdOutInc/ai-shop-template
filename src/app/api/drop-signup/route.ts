@@ -1,6 +1,7 @@
 import { subscribeToDrops } from "@/features/drop-signup/subscribe-to-drops.server"
 import { dropSignupRequest } from "@/features/drop-signup/drop-signup-request"
 import { readSignupBody } from "@/features/drop-signup/read-signup-body.server"
+import { storeConfig } from "@/lib/store-config"
 import { env } from "@/lib/env"
 import { getSiteUrl } from "@/lib/get-site-url"
 import { hasSameOrigin } from "@/lib/has-same-origin"
@@ -22,6 +23,7 @@ export const dynamic = "force-dynamic"
  */
 export async function POST(request: Request) {
   const respond = (body: unknown, status = 200) => Response.json(body, { status, headers: privateResponseHeaders })
+  if (!storeConfig.features.dropSignup) return respond({ error: "Not found." }, 404)
   const deployment = env.VERCEL_ENV === "preview" && env.VERCEL_URL ? new URL(`https://${env.VERCEL_URL}`) : undefined
   if (!hasSameOrigin(request, getSiteUrl(), deployment)) return respond({ error: "Use the form on the site." }, 403)
 

@@ -3,6 +3,7 @@ import { NextRequest } from "next/server"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { marketingPreferences } from "@/features/analytics/marketing-preferences"
+import { storeConfig } from "@/lib/store-config"
 
 import { checkoutRecoveryCookie } from "./checkout-recovery-cookie.server"
 import { createCheckoutIngress } from "./create-checkout-ingress.server"
@@ -11,8 +12,62 @@ vi.mock("server-only", () => ({}))
 
 const sessionId = "cs_live_original1234567890"
 const url = `https://example.com/checkout/success?session_id=${sessionId}`
+const initialBrand = { name: storeConfig.name, locale: storeConfig.locale, theme: { ...storeConfig.theme } }
+
+afterEach(() => {
+  storeConfig.name = initialBrand.name
+  storeConfig.locale = initialBrand.locale
+  Object.assign(storeConfig.theme, initialBrand.theme)
+})
 
 describe("checkout ingress", () => {
+  it("uses the configured brand, locale, and palette without remote assets", async () => {
+    storeConfig.name = "Another & Co."
+    storeConfig.locale = "fr-CA"
+    Object.assign(storeConfig.theme, {
+      background: "#112233",
+      foreground: "#ddeeff",
+      secondary: "#223344",
+      border: "#556677",
+      primary: "#ffbb88",
+      primaryForeground: "#220011",
+      accent: "#99eeaa",
+      accentForeground: "#112211",
+    })
+    const response = createCheckoutIngress(new NextRequest(url))
+    const document = new DOMParser().parseFromString(await response.text(), "text/html")
+    expect(document.documentElement.lang).toBe("fr-CA")
+    expect(document.title).toBe("Returning to Another & Co.")
+    expect(document.querySelector(".brand")!.textContent).toBe("Another & Co.")
+    const style = document.querySelector("style")!.textContent!
+    for (const key of [
+      "background",
+      "foreground",
+      "secondary",
+      "border",
+      "primary",
+      "primaryForeground",
+      "accent",
+      "accentForeground",
+    ] as const)
+      expect(style).toContain(storeConfig.theme[key])
+    expect(style).toContain("font-family: ui-sans-serif, system-ui")
+    expect(style).not.toMatch(/#fffdf6|#17262d|#f36a50|Arial/)
+    expect(document.querySelector("script[src], img, iframe, link")).toBeNull()
+  })
+
+  it("escapes configured text instead of treating it as handoff HTML", async () => {
+    storeConfig.name = 'A & <script>alert("brand")</script>'
+    storeConfig.locale = 'en" data-injected="true'
+    const response = createCheckoutIngress(new NextRequest(url))
+    const document = new DOMParser().parseFromString(await response.text(), "text/html")
+    expect(document.documentElement.lang).toBe(storeConfig.locale)
+    expect(document.documentElement.getAttribute("data-injected")).toBeNull()
+    expect(document.querySelector(".brand")!.textContent).toBe(storeConfig.name)
+    expect(document.title).toBe(`Returning to ${storeConfig.name}`)
+    expect(document.querySelectorAll("script")).toHaveLength(1)
+  })
+
   it("isolates the sensitive document and verifies a private cookie before replacing the URL", async () => {
     const response = createCheckoutIngress(new NextRequest(url))
     const html = await response.text()

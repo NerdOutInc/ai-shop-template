@@ -20,7 +20,7 @@ export class PrintifyClient {
   constructor(config: { apiToken?: string; shopId?: string }) {
     const result = configSchema.safeParse(config)
     if (!result.success)
-      throw new CheckoutError("NOT_CONFIGURED", "Checkout is still getting its shoes on. Please try again later.")
+      throw new CheckoutError("NOT_CONFIGURED", "Checkout is not available yet. Please try again later.")
     this.shopId = result.data.shopId
     this.apiToken = result.data.apiToken
   }

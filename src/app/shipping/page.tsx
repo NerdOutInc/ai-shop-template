@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 
+import { ShippingPolicyDetails } from "@/features/store-policies/shipping-policy-details"
 import { storeConfig } from "@/lib/store-config"
 
 import { StorePolicyContent } from "@/app/_components/store-policy-content"
@@ -16,6 +17,14 @@ export default function ShippingPage() {
     <main id="main-content" tabIndex={-1} className="page-width prose-page">
       <ShippingStructuredData />
       <h1 className="display-heading">Shipping & care</h1>
+      <ShippingPolicyDetails />
+      {storeConfig.policies.published && <h2>Additional shipping & care information</h2>}
+      {storeConfig.policies.published && (
+        <p>
+          These notes supplement the shipping rates, destinations, and estimates above. They do not change checkout
+          charges.
+        </p>
+      )}
       <StorePolicyContent paragraphs={storeConfig.policies.shippingText} />
     </main>
   )

@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright"
 import { expect, test } from "@playwright/test"
 
+import { storeConfig } from "@/lib/store-config"
 import { beginKeyboardNavigation } from "../test/begin-keyboard-navigation"
 import { catalogProducts } from "./catalog-products"
 import { designOfTheWeekDrop } from "./design-of-the-week-drop"
@@ -27,7 +28,7 @@ test.beforeEach(async ({ page }) => {
 
 test("shows only the individually scheduled products, and four more without repeating itself", async ({ page }) => {
   await page.goto("/#design-of-the-week")
-  const section = page.locator("#about + #design-of-the-week")
+  const section = page.locator(".home-intro + #design-of-the-week")
   await expect(section).toHaveCount(1)
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Your next favorite starts here.")
   await expect(section.getByRole("heading", { level: 2, name: "This week’s picks." })).toBeVisible()
@@ -45,7 +46,7 @@ test("shows only the individually scheduled products, and four more without repe
   const moreTitles = await more.getByRole("article").evaluateAll((nodes) => nodes.map((node) => node.textContent))
   expect(new Set(moreTitles).size).toBe(4)
 
-  await expect(section.getByRole("link", { name: "Shop all tees" })).toBeVisible()
+  await expect(section.getByRole("link", { name: storeConfig.home.shopLabel })).toBeVisible()
 })
 
 test("picks the same four every time, so the page can be cached and indexed", async ({ page }) => {
@@ -119,9 +120,9 @@ test("stays accessible and free of horizontal overflow on a narrow screen", asyn
 test("keeps the unconfigured week honest without collecting email", async ({ page }) => {
   const offlinePort = Number(process.env.PLAYWRIGHT_PORT ?? 3100)
   await page.goto(`http://127.0.0.1:${offlinePort}/#design-of-the-week`)
-  const section = page.locator("#about + #design-of-the-week")
+  const section = page.locator(".home-intro + #design-of-the-week")
   await expect(section.getByRole("heading", { level: 2, name: "New designs are on their way." })).toBeVisible()
-  await expect(section.getByRole("link", { name: "Shop all tees" })).toHaveAttribute("href", "/shop")
+  await expect(section.getByRole("link", { name: storeConfig.home.shopLabel })).toHaveAttribute("href", "/shop")
   await expect(section.getByLabel("Know when the next one drops")).toHaveCount(0)
   await expect(section.getByRole("list", { name: "Design of the Week products" })).toHaveCount(0)
 })
@@ -137,7 +138,10 @@ test("offers the drop list honestly, and refuses a sign-up from another site", a
   await expect(field).toBeVisible()
   // The wording beside the field IS the consent, so it has to be on the page, not just in the schema.
   await expect(
-    section.getByText("We'll email you when a new design drops. Nothing else, and you can stop any time.")
+    section.getByText(
+      "We'll email you about new design drops. To request removal from the list, email our support team.",
+      { exact: false }
+    )
   ).toBeVisible()
   // The honeypot must not reach the accessibility tree, or it would be announced and fail an audit.
   await expect(page.getByRole("textbox", { name: "Company" })).toHaveCount(0)

@@ -6,13 +6,15 @@ import { getSiteUrl } from "@/lib/get-site-url"
 export function ShippingStructuredData() {
   if (!storeConfig.configured || !storeConfig.policies.published) return null
   const siteUrl = getSiteUrl()
+  const shippingService = createShippingService(siteUrl)
+  if (!shippingService) return null
   const data = {
     "@context": "https://schema.org",
     "@type": "OnlineStore",
     "@id": new URL("/#store", siteUrl).href,
     name: storeConfig.name,
     url: siteUrl.href,
-    hasShippingService: createShippingService(siteUrl),
+    hasShippingService: shippingService,
   }
   return <JsonLdScript data={data} />
 }

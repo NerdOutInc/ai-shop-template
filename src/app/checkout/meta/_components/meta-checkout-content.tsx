@@ -23,7 +23,7 @@ export function MetaCheckoutContent({ result }: { result: MetaCartResult }) {
               : `This shopping link is incomplete or has invalid items or quantities. Nothing was added. Please choose your shirts again. Orders can include up to ${cartLimits.maxQuantityPerVariant} of each size and color, and ${cartLimits.maxTotalQuantity} shirts in total.`}
       </p>
       <div className="mt-6 flex flex-wrap items-center gap-5">
-        <Link href={result.unavailableItem?.href ?? "/shop"} className="button button-coral">
+        <Link href={result.unavailableItem?.href ?? "/shop"} className="button button-accent">
           {result.unavailableItem ? `Choose options for ${result.unavailableItem.title}` : "Browse the shirts"}
         </Link>
         <Link href="/cart" className="inline-flex min-h-11 items-center text-sm underline underline-offset-4">

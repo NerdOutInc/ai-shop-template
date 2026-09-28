@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { storeConfig } from "@/lib/store-config"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { readProductWeek } from "./read-product-week.server"
@@ -24,6 +25,7 @@ vi.mock("next/cache", () => ({
 }))
 
 beforeEach(() => {
+  storeConfig.features.designOfTheWeek = true
   vi.clearAllMocks()
   cache.clear()
   testEnv.PRINTIFY_PUBLISHING_ENABLED = true
@@ -60,4 +62,11 @@ describe("readProductWeek", () => {
     expect(await readProductWeek()).toBeNull()
     expect(list).not.toHaveBeenCalled()
   })
+})
+
+it("does not initialize schedule storage when the weekly feature is disabled", async () => {
+  storeConfig.features.designOfTheWeek = false
+  expect(await readProductWeek()).toBeNull()
+  expect(list).not.toHaveBeenCalled()
+  expect(cache.size).toBe(0)
 })

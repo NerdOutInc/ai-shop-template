@@ -2,6 +2,7 @@ import "server-only"
 
 import type { ProductWeek } from "@/features/publishing/product-schedule-entry"
 import { readProductWeek } from "@/features/design-of-the-week/read-product-week.server"
+import { storeConfig } from "@/lib/store-config"
 import { env } from "@/lib/env"
 
 import type { CatalogResult } from "./catalog-product"
@@ -24,7 +25,11 @@ export async function getCatalog(
     const [catalog, popularity, productWeek] = await Promise.all([
       readPublishedCatalog(snapshots),
       readPopularity(productIds),
-      options.productWeek === undefined ? readProductWeek() : options.productWeek,
+      storeConfig.features.designOfTheWeek
+        ? options.productWeek === undefined
+          ? readProductWeek()
+          : options.productWeek
+        : null,
     ])
     const now = Date.now()
     return {

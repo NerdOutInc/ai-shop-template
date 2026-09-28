@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import type { ProductScheduleEntry } from "@/features/publishing/product-schedule-entry"
 import { cn } from "@/lib/cn"
+import { formatWeeklyCadence } from "@/features/publishing/format-weekly-cadence"
 import { formatStoreMoment } from "@/lib/format-store-moment"
 
 import { isProductNewOnTheWall } from "./is-product-new-on-the-wall"
@@ -55,7 +56,7 @@ export function WeeklyProductSchedule({
           The next six weeks. Add products together, or drag a product into its week.
         </p>
         <p className="text-xs text-muted-foreground">
-          Every Monday at 4 AM Central. Hidden products appear when their week begins.
+          Every {formatWeeklyCadence()}. Hidden products appear when their week begins.
         </p>
       </header>
       <div className="flex flex-col">

@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { storeConfig } from "@/lib/store-config"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { POST } from "./route"
@@ -24,6 +25,7 @@ function request(
   })
 }
 beforeEach(() => {
+  storeConfig.features.dropSignup = true
   vi.clearAllMocks()
   env.VERCEL_ENV = "production"
   subscribeToDrops.mockResolvedValue("saved")
@@ -91,4 +93,14 @@ describe("drop signup route", () => {
     expect(result.status).toBe(503)
     expect(await result.text()).not.toContain("database")
   })
+})
+
+it("returns 404 when signup is disabled without consuming the body or collecting data", async () => {
+  storeConfig.features.dropSignup = false
+  const input = request()
+  const response = await POST(input)
+  expect(response.status).toBe(404)
+  expect(response.headers.get("cache-control")).toContain("no-store")
+  expect(input.bodyUsed).toBe(false)
+  expect(subscribeToDrops).not.toHaveBeenCalled()
 })

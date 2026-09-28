@@ -130,7 +130,7 @@ export async function adminAuthAction(input: unknown): Promise<AdminAuthResult> 
         }
         return {
           ok: true,
-          message: "Owner setup complete. Welcome to the other side of the wall.",
+          message: "Owner setup complete. Your store studio is ready.",
           destination: "/admin/account",
         }
       }

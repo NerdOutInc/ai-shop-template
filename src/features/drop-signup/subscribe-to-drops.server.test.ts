@@ -18,6 +18,7 @@ const identity = { subject: "2001:db8:1:2::/64", limit: 5, address: "2001:db8:1:
 
 beforeEach(() => {
   vi.resetAllMocks()
+  storeConfig.features.dropSignup = true
   getPublicRequestIdentity.mockResolvedValue(identity)
   getDropSignupStore.mockReturnValue(store)
   store.allowRequest.mockResolvedValue(true)
@@ -26,6 +27,13 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks())
 
 describe("subscribeToDrops", () => {
+  it("does not collect customer email when signup is disabled", async () => {
+    storeConfig.features.dropSignup = false
+    await expect(subscribeToDrops({ email: "customer@example.com", source: "footer" })).resolves.toBe("unavailable")
+    expect(getPublicRequestIdentity).not.toHaveBeenCalled()
+    expect(getDropSignupStore).not.toHaveBeenCalled()
+  })
+
   it("does not collect customer email before store policies are approved", async () => {
     storeConfig.policies.published = false
     await expect(subscribeToDrops({ email: "customer@example.com", source: "footer" })).resolves.toBe("unavailable")

@@ -247,7 +247,7 @@ describe("checkout status route", () => {
     expect(response.status).toBe(503)
     expect(response.headers.get("Cache-Control")).toBe("no-store")
     expect(await response.json()).toEqual({
-      error: "The shop hit a tricky hold. Please try again shortly.",
+      error: "The shop hit a snag. Please try again shortly.",
       code: "CHECKOUT_UNAVAILABLE",
     })
   })

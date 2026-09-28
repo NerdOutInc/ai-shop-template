@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useSelectedLayoutSegment } from "next/navigation"
 
 import { useCart } from "@/features/cart/use-cart"
 import { storeConfig } from "@/lib/store-config"
@@ -9,9 +9,11 @@ import { cn } from "@/lib/cn"
 
 import { BrandLogo } from "./brand-logo"
 
-export function StoreHeader() {
+export function StoreHeader({ adminEnabled = false }: { adminEnabled?: boolean }) {
   const pathname = usePathname()
-  const adminPage = pathname === "/admin" || pathname.startsWith("/admin/")
+  // The matched route stays consistent for prerendered 404s even when the URL starts with /admin.
+  const segment = useSelectedLayoutSegment()
+  const adminPage = adminEnabled && segment === "admin"
   const adminEntryPage = pathname === "/admin/setup" || pathname === "/admin/sign-in"
   const { count } = useCart()
   return (
@@ -40,9 +42,11 @@ export function StoreHeader() {
           {/* Signed-in studio pages reach the store through the logo. */}
           {(!adminPage || adminEntryPage) && (
             <>
-              <Link href="/about" aria-current={pathname === "/about" ? "page" : undefined}>
-                About
-              </Link>
+              {storeConfig.features.about && (
+                <Link href="/about" aria-current={pathname === "/about" ? "page" : undefined}>
+                  About
+                </Link>
+              )}
               <Link href="/shop" aria-current={pathname.startsWith("/shop") ? "page" : undefined}>
                 Shop
               </Link>

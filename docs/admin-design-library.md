@@ -262,7 +262,7 @@ can create a Printify draft; publish that draft in Printify, then use its produc
 of the Week** action. A design itself cannot be queued, and matching artwork never adds another product
 implicitly.
 
-The lineup offers the next six slots from the configured time zone and weekly cadence, with room for multiple
+When `storeConfig.features.designOfTheWeek` is enabled, the lineup offers the next six slots from the configured time zone and weekly cadence, with room for multiple
 products under each date. A scheduled hidden product stays hidden until its chosen instant. **Show in
 shop** makes a product visible immediately and makes it the newest tee in the shop: Newest sorts by that
 moment, and the product carries a New badge for two weeks. A scheduled reveal counts the same way from
@@ -276,7 +276,7 @@ date. Use **Show in shop** or reschedule after the garment is ready to restore i
 The Home page's Design of the Week section at `/#design-of-the-week`, below the brand introduction,
 renders the shop's own product cards for the explicit roster, intersected with
 the live catalog. Prices, images and availability come from those products; private design-library
-notes and artwork records are not part of the section. Once `storeConfig.configured` and `storeConfig.policies.published` are true, it includes the email signup form even when there are no weekly products. The footer links to this anchor. The feature expires at the next
+notes and artwork records are not part of the section. When `storeConfig.features.dropSignup`, `storeConfig.configured` and `storeConfig.policies.published` are true, it includes the email signup form even when there are no weekly products. The footer links to this anchor only while the weekly feature is enabled. Signup can also run independently on the home page with the weekly feature disabled. The feature expires at the next
 weekly slot; products that have already appeared remain for sale. See the
 [Home rendering decision](printify-catalog.md#the-design-of-the-week) for its live-clock and caching behavior.
 

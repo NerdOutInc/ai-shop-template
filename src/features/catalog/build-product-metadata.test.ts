@@ -196,3 +196,14 @@ describe("buildProductMetadata", () => {
     expect(buildProductMetadata({ ...product, title: "Mana T-Shirt — Fixture Store" }).title).toBe("Mana T-Shirt")
   })
 })
+
+it.each(["The Goatee", "Committee of Cats"])(
+  "does not mistake a word ending in tee for a garment label: %s",
+  (title) => {
+    expect(buildProductMetadata({ ...product, title }).title).toBe(`${title} – T-Shirt`)
+  }
+)
+
+it.each(["Otter Tee", "Otter Tees", "Everyday T-shirts"])("keeps an existing complete garment word: %s", (title) => {
+  expect(buildProductMetadata({ ...product, title }).title).toBe(title)
+})

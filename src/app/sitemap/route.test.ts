@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
+import { storeConfig } from "@/lib/store-config"
 import { getSitemapProductIds } from "@/features/catalog/get-sitemap-product-ids.server"
 
 import { GET } from "./route"
@@ -9,6 +10,7 @@ vi.mock("@/lib/get-site-url", () => ({ getSiteUrl: () => new URL("https://store.
 const config = vi.hoisted(() => ({ indexable: true }))
 vi.mock("@/lib/is-indexable-site", () => ({ isIndexableSite: () => config.indexable }))
 beforeEach(() => {
+  storeConfig.features.about = true
   vi.clearAllMocks()
   config.indexable = true
 })
@@ -48,4 +50,12 @@ describe("sitemap response", () => {
     expect(response.headers.get("X-Robots-Tag")).toBe("noindex")
     expect(getSitemapProductIds).not.toHaveBeenCalled()
   })
+})
+
+it("omits the disabled About page from discovery", async () => {
+  storeConfig.features.about = false
+  vi.mocked(getSitemapProductIds).mockResolvedValue([])
+  const response = await GET()
+  expect(response.status).toBe(200)
+  expect(await response.text()).not.toContain("/about")
 })

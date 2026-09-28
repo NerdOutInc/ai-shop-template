@@ -1,9 +1,11 @@
 import type { Metadata, ResolvingMetadata } from "next"
 import Link from "next/link"
+import { notFound } from "next/navigation"
 
 import { storeConfig } from "@/lib/store-config"
 
 export async function generateMetadata(_props: unknown, parent: ResolvingMetadata): Promise<Metadata> {
+  if (!storeConfig.features.about) notFound()
   const inherited = await parent
   const title = `About | ${storeConfig.name}`
   return {
@@ -16,6 +18,7 @@ export async function generateMetadata(_props: unknown, parent: ResolvingMetadat
 }
 
 export default function AboutPage() {
+  if (!storeConfig.features.about) notFound()
   return (
     <main id="main-content" tabIndex={-1} className="page-width prose-page">
       <h1 className="display-heading">About {storeConfig.name}</h1>

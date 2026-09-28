@@ -8,7 +8,13 @@ import { readProductWeek } from "@/features/design-of-the-week/read-product-week
 import { DesignOfTheWeek } from "./design-of-the-week"
 
 vi.mock("server-only", () => ({}))
-const store = vi.hoisted(() => ({ configured: true, name: "Fixture Store", policies: { published: true } }))
+const store = vi.hoisted(() => ({
+  configured: true,
+  name: "Fixture Store",
+  home: { shopLabel: "Browse the collection" },
+  policies: { published: true },
+  features: { designOfTheWeek: true, dropSignup: true },
+}))
 vi.mock("@/lib/store-config", () => ({ storeConfig: store }))
 vi.mock("next/server", () => ({ connection: vi.fn() }))
 vi.mock("@/features/catalog/get-catalog.server", () => ({ getCatalog: vi.fn() }))
@@ -30,6 +36,8 @@ const week = { liveAt: "2026-09-21T09:00:00.000Z", productIds: ["product-0", "pr
 
 beforeEach(() => {
   vi.clearAllMocks()
+  store.features.designOfTheWeek = true
+  store.features.dropSignup = true
   store.configured = true
   store.policies.published = true
   vi.mocked(readProductWeek).mockResolvedValue(week)
@@ -100,7 +108,7 @@ describe("product-based weekly feature", () => {
       "New designs are on their way."
     )
     expect(screen.queryByRole("list", { name: "Design of the Week products" })).not.toBeInTheDocument()
-    expect(screen.getByRole("link", { name: "Shop all tees" })).toHaveAttribute("href", "/shop")
+    expect(screen.getByRole("link", { name: "Browse the collection" })).toHaveAttribute("href", "/shop")
     expect(screen.getByText("Drop signup")).toBeInTheDocument()
   })
 })
@@ -109,4 +117,24 @@ it("does not collect emails before store setup and policy approval", async () =>
   store.configured = false
   render(await DesignOfTheWeek())
   expect(screen.queryByText("Drop signup")).not.toBeInTheDocument()
+})
+
+it("does not read the catalog or schedule when the weekly feature is disabled", async () => {
+  store.features.designOfTheWeek = false
+  expect(await DesignOfTheWeek()).toBeNull()
+  expect(readProductWeek).not.toHaveBeenCalled()
+  expect(getCatalog).not.toHaveBeenCalled()
+})
+
+it("keeps the weekly selection while signup is disabled", async () => {
+  store.features.dropSignup = false
+  render(await DesignOfTheWeek())
+  expect(screen.getByRole("list", { name: "Design of the Week products" })).toBeVisible()
+  expect(screen.queryByText("Drop signup")).not.toBeInTheDocument()
+})
+
+it("uses the configured shop label for a populated weekly selection", async () => {
+  render(await DesignOfTheWeek())
+  expect(screen.getByRole("link", { name: "Browse the collection" })).toHaveAttribute("href", "/shop")
+  expect(screen.queryByRole("link", { name: "Shop all tees" })).not.toBeInTheDocument()
 })

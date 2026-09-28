@@ -9,6 +9,7 @@ export const storeConfig = storeConfigSchema.parse({
   tagline: "Make room for your next favorite.",
   locale: "en-US",
   timeZone: "UTC",
+  features: { designOfTheWeek: true, dropSignup: true, about: true },
   weeklyFeature: { weekday: 1, hour: 9, minute: 0 },
   supportEmail: "support@fixture.example",
   logo: { src: "/images/store-mark.svg", width: 48, height: 48 },

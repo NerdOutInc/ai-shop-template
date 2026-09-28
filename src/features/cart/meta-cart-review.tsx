@@ -68,7 +68,7 @@ export function MetaCartReview({ items, importKey }: { items: CartItem[]; import
     }
   }
 
-  if (!cart.hydrated) return <p role="status">Gathering your gear…</p>
+  if (!cart.hydrated) return <p role="status">Loading your cart…</p>
   if (imported)
     return (
       <>
@@ -177,7 +177,7 @@ export function MetaCartReview({ items, importKey }: { items: CartItem[]; import
         ) : null}
         <button
           type="button"
-          className="button button-coral mt-6 w-full disabled:cursor-wait disabled:opacity-60"
+          className="button button-accent mt-6 w-full disabled:cursor-wait disabled:opacity-60"
           disabled={pending}
           onClick={addSelection}
         >
