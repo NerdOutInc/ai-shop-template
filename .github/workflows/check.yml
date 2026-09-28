@@ -5,6 +5,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  merge_group:
   workflow_dispatch:
 
 permissions:
@@ -36,7 +37,6 @@ jobs:
       CI: true
       NEXT_TELEMETRY_DISABLED: 1
       NEXT_PUBLIC_PRODUCT_IMAGE_BLOB_HOST: publishinge2e.public.blob.vercel-storage.com
-      STORYBOOK_DISABLE_TELEMETRY: 1
       TEMPLATE_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_template_test
       CHECKOUT_CAPACITY_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_capacity_test
       CHECKOUT_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_commerce_test
@@ -46,18 +46,18 @@ jobs:
       GARMENTS_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_garments_test
       LIBRARY_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_library_test
       CATALOG_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_catalog_test
-      CATALOG_E2E_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_catalog_e2e
       PUBLISHING_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_publishing_test
-      PUBLISHING_E2E_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_publishing_e2e
       SIGNUP_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_signup_test
       SHIPPING_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_shipping_test
       ORDERS_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_orders_test
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
       - uses: pnpm/action-setup@v6.1.0
       - uses: actions/setup-node@v7.0.0
         with:
-          node-version: "24"
+          node-version-file: .node-version
           cache: pnpm
       - uses: actions/setup-python@v7.0.0
         with:
@@ -71,7 +71,7 @@ jobs:
       - name: Install store skill dependencies
         run: python3 -m pip install --disable-pip-version-check --requirement scripts/skills/requirements.txt
       - name: Create isolated test databases
-        run: node --input-type=module -e 'import { Pool } from "pg"; const pool = new Pool({connectionString:process.env.CHECKOUT_TEST_DATABASE_URL}); for (const database of ["store_capacity_test", "store_template_test", "store_catalog_test", "store_catalog_e2e", "store_publishing_test", "store_publishing_e2e", "store_admin_test", "store_library_test", "store_agent_test", "store_drafts_test", "store_garments_test", "store_signup_test", "store_orders_test", "store_shipping_test"]) await pool.query(`create database ${database}`); await pool.end();'
+        run: node --input-type=module -e 'import { Pool } from "pg"; const pool = new Pool({connectionString:process.env.CHECKOUT_TEST_DATABASE_URL}); for (const database of ["store_capacity_test", "store_template_test", "store_catalog_test", "store_publishing_test", "store_admin_test", "store_library_test", "store_agent_test", "store_drafts_test", "store_garments_test", "store_signup_test", "store_orders_test", "store_shipping_test"]) await pool.query("create database " + database); await pool.end();'
       - name: Check repository structure
         run: pnpm check:structure
       - name: Lint
@@ -83,11 +83,15 @@ jobs:
       - name: Test unit behavior
         run: pnpm test:unit
       - name: Test fresh template database and runtime permissions
+        env:
+          SUPABASE_PRIVILEGES_TEST: "true"
         run: pnpm test:database
       - name: Test generated brand assets
         run: pnpm test:branding
       - name: Test architecture rules
         run: pnpm test:architecture
+      - name: Test dependency patch upgrades
+        run: pnpm test:dependencies
       - name: Test publishing notifications
         run: pnpm test:monitor
       - name: Test store skill scripts
@@ -100,17 +104,30 @@ jobs:
         run: pnpm test:design-agent
       - name: Verify template portability
         run: pnpm check:template
-      - name: Build the unconfigured storefront
+      - name: Build the merchant storefront
         env:
           NEXT_PUBLIC_SITE_URL: https://example.com
         run: pnpm build
-      - name: Upload browser failure diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v7.0.1
-        with:
-          name: browser-diagnostics
-          path: |
-            playwright-report/
-            test-results/
-          if-no-files-found: ignore
-          retention-days: 7
+
+  integration:
+    name: Integration checks
+    needs: check
+    uses: ./.github/workflows/integration.yml
+
+  required:
+    name: Required checks
+    if: always()
+    needs: [check, integration]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require every suite to succeed
+        env:
+          FOUNDATION_RESULT: ${{ needs.check.result }}
+          INTEGRATION_RESULT: ${{ needs.integration.result }}
+        run: |
+          printf 'Foundation checks: %s\nIntegration checks: %s\n' "$FOUNDATION_RESULT" "$INTEGRATION_RESULT"
+          if [[ "$FOUNDATION_RESULT" != "success" || "$INTEGRATION_RESULT" != "success" ]]; then
+            echo '::error::All foundation, Storybook, storefront, publishing, and admin suites must pass. Open the failed job for its logs and diagnostics.'
+            exit 1
+          fi

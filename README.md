@@ -43,13 +43,13 @@ No particular AI vendor, browser plugin or paid model subscription is bundled. T
 - Product ordering, categories, garment profiles, scheduled reveals, merchant feeds and optional consent-controlled marketing measurement.
 - Neutral brand configuration in [`src/lib/store-config.ts`](src/lib/store-config.ts), with setup and policy gates that must be completed for your store.
 
-Each store uses its own repository, domain, deployment, Supabase project, Printify shop, Stripe account and storage. The template contains no product catalog, customer history, administrator, source-brand artwork or provider account connection. It is a starting point, not a running merchant account.
+Each store uses its own repository, domain, deployment, Supabase project, Printify merchant account and shop, Stripe account and storage. A shared Printify account is an explicit owner-accepted exception: its tokens can reach multiple shops, and its API quota is account-wide. The template contains no product catalog, customer history, administrator, source-brand artwork or provider account connection. It is a starting point, not a running merchant account.
 
 The initial supported workflow is **Next Level 6210 (blueprint 1317), print provider 99 for the built-in per-design color workflow, USD, standard shipping to the 50 US states plus DC**. Other model/provider recipes need independent compatibility work and complete profiles; new currencies, countries, discounts or shipping models can require coordinated code and test changes. The template's sample shipping amounts and delivery windows are not an approved business policy.
 
 ## Run locally
 
-Use Node.js 24.15 or later within Node 24, and the pnpm version pinned in `package.json`:
+Use the Node.js version pinned in [`.node-version`](.node-version) and the pnpm version pinned in `package.json`. The `engines` field describes the supported Node range; local validation and CI use the pinned version:
 
 ```sh
 corepack enable
@@ -62,6 +62,8 @@ pnpm dev
 Open [localhost:3000](http://localhost:3000). The neutral shell works without provider secrets; the catalog and checkout need the services in [store setup](docs/store-setup.md). `pnpm setup:check` loads local environment files with Next.js precedence and reports configuration only, without displaying secrets. `pnpm setup:check --sandbox` fails until the sandbox configuration gates pass; `pnpm setup:check --launch` checks live configuration and the required schedules in `vercel.json`. Use `pnpm setup:check -- --launch --env-file PATH` (or `--sandbox`) to inspect a protected dotenv export without loading development secrets; keep the argument separator. Output distinguishes configured values from remotely unverified readiness. None of these commands contacts providers, creates resources or proves delivery. The supported selling deployment uses Vercel Pro or Enterprise with the reviewed worker schedules; see [hosting requirements](docs/store-setup.md#supported-hosting-and-scheduled-workers).
 
 Keep actual answers and progress in ignored `.store-setup.local.json`, copied from [`store-setup.example.json`](store-setup.example.json). Credentials belong in `.env.local`, provider secret managers or private grant files, never that progress file. Your permanent public choices belong in source configuration; private owner details do not. `.worktreeinclude` carries only this progress file into new Codex managed worktrees as a snapshot. Verify it arrived and reconcile the latest resume timestamp at handoff; secrets and `.env` files are deliberately excluded. Other clients may copy this one inspected, non-secret file explicitly.
+
+`.worktreeinclude` carries setup progress into Codex managed worktrees and Claude Code worktrees as a snapshot, not ongoing sync. Run `pnpm setup:check` in the destination and reconcile any newer progress before resuming; a copied file does not establish current provider state or fresh authorization.
 
 ## Work with your agent
 
@@ -84,8 +86,8 @@ See [the skill catalog](.agents/skills/store-template-readiness/references/skill
 
 ## Development and release
 
-`pnpm check` runs baseline checks. `pnpm check:all` adds Storybook, builds and isolated browser/database suites. `pnpm check:template` scans repository and staged files for known source identity and assets, credentials, private setup state, local paths, and unsafe symlinks; see [template hygiene](docs/template-hygiene.md) for scope and limits. Read [Testing a rebranded store](docs/test-store.md) for fixture contracts, test database requirements and parallel-run ports, and [AGENTS.md](AGENTS.md) for required validation and review boundaries.
+Install the [test prerequisites](docs/ci.md#local-test-prerequisites), including the pinned Python tools, before running validation. `pnpm check` runs baseline checks. `pnpm check:all` adds Storybook, builds and isolated browser/database suites. Every PR runs both through the [CI workflow](docs/ci.md); configure its **Required checks** status as a branch rule before merging. `pnpm check:template` scans repository and staged files for known source identity and assets, credentials, private setup state, local paths, and unsafe symlinks; see [template hygiene](docs/template-hygiene.md) for scope and limits. Read [Testing a rebranded store](docs/test-store.md) for fixture contracts, test database requirements and parallel-run ports, and [AGENTS.md](AGENTS.md) for required validation and review boundaries.
 
-A generated repository is independent of this template; GitHub does not automatically apply future template updates. Review upstream changes before porting them. Template maintainers enable GitHub's **Template repository** setting on this repository; a downstream store usually leaves that setting off.
+A generated repository is independent of this template; GitHub does not automatically apply future template updates. Follow the [store update contract](docs/store-update-contract.md) to record the original content baseline before customization and prepare reviewed upstream ports later. Template maintainers enable GitHub's **Template repository** setting on this repository; a downstream store usually leaves that setting off.
 
 The foundation follows the MIT-licensed [Next.js Enterprise Boilerplate](https://github.com/Blazity/next-enterprise); see [template origin](docs/template-origin.md) and [LICENSE](LICENSE).
