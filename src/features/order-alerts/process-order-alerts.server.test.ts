@@ -156,17 +156,17 @@ describe.skipIf(!databaseUrl)("durable owner reminder outbox", () => {
       transition: "spring",
       paidAt: "2026-03-06T15:00:00.000Z",
       firstCheck: "2026-03-06T16:00:00Z",
-      scheduled: "2026-03-09T13:00:00.000Z",
+      scheduled: "2026-03-09T14:00:00.000Z",
     },
     {
       transition: "fall",
       paidAt: "2026-10-30T15:00:00.000Z",
       firstCheck: "2026-10-30T16:00:00Z",
-      scheduled: "2026-11-02T14:00:00.000Z",
+      scheduled: "2026-11-02T15:00:00.000Z",
     },
   ])("schedules 09:00 in the saved named zone after the $transition DST transition", async (example) => {
     const order = await seed((o) => {
-      o.snapshot.shippingEstimate = { handlingBusinessDays: 3, calendar: "us-federal-v1", timeZone: "America/New_York" }
+      o.snapshot.shippingEstimate = { handlingBusinessDays: 3, calendar: "us-federal-v1", timeZone: "America/Chicago" }
       o.payment.paidAt = example.paidAt
     })
     expect(await run(new Date(example.firstCheck))).toMatchObject({ checked: 1, sent: 0 })
