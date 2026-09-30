@@ -89,6 +89,12 @@
       "publicResourceId": null,
       "environment": null,
       "evidence": []
+    },
+    "dropEmails": {
+      "status": "not-started",
+      "publicResourceId": null,
+      "environment": null,
+      "evidence": []
     }
   },
   "verification": {

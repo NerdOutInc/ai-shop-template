@@ -22,6 +22,8 @@ export async function createAdminDatabaseFixture(connectionString: string) {
       "/store_admin_e2e",
       "/store_orders_test",
       "/store_shipping_test",
+      "/store_drop_email_test",
+      "/store_drop_email_overview_test",
     ].includes(url.pathname)
   ) {
     throw new Error("Admin tests require an isolated local store_* test database")

@@ -300,6 +300,17 @@ export function setupStatus(
     mode !== "sandbox" && enabled("ORDER_ALERTS_ENABLED")
   )
   add(
+    "Weekly drop emails",
+    required(["RESEND_API_KEY", "DROP_EMAIL_FROM_EMAIL", "STORE_POSTAL_ADDRESS"]) &&
+      matches("DROP_EMAIL_FROM_EMAIL", realEmail) &&
+      config.features?.designOfTheWeek === true &&
+      (config.features?.dropSignup === true || config.privacy?.retainedDropSubscribers === true) &&
+      config.privacy?.retainedDropEmailRecords === true &&
+      schedules.some((entry) => entry?.path === "/api/internal/drop-emails" && entry.schedule === "5,20,35,50 * * * *"),
+    "Turn on the weekly feature, a drop list and privacy.retainedDropEmailRecords, then configure the verified Resend sender, sending key, one-line STORE_POSTAL_ADDRESS and the /api/internal/drop-emails schedule (5,20,35,50 * * * *). Send a test from Products → Drop emails and verify receipt separately.",
+    mode !== "sandbox" && enabled("DROP_EMAILS_ENABLED")
+  )
+  add(
     "Meta measurement",
     matches("META_PIXEL_ID", (value) => /^\d{5,25}$/.test(value ?? "")),
     "Set this store's META_PIXEL_ID and verify consent and authorized production activation.",

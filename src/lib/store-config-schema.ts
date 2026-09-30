@@ -56,7 +56,11 @@ export const storeConfigSchema = z
       dropSignup: z.boolean(),
       about: z.boolean(),
     }),
-    privacy: z.object({ retainedDropSubscribers: z.boolean() }),
+    privacy: z.object({
+      retainedDropSubscribers: z.boolean(),
+      // Drop email delivery records outlive a pause in sending; this keeps Privacy describing them.
+      retainedDropEmailRecords: z.boolean().default(false),
+    }),
     weeklyFeature: z.object({
       weekday: z.number().int().min(0).max(6),
       hour: z.number().int().min(0).max(23),

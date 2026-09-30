@@ -7,15 +7,16 @@ const sections = [
   { key: "lineup", href: "/admin/products", label: "Shop lineup" },
   { key: "categories", href: "/admin/products/categories", label: "Categories" },
   { key: "garments", href: "/admin/products/garments", label: "Garment models" },
+  { key: "emails", href: "/admin/products/emails", label: "Drop emails" },
 ] as const
 
 type ProductsSection = (typeof sections)[number]["key"]
 
 /**
- * The three Products pages, as siblings. Each page says which one it is rather than this reading
- * the pathname: that keeps it a Server Component, and there is deliberately no products/layout.tsx
- * to put a client pathname hook in, because every admin page owns its own <main> and its own
- * requireAdmin() call. The store header already marks "Products" current for all three.
+ * The Products pages, as siblings. Each page says which one it is rather than this reading the
+ * pathname: that keeps it a Server Component, and there is deliberately no products/layout.tsx to put
+ * a client pathname hook in, because every admin page owns its own <main> and its own requireAdmin()
+ * call. The store header already marks "Products" current for all of them.
  */
 export function ProductsSectionNav({ current }: { current: ProductsSection }) {
   return (

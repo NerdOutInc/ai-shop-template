@@ -276,7 +276,7 @@ date. Use **Show in shop** or reschedule after the garment is ready to restore i
 The Home page's Design of the Week section at `/#design-of-the-week`, below the brand introduction,
 renders the shop's own product cards for the explicit roster, intersected with
 the live catalog. Prices, images and availability come from those products; private design-library
-notes and artwork records are not part of the section. When `storeConfig.features.dropSignup`, `storeConfig.configured` and `storeConfig.policies.published` are true, it includes the email signup form even when there are no weekly products. The footer links to this anchor only while the weekly feature is enabled. Signup can also run independently on the home page with the weekly feature disabled. The feature expires at the next
+notes and artwork records are not part of the section. When `storeConfig.features.dropSignup`, `storeConfig.configured` and `storeConfig.policies.published` are true, it includes the email signup form even when there are no weekly products. Once [drop emails](drop-emails.md) are enabled, everyone on the list gets one email on each drop's day. The footer links to this anchor only while the weekly feature is enabled. Signup can also run independently on the home page with the weekly feature disabled. The feature expires at the next
 weekly slot; products that have already appeared remain for sale. See the
 [Home rendering decision](printify-catalog.md#the-design-of-the-week) for its live-clock and caching behavior.
 

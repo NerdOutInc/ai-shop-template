@@ -81,6 +81,29 @@ export class PostgresDropSignupStore {
     )
   }
 
+  /**
+   * Stop emailing someone, by the subscriber id their unsubscribe link carries.
+   *
+   * Recorded, never deleted, as the privacy page says. A second click changes nothing, so the first
+   * unsubscribe keeps its time.
+   */
+  async unsubscribe(id: string): Promise<void> {
+    await this.pool.query(
+      `update commerce.drop_subscribers set unsubscribed_at = now(), updated_at = now()
+        where id = $1 and unsubscribed_at is null`,
+      [id]
+    )
+  }
+
+  /** Whether that link's subscriber has already left. An id that matches nobody reads as not. */
+  async isUnsubscribed(id: string): Promise<boolean> {
+    const { rows } = await this.pool.query<{ unsubscribed: boolean }>(
+      "select unsubscribed_at is not null as unsubscribed from commerce.drop_subscribers where id = $1",
+      [id]
+    )
+    return rows[0]?.unsubscribed ?? false
+  }
+
   close() {
     return this.pool.end()
   }

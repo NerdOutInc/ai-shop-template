@@ -1,7 +1,10 @@
 export function isPrivateAppPath(pathname: string) {
   try {
     const path = decodeURIComponent(pathname).toLowerCase()
-    return ["/admin", "/auth", "/api/admin"].some((prefix) => path === prefix || path.startsWith(`${prefix}/`))
+    // /unsubscribe carries a subscriber's token in its path, and no measurement may ever see one.
+    return ["/admin", "/auth", "/api/admin", "/unsubscribe"].some(
+      (prefix) => path === prefix || path.startsWith(`${prefix}/`)
+    )
   } catch {
     return true
   }

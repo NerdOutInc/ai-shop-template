@@ -43,7 +43,10 @@ describe.skipIf(!databaseUrl)("drop signups", () => {
     store = new PostgresDropSignupStore(runtimeConnection)
   })
   beforeEach(async () => {
-    await pool.query("truncate commerce.drop_subscribers, commerce.public_request_attempts")
+    // Drop email deliveries reference subscribers, so they go too.
+    await pool.query(
+      "truncate commerce.drop_email_deliveries, commerce.drop_emails, commerce.drop_subscribers, commerce.public_request_attempts"
+    )
   })
   afterAll(async () => {
     await Promise.all([store?.close(), runtime?.end(), pool?.end()])
@@ -267,5 +270,36 @@ describe.skipIf(!databaseUrl)("drop signups", () => {
 
   it.each([0, 101, 1.5])("refuses the nonsensical limit %s rather than guessing", async (limit) => {
     await expect(store.allowRequest("1.2.3.4", limit)).rejects.toThrow("Invalid public request limit")
+  })
+
+  // Through the runtime role, so a missing update or select policy fails here instead of in production.
+  it("unsubscribes by the id in the link, keeps the row, and keeps the first moment on a second click", async () => {
+    await store.subscribe("customer@example.com", "design-of-the-week", "203.0.113.7")
+    await store.subscribe("friend@example.com", "design-of-the-week", "203.0.113.8")
+    const { id } = (await pool.query("select id from commerce.drop_subscribers where email = 'customer@example.com'"))
+      .rows[0]
+
+    expect(await store.isUnsubscribed(id)).toBe(false)
+    await store.unsubscribe(id)
+    expect(await store.isUnsubscribed(id)).toBe(true)
+    const read = async () =>
+      (await pool.query("select email, unsubscribed_at from commerce.drop_subscribers order by email")).rows
+    const [first] = await read()
+    expect(first.unsubscribed_at).toBeInstanceOf(Date)
+
+    await store.unsubscribe(id)
+    expect(await read()).toEqual([
+      { email: "customer@example.com", unsubscribed_at: first.unsubscribed_at },
+      { email: "friend@example.com", unsubscribed_at: null },
+    ])
+  })
+
+  it("does nothing, and says nothing, for an id that matches nobody", async () => {
+    await store.subscribe("customer@example.com", "design-of-the-week", "203.0.113.7")
+    await store.unsubscribe("00000000-0000-4000-8000-000000000000")
+    expect((await pool.query("select unsubscribed_at from commerce.drop_subscribers")).rows).toEqual([
+      { unsubscribed_at: null },
+    ])
+    expect(await store.isUnsubscribed("00000000-0000-4000-8000-000000000000")).toBe(false)
   })
 })

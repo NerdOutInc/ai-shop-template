@@ -50,6 +50,8 @@ jobs:
       SIGNUP_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_signup_test
       SHIPPING_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_shipping_test
       ORDERS_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_orders_test
+      DROP_EMAIL_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_drop_email_test
+      DROP_EMAIL_OVERVIEW_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_drop_email_overview_test
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -78,7 +80,7 @@ jobs:
           fi
           psql --version
       - name: Create isolated test databases
-        run: node --input-type=module -e 'import { Pool } from "pg"; const pool = new Pool({connectionString:process.env.CHECKOUT_TEST_DATABASE_URL}); for (const database of ["store_capacity_test", "store_template_test", "store_catalog_test", "store_publishing_test", "store_admin_test", "store_library_test", "store_agent_test", "store_drafts_test", "store_garments_test", "store_signup_test", "store_orders_test", "store_shipping_test"]) await pool.query("create database " + database); await pool.end();'
+        run: node --input-type=module -e 'import { Pool } from "pg"; const pool = new Pool({connectionString:process.env.CHECKOUT_TEST_DATABASE_URL}); for (const database of ["store_capacity_test", "store_template_test", "store_catalog_test", "store_publishing_test", "store_admin_test", "store_library_test", "store_agent_test", "store_drafts_test", "store_garments_test", "store_signup_test", "store_orders_test", "store_shipping_test", "store_drop_email_test", "store_drop_email_overview_test"]) await pool.query("create database " + database); await pool.end();'
       - name: Check repository structure
         run: pnpm check:structure
       - name: Lint

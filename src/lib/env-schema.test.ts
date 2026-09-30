@@ -57,3 +57,19 @@ describe("header-bound environment credentials", () => {
     expect(envSchema.server.DATABASE_SSL_CA.parse(certificate)).toBe(certificate)
   })
 })
+
+describe("drop email settings", () => {
+  // Printed in every email's footer, so it has to be one line of real text.
+  it("keeps the postal address to one line", () => {
+    const schema = envSchema.server.STORE_POSTAL_ADDRESS
+    expect(schema.parse("  PO Box 123, Austin, TX 78701  ")).toBe("PO Box 123, Austin, TX 78701")
+    expect(schema.parse(undefined)).toBeUndefined()
+    for (const value of ["PO Box 123\nAustin, TX 78701", "PO Box 123\r\nAustin, TX", "too short", "x".repeat(301)])
+      expect(schema.safeParse(value).success).toBe(false)
+  })
+
+  it("sends only after an explicit switch", () => {
+    expect(envSchema.server.DROP_EMAILS_ENABLED.parse(undefined)).toBe("false")
+    expect(envSchema.server.DROP_EMAILS_ENABLED.safeParse("yes").success).toBe(false)
+  })
+})
