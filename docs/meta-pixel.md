@@ -71,3 +71,9 @@ Pending, test, simulated, mismatched, inconsistent, or recorded reversed payment
 - [Manual advanced matching](https://developers.facebook.com/documentation/meta-pixel/advanced/advanced-matching)
 - [Automatic advanced matching setting](https://www.facebook.com/business/help/1993001664341800)
 - [Meta Business Tools Terms](https://business.facebook.com/legal/technology_terms)
+
+## Route and cached-page views
+
+The bootstrap sets `fbq.disablePushState = true` before loading the SDK. Meta's history listener is separate from `autoConfig`; leaving it enabled duplicates the provider's route views and measures color/size query changes. The provider owns same-document route views, including back/forward navigation.
+
+Meta's separate `pageshow` listener still measures a cached-page restore. A capture-phase listener rechecks opt-in consent, Global Privacy Control and document eligibility first; the provider adds no restore view. Browser tests model both SDK listeners and dispatch synthetic restore events. They verify event counts and withdrawn consent, without claiming a browser cached a production page.

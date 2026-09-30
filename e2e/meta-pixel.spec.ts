@@ -35,11 +35,38 @@ const purchase = {
 const sdkScript = `(() => {
   const fbq = window.fbq;
   if (!fbq) throw new Error("Missing Pixel bootstrap");
+  let granted = false;
   fbq.callMethod = (...args) => {
+    if (args[0] === "consent") granted = args[1] === "grant";
     window.__captureMetaCall({ args, url: location.href, referrer: document.referrer });
   };
   const queue = fbq.queue.splice(0);
   queue.forEach(args => fbq.callMethod(...args));
+  const automaticPageView = () => {
+    if (granted) fbq("trackCustom", "PageView");
+  };
+  // Meta's history listener is independent of set(autoConfig, false).
+  // Model it here so the fixture cannot hide automatic/manual PageView duplicates.
+  if (fbq.disablePushState !== true) {
+    let previousUrl = location.href;
+    const onNavigation = () => {
+      if (location.href !== previousUrl) automaticPageView();
+      previousUrl = location.href;
+    };
+    for (const method of ["pushState", "replaceState"]) {
+      const original = history[method];
+      history[method] = function (...args) {
+        const result = original.apply(this, args);
+        onNavigation();
+        return result;
+      };
+    }
+    window.addEventListener("popstate", onNavigation);
+  }
+  // This separate SDK listener is NOT gated by disablePushState.
+  window.addEventListener("pageshow", (event) => {
+    if (event.persisted) automaticPageView();
+  });
 })();`
 
 const test = base.extend<{ pixel: PixelFixture }>({
@@ -97,7 +124,10 @@ test.beforeEach(async ({ page }) => {
 test.use({ baseURL: shopOrigin })
 
 function events(pixel: PixelFixture, name?: string) {
-  return pixel.calls.filter((call) => call.args[0] === "trackSingle" && (!name || call.args[2] === name))
+  return pixel.calls.filter((call) => {
+    const event = call.args[0] === "trackSingle" ? call.args[2] : call.args[0] === "trackCustom" ? call.args[1] : null
+    return event !== null && (!name || event === name)
+  })
 }
 
 async function seedConsent(context: BrowserContext, consent: "granted" | "denied") {
@@ -744,4 +774,53 @@ test("blocked session storage retains coarse social attribution across clean ing
   await expect.poll(() => storeEvents.filter(({ name }) => name === "add_to_cart")).toHaveLength(1)
   expect(storeEvents.find(({ name }) => name === "add_to_cart")!.data.source).toBe("social")
   expectPrivateDocumentFields(pixel, ["cart_origin=", "products=", `${productId}-1001:1`])
+})
+
+test("route visits send one PageView each and variant changes send none", async ({ context, page, pixel }) => {
+  await seedConsent(context, "granted")
+  await page.goto(`/shop/${productId}`)
+  await expect.poll(() => events(pixel, "PageView")).toHaveLength(1)
+  await selectVariant(page)
+  await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 500)))
+  expect(events(pixel, "PageView")).toHaveLength(1)
+  await page.getByRole("link", { name: "Privacy", exact: true }).click()
+  await expect(page).toHaveURL(`${shopOrigin}/privacy`)
+  await expect.poll(() => events(pixel, "PageView")).toHaveLength(2)
+  await page.goBack()
+  await expect(page).toHaveURL((url) => url.pathname === `/shop/${productId}`)
+  await expect.poll(() => events(pixel, "PageView")).toHaveLength(3)
+  await page.goForward()
+  await expect.poll(() => events(pixel, "PageView")).toHaveLength(4)
+  await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 500)))
+  expect(events(pixel, "PageView").map((call) => new URL(call.url).pathname)).toEqual([
+    `/shop/${productId}`,
+    "/privacy",
+    `/shop/${productId}`,
+    "/privacy",
+  ])
+})
+
+test("a simulated cached-page restore sends only the SDK view and rechecks stored consent", async ({
+  context,
+  page,
+  pixel,
+}) => {
+  await seedConsent(context, "granted")
+  await page.goto(`/shop/${productId}`)
+  await expect.poll(() => events(pixel, "PageView")).toHaveLength(1)
+  await page.evaluate(() => {
+    window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: false }))
+    window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true }))
+  })
+  await expect.poll(() => events(pixel, "PageView")).toHaveLength(2)
+  await page.evaluate((key) => {
+    localStorage.setItem(key, JSON.stringify({ consent: "denied", expiresAt: Date.now() + 60_000 }))
+    window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true }))
+  }, consentKey)
+  await expect.poll(() => pixel.calls.filter((call) => call.args[0] === "consent").at(-1)?.args[1]).toBe("revoke")
+  await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 500)))
+  expect(events(pixel, "PageView").map((call) => call.args)).toEqual([
+    ["trackSingle", pixelId, "PageView"],
+    ["trackCustom", "PageView"],
+  ])
 })

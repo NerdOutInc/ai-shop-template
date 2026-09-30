@@ -5,8 +5,8 @@
   "templateAssessmentCommit": "26fcd518349b5adc3a5ebbe0fc2fb987b3db5405",
   "coverage": {
     "afterSourceCommit": "b32ab30dd7c74f3d17cb88b9dbf4111224cafe54",
-    "reviewedThroughSourceCommit": "1082c1228ba50eb95c76ae30f0acdc201cf2dd89",
-    "firstParentCommitCount": 9,
+    "reviewedThroughSourceCommit": "21bea1d10e28aae50a7c08db3c753e945ce18c01",
+    "firstParentCommitCount": 12,
     "reviewedAt": "2026-09-30",
     "boundary": "The provenance record covers extraction and the accepted follow-up through afterSourceCommit. This ledger individually reviews only the subsequent first-parent range; it does not claim a per-commit audit of earlier history, later source changes or unmerged source work. Accepted entries name their template pull request until its merge commit is recorded."
   },
@@ -243,8 +243,50 @@
       ],
       "reason": "The template collected drop signups without a sender. Adopted at the maintainer's direction as an optional, default-off capability, generalized to store configuration branding, time zone and support email, gated on the weekly feature and a disclosed list, with its own migration for store_app_runtime.",
       "evidence": "Reviewed the complete parent-to-commit diff: 77 files. paths lists 76: the source migration's filename is withheld because migration references here must name this repository's own migrations, and the port adds its own. Ported in NerdOutInc/ai-shop-template#24 with the store-specific copy, identities and migration history replaced.",
+      "templateCommit": "14b7d174b9917a34c6c72fa116fb7932ce6f4e14",
+      "followUp": null
+    },
+    {
+      "sourceCommit": "0e400aeeb71362aee864ae53d859a90aff40db5d",
+      "parentCommit": "1082c1228ba50eb95c76ae30f0acdc201cf2dd89",
+      "disposition": "accepted",
+      "classification": "measurement-correctness",
+      "paths": ["docs/meta-pixel.md", "e2e/meta-pixel.spec.ts", "src/features/analytics/meta-pixel.ts"],
+      "reason": "Disable the SDK history listener so variant query changes and manual route views do not duplicate PageViews. Recheck opt-in consent before cached-page restore events. Preserve the template opt-in model.",
+      "evidence": "Reviewed all three source paths. Adapted runtime and SDK browser fixture to opt-in consent; added a capture-order unit regression. Native stack reconciliation PR records the receiving commit.",
       "templateCommit": null,
-      "followUp": "Record the merge commit of NerdOutInc/ai-shop-template#24."
+      "followUp": "Record the reconciliation PR merge commit after merge."
+    },
+    {
+      "sourceCommit": "932211050767be070064a9e0ec478d021a4227d0",
+      "parentCommit": "0e400aeeb71362aee864ae53d859a90aff40db5d",
+      "disposition": "already-equivalent",
+      "classification": "tool-cache-isolation",
+      "paths": ["scripts/skills/ruff.toml"],
+      "reason": "Both repositories now keep the Ruff cache inside the repository.",
+      "evidence": "Reviewed the complete one-line diff; template PR #26 sets the same cache-dir.",
+      "templateCommit": "09b9fc8392943107f4a380f577cee01ae68ae9e1",
+      "followUp": null
+    },
+    {
+      "sourceCommit": "21bea1d10e28aae50a7c08db3c753e945ce18c01",
+      "parentCommit": "932211050767be070064a9e0ec478d021a4227d0",
+      "disposition": "already-equivalent",
+      "classification": "email-idempotency",
+      "paths": [
+        "docs/drop-emails.md",
+        "src/app/api/admin/drop-emails/test/route.ts",
+        "src/features/drop-emails/drop-email-message.ts",
+        "src/features/drop-emails/personalize-drop-email.test.ts",
+        "src/features/drop-emails/personalize-drop-email.ts",
+        "src/features/drop-emails/process-drop-emails.server.test.ts",
+        "src/features/drop-emails/process-drop-emails.server.ts",
+        "src/features/drop-emails/read-drop-email-overview.server.test.ts"
+      ],
+      "reason": "Template PR #24 already freezes site_origin in a required column on the initial outbox migration and uses it for body and unsubscribe headers. No receiving migration is needed.",
+      "evidence": "Reviewed all nine source paths, including the source-only migration. Compared required site_origin, first-freeze insert/read, personalization and domain-change retry test at template #24. The source repairs a previously shipped nullable-free origin; the template has never shipped that earlier schema.",
+      "templateCommit": "14b7d174b9917a34c6c72fa116fb7932ce6f4e14",
+      "followUp": null
     }
   ],
   "outboundPorts": [],
