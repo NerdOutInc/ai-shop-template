@@ -75,6 +75,13 @@ async function expectRemoteResources(page: Page, expected: string[]) {
   expect(remoteResources.sort()).toEqual([...expected].sort())
 }
 
+// Gives the page half a second to act on what it has already received, so a check that nothing else happened means
+// something. waitForLoadState("networkidle") cannot: it resolves at once for a document that has already been quiet
+// for half a second, and a slow browser can get there before hydration asks for measurement configuration.
+async function settle(page: Page) {
+  await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 500)))
+}
+
 for (const enabled of ["neither", "Google", "Meta", "both"] as const)
   test(`${enabled} enabled: each remote SDK independently respects its switch despite saved consent`, async ({
     context,
@@ -88,7 +95,9 @@ for (const enabled of ["neither", "Google", "Meta", "both"] as const)
       meta: meta ? "enabled" : "disabled",
     })
     await page.goto("/privacy")
-    await page.waitForLoadState("networkidle")
+    await expect.poll(() => [...observed.configurationRequests].sort()).toEqual(["google", "meta"])
+    await expect.poll(() => [...observed.remoteRequests].sort()).toEqual([...expected].sort())
+    await settle(page)
     expect(observed.configurationRequests.sort()).toEqual(["google", "meta"])
     expect(observed.remoteRequests.sort()).toEqual([...expected].sort())
     await expectRemoteResources(page, expected)
@@ -97,12 +106,14 @@ for (const enabled of ["neither", "Google", "Meta", "both"] as const)
     await expect(page).toHaveURL(`${origin}/shipping`)
     await page.getByRole("link", { name: "Privacy", exact: true }).click()
     await expect(page).toHaveURL(`${origin}/privacy`)
-    await page.waitForLoadState("networkidle")
+    await settle(page)
     expect(observed.remoteRequests.sort()).toEqual([...expected].sort())
     await expectRemoteResources(page, expected)
 
     await page.reload()
-    await page.waitForLoadState("networkidle")
+    await expect.poll(() => [...observed.configurationRequests].sort()).toEqual(["google", "google", "meta", "meta"])
+    await expect.poll(() => [...observed.remoteRequests].sort()).toEqual([...expected, ...expected].sort())
+    await settle(page)
     expect(observed.remoteRequests.sort()).toEqual([...expected, ...expected].sort())
     await expectRemoteResources(page, expected)
   })
@@ -111,7 +122,8 @@ for (const state of ["http-error", "malformed", "network-error"] as const)
   test(`${state} configuration cannot load either SDK despite saved consent`, async ({ context, page }) => {
     const observed = await interceptTracking(context, { google: state, meta: state })
     await page.goto("/privacy")
-    await page.waitForLoadState("networkidle")
+    await expect.poll(() => [...observed.configurationRequests].sort()).toEqual(["google", "meta"])
+    await settle(page)
     expect(observed.configurationRequests.sort()).toEqual(["google", "meta"])
     expect(observed.remoteRequests).toEqual([])
     await expectRemoteResources(page, [])
@@ -130,7 +142,7 @@ test("neither SDK loads before runtime configuration arrives", async ({ context,
     expect(observed.remoteRequests).toEqual([])
     await expectRemoteResources(page, [])
     release()
-    await page.waitForLoadState("networkidle")
+    await settle(page)
     expect(observed.remoteRequests).toEqual([])
     await expectRemoteResources(page, [])
   } finally {
