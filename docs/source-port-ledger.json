@@ -50,8 +50,8 @@
       ],
       "reason": "The seeded Crop tops category shows a plain \"Crop top\" product-page label instead of \"Women's crop top\"; search copy and merchant feeds keep the garment's gender. Adopted at the maintainer's direction because the template seeds the same category and labels.",
       "evidence": "Reviewed the complete parent-to-commit diff: four files. Ported by hand to the template's neutral labels in NerdOutInc/ai-shop-template#22; catalog unit tests, ProductDetails stories and e2e/product-garment.spec.ts pass in desktop Chromium, mobile Chromium and WebKit.",
-      "templateCommit": null,
-      "followUp": "Record the merge commit of NerdOutInc/ai-shop-template#22."
+      "templateCommit": "6c800f68254a421a5ab650ee6587a71a38b7571e",
+      "followUp": null
     },
     {
       "sourceCommit": "0e358238c790b06df6e4a6fbff508afccf790e2d",
@@ -67,8 +67,8 @@
       ],
       "reason": "A populated Design of the Week section shows only the week's products and the signup: the More like this grid and the duplicate shop button go. Adopted at the maintainer's direction because the template renders the same section.",
       "evidence": "Reviewed the complete parent-to-commit diff: five files. Ported in NerdOutInc/ai-shop-template#23, which also removes the divider style only that section used; unit tests and the weekly, storefront, SEO and About browser specs pass.",
-      "templateCommit": null,
-      "followUp": "Record the merge commit of NerdOutInc/ai-shop-template#23."
+      "templateCommit": "cafc1580e9e4fc52a6669f710d2e826d6bdd97e9",
+      "followUp": null
     },
     {
       "sourceCommit": "e5a521c2781783a13243986567f04b80160329b2",
@@ -155,8 +155,8 @@
       "paths": ["e2e/tracking-activation.spec.ts"],
       "reason": "networkidle can resolve before hydration requests measurement configuration, so the spec now polls for the requests it expects and settles before negative checks. The template's opt-in spec has the same waits.",
       "evidence": "Adapted to the opt-in spec in NerdOutInc/ai-shop-template#21. Under 20x CPU throttling in Chromium the previous spec failed 7 of 8 tests on its first pass while the ported spec passed 24 of 24; unthrottled, it passed 120 of 120 across three browsers.",
-      "templateCommit": null,
-      "followUp": "Record the merge commit of NerdOutInc/ai-shop-template#21."
+      "templateCommit": "a41a83753ccd42de7a3d54d523fadae4968bfcb6",
+      "followUp": null
     },
     {
       "sourceCommit": "1082c1228ba50eb95c76ae30f0acdc201cf2dd89",
