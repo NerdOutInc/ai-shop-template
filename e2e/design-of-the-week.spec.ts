@@ -26,7 +26,7 @@ test.beforeEach(async ({ page }) => {
   )
 })
 
-test("shows only the individually scheduled products, and four more without repeating itself", async ({ page }) => {
+test("shows only the individually scheduled products without recommendations", async ({ page }) => {
   await page.goto("/#design-of-the-week")
   const section = page.locator(".home-intro + #design-of-the-week")
   await expect(section).toHaveCount(1)
@@ -39,24 +39,10 @@ test("shows only the individually scheduled products, and four more without repe
   // Sharing an artwork revision with a chosen product does not enqueue a sibling.
   await expect(drop.getByRole("article", { name: catalogProducts[6]!.title })).toHaveCount(0)
 
-  const more = page.getByRole("list", { name: "More like this" })
-  await expect(more.getByRole("article")).toHaveCount(4)
-  // Never one of the drop's own, and never a repeat.
-  for (const title of dropTitles) await expect(more.getByRole("article", { name: title })).toHaveCount(0)
-  const moreTitles = await more.getByRole("article").evaluateAll((nodes) => nodes.map((node) => node.textContent))
-  expect(new Set(moreTitles).size).toBe(4)
+  await expect(page.getByRole("list", { name: "More like this" })).toHaveCount(0)
+  await expect(section.getByRole("article")).toHaveCount(dropTitles.length)
 
-  await expect(section.getByRole("link", { name: storeConfig.home.shopLabel })).toBeVisible()
-})
-
-test("picks the same four every time, so the page can be cached and indexed", async ({ page }) => {
-  const read = async () => {
-    await page.goto("/#design-of-the-week")
-    // Level 4: both grids sit under h3 subsections of the weekly h2 section.
-    return page.getByRole("list", { name: "More like this" }).getByRole("heading", { level: 4 }).allTextContents()
-  }
-  const first = await read()
-  expect(await read()).toEqual(first)
+  await expect(section.getByRole("link", { name: storeConfig.home.shopLabel })).toHaveCount(0)
 })
 
 test("leads the shop under Featured only, and shares the New badge with every recent arrival", async ({ page }) => {

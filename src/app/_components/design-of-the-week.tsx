@@ -4,7 +4,6 @@ import { connection } from "next/server"
 import { storeConfig } from "@/lib/store-config"
 
 import { getCatalog } from "@/features/catalog/get-catalog.server"
-import { pickMoreLikeThis } from "@/features/design-of-the-week/pick-more-like-this"
 import { readProductWeek } from "@/features/design-of-the-week/read-product-week.server"
 import { DropSignupForm } from "@/features/drop-signup/drop-signup-form"
 
@@ -18,10 +17,7 @@ export async function DesignOfTheWeek() {
   const [drop, catalog] = await Promise.all([reading, getCatalog({ productWeek: reading })])
   const dropIds = new Set(catalog.designOfTheWeekProductIds ?? [])
   const roster = catalog.products.filter((product) => dropIds.has(product.id))
-  // The pick holds all week, so a sold-out tee would hold its slot all week too.
-  const pool = catalog.products.filter((product) => !dropIds.has(product.id) && product.availability === "available")
   const signupEnabled = storeConfig.features.dropSignup && storeConfig.configured && storeConfig.policies.published
-  const more = drop === null ? [] : pickMoreLikeThis(drop.liveAt, pool, 4)
 
   return (
     <>
@@ -58,17 +54,6 @@ export async function DesignOfTheWeek() {
             />
           </section>
 
-          {more.length > 0 && (
-            <section aria-labelledby="more-like-this-heading" className="mt-14 sm:mt-20">
-              <h3 id="more-like-this-heading" className="font-display text-3xl">
-                More like this
-              </h3>
-              <div className="mt-6">
-                <DropProductGrid products={more} label="More like this" newProductIds={catalog.newProductIds} />
-              </div>
-            </section>
-          )}
-
           {signupEnabled && (
             <section aria-labelledby="drop-signup-heading" className="mt-14 sm:mt-20">
               <h3 id="drop-signup-heading" className="sr-only">
@@ -77,15 +62,6 @@ export async function DesignOfTheWeek() {
               <DropSignupForm source="design-of-the-week" />
             </section>
           )}
-
-          <div className="section-divider mt-14" aria-hidden="true">
-            <span>∞</span>
-          </div>
-          <div className="text-center">
-            <Link href="/shop" className="button">
-              {storeConfig.home.shopLabel}
-            </Link>
-          </div>
         </>
       )}
     </>

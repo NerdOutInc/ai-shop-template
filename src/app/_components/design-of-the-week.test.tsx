@@ -61,7 +61,6 @@ describe("product-based weekly feature", () => {
     expect(screen.getAllByRole("heading", { level: 2 })).toHaveLength(1)
     expect(screen.getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent)).toEqual([
       "This week’s products",
-      "More like this",
       "Get told about the next drop",
     ])
     const featured = within(screen.getByRole("list", { name: "Design of the Week products" }))
@@ -71,15 +70,12 @@ describe("product-based weekly feature", () => {
     expect(featured.getByRole("article", { name: "Graphic tee 2" })).toBeInTheDocument()
     expect(featured.queryByRole("article", { name: "Graphic tee 1" })).not.toBeInTheDocument()
     expect(featured.getByRole("link", { name: "Graphic tee 2" })).toHaveAttribute("href", "/shop/product-2")
-    const more = within(screen.getByRole("list", { name: "More like this" }))
-    expect(more.getAllByRole("article")).toHaveLength(4)
-    expect(more.getAllByRole("heading", { level: 4 })).toHaveLength(4)
-    expect(more.queryByRole("article", { name: "Graphic tee 0" })).not.toBeInTheDocument()
-    expect(more.queryByRole("article", { name: "Graphic tee 2" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("list", { name: "More like this" })).not.toBeInTheDocument()
+    expect(screen.getAllByRole("article")).toHaveLength(2)
     expect(screen.getByText("Drop signup")).toBeInTheDocument()
   })
 
-  it("badges the catalog's new products in both grids, and never a drop tee just for being in the drop", async () => {
+  it("badges new featured products, and never a drop tee just for being in the drop", async () => {
     // Being picked for this week does not make a tee new: product-0 is a returning favorite.
     vi.mocked(getCatalog).mockResolvedValue({
       status: "ready",
@@ -95,9 +91,6 @@ describe("product-based weekly feature", () => {
         .map((card) => within(card).getByRole("heading").textContent)
 
     expect(badgedTitles("Design of the Week products")).toEqual(["Graphic tee 2"])
-    // This week's seed picks product-1, 3, 4 and 5 for More like this.
-    expect(within(screen.getByRole("list", { name: "More like this" })).getAllByRole("article")).toHaveLength(4)
-    expect(badgedTitles("More like this")).toEqual(["Graphic tee 4"])
   })
 
   it.each([null, week])("keeps signup and shop navigation when no selected product is public", async (current) => {
@@ -133,8 +126,9 @@ it("keeps the weekly selection while signup is disabled", async () => {
   expect(screen.queryByText("Drop signup")).not.toBeInTheDocument()
 })
 
-it("uses the configured shop label for a populated weekly selection", async () => {
+it("keeps a populated weekly selection to its products and signup, without a shop link", async () => {
   render(await DesignOfTheWeek())
-  expect(screen.getByRole("link", { name: "Browse the collection" })).toHaveAttribute("href", "/shop")
-  expect(screen.queryByRole("link", { name: "Shop all tees" })).not.toBeInTheDocument()
+  expect(screen.getByRole("list", { name: "Design of the Week products" })).toBeVisible()
+  // The page's introduction and footer already link to the shop.
+  expect(screen.queryByRole("link", { name: "Browse the collection" })).not.toBeInTheDocument()
 })
