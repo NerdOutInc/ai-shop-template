@@ -1,0 +1,42 @@
+name: Prepare template release
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: Full reviewed commit SHA (candidate metadata only)
+        required: true
+        type: string
+      tag:
+        description: Reserved template-vMAJOR.MINOR.PATCH name
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    if: github.repository == 'NerdOutInc/ai-shop-template'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ inputs.commit }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: .node-version
+      - name: Prepare pinned candidate metadata
+        env:
+          RELEASE_COMMIT: ${{ inputs.commit }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          mkdir -p .tmp
+          node scripts/template/prepare-template-release.mjs --ref "$RELEASE_COMMIT" --tag "$RELEASE_TAG" > .tmp/template-release.json
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: template-release-candidate
+          path: .tmp/template-release.json
+          retention-days: 7
