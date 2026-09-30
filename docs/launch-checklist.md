@@ -52,6 +52,7 @@ Use this checklist with [store setup](store-setup.md). Record non-secret evidenc
 - [ ] Optional Meta/Google marketing has this store's own destinations, reviewed consent/account settings and authorized activation. Denial, withdrawal, GPC and private/checkout URL protections pass isolated tests.
 - [ ] Actual page/purchase receipt is recorded separately from an Active tag or successful configuration response. Stripe remains the revenue ledger.
 - [ ] Support ownership, payment/webhook failures and uncertain-order recovery are assigned. Optional shipping reminders have a verified sender, schedule and real recipient receipt; customer correspondence remains a separate action.
+- [ ] If [drop emails](drop-emails.md) are enabled, the migration is applied, the Privacy page's design-drop section is owner-reviewed, and a **Send a test** message reached the support inbox with working links, the store's postal address and `List-Unsubscribe` headers. The first real drop's history and Resend receipts are recorded; an unsubscribe link and one-click POST were checked with a test subscriber.
 
 ## Code and release
 

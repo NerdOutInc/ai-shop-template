@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react"
+import { cleanup, render, screen } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { dropConsentCopy } from "@/features/drop-signup/drop-consent-copy"
@@ -7,14 +7,15 @@ import { storeConfig } from "@/lib/store-config"
 import PrivacyPage from "./page"
 
 vi.mock("server-only", () => ({}))
-vi.mock("@/lib/env", () => ({ env: { ORDER_ALERTS_ENABLED: "false" } }))
+const environment = vi.hoisted(() => ({ ORDER_ALERTS_ENABLED: "false", DROP_EMAILS_ENABLED: "false" }))
+vi.mock("@/lib/env", () => ({ env: environment }))
 
 vi.mock("@/lib/store-config", () => ({
   storeConfig: {
     name: "Sample Store",
     configured: true,
     policies: { published: true, privacyText: ["Owner-reviewed additional privacy information."] },
-    features: { dropSignup: true },
+    features: { dropSignup: true, designOfTheWeek: true },
     privacy: { retainedDropSubscribers: false },
     supportEmail: "help@sample.test",
   },
@@ -23,6 +24,8 @@ vi.mock("./_components/google-privacy-section", () => ({ GooglePrivacySection: (
 vi.mock("./_components/meta-privacy-section", () => ({ MetaPrivacySection: () => null }))
 
 beforeEach(() => {
+  environment.DROP_EMAILS_ENABLED = "false"
+  storeConfig.features.designOfTheWeek = true
   storeConfig.configured = true
   storeConfig.policies.published = true
   storeConfig.features.dropSignup = true
@@ -42,6 +45,46 @@ describe("privacy disclosures", () => {
     expect(screen.getByText(/signup IP address/)).toBeVisible()
     expect(screen.getByText(/Signing up again renews consent/)).toBeVisible()
     expect(screen.getByText(`The signup form’s current consent wording is: “${dropConsentCopy.text}”`)).toBeVisible()
+  })
+
+  it("describes drop emails, their provider and their unsubscribe link only while sending is on", () => {
+    render(<PrivacyPage />)
+    expect(screen.queryByText(/Resend, the store’s email provider/)).not.toBeInTheDocument()
+
+    cleanup()
+    environment.DROP_EMAILS_ENABLED = "true"
+    render(<PrivacyPage />)
+    expect(screen.getByText(/emails subscribers about it once, on the day it drops/)).toBeVisible()
+    expect(screen.getByText(/Every one has an unsubscribe link/)).toBeVisible()
+    expect(screen.getByText(/Resend, the store’s email provider, receives your address/)).toBeVisible()
+    expect(screen.getByText(/the label identifies the email, not you/)).toBeVisible()
+  })
+
+  it("keeps describing drop emails to a closed list that still receives them", () => {
+    environment.DROP_EMAILS_ENABLED = "true"
+    storeConfig.features.dropSignup = false
+    storeConfig.privacy.retainedDropSubscribers = true
+    render(<PrivacyPage />)
+    expect(screen.getByText(/New signups are currently closed/)).toBeVisible()
+    expect(screen.getByText(/Resend, the store’s email provider/)).toBeVisible()
+  })
+
+  it("does not describe drop emails while the policies that gate them are unpublished", () => {
+    environment.DROP_EMAILS_ENABLED = "true"
+    storeConfig.features.dropSignup = false
+    storeConfig.privacy.retainedDropSubscribers = true
+    storeConfig.policies.published = false
+    render(<PrivacyPage />)
+    expect(screen.getByText(/New signups are currently closed/)).toBeVisible()
+    expect(screen.queryByText(/Resend, the store’s email provider/)).not.toBeInTheDocument()
+  })
+
+  it("does not describe drop emails without a weekly feature to announce", () => {
+    environment.DROP_EMAILS_ENABLED = "true"
+    storeConfig.features.designOfTheWeek = false
+    render(<PrivacyPage />)
+    expect(screen.getByRole("heading", { name: "Design-drop emails" })).toBeVisible()
+    expect(screen.queryByText(/Resend, the store’s email provider/)).not.toBeInTheDocument()
   })
 
   it("keeps the manual removal path available after new signups are disabled", () => {

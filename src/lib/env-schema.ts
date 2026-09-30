@@ -34,6 +34,17 @@ export const envSchema = {
     RESEND_API_KEY: singleLineCredential.min(1).optional(),
     ORDER_ALERT_FROM_EMAIL: z.email().optional(),
     ORDER_ALERTS_ENABLED: z.enum(["true", "false"]).default("false"),
+    DROP_EMAILS_ENABLED: z.enum(["true", "false"]).default("false"),
+    DROP_EMAIL_FROM_EMAIL: z.email().optional(),
+    // Commercial email law (CAN-SPAM in the US) requires a physical mailing address in every marketing
+    // email, so drop emails refuse to send without one. One line: it is printed in each email's footer.
+    STORE_POSTAL_ADDRESS: z
+      .string()
+      .trim()
+      .min(10)
+      .max(300)
+      .refine((value) => !/[\r\n]/.test(value), "Use a single-line mailing address")
+      .optional(),
     CRON_SECRET: singleLineCredential.min(32).optional(),
     GOOGLE_TAG_ENABLED: z.string().optional(),
     GOOGLE_TAG_ID: z.string().optional(),

@@ -191,6 +191,7 @@ test("optional integration values are validated when supplied, without becoming 
     { GOOGLE_MERCHANT_FEED_PASSWORD: "short" },
     { ADMIN_LIBRARY_ENABLED: "true" },
     { ORDER_ALERTS_ENABLED: "true" },
+    { DROP_EMAILS_ENABLED: "true" },
     { META_PIXEL_ENABLED: "true" },
   ])
     assert.ok(status({ ...environment, ...optional }).some((check) => !check.ready))
@@ -259,6 +260,34 @@ test("catalog and optional alerts obey their runtime prerequisites", () => {
     false
   )
   assert.ok(status(environment, config, { schedules: [null] }).some((check) => !check.ready))
+})
+
+test("weekly drop emails need a sender, postal address, weekly feature, list and schedule", () => {
+  const enabled = {
+    ...environment,
+    DROP_EMAILS_ENABLED: "true",
+    RESEND_API_KEY: "i".repeat(32),
+    DROP_EMAIL_FROM_EMAIL: "drops@newbrand.com",
+    STORE_POSTAL_ADDRESS: "PO Box 1234, Springfield, OR 97477",
+  }
+  const weekly = { ...config, features: { ...config.features, designOfTheWeek: true, dropSignup: true } }
+  const drops = (env, value = weekly, options) => ready("Weekly drop emails", status(env, value, options))
+  assert.equal(drops(enabled), true)
+  assert.equal(status(environment, weekly).find((check) => check.name === "Weekly drop emails")?.active, false)
+  for (const name of ["RESEND_API_KEY", "DROP_EMAIL_FROM_EMAIL", "STORE_POSTAL_ADDRESS"])
+    assert.equal(drops({ ...enabled, [name]: undefined }), false, name)
+  assert.equal(drops({ ...enabled, DROP_EMAIL_FROM_EMAIL: "drops@example.com" }), false)
+  assert.equal(drops({ ...enabled, STORE_POSTAL_ADDRESS: "PO Box 1234\nSpringfield, OR 97477" }), false)
+  assert.equal(drops(enabled, { ...weekly, features: { ...weekly.features, designOfTheWeek: false } }), false)
+  const closed = { ...weekly, features: { ...weekly.features, dropSignup: false } }
+  assert.equal(drops(enabled, closed), false)
+  // A closed list that kept its subscribers can still hear about drops.
+  assert.equal(drops(enabled, { ...closed, privacy: { retainedDropSubscribers: true } }), true)
+  const withoutDropSchedule = schedules.filter((entry) => entry.path !== "/api/internal/drop-emails")
+  assert.equal(drops(enabled, weekly, { schedules: withoutDropSchedule }), false)
+  const sandbox = { ...enabled, STRIPE_SECRET_KEY: `rk_test_${"f".repeat(64)}`, PRINTIFY_FULFILLMENT_ENABLED: "false" }
+  const sandboxChecks = status(sandbox, weekly, { mode: "sandbox", schedules: [] })
+  assert.equal(sandboxChecks.find((check) => check.name === "Weekly drop emails")?.active, false)
 })
 
 test("enabled owner bootstrap requires a valid setup proof or dated claim evidence", () => {

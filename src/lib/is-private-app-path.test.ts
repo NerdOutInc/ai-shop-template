@@ -9,6 +9,7 @@ describe("private application paths", () => {
     "/admin/setup",
     "/auth/callback",
     "/api/admin/assets/a",
+    "/unsubscribe/5f0b2c4e-8a51-4d8e-9a57-2c1f7f3b9d10",
     "/%61dmin/account",
     "/admin%2Fconcepts",
     "/bad%escape",

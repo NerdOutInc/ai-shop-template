@@ -9,6 +9,7 @@ import { Pool } from "pg"
 
 import { seedCompleteGarment } from "../../test/seed-complete-garment"
 import { listCadenceSlots } from "@/features/publishing/list-cadence-slots"
+import { productionFingerprintVersion } from "@/lib/printify/production-fingerprint-version"
 import { catalogProducts } from "../catalog-products"
 
 import { adminTestConfig } from "./admin-test-config"
@@ -75,6 +76,7 @@ test.beforeAll(async () => {
       if (removed.error) throw removed.error
     }
   await fetch(`${config.mailURL}/api/v1/messages`, { method: "DELETE" })
+  await seedDropEmailStock()
 })
 test.afterAll(async () => {
   await pool.end()
@@ -902,7 +904,7 @@ test("takes an email for the next drop and records the consent it showed", async
   const saved = (
     await pool.query("select email, source, consent_copy_version, confirmed_at from commerce.drop_subscribers")
   ).rows
-  // Stored normalized, with what they were shown, and confirmed by nothing -- because nothing sends yet.
+  // Stored normalized, with what they were shown, and confirmed by nothing -- signing up is the opt-in.
   expect(saved).toEqual([
     { email: "customer@example.com", source: "design-of-the-week", consent_copy_version: "v2", confirmed_at: null },
   ])
@@ -912,5 +914,138 @@ test("takes an email for the next drop and records the consent it showed", async
   await page.getByRole("button", { name: "Keep me posted" }).click()
   await expect(page.getByRole("status").filter({ hasText: "You're on the list" })).toBeVisible()
   expect((await pool.query("select count(*) from commerce.drop_subscribers")).rows[0].count).toBe("1")
+  await context.close()
+})
+
+const dropEmailProducts = catalogProducts.slice(0, 2)
+// Shaped like a real production fingerprint but derived from nothing real, so only this journey's rows match it.
+const dropEmailFingerprint = (variant: { id: number }) =>
+  `${productionFingerprintVersion}:${createHash("sha256").update(`drop-email-fixture-${variant.id}`).digest("hex")}`
+
+/**
+ * A fresh stock read for the drop email journey's two tees, seeded before any journey runs. The app
+ * caches this read for five minutes and only the stock cron clears it, so seeded later, an earlier
+ * journey's cached "no stock read yet" is what the page would still see. Other journeys' tees carry no
+ * matching production fingerprint, so this changes nothing for them: they stay unavailable either way.
+ */
+async function seedDropEmailStock() {
+  const products = Object.fromEntries(
+    dropEmailProducts.map((product) => [
+      product.id,
+      product.variants.map((variant) => ({
+        id: variant.id,
+        enabled: true,
+        inStock: true,
+        fingerprint: dropEmailFingerprint(variant),
+      })),
+    ])
+  )
+  await pool.query(
+    `insert into commerce.catalog_refreshes (shop_id,kind,payload,observed_at) values ('123','stock',$1::jsonb,now())
+     on conflict (shop_id,kind) do update set payload=excluded.payload, observed_at=excluded.observed_at`,
+    [JSON.stringify({ fingerprintVersion: productionFingerprintVersion, products })]
+  )
+}
+
+test("shows the owner the drop list, the next drop's email and what went out, without ever sending", async ({
+  browser,
+}) => {
+  const context = await browser.newContext({ baseURL: config.baseURL, storageState: ownerSession })
+  const page = await context.newPage()
+  await stubProductImages(page)
+  await stubDropArtwork(page)
+  const drop = dropEmailProducts
+  await pool.query("delete from commerce.drop_email_deliveries")
+  await pool.query("delete from commerce.drop_emails")
+  await pool.query("delete from commerce.product_week_schedule where shop_id='123'")
+  await pool.query("delete from commerce.printify_products where shop_id='123'")
+  await seedCompleteGarment(pool, "123")
+  // Hidden until next week's reveal: the preview has to see what the shop cannot show yet. An email
+  // offers only what is for sale, so each tee matches the stock read the suite seeded up front.
+  const cadence = { ...storeConfig.weeklyFeature, timeZone: storeConfig.timeZone }
+  const nextWeek = listCadenceSlots({ from: new Date(), count: 1, cadence })[0]!.toISOString()
+  for (const product of drop) {
+    // Without print_areas the shop checks each variant's recorded production fingerprint instead of
+    // deriving one, so only these rows match the seeded stock and every other journey's tees stay as
+    // they were.
+    const listing = Object.fromEntries(Object.entries(product).filter(([key]) => key !== "print_areas"))
+    const snapshot = {
+      ...listing,
+      visible: true,
+      blueprint_id: 1317,
+      variants: product.variants.map((variant) => ({
+        ...variant,
+        storefront_production_fingerprint: dropEmailFingerprint(variant),
+      })),
+    }
+    await pool.query(
+      `insert into commerce.printify_products (shop_id,product_id,snapshot,active,hidden_at,reveal_at)
+       values ('123',$1,$2::jsonb,true,now(),$3)`,
+      [product.id, JSON.stringify(snapshot), nextWeek]
+    )
+    await pool.query(
+      `insert into commerce.product_week_schedule (shop_id,product_id,live_at,featured_by)
+       values ('123',$1,$2,gen_random_uuid())`,
+      [product.id, nextWeek]
+    )
+  }
+  // The signup journey above left one subscriber; add one who has left, and last week's email to them.
+  const [subscriber] = (await pool.query<{ id: string }>("select id from commerce.drop_subscribers")).rows
+  await pool.query(
+    `insert into commerce.drop_subscribers (email, source, consent_copy_version, unsubscribed_at)
+     values ('left@example.com', 'design-of-the-week', 'v2', now())`
+  )
+  const lastWeek = listCadenceSlots({
+    from: new Date(Date.now() - 8 * 86_400_000),
+    count: 1,
+    cadence,
+  })[0]!.toISOString()
+  await pool.query(
+    `insert into commerce.drop_emails (live_at, from_address, reply_to, subject, html, text_body, product_ids)
+     values ($1, 'Fixture Store <drops@fixture.example>', $2, 'New this week: Last Week',
+             '<p>Last week</p>', 'Last week', array['last-week'])`,
+    [lastWeek, storeConfig.supportEmail]
+  )
+  await pool.query(
+    `insert into commerce.drop_email_deliveries (drop_live_at, subscriber_id, status, attempt_started_at, sent_at, provider_email_id)
+     values ($1, $2, 'sent', now(), now(), 're_fixture')`,
+    [lastWeek, subscriber!.id]
+  )
+  // Direct fixture writes need the same cache refresh that normal admin mutations perform.
+  const refreshed = await context.request.put("/api/admin/products/featured-order", {
+    headers: { origin: config.baseURL },
+    data: { productIds: drop.map((product) => product.id) },
+  })
+  expect(refreshed.status()).toBe(200)
+
+  await page.goto("/admin/products")
+  await page
+    .getByRole("navigation", { name: "Products sections" })
+    .getByRole("link", { name: "Drop emails", exact: true })
+    .click()
+  await expect(page.getByRole("heading", { level: 1, name: "Drop emails" })).toBeVisible()
+  // This build has no Resend key, sender or mailing address, and says so by name.
+  await expect(page.getByRole("heading", { name: "Sending is off" })).toBeVisible()
+  await expect(page.getByText(/^Set .*RESEND_API_KEY.*STORE_POSTAL_ADDRESS.* in Vercel\.$/)).toBeVisible()
+  await expect(page.getByText("1 subscribed · 1 unsubscribed")).toBeVisible()
+
+  const names = drop.map((product) => product.title)
+  await expect(page.getByText(`New this week: ${names.join(" and ")}`)).toBeVisible()
+  // The preview is its own sandboxed document, loaded with the owner's session.
+  const preview = page.frameLocator('iframe[title^="Preview of the email for the"]')
+  await expect(preview.getByRole("heading", { name: "This week’s picks." })).toBeVisible()
+  for (const name of names) await expect(preview.getByRole("heading", { name })).toBeVisible()
+
+  await page.getByRole("button", { name: `Send a test to ${storeConfig.supportEmail}` }).click()
+  await expect(page.getByRole("alert").filter({ hasText: "Email sending isn't set up yet." })).toBeVisible()
+  expect((await pool.query("select count(*) from commerce.drop_emails")).rows[0].count).toBe("1")
+
+  const history = page.getByRole("region", { name: "Sent so far" })
+  await expect(history.getByText("New this week: Last Week")).toBeVisible()
+  await expect(history.getByText(/^Sent to 1 of 1 subscriber\./)).toBeVisible()
+
+  await page.setViewportSize({ width: 375, height: 812 })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+  await page.screenshot({ path: "test-results/admin/drop-emails-narrow.png", fullPage: true })
   await context.close()
 })

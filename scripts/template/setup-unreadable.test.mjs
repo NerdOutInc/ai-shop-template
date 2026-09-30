@@ -134,6 +134,7 @@ test("unknown optional flags are reported as unreadable and known disabled featu
   for (const [flag, name] of [
     ["ADMIN_LIBRARY_ENABLED", "Owner sign-in and private artwork"],
     ["ORDER_ALERTS_ENABLED", "Order shipping reminders"],
+    ["DROP_EMAILS_ENABLED", "Weekly drop emails"],
     ["META_PIXEL_ENABLED", "Meta measurement"],
     ["GOOGLE_TAG_ENABLED", "Google measurement"],
   ]) {
