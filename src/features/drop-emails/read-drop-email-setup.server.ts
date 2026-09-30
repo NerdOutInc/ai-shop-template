@@ -12,6 +12,8 @@ import { formatDropEmailSender } from "./format-drop-email-sender"
 export function readDropEmailSetup() {
   const required: Record<string, unknown> = {
     DATABASE_URL: env.DATABASE_URL,
+    // Every link and the one-click unsubscribe header are built from it; without it they point at localhost.
+    NEXT_PUBLIC_SITE_URL: env.NEXT_PUBLIC_SITE_URL?.startsWith("https://") ? env.NEXT_PUBLIC_SITE_URL : undefined,
     PRINTIFY_SHOP_ID: env.PRINTIFY_SHOP_ID,
     PRINTIFY_PUBLISHING_ENABLED: env.PRINTIFY_PUBLISHING_ENABLED,
     RESEND_API_KEY: env.RESEND_API_KEY,
@@ -20,13 +22,14 @@ export function readDropEmailSetup() {
     CRON_SECRET: env.CRON_SECRET,
   }
   const missing = Object.keys(required).filter((name) => !required[name])
-  // Drops come from the weekly feature, and the Privacy page describes these emails only while it
-  // describes the list, so sending waits for both.
+  // Drops come from the weekly feature. Privacy describes these emails and their delivery records
+  // beside the list while retainedDropEmailRecords is on, and that switch outlives a pause in sending.
   const storeSettings = [
     !storeConfig.configured && "configured",
     !storeConfig.policies.published && "policies.published",
     !storeConfig.features.designOfTheWeek && "features.designOfTheWeek",
     !storeConfig.features.dropSignup && !storeConfig.privacy.retainedDropSubscribers && "features.dropSignup",
+    !storeConfig.privacy.retainedDropEmailRecords && "privacy.retainedDropEmailRecords",
   ].filter((setting) => typeof setting === "string")
   return {
     missing,

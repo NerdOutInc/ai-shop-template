@@ -44,9 +44,9 @@ export default async function AdminDropEmailsPage() {
         </p>
         <h1 className="display-heading">Drop emails</h1>
         <p className="mt-4 text-muted-foreground">
-          Everyone on the list hears about each Design of the Week on the day it drops, at 9 AM store time or when the
-          drop goes live if that is later: one email, just the drop, with a one-click unsubscribe. A week with nothing
-          scheduled sends nothing. Short, sweet, and never a surprise sequel.
+          Everyone on the list hears about each Design of the Week once: at 9 AM store time on the drop&rsquo;s day, or
+          when the drop goes live if that is later. One email, just the drop, with a one-click unsubscribe. A week with
+          nothing scheduled sends nothing. Short, sweet, and never a surprise sequel.
         </p>
       </header>
       <ProductsSectionNav current="emails" />

@@ -46,9 +46,9 @@ export async function POST(request: Request) {
         subject: `[Test] ${next.subject}`,
         html: next.html,
         textBody: next.text,
+        siteOrigin: getSiteUrl().origin,
       },
-      { id: dropEmailPreviewToken, email: supportEmail },
-      getSiteUrl().origin
+      { id: dropEmailPreviewToken, email: supportEmail }
     )
     const outcome = await sendDropEmail(apiKey, message, `drop-email-test/${randomUUID()}`)
     if (outcome.status === "sent") return respond({ sent: true })

@@ -19,6 +19,9 @@ create table commerce.drop_emails (
   subject text not null check (subject <> '' and length(subject) <= 200),
   html text not null check (html <> ''),
   text_body text not null check (text_body <> ''),
+  -- The origin the email's links point at. The one-click unsubscribe header is built from it at send
+  -- time, so a retry after a domain change still hands Resend the same payload under the same key.
+  site_origin text not null check (site_origin ~ '^https?://[^/?#]+$'),
   -- What the email announced, for the admin history. The words themselves are in html and text_body.
   product_ids text[] not null check (cardinality(product_ids) between 1 and 100),
   frozen_at timestamptz not null default now()

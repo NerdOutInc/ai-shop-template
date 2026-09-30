@@ -16,4 +16,6 @@ export type FrozenDropEmail = {
   subject: string
   html: string
   textBody: string
+  /** Where its links point, frozen with it so a retry never changes the payload under its key. */
+  siteOrigin: string
 }

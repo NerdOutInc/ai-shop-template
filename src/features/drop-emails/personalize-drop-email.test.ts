@@ -13,9 +13,9 @@ describe("personalizeDropEmail", () => {
         subject: "New this week: Abstract Lines",
         html: `<a href="${link}">Unsubscribe</a> <a href="${link}">again</a>`,
         textBody: `Unsubscribe ${link}`,
+        siteOrigin: "https://store.example",
       },
-      { id: "5f0b2c4e-8a51-4d8e-9a57-2c1f7f3b9d10", email: "customer@example.com" },
-      "https://store.example"
+      { id: "5f0b2c4e-8a51-4d8e-9a57-2c1f7f3b9d10", email: "customer@example.com" }
     )
     expect(message).toEqual({
       from: "Fixture Store <drops@fixture.example>",

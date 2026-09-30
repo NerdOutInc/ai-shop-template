@@ -5,8 +5,7 @@ import { dropUnsubscribeUrls } from "./drop-unsubscribe-urls"
 /** The one email this subscriber gets: the frozen copy with their own unsubscribe links filled in. */
 export function personalizeDropEmail(
   frozen: FrozenDropEmail,
-  subscriber: { id: string; email: string },
-  siteUrl: string
+  subscriber: { id: string; email: string }
 ): DropEmailMessage {
   const fill = (value: string) => value.replaceAll(dropEmailSubscriberPlaceholder, subscriber.id)
   return {
@@ -17,7 +16,7 @@ export function personalizeDropEmail(
     html: fill(frozen.html),
     text: fill(frozen.textBody),
     headers: {
-      "List-Unsubscribe": `<${dropUnsubscribeUrls(siteUrl, subscriber.id).oneClick}>`,
+      "List-Unsubscribe": `<${dropUnsubscribeUrls(frozen.siteOrigin, subscriber.id).oneClick}>`,
       "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
     },
   }

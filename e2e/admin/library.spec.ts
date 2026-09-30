@@ -1001,10 +1001,10 @@ test("shows the owner the drop list, the next drop's email and what went out, wi
     cadence,
   })[0]!.toISOString()
   await pool.query(
-    `insert into commerce.drop_emails (live_at, from_address, reply_to, subject, html, text_body, product_ids)
+    `insert into commerce.drop_emails (live_at, from_address, reply_to, subject, html, text_body, product_ids, site_origin)
      values ($1, 'Fixture Store <drops@fixture.example>', $2, 'New this week: Last Week',
-             '<p>Last week</p>', 'Last week', array['last-week'])`,
-    [lastWeek, storeConfig.supportEmail]
+             '<p>Last week</p>', 'Last week', array['last-week'], $3)`,
+    [lastWeek, storeConfig.supportEmail, config.baseURL]
   )
   await pool.query(
     `insert into commerce.drop_email_deliveries (drop_live_at, subscriber_id, status, attempt_started_at, sent_at, provider_email_id)

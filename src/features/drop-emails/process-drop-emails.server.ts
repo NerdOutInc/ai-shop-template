@@ -35,8 +35,8 @@ const rejectionLimit = 3
 /**
  * One pass of the weekly drop email, run by cron every 15 minutes.
  *
- * On the drop's morning the first pass freezes the email and its recipient list together; every pass
- * after that sends whatever is still queued, paced under Resend's rate limit, and retries an
+ * On the drop's day the first pass at or after its send time freezes the email and its recipient list
+ * together; every pass after that sends whatever is still queued, paced under Resend's rate limit, and retries an
  * unconfirmed send only under its original key. The shape of the owner alerts: state is written
  * before provider I/O, so a crash mid-send leaves an honest trace rather than a second email.
  */
@@ -95,7 +95,7 @@ export async function processDropEmails(deps: {
         unsubscribeUrl: dropUnsubscribeUrls(deps.siteUrl, dropEmailSubscriberPlaceholder).page,
       })
       // One statement, so the email and its recipients exist together or not at all. Recipients are
-      // whoever was signed up when the drop went live: someone who joins at 8 AM has already seen it.
+      // whoever was signed up when the drop went live: someone who joins after that has already seen it.
       //
       // A return keeps created_at, so a returning subscriber counts from the consent their return
       // refreshed instead: the same cutoff as someone new. Submitting the form again once back
@@ -104,8 +104,8 @@ export async function processDropEmails(deps: {
       const queued = await client.query(
         `with frozen as (
            insert into commerce.drop_emails
-             (live_at, from_address, reply_to, subject, html, text_body, product_ids, frozen_at)
-           values ($1, $2, $3, $4, $5, $6, $7, $8)
+             (live_at, from_address, reply_to, subject, html, text_body, product_ids, frozen_at, site_origin)
+           values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
            on conflict (live_at) do nothing
            returning live_at
          )
@@ -124,15 +124,16 @@ export async function processDropEmails(deps: {
           email.text,
           products.map((product) => product.id),
           now,
+          new URL(deps.siteUrl).origin,
         ]
       )
       result.queued = queued.rowCount ?? 0
       frozen = await readFrozen(client, week.liveAt)
       if (!frozen) throw new Error("The drop email was not saved")
     }
-    // A first attempt belongs to the drop's day, however the day ended: a rate limit, sending
-    // switched off, or a queue longer than the day. After midnight only an unconfirmed send may go
-    // again, under its original key and inside its 23 hours.
+    // A first attempt belongs to the drop's send window (read-drop-email-window.ts), however it ended:
+    // a rate limit, sending switched off, or a queue longer than the window. After it closes only an
+    // unconfirmed send may go again, under its original key and inside its 23 hours.
     if (window.state === "closed")
       await client.query(
         `update commerce.drop_email_deliveries set status = 'expired', updated_at = $2
@@ -187,7 +188,7 @@ export async function processDropEmails(deps: {
         continue
       }
       const outcome = await deps.send(
-        personalizeDropEmail(frozen, { id: candidate.subscriber_id, email }, deps.siteUrl),
+        personalizeDropEmail(frozen, { id: candidate.subscriber_id, email }),
         `drop-email/${drop}/${candidate.subscriber_id}`
       )
       if (outcome.status === "sent") {
@@ -240,8 +241,15 @@ export async function processDropEmails(deps: {
 
 async function readFrozen(client: PoolClient, liveAt: string): Promise<FrozenDropEmail | null> {
   const row = (
-    await client.query<{ from_address: string; reply_to: string; subject: string; html: string; text_body: string }>(
-      "select from_address, reply_to, subject, html, text_body from commerce.drop_emails where live_at = $1",
+    await client.query<{
+      from_address: string
+      reply_to: string
+      subject: string
+      html: string
+      text_body: string
+      site_origin: string
+    }>(
+      "select from_address, reply_to, subject, html, text_body, site_origin from commerce.drop_emails where live_at = $1",
       [liveAt]
     )
   ).rows[0]
@@ -252,6 +260,7 @@ async function readFrozen(client: PoolClient, liveAt: string): Promise<FrozenDro
         subject: row.subject,
         html: row.html,
         textBody: row.text_body,
+        siteOrigin: row.site_origin,
       }
     : null
 }

@@ -14,6 +14,8 @@ const store = vi.hoisted(() => ({
 vi.mock("@/lib/store-config", () => ({ storeConfig: store }))
 
 beforeEach(() => {
+  store.configured = true
+  store.policies.published = true
   store.features.dropSignup = true
 })
 afterEach(() => vi.unstubAllGlobals())
@@ -38,8 +40,13 @@ describe("DropUnsubscribePanel", () => {
     expect(screen.getByRole("link", { name: "Browse the collection" })).toHaveAttribute("href", "/shop")
   })
 
-  it("never points someone at a signup the store has closed", () => {
-    store.features.dropSignup = false
+  // The same three conditions that decide whether the signup form shows at all.
+  it.each([
+    ["signup is switched off", () => (store.features.dropSignup = false)],
+    ["the store is not configured", () => (store.configured = false)],
+    ["the policies are unpublished", () => (store.policies.published = false)],
+  ])("never points someone at a signup that is closed because %s", (_, close) => {
+    close()
     const { unmount } = render(<DropUnsubscribePanel token={token} />)
     expect(
       screen.getByText("We’ll stop emailing you when a new design drops. That’s all this list ever sends.")

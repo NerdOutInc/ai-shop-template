@@ -46,8 +46,9 @@ describe.skipIf(!databaseUrl)("drop email overview", () => {
       ["2026-10-12T09:00:00Z", "New this week: Fern Study"],
     ])
       await database.query(
-        `insert into commerce.drop_emails (live_at, from_address, reply_to, subject, html, text_body, product_ids)
-         values ($1, 'Fixture Store <drops@fixture.example>', 'support@fixture.example', $2, '<p>x</p>', 'x', array['tee', 'crop'])`,
+        `insert into commerce.drop_emails (live_at, from_address, reply_to, subject, html, text_body, product_ids, site_origin)
+         values ($1, 'Fixture Store <drops@fixture.example>', 'support@fixture.example', $2, '<p>x</p>', 'x', array['tee', 'crop'],
+                 'https://store.example')`,
         [liveAt, subject]
       )
     await database.query(

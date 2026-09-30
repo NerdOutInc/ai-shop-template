@@ -32,7 +32,7 @@ export type NextDropEmail =
  * subscriber placeholder still in place.
  *
  * Admin only: it reads products that stay hidden until their reveal. The real email is frozen from the
- * live shop on the morning, so a product hidden or sold out by then is not in it.
+ * live shop at send time, so a product hidden or sold out by then is not in it.
  */
 export async function renderNextDropEmail(): Promise<NextDropEmail> {
   const now = Date.now()

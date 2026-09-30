@@ -38,13 +38,13 @@ describe.skipIf(!databaseUrl)("weekly drop email outbox", () => {
   const readWeek = vi.fn()
   const readProducts = vi.fn()
   const send = vi.fn<(message: DropEmailMessage, key: string) => Promise<DropEmailSendOutcome>>()
-  const run = (now: Date) =>
+  const run = (now: Date, siteUrl = "https://store.example") =>
     processDropEmails({
       pool: runtime,
       now,
       from: "Fixture Store <drops@fixture.example>",
       replyTo: "support@fixture.example",
-      siteUrl: "https://store.example",
+      siteUrl,
       postalAddress: "PO Box 123, Austin, TX 78701",
       readWeek,
       readProducts,
@@ -167,6 +167,18 @@ describe.skipIf(!databaseUrl)("weekly drop email outbox", () => {
     await run(later(5 + 23 * 60 + 1))
     expect(send).not.toHaveBeenCalled()
     expect(await deliveries()).toMatchObject([{ status: "expired" }, { status: "sent" }])
+  })
+
+  // Resend answers a retry whose body differs from the first attempt under the same key with a 409.
+  it("retries with the frozen links even after the store's domain changes", async () => {
+    await subscribe("early@example.com", "2026-09-23T21:18:32Z")
+    send.mockResolvedValueOnce({ status: "unconfirmed" })
+    await run(later(5))
+    await run(later(20), "https://new-domain.example")
+    const [first, retry] = send.mock.calls
+    expect(retry).toEqual(first)
+    expect(retry![0].headers["List-Unsubscribe"]).toMatch(/^<https:\/\/store\.example\/api\/drop-unsubscribe\//)
+    expect(retry![0].html).not.toContain("new-domain.example")
   })
 
   it("puts a first attempt back when Resend took nothing, and stops the run there", async () => {
@@ -302,6 +314,14 @@ describe.skipIf(!databaseUrl)("weekly drop email outbox", () => {
     ])
   })
 
+  // Midnight alone would leave this drop five minutes and no cron run at all.
+  it("still announces a drop that goes live minutes before midnight", async () => {
+    await subscribe("early@example.com", "2026-09-23T21:18:32Z")
+    // Monday 11:55 PM Central; the next run is 12:05 AM Tuesday.
+    readWeek.mockResolvedValue({ liveAt: "2026-10-06T04:55:00.000Z", productIds: [products[0]!.id] })
+    expect(await run(new Date("2026-10-06T05:05:00Z"))).toMatchObject({ reason: "processed", queued: 1, sent: 1 })
+  })
+
   it("closes out an earlier week's leftovers once the next week begins", async () => {
     await subscribe("early@example.com", "2026-09-23T21:18:32Z")
     send.mockResolvedValueOnce({ status: "not-sent" })
@@ -333,8 +353,11 @@ describe.skipIf(!databaseUrl)("weekly drop email outbox", () => {
         for (const table of ["commerce.drop_emails", "commerce.drop_email_deliveries"]) {
           await client.query("begin")
           try {
+            // Schema access alone would turn them away; grant it here, rolled back below, so the check
+            // reaches the table's own privileges.
+            await client.query(`grant usage on schema commerce to ${role}`)
             await client.query(`set local role ${role}`)
-            await expect(client.query(`select 1 from ${table}`)).rejects.toThrow(/permission denied/)
+            await expect(client.query(`select 1 from ${table}`)).rejects.toThrow(/permission denied for table/)
           } finally {
             await client.query("rollback")
           }

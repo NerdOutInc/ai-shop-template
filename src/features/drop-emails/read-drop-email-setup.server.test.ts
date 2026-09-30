@@ -9,7 +9,7 @@ const { settings, store } = vi.hoisted(() => ({
     configured: true,
     policies: { published: true },
     features: { designOfTheWeek: true, dropSignup: true },
-    privacy: { retainedDropSubscribers: false },
+    privacy: { retainedDropSubscribers: false, retainedDropEmailRecords: true },
   },
 }))
 vi.mock("server-only", () => ({}))
@@ -18,6 +18,7 @@ vi.mock("@/lib/store-config", () => ({ storeConfig: store }))
 
 const complete = {
   DATABASE_URL: "postgres://fixture",
+  NEXT_PUBLIC_SITE_URL: "https://store.example",
   PRINTIFY_SHOP_ID: "123",
   PRINTIFY_PUBLISHING_ENABLED: true,
   RESEND_API_KEY: "re_fixture",
@@ -36,6 +37,7 @@ beforeEach(() => {
   store.features.designOfTheWeek = true
   store.features.dropSignup = true
   store.privacy.retainedDropSubscribers = false
+  store.privacy.retainedDropEmailRecords = true
 })
 
 describe("readDropEmailSetup", () => {
@@ -76,6 +78,20 @@ describe("readDropEmailSetup", () => {
       storeSettings: ["configured", "policies.published", "features.designOfTheWeek", "features.dropSignup"],
       sending: false,
     })
+  })
+
+  // Its links, and the one-click unsubscribe header, would otherwise fall back to localhost.
+  it("needs the store's own https address before any link can go out", () => {
+    for (const address of [undefined, "http://store.example"]) {
+      settings.NEXT_PUBLIC_SITE_URL = address
+      expect(readDropEmailSetup()).toMatchObject({ missing: ["NEXT_PUBLIC_SITE_URL"], sending: false })
+    }
+  })
+
+  // The switch that keeps Privacy describing delivery records after a pause has to be on first.
+  it("waits for the delivery-record disclosure before the first send", () => {
+    store.privacy.retainedDropEmailRecords = false
+    expect(readDropEmailSetup()).toMatchObject({ storeSettings: ["privacy.retainedDropEmailRecords"], sending: false })
   })
 
   it("keeps mailing a closed list that kept its subscribers", () => {

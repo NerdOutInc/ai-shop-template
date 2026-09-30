@@ -21,9 +21,9 @@ const products: DropEmailProduct[] = [
     price: { min: 3200, max: 3200 },
   },
 ]
-const render = () =>
+const render = (liveAt = "2026-10-05T09:00:00.000Z") =>
   renderDropEmail({
-    liveAt: "2026-10-05T09:00:00.000Z",
+    liveAt,
     products,
     siteUrl: "https://store.example",
     postalAddress: "PO Box 123, Austin, TX 78701",
@@ -43,6 +43,13 @@ describe("renderDropEmail", () => {
       "https://store.example/shop/0a1b2c3d4e5f60718293a4b5?utm_source=drop-email&amp;utm_medium=email&amp;utm_campaign=dotw-2026-10-05"
     )
     expect(html).toContain('href="https://store.example/privacy"')
+  })
+
+  // 3 AM UTC on October 5 is still Sunday evening in Chicago, the fixture store's zone.
+  it("labels the campaign with the drop's date in the store's own time zone", async () => {
+    const { html } = await render("2026-10-05T03:00:00.000Z")
+    expect(html).toContain("utm_campaign=dotw-2026-10-04")
+    expect(html).not.toContain("dotw-2026-10-05")
   })
 
   it("carries the legal footer and no tracking pixel", async () => {

@@ -270,7 +270,11 @@ test("weekly drop emails need a sender, postal address, weekly feature, list and
     DROP_EMAIL_FROM_EMAIL: "drops@newbrand.com",
     STORE_POSTAL_ADDRESS: "PO Box 1234, Springfield, OR 97477",
   }
-  const weekly = { ...config, features: { ...config.features, designOfTheWeek: true, dropSignup: true } }
+  const weekly = {
+    ...config,
+    features: { ...config.features, designOfTheWeek: true, dropSignup: true },
+    privacy: { retainedDropSubscribers: false, retainedDropEmailRecords: true },
+  }
   const drops = (env, value = weekly, options) => ready("Weekly drop emails", status(env, value, options))
   assert.equal(drops(enabled), true)
   assert.equal(status(environment, weekly).find((check) => check.name === "Weekly drop emails")?.active, false)
@@ -282,7 +286,12 @@ test("weekly drop emails need a sender, postal address, weekly feature, list and
   const closed = { ...weekly, features: { ...weekly.features, dropSignup: false } }
   assert.equal(drops(enabled, closed), false)
   // A closed list that kept its subscribers can still hear about drops.
-  assert.equal(drops(enabled, { ...closed, privacy: { retainedDropSubscribers: true } }), true)
+  assert.equal(
+    drops(enabled, { ...closed, privacy: { retainedDropSubscribers: true, retainedDropEmailRecords: true } }),
+    true
+  )
+  // Privacy has to be ready to describe the delivery records before the first one exists.
+  assert.equal(drops(enabled, { ...weekly, privacy: { ...weekly.privacy, retainedDropEmailRecords: false } }), false)
   const withoutDropSchedule = schedules.filter((entry) => entry.path !== "/api/internal/drop-emails")
   assert.equal(drops(enabled, weekly, { schedules: withoutDropSchedule }), false)
   const sandbox = { ...enabled, STRIPE_SECRET_KEY: `rk_test_${"f".repeat(64)}`, PRINTIFY_FULFILLMENT_ENABLED: "false" }
