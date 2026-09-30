@@ -40,12 +40,19 @@ Apply the setup skill's canonical [authority and saved-progress rules](../.agent
 
 ## Source-store ports
 
-Extraction provenance answers where the template came from; [the source-port ledger](source-port-ledger.json) records which later source changes were considered. Keep it beside the provenance record, with full source/parent SHAs, paths, disposition, reason, evidence and any resulting template commit or tracked follow-up. The checked interval currently starts **after** accepted source commit `b32ab30dd7c74f3d17cb88b9dbf4111224cafe54` and ends at `779bc8e80e3cdb03edef80be8da3d38cfb3fc41b`:
+Extraction provenance answers where the template came from; [the source-port ledger](source-port-ledger.json) records which later source changes were considered. Keep it beside the provenance record, with full source/parent SHAs, paths, disposition, reason, evidence and any resulting template commit or tracked follow-up. The checked interval currently starts **after** accepted source commit `b32ab30dd7c74f3d17cb88b9dbf4111224cafe54` and ends at `1082c1228ba50eb95c76ae30f0acdc201cf2dd89`:
 
 - `786b2a04101b89b500bee99a7b5bf739a18f39b9`: skipped; store-specific fixture labels, with no production behavior change.
 - `779bc8e80e3cdb03edef80be8da3d38cfb3fc41b`: skipped; store-specific shop copy.
+- `8fec64cfbc67c80d4f475d00948b08f98037218a`: accepted; plain "Crop top" product-page label for the seeded category.
+- `0e358238c790b06df6e4a6fbff508afccf790e2d`: accepted; the weekly home section shows only the week's products and signup.
+- `e5a521c2781783a13243986567f04b80160329b2`: skipped; opt-out ad measurement approved for one US-only store. The template keeps opt-in consent.
+- `74040bc69a5bc3c6038bbbca5e6544a6f9eb3be0`: skipped; a test expectation for the skipped opt-out change.
+- `7c3ce5d53a9baa69904df0b9bb6e2efd72106618`: already equivalent; the template already pins the same or newer packages.
+- `7a32d108055dd562cc123d821dd693fc7eab02ee`: accepted; tracking tests wait for measurement requests instead of `networkidle`.
+- `1082c1228ba50eb95c76ae30f0acdc201cf2dd89`: accepted; optional drop emails, off by default.
 
-This is a two-commit review, not a claim that every historical or later source change has been audited. Before each template release, the maintainer checks the source's subsequent first-parent range with read-only access and records each change as accepted, already equivalent, skipped, deferred, conflict or unresolved. Accepted/equivalent entries need destination code and validation evidence; deferred/conflict/unresolved entries need an owner and follow-up. Advance `reviewedThroughSourceCommit` only across a contiguous accounted-for range, including any merged changes inspected within it. It never means every change was integrated. Keep private code, credentials and unreleased security details within their original access boundary.
+Accepted entries name their template pull request until its merge commit is recorded in the ledger. This is a nine-commit review, not a claim that every historical or later source change, or any unmerged source work, has been audited. Before each template release, the maintainer checks the source's subsequent first-parent range with read-only access and records each change as accepted, already equivalent, skipped, deferred, conflict or unresolved. Accepted/equivalent entries need destination code and validation evidence; deferred/conflict/unresolved entries need an owner and follow-up. Advance `reviewedThroughSourceCommit` only across a contiguous accounted-for range, including any merged changes inspected within it. It never means every change was integrated. Keep private code, credentials and unreleased security details within their original access boundary.
 
 ### Send template fixes back before engine adoption
 
