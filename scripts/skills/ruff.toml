@@ -1,7 +1,7 @@
 required-version = "==0.16.7"
 target-version = "py312"
 line-length = 120
-cache-dir = "../../.tmp/ruff-cache"
+cache-dir = ".tmp/ruff-cache"
 include = ["*.py", "*.pyi", "*.pyw"]
 
 [lint]
