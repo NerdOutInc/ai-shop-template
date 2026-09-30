@@ -30,7 +30,7 @@ test("uses each product's configured garment for its header and search metadata"
     {
       product: cropTop,
       model: "Next Level 5080",
-      type: "Women's crop top",
+      type: "Crop top",
       title: "Fixture Festival Crop - Women's Festival Crop Top | Fixture Store",
       description: /A women's crop top from Fixture Store\.$/,
     },
@@ -63,7 +63,7 @@ test("keeps crop-top labels and the size guide usable by keyboard at narrow widt
   await page.setViewportSize({ width: 320, height: 740 })
   await page.goto(`/shop/${cropTop.id}`)
   await expect(page.getByText("Next Level 5080", { exact: true }).first()).toBeVisible()
-  await expect(page.getByText("Women's crop top", { exact: true })).toBeVisible()
+  await expect(page.getByText("Crop top", { exact: true })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
 
   const fitButton = page.getByRole("button", { name: "Find your fit", exact: true })
