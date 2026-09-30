@@ -47,7 +47,7 @@ for (const fixture of fixtures) {
   await symlink(path.join(root, "node_modules"), path.join(destination, "node_modules"), "dir")
   // Emit only validated public config data. No production module imports test code,
   // and the merchant source is never patched in place.
-  const configFile = path.join(destination, "src/lib/store-config.ts")
+  const configFile = path.join(destination, "src/lib/store-config-values.ts")
   await writeFile(configFile, createStoreConfigSource(await readFile(configFile, "utf8"), fixture.config))
   const child = spawn("pnpm", ["exec", "next", "build"], {
     cwd: destination,

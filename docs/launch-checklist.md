@@ -4,7 +4,7 @@ Use this checklist with [store setup](store-setup.md). Record non-secret evidenc
 
 ## Brand and business choices
 
-- [ ] `src/lib/store-config.ts` contains the owner's name, store ID, voice, real support contact and approved assets; no template placeholders remain.
+- [ ] `src/lib/store-config-values.ts` contains the owner's name, store ID, voice, real support contact and approved assets; no template placeholders remain.
 - [ ] Public logo, favicon, home and theme are inspected in the actual storefront on desktop and a narrow viewport, including keyboard focus and contrast.
 - [ ] Prices, enabled colors/sizes, currency, destination coverage and agent delegation are confirmed. The current supported scope is USD/50 US states plus DC.
 - [ ] First/additional-shirt shipping amounts and delivery estimates are reviewed against the real provider and owner policy; `commerce.shippingConfirmed=true` is justified.

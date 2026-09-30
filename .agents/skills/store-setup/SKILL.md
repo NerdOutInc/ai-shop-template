@@ -5,7 +5,7 @@ description: Set up a new clothing brand from this template through an agent-led
 
 # Build the owner's store
 
-Read [the setup runbook](../../../docs/store-setup.md), [owner intake](../store-owner-handoff/references/owner-intake.md), [store configuration](../../../src/lib/store-config.ts), `.env.example`, and `package.json`. This template is meant to be operated with an agent. Do the authorized work; do not hand over a homework syllabus wearing a T-shirt.
+Read [the setup runbook](../../../docs/store-setup.md), [owner intake](../store-owner-handoff/references/owner-intake.md), [store configuration](../../../src/lib/store-config-values.ts), `.env.example`, and `package.json`. This template is meant to be operated with an agent. Do the authorized work; do not hand over a homework syllabus wearing a T-shirt.
 
 ## Resume before asking
 
@@ -27,7 +27,7 @@ Use a short first round: brand name and audience; existing domain/assets/account
 
 Then resolve only the business inputs needed for the next phase: prices or margin rule, garment/provider options, customer shipping charges, delivery estimates, support contact, policies, IANA time zone and weekly feature cadence, owner access and permitted agent decisions. The owner can supply a rule, delegate within bounds or leave a decision unanswered. Never invent legal facts, tax registrations, provider verification information or rights to artwork.
 
-Use image tools for accepted concept work and show results. Preserve approved artwork instead of regenerating it during implementation. Translate the chosen direction into `src/lib/store-config.ts`, theme, public logo/favicon and home assets. Test legibility, responsive layout, keyboard focus and real favicon rendering. Merchandise art belongs to the private library; public identity assets are intentionally public. Complete policy wording with the owner before setting `policies.published` true. Choose immutable `commerce.identity` before the first Checkout; cosmetic brand IDs may change later but payment identity must not. Keep optional weekly feature, signup and About features disabled until selected and operationally ready.
+Use image tools for accepted concept work and show results. Preserve approved artwork instead of regenerating it during implementation. Translate the chosen direction into `src/lib/store-config-values.ts`, theme, public logo/favicon and home assets. Test legibility, responsive layout, keyboard focus and real favicon rendering. Merchandise art belongs to the private library; public identity assets are intentionally public. Complete policy wording with the owner before setting `policies.published` true. Choose immutable `commerce.identity` before the first Checkout; cosmetic brand IDs may change later but payment identity must not. Keep optional weekly feature, signup and About features disabled until selected and operationally ready.
 
 Follow [branding and icon generation](../../../docs/branding.md), [storefront feature controls](../../../docs/storefront-features.md), [shipping and policy setup](../../../docs/storefront-policies.md), and [drop signup operations](../../../docs/drop-signup.md). Use the approved source with the documented icon generator; review its output and run `pnpm test:branding`. Signup needs a working manual suppression/list-removal process before activation. [Drop emails](../../../docs/drop-emails.md) stay off until the owner chooses them, including their re-signup behavior, and their sender, postal address, schedule, Resend tracking settings and test email are verified.
 

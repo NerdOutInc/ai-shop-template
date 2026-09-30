@@ -10,32 +10,24 @@ export function createStoreConfigSource(source: string, fixture: unknown): strin
     statement.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword) &&
     (statement.declarationList.flags & ts.NodeFlags.Const) !== 0
       ? statement.declarationList.declarations.filter(
-          (declaration) => ts.isIdentifier(declaration.name) && declaration.name.text === "storeConfig"
+          (declaration) => ts.isIdentifier(declaration.name) && declaration.name.text === "storeConfigValues"
         )
       : []
   )
-  const initializer = declarations[0]?.initializer
+  let initializer = declarations[0]?.initializer
   if (declarations.length !== 1 || !initializer)
-    throw new Error("Expected exactly one exported const storeConfig with an initializer")
+    throw new Error("Expected exactly one exported const storeConfigValues with an initializer")
 
-  const identifiers = new Set<string>()
-  const collectIdentifiers = (node: ts.Node) => {
-    if (ts.isIdentifier(node)) identifiers.add(node.text)
-    ts.forEachChild(node, collectIdentifiers)
+  while (
+    ts.isSatisfiesExpression(initializer) ||
+    ts.isAsExpression(initializer) ||
+    ts.isParenthesizedExpression(initializer)
+  ) {
+    initializer = initializer.expression
   }
-  collectIdentifiers(file)
-  let schemaName = "fixtureStoreConfigSchema"
-  for (let suffix = 2; identifiers.has(schemaName); suffix++) schemaName = `fixtureStoreConfigSchema${suffix}`
 
-  const replacement = `${schemaName}.parse(${JSON.stringify(config, null, 2)})`
-  const replaced = `${source.slice(0, initializer.getStart(file))}${replacement}${source.slice(initializer.end)}`
-  let importPosition = ts.getShebang(source)?.length ?? 0
-  for (const statement of file.statements) {
-    if (!ts.isExpressionStatement(statement) || !ts.isStringLiteral(statement.expression)) break
-    importPosition = statement.end
-  }
-  // Keep directives first and preserve existing leading comments on their own
-  // declarations. The new import must precede use even when compiled to CommonJS.
-  const schemaImport = `\nimport { storeConfigSchema as ${schemaName} } from "./store-config-schema"\n`
-  return `${replaced.slice(0, importPosition)}${schemaImport}${replaced.slice(importPosition)}`
+  // The production loader validates this owner-data module in the generated build.
+  // Validate here too so malformed fixtures fail before starting a build.
+  const replacement = JSON.stringify(config, null, 2)
+  return `${source.slice(0, initializer.getStart(file))}${replacement}${source.slice(initializer.end)}`
 }

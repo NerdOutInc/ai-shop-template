@@ -4,7 +4,7 @@ Keep the owner's approved logo and icon source. A fresh favicon is useful; a sur
 
 ## Configuration
 
-Edit `src/lib/store-config.ts` and run `pnpm setup:check`. The fixed brand in `test/store-config.ts` is test support, not the owner's configuration.
+Edit `src/lib/store-config-values.ts` and run `pnpm setup:check`. The fixed brand in `test/store-config.ts` is test support, not the owner's configuration.
 
 | Setting                                      | Meaning                                                                                                                                                                                                                                                                       |
 | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

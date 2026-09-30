@@ -30,3 +30,31 @@ test("the fixed test configuration cannot bypass production validation", () => {
   )
   assert.throws(() => storeConfigSchema.parse({ ...configuredStoreConfig, supportEmail: "support@example.com" }))
 })
+
+test("the prior owner-data snapshot loads without losing customization or activating omitted features", async () => {
+  const { readFileSync } = await import("node:fs")
+  const prior = JSON.parse(readFileSync(new URL("./fixtures/prior-store-config.json", import.meta.url), "utf8"))
+  assert.deepEqual(storeConfigSchema.parse(prior), prior)
+  const { features, ...withoutFeatures } = prior
+  assert.deepEqual(storeConfigSchema.parse(withoutFeatures), {
+    ...withoutFeatures,
+    features: { designOfTheWeek: false, dropSignup: false, about: false },
+  })
+  assert.deepEqual(storeConfigSchema.parse({ ...prior, features: { about: features.about } }).features, {
+    designOfTheWeek: false,
+    dropSignup: false,
+    about: features.about,
+  })
+})
+
+test("retained-data disclosures and payment identity need explicit store decisions", () => {
+  for (const key of ["retainedDropSubscribers", "retainedDropEmailRecords"]) {
+    const privacy = { ...configuredStoreConfig.privacy, retainedDropSubscribers: true, retainedDropEmailRecords: true }
+    assert.deepEqual(storeConfigSchema.parse({ ...configuredStoreConfig, privacy }).privacy, privacy)
+    delete privacy[key]
+    assert.throws(() => storeConfigSchema.parse({ ...configuredStoreConfig, privacy }))
+  }
+  const { identity, ...commerce } = configuredStoreConfig.commerce
+  assert.ok(identity)
+  assert.throws(() => storeConfigSchema.parse({ ...configuredStoreConfig, commerce }))
+})

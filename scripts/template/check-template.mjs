@@ -196,9 +196,13 @@ export function checkTemplate(root = process.cwd(), policy = defaultPolicy) {
     }
     return undefined
   }
-  const configPath = "src/lib/store-config.ts"
+  const valuesPath = "src/lib/store-config-values.ts"
+  const legacyPath = "src/lib/store-config.ts"
+  const configPath = files.includes(valuesPath) ? valuesPath : legacyPath
+  const indexConfigPath = indexEntries.has(valuesPath) ? valuesPath : legacyPath
+  const binding = (file) => (file === valuesPath ? "storeConfigValues" : "storeConfig")
   const configBytes = files.includes(configPath) ? readWorkingFile(configPath) : undefined
-  const configured = isConfiguredStore(configBytes)
+  const configured = isConfiguredStore(configBytes, binding(configPath))
   const matchingIndexFiles = new Set()
   const matchingTemplateLocations = new Map()
   const requestedBlobs = new Set()
@@ -236,9 +240,14 @@ export function checkTemplate(root = process.cwd(), policy = defaultPolicy) {
     }
   }
   const indexConfigured =
-    indexEntries.get(configPath)?.mode.startsWith("100") &&
+    indexEntries.get(indexConfigPath)?.mode.startsWith("100") &&
     isConfiguredStore(
-      matchingIndexFiles.has(configPath) ? configBytes : indexBlobs.get(indexEntries.get(configPath)?.objectId)
+      matchingIndexFiles.has(indexConfigPath)
+        ? indexConfigPath === configPath
+          ? configBytes
+          : readWorkingFile(indexConfigPath)
+        : indexBlobs.get(indexEntries.get(indexConfigPath)?.objectId),
+      binding(indexConfigPath)
     )
   for (const file of files) {
     const entry = indexEntries.get(file)

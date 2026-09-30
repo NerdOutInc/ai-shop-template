@@ -115,3 +115,11 @@ For relevant changes, include these controls:
 - Deployment: distinct preview and production resources, correct build configuration, unchanged unrelated brand, upgrade and permitted app rollback. UI changes include narrow/wide viewports, keyboard and focus evidence.
 
 The PR receipt names the exact head, passed/failed/skipped checks, upstream changes accounted for, schema/config requirements and remaining release action. A remotely verified release adds its deployment receipt; configuration checks alone never establish live payments, fulfillment, artwork delivery or merchant acceptance.
+
+## Owner configuration compatibility
+
+Edit public owner values in `src/lib/store-config-values.ts`. `store-config.ts` remains the template-owned loader; consumers keep importing it, and validation/defaults stay in `store-config-schema.ts`. During an update from the earlier single-file shape, move the receiving store's exact literal values into the data file before adopting the loader. Do not copy the neutral template values over a configured brand.
+
+Omitted feature activation flags resolve to false; explicit true/false owner choices survive. New activation flags must follow this rule and be tested against the saved prior configuration fixture. New policy, identity or retained-data fields require review rather than an invented safe answer. In particular, supply both retained subscriber and delivery-record disclosures from that store's actual retained data, and preserve its permanent commerce identity. Missing disclosures fail validation even when sending is disabled. The shirts can be optional; the privacy facts cannot.
+
+Setup, hygiene and browser fixture generation use the owner-data file. Hygiene still scans working and staged content independently and never executes owner code; older single-file stores retain the static inspection path. Run `pnpm setup:check` and the full suite after moving owner values. The config split must merge before generating a new store so that every future update preserves this boundary.

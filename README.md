@@ -41,7 +41,7 @@ No particular AI vendor, browser plugin or paid model subscription is bundled. T
 - Agent workflows for design generation, product drafts, publishing, account setup and recovery.
 - Public mockups and private print masters in separate Blob stores; signed webhooks and a durable order/publication ledger.
 - Product ordering, categories, garment profiles, scheduled reveals, merchant feeds and optional consent-controlled marketing measurement.
-- Neutral brand configuration in [`src/lib/store-config.ts`](src/lib/store-config.ts), with setup and policy gates that must be completed for your store.
+- Neutral brand configuration in [`src/lib/store-config-values.ts`](src/lib/store-config-values.ts), with setup and policy gates that must be completed for your store.
 
 Each store uses its own repository, domain, deployment, Supabase project, Printify merchant account and shop, Stripe account and storage. A shared Printify account is an explicit owner-accepted exception: its tokens can reach multiple shops, and its API quota is account-wide. The template contains no product catalog, customer history, administrator, source-brand artwork or provider account connection. It is a starting point, not a running merchant account.
 

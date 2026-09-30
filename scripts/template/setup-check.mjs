@@ -44,7 +44,7 @@ try {
   config = (await import("../../src/lib/store-config.ts")).storeConfig
 } catch {
   console.error(
-    "TODO Store configuration is invalid. Correct src/lib/store-config.ts against its schema; values are hidden."
+    "TODO Store configuration is invalid. Correct src/lib/store-config-values.ts against its schema; values are hidden."
   )
   process.exit(1)
 }

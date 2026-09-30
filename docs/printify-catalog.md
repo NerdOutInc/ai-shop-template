@@ -60,7 +60,7 @@ The owner selects individual published products under **Products**. The schedule
 
 Enable `storeConfig.features.designOfTheWeek` to expose the home section, footer link and admin scheduling controls. It starts disabled. Disabled stores skip weekly membership reads and return 404 from the scheduling API; catalog, lineup ordering and manual Show/Hide remain available. Disabling this presentation feature does not cancel existing product reveals or delete schedule history. Cancel future assignments before disabling it if those products should stay hidden. Re-enabling it resumes the saved schedule.
 
-Configure `storeConfig.timeZone` and `storeConfig.weeklyFeature` in `src/lib/store-config.ts`. The default is Monday at 09:00 UTC; `weekday` uses Sunday = 0 through Saturday = 6. Confirm the owner's named IANA time zone and preferred cadence. Week boundaries follow that zone's wall clock across daylight-saving changes.
+Configure `storeConfig.timeZone` and `storeConfig.weeklyFeature` in `src/lib/store-config-values.ts`. The default is Monday at 09:00 UTC; `weekday` uses Sunday = 0 through Saturday = 6. Confirm the owner's named IANA time zone and preferred cadence. Week boundaries follow that zone's wall clock across daylight-saving changes.
 
 The Home page's `/#design-of-the-week` section intersects the current roster with visible published products and uses ordinary product cards. It expires at the next configured slot; the products remain in the shop. An empty week has no featured products. Library records, private artwork and unpublished siblings never become public merely because they share a design.
 
