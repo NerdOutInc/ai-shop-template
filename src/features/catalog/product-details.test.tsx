@@ -219,7 +219,7 @@ describe("ProductDetails", () => {
       categoryName: "Crop tops",
       categorySortPosition: 3,
       gender: "female" as const,
-      label: "Women's crop top",
+      label: "Crop top",
     },
     {
       manufacturer: "Independent",

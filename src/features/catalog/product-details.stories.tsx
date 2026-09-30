@@ -224,7 +224,7 @@ export const FestivalCropTop: Story = {
   },
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Next Level 5080", { exact: true })).toBeVisible()
-    await expect(canvas.getByText("Women's crop top", { exact: true })).toBeVisible()
+    await expect(canvas.getByText("Crop top", { exact: true })).toBeVisible()
     await expect(canvas.queryByText("Next Level 6210", { exact: true })).not.toBeInTheDocument()
     const size = canvas.getByRole("button", { name: /^S$/ })
     size.focus()

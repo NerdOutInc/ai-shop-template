@@ -1,14 +1,30 @@
 import { storeConfig } from "@/lib/store-config"
 import type { CatalogProduct } from "./catalog-product"
 
-const categoryLabels: Record<string, { categoryName: string; name: string; title: string; titlePattern: RegExp }> = {
+type CategoryLabels = {
+  categoryName: string
+  name: string
+  title: string
+  titlePattern: RegExp
+  /** The page's garment label when "{gender} {name}" is not what shoppers should read. */
+  typeLabel?: string
+}
+
+const categoryLabels: Record<string, CategoryLabels> = {
   "t-shirts": {
     categoryName: "T-shirts",
     name: "tee",
     title: "T-Shirt",
     titlePattern: /\b(?:t[- ]?shirts?|tees?)\b/i,
   },
-  "crop-tops": { categoryName: "Crop tops", name: "crop top", title: "Crop Top", titlePattern: /\bcrop[-\s]+tops?\b/i },
+  // The page says just "Crop top". Search copy and the merchant feeds still carry the garment's gender.
+  "crop-tops": {
+    categoryName: "Crop tops",
+    name: "crop top",
+    title: "Crop Top",
+    titlePattern: /\bcrop[-\s]+tops?\b/i,
+    typeLabel: "Crop top",
+  },
   "tank-tops": {
     categoryName: "Tank tops",
     name: "tank top",
@@ -42,7 +58,8 @@ export function getProductGarmentLabels({ garment }: Pick<CatalogProduct, "garme
           ? "Unisex"
           : ""
   const typeLabel =
-    category || savedCategoryName ? [gender, category?.name ?? savedCategoryName].filter(Boolean).join(" ") : null
+    category?.typeLabel ??
+    (category || savedCategoryName ? [gender, category?.name ?? savedCategoryName].filter(Boolean).join(" ") : null)
   const descriptionType = category
     ? [gender.toLowerCase(), category.title === "T-Shirt" ? "T-shirt" : category.title.toLowerCase()]
         .filter(Boolean)
