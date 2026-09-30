@@ -85,3 +85,7 @@ supabase stop --workdir .tmp/admin-e2e --no-backup
 ```
 
 A skipped database suite does not count as validation. CI provisions all required environments, so use the complete **Required checks** result when local prerequisites are unavailable.
+
+## Migration history gate
+
+Foundation checks run `pnpm check:migration-history` against the event's explicit prior commit, with full Git history available. Existing SQL filenames, bytes and previously recorded forward-port mappings are immutable; new migrations must follow the receiving history and have distinct timestamps. Local `pnpm check` includes the same guard, defaulting to a fetched `origin/main`. A missing base fails with an actionable error. See [migration identity and receipts](store-update-contract.md#migration-identity-and-forward-port-receipts) for aliases used by canonical docs and skills. This gate protects repository history and does not establish the deployed schema or upgrade safety for populated data.

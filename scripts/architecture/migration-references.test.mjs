@@ -106,3 +106,92 @@ test("CLI fails with source locations and succeeds after repairing the reference
   assert.equal(repaired.stdout, "Migration reference checks passed.\n")
   assert.equal(repaired.stderr, "")
 })
+
+test("canonical names and correctly resolved links accept a checksummed forward-port receipt", async (t) => {
+  const { createHash } = await import("node:crypto")
+  const sql = "select 2;"
+  const hash = createHash("sha256").update(sql).digest("hex")
+  const entry = {
+    canonicalFilename: original,
+    canonicalSha256: "a".repeat(64),
+    templateCommit: "b".repeat(40),
+    localFilename: renamed,
+    localSha256: hash,
+    reason: "Receiving store already has a later migration.",
+  }
+  const root = fixture(t, {
+    [migrationPath(renamed)]: sql,
+    "docs/store-update-ledger.json": JSON.stringify({ schemaVersion: 1, migrationMappings: [entry] }),
+    "docs/setup.md": `${original}\n[Apply](../${migrationPath(original)})\n[Root](/${migrationPath(original)})`,
+    ".agents/skills/setup/SKILL.md": `[Apply](../../../${migrationPath(original)})`,
+  })
+  assert.deepEqual(checkMigrationReferences(root), [])
+  write(root, "docs/setup.md", `[Wrong depth](${migrationPath(original)})`)
+  assert.ok(checkMigrationReferences(root).some((error) => error.includes("broken migration link")))
+  write(root, migrationPath(renamed), "select 3;")
+  assert.ok(checkMigrationReferences(root).some((error) => error.includes("checksum mismatch")))
+  assert.ok(checkMigrationReferences(root).some((error) => error.includes("missing migration")))
+})
+
+test("invalid, duplicate, chained, unsafe and missing migration receipts fail closed", async (t) => {
+  const { createHash } = await import("node:crypto")
+  const sql = "select 2;"
+  const entry = {
+    canonicalFilename: original,
+    canonicalSha256: "a".repeat(64),
+    templateCommit: "b".repeat(40),
+    localFilename: renamed,
+    localSha256: createHash("sha256").update(sql).digest("hex"),
+    reason: "Reviewed forward port",
+  }
+  const root = fixture(t, { [migrationPath(renamed)]: sql, "docs/setup.md": original })
+  const ledger = (items) =>
+    write(root, "docs/store-update-ledger.json", JSON.stringify({ schemaVersion: 1, migrationMappings: items }))
+  for (const bad of [
+    { ...entry, canonicalSha256: "short" },
+    { ...entry, templateCommit: "main" },
+    { ...entry, reason: "" },
+    { ...entry, localFilename: `../${renamed}` },
+    { ...entry, canonicalFilename: [original] },
+    { ...entry, localFilename: original },
+  ]) {
+    ledger([bad])
+    const errors = checkMigrationReferences(root)
+    assert.ok(errors.some((error) => error.startsWith("docs/store-update-ledger.json:")))
+    assert.ok(errors.some((error) => error.includes("missing migration")))
+  }
+  ledger([entry, entry])
+  assert.ok(checkMigrationReferences(root).some((error) => error.includes("duplicate")))
+  ledger([entry, { ...entry, canonicalFilename: renamed, localFilename: original }])
+  assert.ok(checkMigrationReferences(root).some((error) => error.includes("chains or cycles")))
+  ledger([entry])
+  fs.unlinkSync(path.join(root, migrationPath(renamed)))
+  assert.ok(checkMigrationReferences(root).some((error) => error.includes("ordinary file")))
+  write(root, "docs/store-update-ledger.json", "{")
+  assert.ok(checkMigrationReferences(root).some((error) => error.includes("ordinary JSON")))
+})
+
+test("mapped migration symlinks and coexisting canonical files are rejected", async (t) => {
+  const { createHash } = await import("node:crypto")
+  const sql = "select 1;"
+  const entry = {
+    canonicalFilename: original,
+    canonicalSha256: "a".repeat(64),
+    templateCommit: "b".repeat(40),
+    localFilename: renamed,
+    localSha256: createHash("sha256").update(sql).digest("hex"),
+    reason: "Reviewed",
+  }
+  const root = fixture(t, {
+    "docs/store-update-ledger.json": JSON.stringify({ schemaVersion: 1, migrationMappings: [entry] }),
+    "external.sql": sql,
+    "docs/setup.md": original,
+  })
+  fs.mkdirSync(path.join(root, "supabase/migrations"), { recursive: true })
+  fs.symlinkSync(path.join(root, "external.sql"), path.join(root, migrationPath(renamed)))
+  assert.ok(checkMigrationReferences(root).some((error) => error.includes("ordinary file")))
+  fs.unlinkSync(path.join(root, migrationPath(renamed)))
+  write(root, migrationPath(renamed), sql)
+  write(root, migrationPath(original), sql)
+  assert.ok(checkMigrationReferences(root).some((error) => error.includes("coexist")))
+})

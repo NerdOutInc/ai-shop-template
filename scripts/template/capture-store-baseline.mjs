@@ -74,11 +74,14 @@ try {
       method: explicitCommit ? "root-tree-match-with-explicit-commit" : "unique-root-tree-match",
       evidence: "Local Git tree equivalence; does not verify the GitHub repository-creation event",
     },
+    originRelease: null,
+    comparisonRelease: null,
     lastFullyIntegratedTemplateCommit: templateCommit,
     reviewedThroughTemplateCommit: templateCommit,
     localDivergencePaths: git(store, "diff", "--name-only", "-z", storeRootCommit, "HEAD").split("\0").filter(Boolean),
     changes: [],
     deployments: [],
+    migrationMappings: [],
   }
   // Exclusive creation preserves prior evidence, including a dangling symlink at the destination.
   writeFileSync(resolve(docs, "store-update-ledger.json"), `${JSON.stringify(ledger, null, 2)}\n`, { flag: "wx" })
