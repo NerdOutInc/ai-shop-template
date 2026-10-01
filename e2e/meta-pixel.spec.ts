@@ -153,7 +153,8 @@ async function flushSdkCapture(page: Page) {
   // Await a sentinel through the same binding after the browser has completed its render tasks.
   await page.evaluate(async () => {
     await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
-    const target = window as Window & { __captureMetaCall: (call: SdkCall) => Promise<unknown> }
+    const target = window as Window & { __captureMetaCall?: (call: SdkCall) => Promise<unknown> }
+    if (!target.__captureMetaCall) throw new Error("Missing SDK capture binding")
     await target.__captureMetaCall({ args: ["sentinel"], url: location.href, referrer: document.referrer })
   })
 }
