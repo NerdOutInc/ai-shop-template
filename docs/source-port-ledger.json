@@ -293,11 +293,17 @@
       "parentCommit": "21bea1d10e28aae50a7c08db3c753e945ce18c01",
       "disposition": "accepted",
       "classification": "signup-input-and-commerce-testing",
-      "paths": ["src/features/drop-signup/drop-signup-form.tsx"],
-      "reason": "Port the DOM-value signup fix. Commerce journeys are a separate draft follow-up; skip the source narrower CI gate and instruction changes. Preserve full Required checks.",
+      "paths": [
+        "src/features/drop-signup/drop-signup-form.tsx",
+        "e2e/commerce",
+        "e2e/prepare-storefront.ts",
+        "playwright.config.ts",
+        ".github/workflows/integration.yml"
+      ],
+      "reason": "Ported DOM-value signup fix and customer commerce journeys with template branding, isolated configured builds, loopback synthetic providers and v3 confirmation. Retained full Required checks; skipped source narrower CI policy and instruction changes.",
       "evidence": "Pinned source parent-to-commit review against template main d69db5615f1ced24f18f07604b9836cbda1eb2a2; implementation and validation receipts follow in the native draft stack.",
       "templateCommit": null,
-      "followUp": "Validate native draft stack codex/port-signup-input; add commerce journeys in codex/port-commerce-journeys."
+      "followUp": "Validate native draft layers codex/port-signup-input and codex/port-commerce-journeys; record their PR/merge receipts."
     },
     {
       "sourceCommit": "dd85bfb73ef884057920393c5abc0e47a83836e0",
