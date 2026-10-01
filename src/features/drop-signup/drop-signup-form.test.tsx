@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -47,6 +47,17 @@ describe("DropSignupForm", () => {
     expect(await screen.findByText("You're on the list. See you at the next drop.")).toBeInTheDocument()
     // The field clears so a second person on a shared screen does not resend the first one's address.
     expect(field()).toHaveValue("")
+  })
+
+  it("submits a DOM address that React has not received yet", async () => {
+    const request = vi.fn().mockResolvedValue({ ok: true })
+    vi.stubGlobal("fetch", request)
+    render(<DropSignupForm source="footer" />)
+    const input = field() as HTMLInputElement
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "early@example.com")
+    fireEvent.submit(input.closest("form")!)
+    expect(JSON.parse(String(request.mock.calls[0]?.[1]?.body))).toMatchObject({ email: "early@example.com" })
+    expect(await screen.findByText("You're on the list. See you at the next drop.")).toBeInTheDocument()
   })
 
   it("passes the server's own refusal through rather than inventing one", async () => {
