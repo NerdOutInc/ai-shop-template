@@ -266,7 +266,10 @@ export const metaPixel = {
       window.addEventListener(
         "pageshow",
         (event) => {
-          if (event.persisted) refresh()
+          if (!event.persisted) return
+          refresh()
+          // The SDK queues revoked restore views and replays them on grant. Prevent their creation.
+          if (scriptState === "loaded" && !snapshot.ready) event.stopImmediatePropagation()
         },
         true
       )

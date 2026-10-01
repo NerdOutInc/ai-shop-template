@@ -253,9 +253,9 @@
       "classification": "measurement-correctness",
       "paths": ["docs/meta-pixel.md", "e2e/meta-pixel.spec.ts", "src/features/analytics/meta-pixel.ts"],
       "reason": "Disable the SDK history listener so variant query changes and manual route views do not duplicate PageViews. Recheck opt-in consent before cached-page restore events. Preserve the template opt-in model.",
-      "evidence": "Reviewed all three source paths. Adapted runtime and SDK browser fixture to opt-in consent; added a capture-order unit regression. Native stack reconciliation PR records the receiving commit.",
+      "evidence": "Reviewed all three source paths. Adapted runtime and SDK browser fixture to opt-in consent; added a capture-order unit regression. NerdOutInc/ai-shop-template#27 records the receiving commit.",
       "templateCommit": null,
-      "followUp": "Record the reconciliation PR merge commit after merge."
+      "followUp": "Record NerdOutInc/ai-shop-template#27 merge commit after merge."
     },
     {
       "sourceCommit": "932211050767be070064a9e0ec478d021a4227d0",

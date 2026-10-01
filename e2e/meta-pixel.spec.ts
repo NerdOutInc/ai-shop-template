@@ -37,13 +37,17 @@ const sdkScript = `(() => {
   if (!fbq) throw new Error("Missing Pixel bootstrap");
   let granted = false;
   fbq.callMethod = (...args) => {
+    if (args[0] !== "consent" && !granted) { fbq.queue.push(args); return; }
     if (args[0] === "consent") granted = args[1] === "grant";
     window.__captureMetaCall({ args, url: location.href, referrer: document.referrer });
+    if (args[0] === "consent" && granted) {
+      fbq.queue.splice(0).forEach(queued => fbq.callMethod(...queued));
+    }
   };
   const queue = fbq.queue.splice(0);
   queue.forEach(args => fbq.callMethod(...args));
   const automaticPageView = () => {
-    if (granted) fbq("trackCustom", "PageView");
+    fbq("trackCustom", "PageView");
   };
   // Meta's history listener is independent of set(autoConfig, false).
   // Model it here so the fixture cannot hide automatic/manual PageView duplicates.
@@ -143,6 +147,15 @@ async function seedConsent(context: BrowserContext, consent: "granted" | "denied
 async function selectVariant(page: Page) {
   await page.getByRole("button", { name: "Clay", exact: true }).click()
   await page.getByRole("button", { name: "XL", exact: true }).click()
+}
+
+async function flushSdkCapture(page: Page) {
+  // Await a sentinel through the same binding after the browser has completed its render tasks.
+  await page.evaluate(async () => {
+    await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+    const target = window as Window & { __captureMetaCall: (call: SdkCall) => Promise<unknown> }
+    await target.__captureMetaCall({ args: ["sentinel"], url: location.href, referrer: document.referrer })
+  })
 }
 
 function expectPrivateDocumentFields(pixel: PixelFixture, secrets: string[]) {
@@ -781,7 +794,7 @@ test("route visits send one PageView each and variant changes send none", async 
   await page.goto(`/shop/${productId}`)
   await expect.poll(() => events(pixel, "PageView")).toHaveLength(1)
   await selectVariant(page)
-  await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 500)))
+  await flushSdkCapture(page)
   expect(events(pixel, "PageView")).toHaveLength(1)
   await page.getByRole("link", { name: "Privacy", exact: true }).click()
   await expect(page).toHaveURL(`${shopOrigin}/privacy`)
@@ -791,7 +804,7 @@ test("route visits send one PageView each and variant changes send none", async 
   await expect.poll(() => events(pixel, "PageView")).toHaveLength(3)
   await page.goForward()
   await expect.poll(() => events(pixel, "PageView")).toHaveLength(4)
-  await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 500)))
+  await flushSdkCapture(page)
   expect(events(pixel, "PageView").map((call) => new URL(call.url).pathname)).toEqual([
     `/shop/${productId}`,
     "/privacy",
@@ -818,7 +831,9 @@ test("a simulated cached-page restore sends only the SDK view and rechecks store
     window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true }))
   }, consentKey)
   await expect.poll(() => pixel.calls.filter((call) => call.args[0] === "consent").at(-1)?.args[1]).toBe("revoke")
-  await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 500)))
+  await page.getByRole("button", { name: "Allow Meta", exact: true }).click()
+  await expect.poll(() => pixel.calls.filter((call) => call.args[0] === "consent").at(-1)?.args[1]).toBe("grant")
+  await flushSdkCapture(page)
   expect(events(pixel, "PageView").map((call) => call.args)).toEqual([
     ["trackSingle", pixelId, "PageView"],
     ["trackCustom", "PageView"],

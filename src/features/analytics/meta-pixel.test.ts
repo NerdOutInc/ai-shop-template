@@ -339,20 +339,20 @@ describe("Meta Pixel consent and delivery", () => {
     expect(target.fbq!.disablePushState).toBe(true)
   })
 
-  it("rechecks consent in capture phase before a cached-page restore", async () => {
+  it("blocks an earlier SDK restore listener in capture phase while consent is denied", async () => {
+    const sdkListener = vi.fn()
+    window.addEventListener("pageshow", sdkListener)
     remember("granted")
     const pixel = await setup()
     const call = loadSdk()
-    let readyAtSdkListener: boolean | undefined
-    const sdkListener = () => {
-      readyAtSdkListener = pixel.getSnapshot().ready
-    }
-    window.addEventListener("pageshow", sdkListener)
     remember("denied")
     window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true }))
-    window.removeEventListener("pageshow", sdkListener)
-    expect(readyAtSdkListener).toBe(false)
+    expect(sdkListener).not.toHaveBeenCalled()
+    expect(pixel.getSnapshot().ready).toBe(false)
     expect(call.mock.calls.at(-1)).toEqual(["consent", "revoke"])
+    pixel.setConsent("granted")
+    window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true }))
+    expect(sdkListener).toHaveBeenCalledTimes(1)
     expect(events(call)).toEqual([])
   })
 
