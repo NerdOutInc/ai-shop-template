@@ -832,7 +832,16 @@ test("a simulated cached-page restore sends only the SDK view and rechecks store
     window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true }))
   }, consentKey)
   await expect.poll(() => pixel.calls.filter((call) => call.args[0] === "consent").at(-1)?.args[1]).toBe("revoke")
-  await page.getByRole("button", { name: "Allow Meta", exact: true }).click()
+  await page.evaluate(() => {
+    const fbq = (window as Window & { fbq?: (...args: unknown[]) => void }).fbq
+    if (!fbq) throw new Error("Missing SDK fixture")
+    fbq("trackCustom", "FixtureQueueProbe")
+  })
+  await flushSdkCapture(page)
+  expect(events(pixel, "FixtureQueueProbe")).toHaveLength(0)
+  await page.getByRole("button", { name: "Privacy choices", exact: true }).click()
+  await page.getByRole("button", { name: "Allow Meta marketing cookies", exact: true }).click()
+  await expect.poll(() => events(pixel, "FixtureQueueProbe")).toHaveLength(1)
   await expect.poll(() => pixel.calls.filter((call) => call.args[0] === "consent").at(-1)?.args[1]).toBe("grant")
   await flushSdkCapture(page)
   expect(events(pixel, "PageView").map((call) => call.args)).toEqual([
