@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { readStoreMigrationMappings } from "./template/read-store-migration-mappings.mjs"
 
 const migrationFilename = /\b\d{14}_[A-Za-z0-9_-]+\.sql\b/g
 const textExtensions = new Set([
@@ -59,7 +60,7 @@ function markdownLinks(text) {
 }
 
 export function checkMigrationReferences(root) {
-  const errors = []
+  const { mappings, errors } = readStoreMigrationMappings(root)
   // Include hidden skills and untracked edits; Git ignores and text extensions keep generated output and artwork out.
   const filenames = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "-z"], {
     cwd: root,
@@ -78,7 +79,7 @@ export function checkMigrationReferences(root) {
 
     for (const match of text.matchAll(migrationFilename)) {
       const expected = `supabase/migrations/${match[0]}`
-      if (!isRegularFile(path.join(root, expected)))
+      if (!isRegularFile(path.join(root, expected)) && !mappings.has(match[0]))
         errors.push(`${filename}:${lineNumber(text, match.index)}: missing migration ${expected}`)
     }
 
@@ -93,7 +94,10 @@ export function checkMigrationReferences(root) {
       const resolved = target.startsWith("/")
         ? path.resolve(root, `.${target}`)
         : path.resolve(path.dirname(absolute), target)
-      if (!isRegularFile(resolved))
+      const canonicalName = path.basename(resolved)
+      const mappedTarget =
+        resolved === path.resolve(root, "supabase/migrations", canonicalName) && mappings.has(canonicalName)
+      if (!isRegularFile(resolved) && !mappedTarget)
         errors.push(`${filename}:${lineNumber(text, index)}: broken migration link ${destination}`)
     }
   }

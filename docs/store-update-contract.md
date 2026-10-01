@@ -125,3 +125,26 @@ Omitted feature activation flags resolve to false; explicit true/false owner cho
 Setup, hygiene and browser fixture generation use the owner-data file. Hygiene still scans working and staged content independently and never executes owner code; older single-file stores retain the static inspection path. Run `pnpm setup:check` and the full suite after moving owner values. The config split must merge before generating a new store so that every future update preserves this boundary.
 
 Static hygiene now recognizes both historical `storeSchema.parse({...})` and the actual `storeConfigSchema.parse({...})` spelling. The earlier detector missed the latter, so configured single-file stores now receive the configured-store hygiene scope rather than neutral-template fingerprints. Configuration parsing and brand-isolation checks still apply.
+
+## Migration identity and forward-port receipts
+
+`pnpm check:migration-history` protects SQL filenames and bytes already in the prior Git snapshot, checks both working and staged content, and rejects new migrations at or before its latest timestamp or with duplicate timestamps. Its local default is `origin/main`; fetch the receiving repository's current base, or supply `pnpm check:migration-history --base FULL_BASE_SHA`. Missing history fails closed even before a first push; use `MIGRATION_BASE_REF=FULL_BASE_SHA pnpm check` with a reviewed local baseline when no remote exists. CI fetches full history and selects the PR base, merge-group base or push's previous commit; a manual run compares against its checked-out commit. Only a first push with GitHub's all-zero `before` value has no prior history to protect. The ordering result is advisory against its tested base unless [up-to-date branches or a merge queue](ci.md#required-merge-gate) are enforced. Without that setting, update against the latest target and confirm it has not advanced after full checks, immediately before the authorized merge. The check does not inspect a provider's applied-migration table: read that separately before preparing a rollout.
+
+Keep already applied files intact. An adopted canonical migration can keep its name only when it follows the receiving history safely. Otherwise add a later receiving-store forward migration and append a receipt to `migrationMappings` in `docs/store-update-ledger.json`:
+
+```json
+{
+  "canonicalFilename": "20260930172137_drop_email_deliveries.sql",
+  "canonicalSha256": "<SHA-256 of canonical SQL at templateCommit>",
+  "templateCommit": "<full pinned template commit>",
+  "localFilename": "YYYYMMDDHHMMSS_drop_emails_forward.sql",
+  "localSha256": "<SHA-256 of reviewed local SQL>",
+  "reason": "The receiving store has later migrations; this forward port preserves its runtime role and existing data."
+}
+```
+
+This is a shape example, not a ready-to-apply migration or valid checksum receipt. Capture the canonical hash from the pinned template snapshot and verify it against that release's manifest. Review any semantic adaptation, dependencies, transaction behavior and deploy order. The local hash must match the actual SQL bytes. Receipts are append-only after merge; do not revise an old mapping or checksum to conceal a migration edit. Record a correction in a new forward migration and update receipt instead.
+
+`pnpm check:migrations` validates the map and accepts a missing canonical filename when its reviewed local copy exists and matches the recorded hash. It also recognizes correctly resolved canonical Markdown paths. It rejects malformed receipts, unsafe paths, symlinks, checksum mismatches, duplicate/chained aliases and a canonical file coexisting with its alias. A wrong-depth Markdown link still fails. Canonical docs and skills can retain their names across later updates; when applying SQL, use the mapped **localFilename**, not the canonical link. Canonical filenames, canonical hashes and template commit IDs are self-attested fields: local checks do not look them up upstream or authenticate a release manifest. A fabricated canonical receipt can satisfy a dangling reference, so a reviewer must independently compare that half against the pinned template/release before accepting it. Future manifest-backed validation requires a trusted release artifact, not another unchecked local assertion. This is reference validation, not proof that the canonical bytes were independently fetched, that SQL is equivalent, or that a migration was deployed.
+
+Baseline capture initializes empty mapping/deployment arrays and null release fields. It records exact commit/tree identity without guessing a release. After verifying an exact published release match, record `originRelease`; otherwise keep it null and use a verified earlier release only as `comparisonRelease`. A store created between releases retains its exact origin commit as the integration anchor.

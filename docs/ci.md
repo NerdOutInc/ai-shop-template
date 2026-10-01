@@ -18,6 +18,8 @@ PR integration suites start only after Foundation passes. This avoids spending b
 
 In the repository's branch protection or ruleset, require the **Required checks** status from GitHub Actions for `main`. A workflow file schedules checks; it cannot enforce repository settings by itself. A repository generated from this template must configure that rule separately. Confirm that the rule applies to the intended branches and the latest PR head before merging. Do not replace this aggregate with the foundation job alone.
 
+Require branches to be up to date with their target (`required_status_checks.strict=true`) or use a merge queue. Migration ordering is only advisory against the last tested base without one of these controls: another PR can merge a later migration after checks pass. Generated stores inherit workflows, not repository settings. At this review the canonical repository requires the aggregate but has `strict=false`; until settings are separately approved, update each PR/stack against the latest target, rerun full checks and confirm the target has not advanced immediately before any authorized merge. If it advances, update and rerun again.
+
 The aggregate uses `always()` so failed or skipped dependencies still produce a result. It accepts only `success` for both the foundation job and the reusable integration workflow. The separate suite names show where to investigate. The `merge_group` event supplies the same gate if the repository later uses a merge queue.
 
 ## Isolation and diagnostics
@@ -85,3 +87,7 @@ supabase stop --workdir .tmp/admin-e2e --no-backup
 ```
 
 A skipped database suite does not count as validation. CI provisions all required environments, so use the complete **Required checks** result when local prerequisites are unavailable.
+
+## Migration history gate
+
+Foundation checks run `pnpm check:migration-history` against the event's explicit prior commit, with full Git history available. Existing SQL filenames, bytes and previously recorded forward-port mappings are immutable; new migrations must follow the receiving history and have distinct timestamps. Local `pnpm check` includes the same guard, defaulting to a fetched `origin/main`. A missing base deliberately fails closed, including an unpushed repository without a remote. Set `MIGRATION_BASE_REF=FULL_BASE_SHA pnpm check` for a reviewed local snapshot, or pass `--base` to the standalone migration-history command; do not invent an empty baseline to bypass protection. See [migration identity and receipts](store-update-contract.md#migration-identity-and-forward-port-receipts) for aliases used by canonical docs and skills. This gate protects repository history and does not establish the deployed schema or upgrade safety for populated data.
