@@ -4,13 +4,19 @@ on:
   workflow_dispatch:
     inputs:
       commit:
-        description: Full reviewed commit SHA (candidate metadata only)
+        description: Full reviewed commit SHA on main (unless unmerged candidate)
         required: true
         type: string
       tag:
         description: Reserved template-vMAJOR.MINOR.PATCH name
         required: true
         type: string
+
+      candidate:
+        description: Explicitly allow an unmerged candidate and report PR differences
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -25,6 +31,7 @@ jobs:
         with:
           ref: ${{ inputs.commit }}
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-node@v7.0.0
         with:
           node-version-file: .node-version
@@ -32,9 +39,12 @@ jobs:
         env:
           RELEASE_COMMIT: ${{ inputs.commit }}
           RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_CANDIDATE: ${{ inputs.candidate }}
         run: |
           mkdir -p .tmp
-          node scripts/template/prepare-template-release.mjs --ref "$RELEASE_COMMIT" --tag "$RELEASE_TAG" > .tmp/template-release.json
+          args=()
+          if [ "$RELEASE_CANDIDATE" = "true" ]; then args+=(--candidate); fi
+          node scripts/template/prepare-template-release.mjs --ref "$RELEASE_COMMIT" --tag "$RELEASE_TAG" "${args[@]}" > .tmp/template-release.json
       - uses: actions/upload-artifact@v7.0.1
         with:
           name: template-release-candidate

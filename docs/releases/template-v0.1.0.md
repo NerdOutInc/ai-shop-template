@@ -31,8 +31,7 @@ Status: prepared for review, **not published**. This is the first template relea
 | [#27](https://github.com/NerdOutInc/ai-shop-template/pull/27) | Reconcile source ports and prevent duplicate Meta route views      |
 | [#28](https://github.com/NerdOutInc/ai-shop-template/pull/28) | Separate owner configuration and preserve update compatibility     |
 | [#29](https://github.com/NerdOutInc/ai-shop-template/pull/29) | Protect merged migrations and resolve forward-port references      |
-
-| [#31](https://github.com/NerdOutInc/ai-shop-template/pull/31) | Prepare pinned template release metadata without publishing |
+| [#31](https://github.com/NerdOutInc/ai-shop-template/pull/31) | Prepare pinned template release metadata without publishing        |
 
 The initial AI-first snapshot and its subsequent local-mail configuration commit are also included. Source-store changes are sanitized ports recorded separately in the source ledger; source consent/legal decisions are not inherited. The canonical template continues to use opt-in marketing consent.
 
@@ -72,3 +71,5 @@ The configuration boundary passed `pnpm check:all`: 3,920 unit tests, 139 Storyb
 - After approval for the rehearsal repository, use GitHub's template generator only while `main` exactly equals the verified R1 commit. Capture root/template commit and tree before customization. Between releases, keep `originRelease` null and record the exact commit; an earlier release is only a comparison anchor.
 - R2 must contain a real subsequent fix. Do not withhold security fixes to manufacture practice material. Manually integrate R2 and an intentional conflict in one store. A repository-only exercise proves integration, not migration/deployment order or activation.
 - Build permanent populated-upgrade CI and derive the store-update skill from that rehearsal before automation. No new provider project is part of the repository-only rehearsal.
+
+Stores predating template #13 had no `features` object: About, Design of the Week and signup rendered unconditionally. Moving those literal values unchanged would now default all three off. Before deployment, explicitly preserve or disable each existing surface and record the owner's decision; absence is not evidence that the owner wanted it hidden. Historical commit-named fixtures record the old shapes and required disclosure/branding migrations.

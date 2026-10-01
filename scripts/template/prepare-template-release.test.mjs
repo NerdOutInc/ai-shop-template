@@ -45,7 +45,10 @@ function fixture(t) {
     })
   )
   git("add", ".")
-  git("commit", "--quiet", "-m", "Candidate fixture")
+  git("commit", "--quiet", "-m", "Fixture (#27)")
+  git("commit", "--quiet", "--allow-empty", "-m", "Fixture (#28)")
+  git("commit", "--quiet", "--allow-empty", "-m", "Fixture (#29)")
+  git("update-ref", "refs/remotes/origin/main", "HEAD")
   return { root, git, write, ref: git("rev-parse", "HEAD"), record }
 }
 
@@ -102,5 +105,36 @@ test("CLI rejects a mutable ref and the workflow runs only in the canonical repo
   )
   assert.match(workflow, /if: github\.repository == 'NerdOutInc\/ai-shop-template'/)
   assert.match(workflow, /contents: read/)
+  assert.match(workflow, /fetch-depth: 0/)
+  assert.match(workflow, /default: false/)
   assert.doesNotMatch(workflow, /contents: write|pull_request_target|secrets\.|gh release create/)
+})
+
+test("main metadata rejects missing and extra PRs; unmerged mode exposes both differences", (t) => {
+  const { root, git, write, record } = fixture(t)
+  write(`docs/releases/${tag}.json`, JSON.stringify({ ...record, includedPullRequests: [27, 29, 99] }))
+  git("add", ".")
+  git("commit", "--quiet", "-m", "Unmerged candidate")
+  const ref = git("rev-parse", "HEAD")
+  assert.throws(() => prepareTemplateRelease(root, { ref, tag }), /not on fetched origin\/main/)
+  const candidate = prepareTemplateRelease(root, { ref, tag, candidate: true })
+  assert.deepEqual(candidate.includedPullRequests, [27, 28, 29])
+  assert.deepEqual(candidate.proposedPullRequests, [27, 29, 99])
+  assert.deepEqual(candidate.pullRequestVerification.unmergedListedPullRequests, [99])
+  assert.deepEqual(candidate.pullRequestVerification.unlistedHistoryPullRequests, [28])
+  git("update-ref", "refs/remotes/origin/main", ref)
+  assert.throws(() => prepareTemplateRelease(root, { ref, tag }), /PR record\/history mismatch/)
+})
+
+test("preparation handles lockfiles and migration blobs larger than one MiB", (t) => {
+  const { root, git, write } = fixture(t)
+  const bytes = "large existing bytes\n".repeat(70_000)
+  write("pnpm-lock.yaml", bytes)
+  write(`supabase/migrations/${filename}`, bytes)
+  git("add", ".")
+  git("commit", "--quiet", "-m", "Large blobs")
+  git("update-ref", "refs/remotes/origin/main", "HEAD")
+  const result = prepareTemplateRelease(root, { ref: git("rev-parse", "HEAD"), tag })
+  assert.equal(result.lockfileSha256, hash(bytes))
+  assert.equal(result.migrations[0].sha256, hash(bytes))
 })

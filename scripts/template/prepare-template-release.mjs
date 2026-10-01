@@ -7,11 +7,12 @@ const canonicalRepository = "NerdOutInc/ai-shop-template"
 const digest = (bytes) => createHash("sha256").update(bytes).digest("hex")
 
 /** Prepare reproducible candidate metadata from committed bytes; never publish or change settings. */
-export function prepareTemplateRelease(root, { ref, tag }) {
+export function prepareTemplateRelease(root, { ref, tag, candidate = false }) {
   if (!/^template-v(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$/.test(tag ?? ""))
     throw new Error("Use the template-vMAJOR.MINOR.PATCH release namespace")
   if (!/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(ref ?? "")) throw new Error("Supply a full pinned commit SHA")
-  const git = (...args) => execFileSync("git", args, { cwd: root, stdio: ["ignore", "pipe", "pipe"] })
+  const git = (...args) =>
+    execFileSync("git", args, { cwd: root, stdio: ["ignore", "pipe", "pipe"], maxBuffer: Infinity })
   const remote = git("remote", "get-url", "origin").toString().trim()
   if (
     !/^(?:git@github\.com:|https:\/\/github\.com\/|ssh:\/\/git@github\.com\/)NerdOutInc\/ai-shop-template(?:\.git)?$/i.test(
@@ -36,6 +37,40 @@ export function prepareTemplateRelease(root, { ref, tag }) {
     record.upgradeNotes !== `docs/releases/${tag}.md`
   )
     throw new Error("Release record needs schemaVersion 1, distinct positive PR numbers and matching upgrade notes")
+  let mainCommit
+  try {
+    mainCommit = git("rev-parse", "--verify", "origin/main^{commit}").toString().trim()
+  } catch {
+    throw new Error("Fetch origin/main with full history before preparing metadata")
+  }
+  const historyPullRequests = [
+    ...new Set(
+      git("log", "--first-parent", "--format=%s", commit)
+        .toString()
+        .split("\n")
+        .flatMap((subject) => {
+          const match = subject.match(/\(#([1-9]\d*)\)\s*$/)
+          return match ? [Number(match[1])] : []
+        })
+    ),
+  ].sort((a, b) => a - b)
+  const unmergedListedPullRequests = record.includedPullRequests.filter(
+    (number) => !historyPullRequests.includes(number)
+  )
+  const unlistedHistoryPullRequests = historyPullRequests.filter(
+    (number) => !record.includedPullRequests.includes(number)
+  )
+  if (!candidate) {
+    try {
+      git("merge-base", "--is-ancestor", commit, mainCommit)
+    } catch {
+      throw new Error("Pinned commit is not on fetched origin/main; use --candidate only for unmerged review")
+    }
+    if (unmergedListedPullRequests.length || unlistedHistoryPullRequests.length)
+      throw new Error(
+        `PR record/history mismatch: listed but absent ${unmergedListedPullRequests.join(",") || "none"}; merged but unlisted ${unlistedHistoryPullRequests.join(",") || "none"}`
+      )
+  }
   const notes = read(record.upgradeNotes)
   if (!notes.toString().trim()) throw new Error("Upgrade notes must not be empty")
   const entries = git("ls-tree", "-r", "-z", commit, "--", "supabase/migrations").toString().split("\0").filter(Boolean)
@@ -64,7 +99,14 @@ export function prepareTemplateRelease(root, { ref, tag }) {
     tree: git("rev-parse", `${commit}^{tree}`).toString().trim(),
     lockfileSha256: digest(read("pnpm-lock.yaml")),
     migrations,
-    includedPullRequests: record.includedPullRequests,
+    includedPullRequests: historyPullRequests,
+    proposedPullRequests: record.includedPullRequests,
+    pullRequestVerification: {
+      mode: candidate ? "unmerged-candidate" : "main-history",
+      mainCommit,
+      unmergedListedPullRequests,
+      unlistedHistoryPullRequests,
+    },
     releaseRecord: { path: recordPath, sha256: digest(recordBytes) },
     upgradeNotes: { path: record.upgradeNotes, sha256: digest(notes) },
     reviewedThroughSourceCommit: sourceLedger.coverage.reviewedThroughSourceCommit,
@@ -77,9 +119,15 @@ export function prepareTemplateRelease(root, { ref, tag }) {
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const args = process.argv.slice(2)
+    const candidate = args.at(-1) === "--candidate"
+    if (candidate) args.pop()
     if (args.length !== 4 || args[0] !== "--ref" || args[2] !== "--tag")
-      throw new Error("Usage: prepare-template-release.mjs --ref FULL_SHA --tag template-vMAJOR.MINOR.PATCH")
-    console.log(JSON.stringify(prepareTemplateRelease(process.cwd(), { ref: args[1], tag: args[3] }), null, 2))
+      throw new Error(
+        "Usage: prepare-template-release.mjs --ref FULL_SHA --tag template-vMAJOR.MINOR.PATCH [--candidate]"
+      )
+    console.log(
+      JSON.stringify(prepareTemplateRelease(process.cwd(), { ref: args[1], tag: args[3], candidate }), null, 2)
+    )
   } catch (error) {
     console.error(`Release preparation failed: ${error.message}`)
     process.exitCode = 1
