@@ -13,6 +13,7 @@ type PixelFunction = {
   push?: PixelFunction
   loaded?: boolean
   version?: string
+  disablePushState?: boolean
   queue: unknown[][]
 }
 type PixelWindow = Window & { fbq?: PixelFunction; _fbq?: PixelFunction }
@@ -175,6 +176,8 @@ function loadScript() {
   stub.loaded = true
   stub.version = "2.0"
   stub.queue = []
+  // The provider owns route views; autoConfig does not disable the SDK history listener.
+  stub.disablePushState = true
   target.fbq = target._fbq = pixel = stub
   stub("consent", "revoke")
   scriptState = "loading"
@@ -259,6 +262,17 @@ export const metaPixel = {
       })
       window.addEventListener("focus", refresh)
       document.addEventListener("visibilitychange", refresh)
+      // The SDK also measures cached-page restores. Recheck consent before its listener runs.
+      window.addEventListener(
+        "pageshow",
+        (event) => {
+          if (!event.persisted) return
+          refresh()
+          // The SDK queues revoked restore views and replays them on grant. Prevent their creation.
+          if (scriptState === "loaded" && !snapshot.ready) event.stopImmediatePropagation()
+        },
+        true
+      )
       refresh()
     } catch {
       blockedDocument = true

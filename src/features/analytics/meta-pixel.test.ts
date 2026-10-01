@@ -11,7 +11,11 @@ const purchase = {
 }
 const cartEvent = { name: "AddToCart" as const, items: purchase.items }
 const viewEvent = { name: "ViewContent" as const, productId }
-type TestPixel = ((...args: unknown[]) => void) & { queue: unknown[][]; callMethod?: ReturnType<typeof vi.fn> }
+type TestPixel = ((...args: unknown[]) => void) & {
+  queue: unknown[][]
+  disablePushState?: boolean
+  callMethod?: ReturnType<typeof vi.fn>
+}
 const target = window as Window & { fbq?: TestPixel; _fbq?: TestPixel }
 const config = { enabled: true, pixelId: "123456789012345", canonicalOrigin: window.location.origin }
 function spyWindowListeners() {
@@ -94,6 +98,7 @@ describe("Meta Pixel consent and delivery", () => {
     const pixel = await setup()
     pixel.setConsent("granted")
     expect(target.fbq!.queue).toEqual([["consent", "revoke"]])
+    expect(target.fbq!.disablePushState).toBe(true)
     expect(script()!.referrerPolicy).toBe("no-referrer")
     expect(pixel.getSnapshot().ready).toBe(false)
     const call = loadSdk()
@@ -331,6 +336,24 @@ describe("Meta Pixel consent and delivery", () => {
     script()!.dispatchEvent(new Event("load"))
     expect(pixel.getSnapshot().ready).toBe(false)
     expect(target.fbq!.queue).toEqual([["consent", "revoke"]])
+    expect(target.fbq!.disablePushState).toBe(true)
+  })
+
+  it("blocks an earlier SDK restore listener in capture phase while consent is denied", async () => {
+    const sdkListener = vi.fn()
+    window.addEventListener("pageshow", sdkListener)
+    remember("granted")
+    const pixel = await setup()
+    const call = loadSdk()
+    remember("denied")
+    window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true }))
+    expect(sdkListener).not.toHaveBeenCalled()
+    expect(pixel.getSnapshot().ready).toBe(false)
+    expect(call.mock.calls.at(-1)).toEqual(["consent", "revoke"])
+    pixel.setConsent("granted")
+    window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true }))
+    expect(sdkListener).toHaveBeenCalledTimes(1)
+    expect(events(call)).toEqual([])
   })
 
   it("deduplicates consecutive PageView updates but records later route visits", async () => {
