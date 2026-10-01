@@ -96,7 +96,7 @@ describe("admin drop emails page", () => {
     render(await AdminDropEmailsPage())
     expect(screen.getByRole("heading", { name: "Sending is off" })).toBeVisible()
     expect(screen.getByText("Set STORE_POSTAL_ADDRESS in Vercel.")).toBeVisible()
-    expect(screen.getByText("Set features.designOfTheWeek to true in src/lib/store-config.ts.")).toBeVisible()
+    expect(screen.getByText("Set features.designOfTheWeek to true in src/lib/store-config-values.ts.")).toBeVisible()
     expect(screen.getByText("Drop emails only ever go out from the production site.")).toBeVisible()
     expect(screen.getByText("Set DROP_EMAILS_ENABLED to true when you're ready.")).toBeVisible()
     expect(screen.getByText(/going out at 9:00 AM CDT if sending is on by then\./)).toBeVisible()

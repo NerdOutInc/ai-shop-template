@@ -171,6 +171,11 @@ test("configured stores allow their own owner and ordinary copy but still reject
     'import "module-that-must-not-be-executed"; export const storeConfig = storeSchema.parse({ configured: true, name: "New Store" })'
   )
   assert.deepEqual(check(scopedPolicy), [])
+  write(
+    "src/lib/store-config.ts",
+    'export const storeConfig = storeConfigSchema.parse({ configured: true, name: "New Store" })'
+  )
+  assert.deepEqual(check(scopedPolicy), [])
   write("accounts.json", JSON.stringify({ shop: identifiers[4][0] }))
   assert.ok(check(scopedPolicy).some((failure) => failure.includes("source-shop")))
   write("accounts.json", "{}")

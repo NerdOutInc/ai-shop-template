@@ -53,6 +53,30 @@ test("browser tests use fixture configuration through every import form", async 
   assert.deepEqual(results["src/lib/consumer.ts"], [])
 })
 
+test("only the validated loader may import raw owner values", async (t) => {
+  const results = await lint(t, {
+    "src/lib/store-config-values.ts": "export const storeConfigValues = { name: 'Merchant' }",
+    "src/lib/store-config.ts":
+      "import { storeConfigValues } from './store-config-values'; export const storeConfig = storeConfigValues",
+    "src/features/cart/brand.ts":
+      "import { storeConfigValues } from '@/lib/store-config-values'; export const name = storeConfigValues.name",
+    "src/lib/brand.test.ts": "void import('./store-config-values')",
+    "e2e/alias.spec.ts": "void import('@/lib/store-config-values')",
+    "e2e/relative.spec.ts":
+      "import { storeConfigValues } from '../src/lib/store-config-values'; void storeConfigValues",
+  })
+  for (const file of [
+    "src/features/cart/brand.ts",
+    "src/lib/brand.test.ts",
+    "e2e/alias.spec.ts",
+    "e2e/relative.spec.ts",
+  ])
+    assert.ok(has(results, file, "architecture/imports", "ownerValues"), file)
+  for (const file of ["e2e/alias.spec.ts", "e2e/relative.spec.ts"])
+    assert.ok(has(results, file, "architecture/imports", "merchantConfig"), file)
+  assert.deepEqual(results["src/lib/store-config.ts"], [])
+})
+
 test("allows shared dependencies and direct acyclic feature imports with local relative imports", async (t) => {
   const results = await lint(t, {
     "src/lib/format-price.ts": "export const formatPrice = (n: number) => String(n)",
