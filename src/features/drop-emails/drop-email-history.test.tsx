@@ -37,6 +37,6 @@ describe("DropEmailHistory", () => {
     expect(screen.getByText(/No drop emails yet/)).toBeVisible()
     unmount()
     render(<DropEmailHistory entries={[entry({ recipients: 0, sent: 0, firstSentAt: null, productCount: 1 })]} />)
-    expect(screen.getByText("Nobody was on the list yet. 1 product.")).toBeVisible()
+    expect(screen.getByText("No recipient records remain. 1 product.")).toBeVisible()
   })
 })

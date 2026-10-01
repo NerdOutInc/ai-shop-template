@@ -315,6 +315,17 @@ export function setupStatus(
     mode !== "sandbox" && (config.features?.dropSignup === true || enabled("SIGNUP_CONFIRMATIONS_ENABLED"))
   )
   add(
+    "Pending signup expiry",
+    config.configured === true &&
+      config.policies?.published === true &&
+      matches("CRON_SECRET", (value) => typeof value === "string" && value.length >= 32) &&
+      schedules.some(
+        (entry) => entry?.path === "/api/internal/signup-confirmations" && entry.schedule === "*/15 * * * *"
+      ),
+    "Keep the authenticated 15-minute signup-confirmations worker and subscriber disclosure active for automatic expiry, including when email sending is off.",
+    mode !== "sandbox" && (config.features?.dropSignup === true || config.privacy?.retainedDropSubscribers === true)
+  )
+  add(
     "Weekly drop emails",
     required(["RESEND_API_KEY", "DROP_EMAIL_FROM_EMAIL", "STORE_POSTAL_ADDRESS"]) &&
       matches("DROP_EMAIL_FROM_EMAIL", realEmail) &&

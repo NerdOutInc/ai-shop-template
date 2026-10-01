@@ -317,3 +317,5 @@ Keep webhook failure and worker monitoring visible. An uncertain Printify create
 ## Activate signup confirmation separately
 
 New drop signups require verified inbox confirmation under [the signup runbook](drop-signup.md#inbox-confirmation-and-release). Keep `SIGNUP_CONFIRMATIONS_ENABLED=false` until the reviewed production sender, HTTPS origin and authenticated 15-minute confirmation worker are configured. Existing consent versions remain immutable; new consent is v3. `DROP_EMAILS_ENABLED` remains an independent default-off marketing decision. Apply the new incremental migration before deploying this flow to a populated store, with both workers drained and historical rows verified as legacy. A configured sender proves no actual inbox receipt.
+
+Retained signup lists also require the authenticated 15-minute worker for automatic pending expiry, even with `SIGNUP_CONFIRMATIONS_ENABLED=false` and `DROP_EMAILS_ENABLED=false`. The local setup check requires the schedule and published disclosure independently of sender readiness. Confirmed, historical and unsubscribed rows remain until reviewed erasure.

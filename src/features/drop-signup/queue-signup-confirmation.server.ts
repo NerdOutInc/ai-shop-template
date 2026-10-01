@@ -23,19 +23,24 @@ export async function queueSignupConfirmation(
   const client = await pool.connect()
   try {
     await client.query("begin")
-    await client.query(
-      `insert into commerce.drop_subscribers (email, source, consent_copy_version, signup_ip)
-      values ($1, $2, $3, $4::inet) on conflict (email) do nothing`,
-      [input.email, input.source, dropConsentCopy.version, input.signupIp]
-    )
-    // All signup/confirm operations lock the subscriber first. This bounds concurrent resends.
-    const subscriber = (
-      await client.query<{ id: string; eligible: boolean }>(
-        `select id, commerce.is_drop_subscriber_eligible(subscriber) as eligible
-        from commerce.drop_subscribers subscriber where email = $1 for update`,
-        [input.email]
+    let subscriber: { id: string; eligible: boolean } | undefined
+    // Erasure can win after ON CONFLICT DO NOTHING but before the row lock. Retry the
+    // insert once in a fresh statement snapshot; a fresh signup must receive a new UUID.
+    for (let attempt = 0; attempt < 2 && !subscriber; attempt++) {
+      await client.query(
+        `insert into commerce.drop_subscribers (email, source, consent_copy_version, signup_ip)
+        values ($1, $2, $3, $4::inet) on conflict (email) do nothing`,
+        [input.email, input.source, dropConsentCopy.version, input.signupIp]
       )
-    ).rows[0]!
+      subscriber = (
+        await client.query<{ id: string; eligible: boolean }>(
+          `select id, commerce.is_drop_subscriber_eligible(subscriber) as eligible
+        from commerce.drop_subscribers subscriber where email = $1 for update`,
+          [input.email]
+        )
+      ).rows[0]
+    }
+    if (!subscriber) throw new Error("Signup changed during queueing")
     if (subscriber.eligible) {
       await client.query("commit")
       return null

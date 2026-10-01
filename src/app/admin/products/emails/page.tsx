@@ -152,6 +152,9 @@ export default async function AdminDropEmailsPage() {
         <h2 id="drop-email-history" className="font-condensed text-xl font-semibold">
           Sent so far
         </h2>
+        <p className="text-sm text-muted-foreground">
+          Totals reflect the delivery records still held. Subscriber erasure reduces these counts.
+        </p>
         {overview.status === "ready" ? (
           <DropEmailHistory entries={overview.history} />
         ) : (
