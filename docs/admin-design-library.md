@@ -280,7 +280,7 @@ notes and artwork records are not part of the section. When `storeConfig.feature
 weekly slot; products that have already appeared remain for sale. See the
 [Home rendering decision](printify-catalog.md#the-design-of-the-week) for its live-clock and caching behavior.
 
-The cadence comes from `storeConfig.weeklyFeature` and `storeConfig.timeZone` in `src/lib/store-config.ts`. Each week’s instant is solved from that named time zone’s wall clock across daylight-saving changes. Hidden product previews at
+The cadence comes from `storeConfig.weeklyFeature` and `storeConfig.timeZone` in `src/lib/store-config-values.ts`. Each week’s instant is solved from that named time zone’s wall clock across daylight-saving changes. Hidden product previews at
 `/admin/products/<product-id>` require an administrator and return 404 to anyone else.
 
 ## Featuring a design as an agent

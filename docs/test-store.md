@@ -1,6 +1,6 @@
 # Testing a rebranded store
 
-Owner edits belong in `src/lib/store-config.ts`. Ordinary tests use **Fixture Store** from `test/store-config.ts`; changing a merchant name, support address, timezone, weekly schedule or setup status does not require rewriting test expectations. This fixture is a complete object parsed by the same `storeConfigSchema` as the merchant configuration. `test/configured-store-config.ts` supplies the configured version with explicit policies and shipping prices.
+Owner edits belong in `src/lib/store-config-values.ts`. Ordinary tests use **Fixture Store** from `test/store-config.ts`; changing a merchant name, support address, timezone, weekly schedule or setup status does not require rewriting test expectations. This fixture is a complete object parsed by the same `storeConfigSchema` as the merchant configuration. `test/configured-store-config.ts` supplies the configured version with explicit policies and shipping prices.
 
 Vitest and Storybook select the fixture through `test/store-config-plugin.ts`, resolving both relative and `@/` imports. Production builds have no fixture switch and never import test support. Tests that need configured commerce import `test/configured-store.ts`; tests of an individual gate explicitly turn that gate off. Schema tests exercise invalid owner values, and `scripts/template/store-config.test.mjs` runs under Node without the resolver to validate the actual merchant module. Cadence tests use two validated brands with different timezones and schedules.
 

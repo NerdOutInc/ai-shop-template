@@ -51,15 +51,17 @@ export const storeConfigSchema = z
       error: "The storefront currently supports en-US. Translation and regional formatting require implementation.",
     }),
     timeZone: text.refine(isStoreTimeZone, "Use UTC or an IANA region/city time zone such as America/New_York"),
-    features: z.object({
-      designOfTheWeek: z.boolean(),
-      dropSignup: z.boolean(),
-      about: z.boolean(),
-    }),
+    features: z
+      .object({
+        designOfTheWeek: z.boolean().default(false),
+        dropSignup: z.boolean().default(false),
+        about: z.boolean().default(false),
+      })
+      .default({ designOfTheWeek: false, dropSignup: false, about: false }),
     privacy: z.object({
       retainedDropSubscribers: z.boolean(),
       // Drop email delivery records outlive a pause in sending; this keeps Privacy describing them.
-      retainedDropEmailRecords: z.boolean().default(false),
+      retainedDropEmailRecords: z.boolean(),
     }),
     weeklyFeature: z.object({
       weekday: z.number().int().min(0).max(6),
@@ -150,3 +152,5 @@ export const storeConfigSchema = z
       context.addIssue({ code: "custom", message: "All three owner-approved policies are required before publishing" })
     }
   })
+
+export type StoreConfigInput = z.input<typeof storeConfigSchema>

@@ -139,7 +139,7 @@ export function setupStatus(
       config.name !== "Your Store" &&
       config.shortName !== "Your Store" &&
       realEmail(config.supportEmail),
-    "Review src/lib/store-config.ts with the owner; replace template identity and support contact."
+    "Review src/lib/store-config-values.ts with the owner; replace template identity and support contact."
   )
   if (mode === "launch") {
     const unchangedCopy = Object.entries(templateCopy)

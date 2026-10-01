@@ -31,7 +31,8 @@ export default async function AdminDropEmailsPage() {
   ])
   const off = [
     setup.missing.length > 0 && `Set ${setup.missing.join(", ")} in Vercel.`,
-    setup.storeSettings.length > 0 && `Set ${setup.storeSettings.join(", ")} to true in src/lib/store-config.ts.`,
+    setup.storeSettings.length > 0 &&
+      `Set ${setup.storeSettings.join(", ")} to true in src/lib/store-config-values.ts.`,
     env.DROP_EMAILS_ENABLED !== "true" && "Set DROP_EMAILS_ENABLED to true when you're ready.",
     env.VERCEL_ENV !== "production" && "Drop emails only ever go out from the production site.",
   ].filter((reason) => typeof reason === "string")

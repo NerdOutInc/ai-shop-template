@@ -4,7 +4,7 @@ Confirm delivery promises for this store's actual garment, provider, destination
 
 ## Shared configuration
 
-`src/lib/store-config.ts` supplies `commerce.firstItemShippingCents`, `additionalItemShippingCents` and `deliveryEstimates`. Set them to the reviewed policy, then set `commerce.shippingConfirmed=true`. Fill and review all policy text before `policies.published=true`. Checkout also requires the brand's `configured=true` flag. Zero sample shipping amounts are not permission to offer free shipping.
+`src/lib/store-config-values.ts` supplies `commerce.firstItemShippingCents`, `additionalItemShippingCents` and `deliveryEstimates`. Set them to the reviewed policy, then set `commerce.shippingConfirmed=true`. Fill and review all policy text before `policies.published=true`. Checkout also requires the brand's `configured=true` flag. Zero sample shipping amounts are not permission to offer free shipping.
 
 The shared `src/features/store-policies/delivery-estimates.ts` projects handling, ordinary transit and extended-region transit into store surfaces. Estimates combine printing/handling and carrier transit; Printify submission is not carrier shipment. The existing fulfillment path uses standard shipping (`shipping_method: 1`) and supports the 50 US states plus DC. Other regions or shipping methods require coordinated implementation.
 

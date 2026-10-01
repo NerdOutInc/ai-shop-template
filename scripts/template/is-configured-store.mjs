@@ -1,14 +1,14 @@
 import ts from "typescript"
 
 /** Read the supported public configuration shape without importing or executing it. */
-export function isConfiguredStore(bytes) {
+export function isConfiguredStore(bytes, binding = "storeConfig") {
   if (!bytes) return false
   const source = ts.createSourceFile("store-config.ts", bytes.toString("utf8"), ts.ScriptTarget.Latest, true)
   if (source.parseDiagnostics.length) return false
   let declaration
   let references = 0
   const visit = (node) => {
-    if (ts.isIdentifier(node) && node.text === "storeConfig") references++
+    if (ts.isIdentifier(node) && node.text === binding) references++
     ts.forEachChild(node, visit)
   }
   visit(source)
@@ -16,7 +16,7 @@ export function isConfiguredStore(bytes) {
     if (!ts.isVariableStatement(statement) || !(statement.declarationList.flags & ts.NodeFlags.Const)) continue
     if (!statement.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)) continue
     for (const candidate of statement.declarationList.declarations) {
-      if (ts.isIdentifier(candidate.name) && candidate.name.text === "storeConfig") declaration = candidate
+      if (ts.isIdentifier(candidate.name) && candidate.name.text === binding) declaration = candidate
     }
   }
   // A later mutation, alias or duplicate binding makes the final flag uncertain.
@@ -34,7 +34,7 @@ export function isConfiguredStore(bytes) {
     if (
       !ts.isPropertyAccessExpression(callee) ||
       !ts.isIdentifier(callee.expression) ||
-      callee.expression.text !== "storeSchema" ||
+      !["storeSchema", "storeConfigSchema"].includes(callee.expression.text) ||
       callee.name.text !== "parse" ||
       object.arguments.length !== 1 ||
       object.questionDotToken ||

@@ -171,6 +171,11 @@ test("configured stores allow their own owner and ordinary copy but still reject
     'import "module-that-must-not-be-executed"; export const storeConfig = storeSchema.parse({ configured: true, name: "New Store" })'
   )
   assert.deepEqual(check(scopedPolicy), [])
+  write(
+    "src/lib/store-config.ts",
+    'export const storeConfig = storeConfigSchema.parse({ configured: true, name: "New Store" })'
+  )
+  assert.deepEqual(check(scopedPolicy), [])
   write("accounts.json", JSON.stringify({ shop: identifiers[4][0] }))
   assert.ok(check(scopedPolicy).some((failure) => failure.includes("source-shop")))
   write("accounts.json", "{}")
@@ -661,4 +666,31 @@ test("a synthetic database exception allows only its exact bytes and path in bot
       (failure) => failure.includes("test/other.ts") && failure.includes("credentialed database URL")
     )
   )
+})
+
+test("data-only owner values select the brand scope without executing code, including staged transitions", (t) => {
+  const { write, git, check } = fixture(t)
+  const scopedPolicy = {
+    ...policy,
+    forbiddenIdentifiers: policy.forbiddenIdentifiers.map((item) =>
+      item.kind === "source-owner" ? { ...item, scope: "template" } : item
+    ),
+  }
+  write("LICENSE", "Copyright\nFormer Store Owner\n")
+  write("src/lib/store-config.ts", "export const storeConfig = { configured: false }")
+  git("add", ".")
+  write(
+    "src/lib/store-config.ts",
+    'import "never-execute-me"; export const storeConfig = storeConfigSchema.parse(storeConfigValues)'
+  )
+  write("src/lib/store-config-values.ts", "export const storeConfigValues = { configured: true } satisfies OwnerInput")
+  assert.deepEqual(check(scopedPolicy), ['"LICENSE":2 (index): source-owner'])
+  git("add", ".")
+  assert.deepEqual(check(scopedPolicy), [])
+  write("src/lib/store-config-values.ts", "export const storeConfigValues = { configured: false }")
+  assert.deepEqual(check(scopedPolicy), ['"LICENSE":2: source-owner'])
+  write("src/lib/store-config-values.ts", "export const storeConfigValues = { configured: true, ...dynamic }")
+  assert.ok(check(scopedPolicy).some((failure) => failure.includes("source-owner")))
+  write("accounts.json", JSON.stringify({ shop: identifiers[4][0] }))
+  assert.ok(check(scopedPolicy).some((failure) => failure.includes("source-shop")))
 })

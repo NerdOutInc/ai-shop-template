@@ -28,4 +28,4 @@ Treat saved decisions and receipts as context, not fresh authorization. Reuse ac
 
 For a launch with delayed external checks, prepare a receipt such as: “Checkout and the paid order are verified. Sample inspection and Google approval are still pending. The next decision is whether to wait or open with those two checks outstanding.” Present the actual launch and purchase-test actions for explicit approval when needed; never infer either approval from completion of setup.
 
-Confirm the store’s IANA time zone and weekly feature day/time. Save them in `src/lib/store-config.ts` as `timeZone` and `weeklyFeature` (`weekday`: Sunday 0 through Saturday 6). The template’s neutral default is Monday 09:00 UTC; delivery business dates and admin date displays also use the configured zone.
+Confirm the store’s IANA time zone and weekly feature day/time. Save them in `src/lib/store-config-values.ts` as `timeZone` and `weeklyFeature` (`weekday`: Sunday 0 through Saturday 6). The template’s neutral default is Monday 09:00 UTC; delivery business dates and admin date displays also use the configured zone.
