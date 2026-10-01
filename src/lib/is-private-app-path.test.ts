@@ -21,3 +21,8 @@ describe("private application paths", () => {
     expect(isPrivateAppPath(path)).toBe(false)
   })
 })
+
+it("excludes the confirmation page and descendants from measurement", () => {
+  expect(isPrivateAppPath("/confirm-signup")).toBe(true)
+  expect(isPrivateAppPath("/confirm-signup/anything")).toBe(true)
+})

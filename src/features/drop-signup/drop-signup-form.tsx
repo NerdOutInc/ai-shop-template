@@ -42,7 +42,10 @@ export function DropSignupForm({ source }: DropSignupFormProps) {
         return
       }
       setEmail("")
-      setState({ status: "done", message: "You're on the list. See you at the next drop." })
+      setState({
+        status: "done",
+        message: "Check your inbox for a confirmation link. Opening it won't sign you up; choose Confirm signup.",
+      })
     } catch {
       setState({ status: "failed", message: "That didn't send. Check your connection and try again." })
     }

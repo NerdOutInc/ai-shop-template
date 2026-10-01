@@ -73,7 +73,8 @@ export default async function AdminDropEmailsPage() {
         </h2>
         {overview.status === "ready" ? (
           <p className="mt-1">
-            {overview.subscribed} subscribed · {overview.unsubscribed} unsubscribed
+            {overview.subscribed} eligible · {overview.pending} awaiting confirmation · {overview.unsubscribed}{" "}
+            unsubscribed
           </p>
         ) : (
           <Alert variant="destructive" className="mt-2">

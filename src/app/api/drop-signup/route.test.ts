@@ -35,7 +35,7 @@ describe("drop signup route", () => {
   it("takes a sign-up and never lets it be cached", async () => {
     const result = await POST(request())
     expect(result.status).toBe(200)
-    expect(await result.json()).toEqual({ subscribed: true })
+    expect(await result.json()).toEqual({ requested: true })
     expect(subscribeToDrops).toHaveBeenCalledWith({ email: "shopper@example.com", source: "design-of-the-week" })
     expect(result.headers.get("cache-control")).toContain("no-store")
     expect(result.headers.get("x-robots-tag")).toBeTruthy()

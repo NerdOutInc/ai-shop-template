@@ -44,7 +44,11 @@ describe("DropSignupForm", () => {
       source: "design-of-the-week",
       company: "",
     })
-    expect(await screen.findByText("You're on the list. See you at the next drop.")).toBeInTheDocument()
+    expect(
+      await screen.findByText(
+        "Check your inbox for a confirmation link. Opening it won't sign you up; choose Confirm signup."
+      )
+    ).toBeInTheDocument()
     // The field clears so a second person on a shared screen does not resend the first one's address.
     expect(field()).toHaveValue("")
   })
@@ -57,7 +61,11 @@ describe("DropSignupForm", () => {
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "early@example.com")
     fireEvent.submit(input.closest("form")!)
     expect(JSON.parse(String(request.mock.calls[0]?.[1]?.body))).toMatchObject({ email: "early@example.com" })
-    expect(await screen.findByText("You're on the list. See you at the next drop.")).toBeInTheDocument()
+    expect(
+      await screen.findByText(
+        "Check your inbox for a confirmation link. Opening it won't sign you up; choose Confirm signup."
+      )
+    ).toBeInTheDocument()
   })
 
   it.each(["refusal", "offline"])(
@@ -126,7 +134,7 @@ describe("DropSignupForm", () => {
 
   it("tells the visitor exactly what they are agreeing to, beside the field", () => {
     render(<DropSignupForm source="design-of-the-week" />)
-    expect(dropConsentCopy.version).toBe("v2")
+    expect(dropConsentCopy.version).toBe("v3")
     expect(field()).toHaveAccessibleDescription(expect.stringContaining(dropConsentCopy.text))
     expect(screen.getByRole("link", { name: "Email help@sample.test to request removal" })).toHaveAttribute(
       "href",

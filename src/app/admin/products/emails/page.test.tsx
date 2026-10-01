@@ -30,6 +30,7 @@ beforeEach(() => {
   mocks.overview.mockResolvedValue({
     status: "ready",
     subscribed: 2,
+    pending: 3,
     unsubscribed: 1,
     history: [
       {
@@ -71,7 +72,7 @@ describe("admin drop emails page", () => {
     expect(screen.getByRole("link", { name: "Drop emails" })).toHaveAttribute("aria-current", "page")
     expect(screen.getByRole("heading", { name: "Sending is on" })).toBeVisible()
     expect(screen.getByText("Emails go out from Fixture Store <drops@fixture.example>.")).toBeVisible()
-    expect(screen.getByText("2 subscribed · 1 unsubscribed")).toBeVisible()
+    expect(screen.getByText("2 eligible · 3 awaiting confirmation · 1 unsubscribed")).toBeVisible()
     expect(screen.getByText("For the Monday, October 12 drop, going out at 9:00 AM CDT.")).toBeVisible()
     expect(screen.getByText("New this week: Fern Study")).toBeVisible()
     expect(screen.getByTitle("Preview of the email for the Monday, October 12 drop")).toHaveAttribute(

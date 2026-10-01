@@ -1,4 +1,8 @@
 import "server-only"
+import { after } from "next/server"
+import { getSiteUrl } from "@/lib/get-site-url"
+import { readSignupConfirmationSetup } from "./read-signup-confirmation-setup.server"
+import { runSignupConfirmations } from "./run-signup-confirmations.server"
 import { storeConfig } from "@/lib/store-config"
 
 import type { DropSignupRequest } from "./drop-signup-request"
@@ -27,9 +31,30 @@ export async function subscribeToDrops(input: DropSignupRequest): Promise<Subscr
   if (identity === null) return "unidentified"
 
   try {
+    const setup = readSignupConfirmationSetup()
+    if (!setup.sending || !setup.from) return "unavailable"
     const store = getDropSignupStore()
     if (!(await store.allowRequest(identity.subject, identity.limit))) return "rate-limited"
-    await store.subscribe(normalizeEmail(input.email), input.source, identity.address)
+    const id = await store.subscribe(normalizeEmail(input.email), input.source, identity.address, {
+      from: setup.from,
+      replyTo: storeConfig.supportEmail,
+      siteUrl: getSiteUrl().origin,
+    })
+    if (id) {
+      // Provider pacing and failures must not distinguish a new address from an eligible one.
+      // The queue is durable before acknowledgment; cron retries if this prompt run cannot finish.
+      try {
+        after(async () => {
+          try {
+            if ((await runSignupConfirmations(id)).errors) console.warn("Signup confirmation deferred")
+          } catch {
+            console.warn("Signup confirmation deferred")
+          }
+        })
+      } catch {
+        console.warn("Signup confirmation deferred")
+      }
+    }
     return "saved"
   } catch {
     console.warn("Drop signup unavailable", { reason: "storage" })

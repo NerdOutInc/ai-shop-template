@@ -34,6 +34,7 @@ export const offlineStoreEnvironment = {
   RESEND_API_KEY: "",
   ORDER_ALERT_FROM_EMAIL: "",
   ORDER_ALERTS_ENABLED: "false",
+  SIGNUP_CONFIRMATIONS_ENABLED: "false",
   DROP_EMAILS_ENABLED: "false",
   DROP_EMAIL_FROM_EMAIL: "",
   STORE_POSTAL_ADDRESS: "",

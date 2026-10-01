@@ -4,14 +4,15 @@ import { createHash } from "node:crypto"
 
 import { createPostgresPool } from "@/lib/create-postgres-pool.server"
 
-import { dropConsentCopy } from "./drop-consent-copy"
+import { queueSignupConfirmation } from "./queue-signup-confirmation.server"
+import { confirmDropSignup } from "./confirm-drop-signup.server"
 
 export class PostgresDropSignupStore {
   private readonly pool
 
   constructor(connectionString: string) {
     // One connection: a marketing form must never compete with checkout or publishing for the
-    // database, and a signup is a single short statement.
+    // database. Signup transactions hold only the short subscriber-first queue/consent locks.
     this.pool = createPostgresPool(connectionString, 1)
   }
 
@@ -54,43 +55,30 @@ export class PostgresDropSignupStore {
     return result.rowCount === 1
   }
 
-  /**
-   * Record a subscriber, or refresh the consent of one who is already here.
-   *
-   * Signing up again is ordinary, not an error: it refreshes when they agreed and what they were
-   * shown, and lifts an earlier unsubscribe. The lifted moment moves to last_unsubscribed_at and the
-   * row is never deleted, so "they once said no" outlives them saying yes again.
-   */
-  async subscribe(email: string, source: string, signupIp: string | null): Promise<void> {
-    await this.pool.query(
-      `insert into commerce.drop_subscribers (email, source, consent_copy_version, signup_ip)
-         values ($1, $2, $3, $4::inet)
-       on conflict (email) do update set
-         source = excluded.source,
-         consent_copy_version = excluded.consent_copy_version,
-         consented_at = now(),
-         -- Keep the earlier address when this signup has none, so a local or preview submission
-         -- cannot erase real evidence.
-         signup_ip = coalesce(excluded.signup_ip, drop_subscribers.signup_ip),
-         -- Every SET expression sees the OLD row, so this copies the unsubscribe the next line lifts.
-         -- The coalesce keeps an earlier one through a second re-signup, which has nothing to copy.
-         last_unsubscribed_at = coalesce(drop_subscribers.unsubscribed_at, drop_subscribers.last_unsubscribed_at),
-         unsubscribed_at = null,
-         updated_at = now()`,
-      [email, source, dropConsentCopy.version, signupIp]
-    )
+  /** Queue fresh inbox proof without lifting an unsubscribe or refreshing existing consent. */
+  subscribe(
+    email: string,
+    source: string,
+    signupIp: string | null,
+    sender: { from: string; replyTo: string; siteUrl: string }
+  ) {
+    return queueSignupConfirmation(this.pool, { email, source, signupIp, ...sender })
+  }
+
+  confirm(token: string) {
+    return confirmDropSignup(this.pool, token)
   }
 
   /**
    * Stop emailing someone, by the subscriber id their unsubscribe link carries.
    *
-   * Recorded, never deleted, as the privacy page says. A second click changes nothing, so the first
-   * unsubscribe keeps its time.
+   * Preserve the first stop time but always update the row: its trigger revokes outstanding links
+   * on repeat clicks too. The subscriber lock serializes this with queueing and confirmation.
    */
   async unsubscribe(id: string): Promise<void> {
     await this.pool.query(
-      `update commerce.drop_subscribers set unsubscribed_at = now(), updated_at = now()
-        where id = $1 and unsubscribed_at is null`,
+      `update commerce.drop_subscribers set unsubscribed_at = coalesce(unsubscribed_at, now()), updated_at = now()
+        where id = $1`,
       [id]
     )
   }

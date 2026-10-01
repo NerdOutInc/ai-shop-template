@@ -125,7 +125,7 @@ test("offers the drop list honestly, and refuses a sign-up from another site", a
   // The wording beside the field IS the consent, so it has to be on the page, not just in the schema.
   await expect(
     section.getByText(
-      "We'll email you about new design drops. To request removal from the list, email our support team.",
+      "We'll send a confirmation email first. Once you confirm, we'll email you about new design drops. You can unsubscribe in every drop email or contact our support team.",
       { exact: false }
     )
   ).toBeVisible()

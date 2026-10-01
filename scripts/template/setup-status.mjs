@@ -300,6 +300,21 @@ export function setupStatus(
     mode !== "sandbox" && enabled("ORDER_ALERTS_ENABLED")
   )
   add(
+    "Signup inbox confirmation",
+    enabled("SIGNUP_CONFIRMATIONS_ENABLED") &&
+      required(["RESEND_API_KEY"]) &&
+      (matches("DROP_EMAIL_FROM_EMAIL", realEmail) || matches("ORDER_ALERT_FROM_EMAIL", realEmail)) &&
+      config.configured === true &&
+      config.policies?.published === true &&
+      (config.features?.dropSignup === true || config.privacy?.retainedDropSubscribers === true) &&
+      matches("NEXT_PUBLIC_SITE_URL", (value) => typeof value === "string" && value.startsWith("https://")) &&
+      schedules.some(
+        (entry) => entry?.path === "/api/internal/signup-confirmations" && entry.schedule === "*/15 * * * *"
+      ),
+    "Configure the verified confirmation sender and 15-minute /api/internal/signup-confirmations worker, then verify an owner-controlled inbox and explicit confirmation before activation.",
+    mode !== "sandbox" && (config.features?.dropSignup === true || enabled("SIGNUP_CONFIRMATIONS_ENABLED"))
+  )
+  add(
     "Weekly drop emails",
     required(["RESEND_API_KEY", "DROP_EMAIL_FROM_EMAIL", "STORE_POSTAL_ADDRESS"]) &&
       matches("DROP_EMAIL_FROM_EMAIL", realEmail) &&

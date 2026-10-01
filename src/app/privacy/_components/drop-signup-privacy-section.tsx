@@ -28,12 +28,13 @@ export function DropSignupPrivacySection() {
       <p>
         If you signed up, the store keeps your email address, where you signed up, the consent wording version and time,
         and the signup IP address when supplied by the hosting platform. It also keeps signup update times and
-        unsubscribe history. The IP address and a separate rate-limit record help limit abusive submissions.
+        unsubscribe history. New signups stay pending until you press the confirmation button from your inbox. The IP
+        address and a separate rate-limit record help limit abusive submissions.
       </p>
       {dropEmailRecords && (
         <p>
           {sending
-            ? "When a new Design of the Week goes live, the store emails subscribers about it once. That is the only email this list sends."
+            ? "When a new Design of the Week goes live, the store emails subscribers about it once. Those are the only marketing messages this list sends."
             : "The store is not sending drop emails right now."}{" "}
           Drop emails go through Resend, the store’s email provider, which receives each recipient’s address and the
           message in order to deliver it. Every drop email has an unsubscribe link, and a mail app’s own unsubscribe
@@ -42,7 +43,16 @@ export function DropSignupPrivacySection() {
           identifies the email, not you.
         </p>
       )}
-      {signupOpen && <p>Signing up again renews consent and can reactivate a previously unsubscribed address.</p>}
+      {signupOpen && (
+        <p>
+          Signing up again requests fresh inbox confirmation. An earlier unsubscribe stays in effect until you confirm.
+        </p>
+      )}
+      <p>
+        Confirmation messages go through Resend. The store keeps private confirmation tokens and delivery-attempt
+        evidence while confirmation is pending. Used or ended requests clear their message payload; request evidence
+        stays until erasure.
+      </p>
       <p>
         <DropRemovalLink />. Send your request from the address that receives the emails. Requests are handled by the
         store’s support team; opening the email link does not remove an address automatically. This request concerns

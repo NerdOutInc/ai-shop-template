@@ -34,6 +34,7 @@ export const envSchema = {
     RESEND_API_KEY: singleLineCredential.min(1).optional(),
     ORDER_ALERT_FROM_EMAIL: z.email().optional(),
     ORDER_ALERTS_ENABLED: z.enum(["true", "false"]).default("false"),
+    SIGNUP_CONFIRMATIONS_ENABLED: z.enum(["true", "false"]).default("false"),
     DROP_EMAILS_ENABLED: z.enum(["true", "false"]).default("false"),
     DROP_EMAIL_FROM_EMAIL: z.email().optional(),
     // Commercial email law (CAN-SPAM in the US) requires a physical mailing address in every marketing
