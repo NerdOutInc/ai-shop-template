@@ -102,3 +102,37 @@ test("missing history fails closed in the API and CLI", (t) => {
   assert.equal(result.status, 1)
   assert.match(result.stderr, /unavailable/)
 })
+
+test("a branch behind its base gets an update instruction rather than a deletion accusation", (t) => {
+  const { root, base, write, git } = fixture(t)
+  write(migrationPath(next), "select 2;")
+  git("add", ".")
+  git("commit", "--quiet", "-m", "Teammate migration")
+  const newerBase = git("rev-parse", "HEAD")
+  git("checkout", "--quiet", "--detach", base)
+  const errors = checkMigrationHistory(root, newerBase)
+  assert.ok(errors.some((error) => error.includes("branch is behind")))
+  assert.ok(errors.every((error) => !error.includes("removed")))
+})
+
+test("unchanged merged migrations larger than the Git stdout default pass", (t) => {
+  const { root, write, git } = fixture(t)
+  write(migrationPath(old), "-- large schema dump\n".repeat(70_000))
+  git("add", ".")
+  git("commit", "--quiet", "-m", "Large existing migration")
+  assert.deepEqual(checkMigrationHistory(root, git("rev-parse", "HEAD")), [])
+})
+
+test("a local repository without a remote requires an explicit history baseline", (t) => {
+  const { root, base } = fixture(t)
+  const script = fileURLToPath(new URL("./check-migration-history.mjs", import.meta.url))
+  const missing = spawnSync(process.execPath, [script], { cwd: root, encoding: "utf8" })
+  assert.equal(missing.status, 1)
+  assert.match(missing.stderr, /MIGRATION_BASE_REF/)
+  const explicit = spawnSync(process.execPath, [script], {
+    cwd: root,
+    encoding: "utf8",
+    env: { ...process.env, MIGRATION_BASE_REF: base },
+  })
+  assert.equal(explicit.status, 0)
+})

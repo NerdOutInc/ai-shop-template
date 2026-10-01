@@ -12,7 +12,7 @@ const filename = /^\d{14}_[A-Za-z0-9_-]+\.sql$/
 /** Compare immutable migration receipts with an explicit prior Git commit, including staged edits. */
 export function checkMigrationHistory(root, baseRef) {
   const { errors } = readStoreMigrationMappings(root)
-  const git = (args) => execFileSync("git", args, { cwd: root, stdio: ["ignore", "pipe", "pipe"] })
+  const git = (args) => execFileSync("git", args, { cwd: root, stdio: ["ignore", "pipe", "pipe"], maxBuffer: Infinity })
   let base
   const emptyHistory = /^(?:0{40}|0{64})$/.test(baseRef ?? "")
   try {
@@ -22,7 +22,10 @@ export function checkMigrationHistory(root, baseRef) {
         .toString()
         .trim()
   } catch {
-    return [...errors, "Migration history: base commit is unavailable; fetch it and pass --base explicitly"]
+    return [
+      ...errors,
+      "Migration history: base commit is unavailable; fetch it and set MIGRATION_BASE_REF for pnpm check, or pass --base to check:migration-history",
+    ]
   }
   const previous = new Map()
   if (base) {
@@ -33,6 +36,12 @@ export function checkMigrationHistory(root, baseRef) {
       previous.set(file, { mode, type, oid })
     }
   }
+  const sharedFiles = new Set()
+  if (base) {
+    const shared = git(["merge-base", "HEAD", base]).toString().trim()
+    for (const file of git(["ls-tree", "-r", "--name-only", shared, "--", directory]).toString().trim().split("\n"))
+      sharedFiles.add(file)
+  }
   const staged = new Map()
   for (const entry of git(["ls-files", "--stage", "-z", "--", directory]).toString().split("\0").filter(Boolean)) {
     const [metadata, file] = entry.split("\t")
@@ -42,15 +51,18 @@ export function checkMigrationHistory(root, baseRef) {
   }
   for (const [file, old] of previous) {
     const local = resolve(root, file)
-    let bytes
     try {
       if (!lstatSync(local).isFile()) throw new Error("not regular")
-      bytes = readFileSync(local)
     } catch {
-      errors.push(`${file}: merged migration removed, renamed or replaced`)
+      errors.push(
+        !existsSync(local) && !sharedFiles.has(file)
+          ? `${file}: branch is behind ${baseRef}; fetch and update it before checking migrations`
+          : `${file}: merged migration removed, renamed or replaced`
+      )
       continue
     }
-    if (old.type !== "blob" || !old.mode.startsWith("100") || !bytes.equals(git(["cat-file", "blob", old.oid])))
+    const localOid = git(["hash-object", "--no-filters", local]).toString().trim()
+    if (old.type !== "blob" || !old.mode.startsWith("100") || localOid !== old.oid)
       errors.push(`${file}: merged migration bytes changed; add a forward migration instead`)
     const index = staged.get(file)
     if (!index || index.oid !== old.oid || index.mode !== old.mode)
