@@ -113,53 +113,15 @@ test("keeps the unconfigured week honest without collecting email", async ({ pag
   await expect(section.getByRole("list", { name: "Design of the Week products" })).toHaveCount(0)
 })
 
-test("offers the drop list honestly, and refuses a sign-up from another site", async ({
-  page,
-  request,
-  browserName,
-}) => {
+test("hides signup while confirmation sending is disabled and refuses a foreign origin", async ({ page, request }) => {
   await page.goto("/#design-of-the-week")
   const section = page.locator("#design-of-the-week")
-  const field = section.getByRole("textbox", { name: "Know when the next one drops" })
-  await expect(field).toBeVisible()
-  // The wording beside the field IS the consent, so it has to be on the page, not just in the schema.
-  await expect(
-    section.getByText(
-      "We'll send a confirmation email first. Once you confirm, we'll email you about new design drops. You can unsubscribe in every drop email or contact our support team.",
-      { exact: false }
-    )
-  ).toBeVisible()
-  // The honeypot must not reach the accessibility tree, or it would be announced and fail an audit.
-  await expect(page.getByRole("textbox", { name: "Company" })).toHaveCount(0)
-
-  // This fixture is built with the production site URL, so a browser post from 127.0.0.1 is
-  // genuinely cross-origin -- which is what makes it a good place to prove the guard bites.
-  // The accepted path is proven in the admin suite, which builds with a local origin.
+  await expect(section.getByRole("textbox", { name: "Know when the next one drops" })).toHaveCount(0)
+  await expect(section.getByRole("button", { name: "Keep me posted" })).toHaveCount(0)
+  await expect(section.getByText(/We'll send a confirmation email first/)).toHaveCount(0)
   const foreign = await request.post("/api/drop-signup", {
     headers: { origin: "https://foreign.example", "content-type": "application/json" },
     data: { email: "someone@example.com", source: "footer" },
   })
   expect(foreign.status()).toBe(403)
-
-  await field.focus()
-  const tabKey = await beginKeyboardNavigation(page, browserName)
-  const submit = section.getByRole("button", { name: "Keep me posted" })
-  await expect(submit).toBeFocused()
-  expect(await submit.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe("none")
-  await page.keyboard.press(tabKey === "Alt+Tab" ? "Alt+Shift+Tab" : "Shift+Tab")
-  await expect(field).toBeFocused()
-  expect(await field.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe("none")
-  await field.fill("customer@example.com")
-  await page.keyboard.press(tabKey)
-  const submission = page.waitForRequest(
-    (request) => request.url().endsWith("/api/drop-signup") && request.method() === "POST"
-  )
-  await page.keyboard.press("Enter")
-  expect((await submission).postDataJSON()).toMatchObject({
-    email: "customer@example.com",
-    source: "design-of-the-week",
-  })
-  // Named, not just role="alert": Next renders its own route announcer with that role, so a bare
-  // role match is ambiguous and the assertion has to say which message it expects.
-  await expect(page.getByRole("alert").filter({ hasText: "Use the form on the site." })).toBeVisible()
 })
