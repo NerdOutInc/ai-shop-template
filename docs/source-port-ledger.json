@@ -342,7 +342,7 @@
         "src/features/subscribers",
         "src/app/api/admin/subscribers",
         "src/app/api/internal/signup-confirmations",
-        "supabase/migrations/20261001185846_subscriber_erasure.sql",
+        "supabase/migrations/20261002133308_subscriber_erasure.sql",
         "docs/subscriber-admin.md"
       ],
       "reason": "Ported reviewed erasure with immutable identity, preview freshness, bounded locks and child cascades; automatic never-confirmed expiry cleanup by owner choice, independent of sending. Preserves checkout evidence and template privacy/configuration gates.",
