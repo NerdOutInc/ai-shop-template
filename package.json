@@ -46,7 +46,7 @@
     "template:release:prepare": "node scripts/template/prepare-template-release.mjs",
     "test:commerce:build": "tsx e2e/prepare-storefront.ts --commerce",
     "test:e2e:commerce": "COMMERCE_E2E=true playwright test",
-    "test:commerce": "vitest run --project commerce",
+    "test:commerce": "vitest run --config vitest.commerce.config.ts",
     "test:ci": "node --import tsx --test scripts/ci/*.test.mjs"
   },
   "dependencies": {

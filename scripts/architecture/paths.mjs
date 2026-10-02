@@ -27,6 +27,7 @@ export const toolConfigurations = new Set([
   "postcss.config.mjs",
   "prettier.config.mjs",
   "vitest.config.ts",
+  "vitest.commerce.config.ts",
   "playwright.config.ts",
   ".storybook/main.ts",
   ".storybook/preview.ts",

@@ -36,7 +36,11 @@ beforeEach(() => {
   getDropSignupStore.mockReturnValue(store)
   store.allowRequest.mockResolvedValue(true)
   store.subscribe.mockResolvedValue(null)
-  readSignupConfirmationSetup.mockReturnValue({ sending: true, from: "Fixture Store <drops@example.com>" })
+  readSignupConfirmationSetup.mockReturnValue({
+    sending: true,
+    from: "Fixture Store <drops@example.com>",
+    identityKey: "fixture-cron-secret",
+  })
   runSignupConfirmations.mockResolvedValue({ sent: 1, errors: 0 })
 })
 afterEach(() => vi.restoreAllMocks())
@@ -84,7 +88,7 @@ describe("subscribeToDrops", () => {
   it("writes nothing for a caller who is over the limit", async () => {
     store.allowRequest.mockResolvedValue(false)
     await expect(subscribeToDrops({ email: "shopper@example.com", source: "footer" })).resolves.toBe("rate-limited")
-    expect(store.allowRequest).toHaveBeenCalledWith(identity.subject, identity.limit)
+    expect(store.allowRequest).toHaveBeenCalledWith(identity.subject, identity.limit, "fixture-cron-secret")
     expect(store.subscribe).not.toHaveBeenCalled()
   })
 
@@ -92,7 +96,7 @@ describe("subscribeToDrops", () => {
     await expect(subscribeToDrops({ email: "  Shopper@Example.COM ", source: "design-of-the-week" })).resolves.toBe(
       "saved"
     )
-    expect(store.allowRequest).toHaveBeenCalledWith(identity.subject, identity.limit)
+    expect(store.allowRequest).toHaveBeenCalledWith(identity.subject, identity.limit, "fixture-cron-secret")
     expect(store.subscribe).toHaveBeenCalledWith(
       "shopper@example.com",
       "design-of-the-week",

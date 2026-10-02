@@ -58,6 +58,14 @@ test("removing a selected test file cannot silently reduce commerce coverage", (
       join(fixture, "test", "assert-commerce-test-scope.ts")
     )
     copyFileSync(
+      new URL("../../test/resolve-commerce-test-scope.ts", import.meta.url),
+      join(fixture, "test", "resolve-commerce-test-scope.ts")
+    )
+    copyFileSync(
+      new URL("test-database-names.json", import.meta.url),
+      join(fixture, "scripts", "ci", "test-database-names.json")
+    )
+    copyFileSync(
       new URL("commerce-test-scope.json", import.meta.url),
       join(fixture, "scripts", "ci", "commerce-test-scope.json")
     )
@@ -82,11 +90,11 @@ test("removing a selected test file cannot silently reduce commerce coverage", (
 })
 
 test("the commerce Vitest entrypoint stops before any test when a database is missing, even locally", () => {
-  const environment = { ...process.env, ...databases, CI: "", FORCE_COLOR: "0" }
+  const environment = { ...process.env, ...databases, CI: "", CI_TEST_SELECTION: "", FORCE_COLOR: "0" }
   delete environment.SIGNUP_TEST_DATABASE_URL
   const result = spawnSync(
     process.execPath,
-    ["node_modules/vitest/vitest.mjs", "run", "--project", "commerce", "--reporter=json"],
+    ["node_modules/vitest/vitest.mjs", "run", "--config", "vitest.commerce.config.ts", "--reporter=json"],
     { cwd: root, env: environment, encoding: "utf8", timeout: 30_000 }
   )
   assert.equal(result.error, undefined)
@@ -103,6 +111,9 @@ function gate(mode, changes = {}) {
     env: {
       ...process.env,
       CI_SUITE: mode,
+      SELECTION_RESULT: "success",
+      INTEGRATION_REQUIRED: "false",
+      INTEGRATION_RESULT: "skipped",
       LINT_RESULT: "success",
       FOUNDATION_RESULT: "success",
       COMMERCE_RESULT: "success",
@@ -114,7 +125,7 @@ function gate(mode, changes = {}) {
 }
 
 for (const [mode, names] of [
-  ["commerce", ["LINT_RESULT", "FOUNDATION_RESULT", "COMMERCE_RESULT"]],
+  ["commerce", ["SELECTION_RESULT", "LINT_RESULT", "FOUNDATION_RESULT", "COMMERCE_RESULT"]],
   ["full", ["FULL_RESULT"]],
 ]) {
   test(`${mode} aggregate rejects every non-success dependency`, () => {
@@ -137,4 +148,32 @@ test("unknown verification scope fails closed", () => {
   for (const mode of ["", "other", "toString", "__proto__"]) {
     assert.notEqual(gate(mode).status, 0)
   }
+})
+
+test("changed integration coverage is required only when selected, and the selection fails closed", () => {
+  assert.equal(gate("commerce", { INTEGRATION_REQUIRED: "true", INTEGRATION_RESULT: "success" }).status, 0)
+  for (const result of ["failure", "cancelled", "skipped", ""]) {
+    assert.equal(gate("commerce", { INTEGRATION_REQUIRED: "true", INTEGRATION_RESULT: result }).status, 1)
+  }
+  for (const flag of ["", "unexpected"]) assert.equal(gate("commerce", { INTEGRATION_REQUIRED: flag }).status, 1)
+})
+
+test("default single-file Vitest runs remain mock-only and execute each file once", () => {
+  const environment = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.endsWith("DATABASE_URL")))
+  const run = spawnSync(
+    process.execPath,
+    ["node_modules/vitest/vitest.mjs", "run", "src/app/api/drop-signup/route.test.ts", "--reporter=json"],
+    {
+      cwd: root,
+      env: { ...environment, CI: "", CI_TEST_SELECTION: "", FORCE_COLOR: "0" },
+      encoding: "utf8",
+      timeout: 30_000,
+    }
+  )
+  assert.equal(run.error, undefined)
+  assert.equal(run.status, 0, run.stdout + run.stderr)
+  const report = JSON.parse(run.stdout)
+  assert.equal(report.testResults.length, 1)
+  assert.ok(report.numTotalTests > 0)
+  assert.doesNotMatch(run.stderr, /JSON import|commerce tests/)
 })

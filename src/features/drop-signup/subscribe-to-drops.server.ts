@@ -34,9 +34,10 @@ export async function subscribeToDrops(input: DropSignupRequest): Promise<Subscr
     const setup = readSignupConfirmationSetup()
     if (!setup.sending || !setup.from) return "unavailable"
     const store = getDropSignupStore()
-    if (!(await store.allowRequest(identity.subject, identity.limit))) return "rate-limited"
+    if (!(await store.allowRequest(identity.subject, identity.limit, setup.identityKey))) return "rate-limited"
     const id = await store.subscribe(normalizeEmail(input.email), input.source, identity.address, {
       hourlyLimit: setup.hourlyLimit,
+      identityKey: setup.identityKey,
       requestSubject: identity.subject,
       from: setup.from,
       replyTo: storeConfig.supportEmail,

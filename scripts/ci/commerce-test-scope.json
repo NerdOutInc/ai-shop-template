@@ -28,6 +28,7 @@
     "src/features/drop-signup/drop-signup-form.test.tsx",
     "src/features/drop-signup/drop-unsubscribe-panel.test.tsx",
     "src/features/drop-signup/get-public-request-identity.server.test.ts",
+    "src/features/drop-signup/hash-signup-request-subject.server.test.ts",
     "src/features/drop-signup/postgres-drop-signup-store.server.test.ts",
     "src/features/drop-signup/read-signup-confirmation-setup.server.test.ts",
     "src/features/drop-signup/run-signup-confirmations.server.test.ts",

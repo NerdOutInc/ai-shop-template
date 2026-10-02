@@ -18,6 +18,7 @@ export const commerceTestConfig = {
     VERCEL: "",
     VERCEL_ENV: "production",
     SIGNUP_CONFIRMATIONS_ENABLED: "true",
+    CRON_SECRET: "commerce-fixture-cron-secret-123456789",
     // Offline browser projects share one identity; production-default limits have dedicated DB tests.
     SIGNUP_CONFIRMATIONS_HOURLY_LIMIT: "60",
     RESEND_API_KEY: "commerce-confirmation-fixture-never-a-real-key",

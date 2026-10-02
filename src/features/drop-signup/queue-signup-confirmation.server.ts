@@ -2,6 +2,7 @@ import "server-only"
 import { createHash, randomBytes } from "node:crypto"
 import type { Pool } from "pg"
 
+import { hashSignupRequestSubject } from "./hash-signup-request-subject.server"
 import { dropConsentCopy } from "./drop-consent-copy"
 import { renderSignupConfirmation } from "./render-signup-confirmation"
 
@@ -16,6 +17,7 @@ export async function queueSignupConfirmation(
     siteUrl: string
     hourlyLimit?: number
     requestSubject?: string
+    identityKey?: string
   }
 ): Promise<string | null> {
   const hourlyLimit = input.hourlyLimit ?? 20
@@ -27,7 +29,7 @@ export async function queueSignupConfirmation(
     // Admission must precede every address-dependent branch. Otherwise another request's
     // remaining capacity reveals whether a target is eligible or in its resend cooldown.
     const subjectHash = input.requestSubject
-      ? createHash("sha256").update(`signup-hour:${input.requestSubject}`).digest("hex")
+      ? hashSignupRequestSubject(input.requestSubject, input.identityKey, "hour")
       : null
     await client.query(
       `insert into commerce.drop_signup_confirmation_budget (singleton) values (true) on conflict do nothing`
@@ -51,7 +53,10 @@ export async function queueSignupConfirmation(
     ).rows[0]!
     if (budget.count >= hourlyLimit) {
       await client.query(
-        `update commerce.drop_signup_confirmation_budget set blocked_at = clock_timestamp() where singleton = true`
+        `update commerce.drop_signup_confirmation_budget set
+          blocked_since = case when blocked_at > clock_timestamp() - interval '1 hour'
+            then coalesce(blocked_since, blocked_at) else clock_timestamp() end,
+          blocked_at = clock_timestamp() where singleton = true`
       )
       await client.query("commit")
       console.warn("Signup confirmation hourly ceiling reached")
@@ -62,7 +67,7 @@ export async function queueSignupConfirmation(
       return "rate-limited"
     }
     // Count all admitted requests, including eligible addresses and resends with no new mail.
-    // Paired hashes expire with their timestamps; subscriber erasure cannot reset either quota.
+    // Paired hashes stop counting after an hour and cron prunes them; subscriber erasure cannot reset either quota.
     await client.query(
       `update commerce.drop_signup_confirmation_budget set accepted_at = array_append(accepted_at, clock_timestamp()),
         subject_hashes = array_append(subject_hashes, $1::text) where singleton = true`,

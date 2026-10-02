@@ -1,8 +1,9 @@
 import { existsSync } from "node:fs"
 
-import commerceScope from "../scripts/ci/commerce-test-scope.json"
+import { resolveCommerceTestScope } from "./resolve-commerce-test-scope"
 
 export function assertCommerceTestScope(environment: NodeJS.ProcessEnv = process.env) {
+  const commerceScope = resolveCommerceTestScope(environment)
   for (const filename of commerceScope.files) {
     if (!existsSync(new URL(`../${filename}`, import.meta.url))) {
       throw new Error(`[commerce tests] Required test file is missing: ${filename}`)

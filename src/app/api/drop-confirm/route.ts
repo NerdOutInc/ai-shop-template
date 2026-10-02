@@ -33,7 +33,7 @@ export async function POST(request: Request) {
   if (!identity) return respond({ error: "Please try again." }, 400)
   try {
     const store = getDropSignupStore()
-    if (!(await store.allowRequest(`confirmation:${identity.subject}`, identity.limit)))
+    if (!(await store.allowRequest(`confirmation:${identity.subject}`, identity.limit, env.CRON_SECRET)))
       return respond({ error: "Try again in a few minutes." }, 429)
     const status = await store.confirm(input.data.token)
     return respond({ status }, status === "confirmed" ? 200 : 410)

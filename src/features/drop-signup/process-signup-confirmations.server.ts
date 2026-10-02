@@ -18,7 +18,18 @@ export async function processSignupConfirmations(deps: {
     sent: 0,
     errors: 0,
     busy: false,
-    saturated: (await readSignupConfirmationBudget(deps.pool)).saturated,
+    saturated: false,
+    saturationNeedsAttention: false,
+  }
+  async function readHealth(connection: Pool | PoolClient) {
+    try {
+      const budget = await readSignupConfirmationBudget(connection)
+      result.saturated = budget.saturated
+      result.saturationNeedsAttention = budget.sustained
+    } catch {
+      // Health is advisory. A schema/deploy mismatch must not stop already queued delivery.
+      console.error("Signup admission health is unavailable")
+    }
   }
   try {
     const lockDeadline = Date.now() + (deps.id ? 5_000 : 0)
@@ -38,6 +49,9 @@ export async function processSignupConfirmations(deps: {
     } while (Date.now() < lockDeadline)
     if (!locked) {
       result.busy = true
+      client?.release()
+      client = undefined
+      await readHealth(deps.pool)
       return result
     }
     if (!client) throw new Error("Signup worker lock has no connection")
@@ -96,7 +110,7 @@ export async function processSignupConfirmations(deps: {
         if (outcome.status === "not-sent") break
       }
     }
-    result.saturated = (await readSignupConfirmationBudget(client)).saturated
+    await readHealth(client)
     return result
   } finally {
     if (locked) {

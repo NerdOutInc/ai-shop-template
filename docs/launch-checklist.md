@@ -57,7 +57,7 @@ Use this checklist with [store setup](store-setup.md). Record non-secret evidenc
 
 ## Code and release
 
-- [ ] `pnpm check` passes. The required PR checks pass before merge and full verification passes before production release; any unavailable suite is explicit and cannot count as passed.
+- [ ] `pnpm check` passes. The required PR checks pass before merge and full verification passes on the exact release head before production release (before merge when merge auto-deploys); any unavailable suite is explicit and cannot count as passed.
 - [ ] `pnpm check:template` passes for template changes. `pnpm setup:check --sandbox` passed before the sandbox journey and `pnpm setup:check --launch` passes for the configured store; this is a configuration gate only.
 - [ ] The exact authorized production revision, origin and environment are read back after deployment. Normal Git integration may trigger deployment: account for that before pushing or merging.
 - [ ] Live activation and product-publication actions remain within actual owner instructions. Reuse authority already given; ask only for a concrete uncovered decision.

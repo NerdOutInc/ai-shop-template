@@ -1,6 +1,6 @@
 import "server-only"
 
-import { createHash } from "node:crypto"
+import { hashSignupRequestSubject } from "./hash-signup-request-subject.server"
 
 import { createPostgresPool } from "@/lib/create-postgres-pool.server"
 
@@ -28,9 +28,9 @@ export class PostgresDropSignupStore {
    * try-lock and skips locked rows; the window is fixed rather than sliding; and the trailing
    * `where` means a blocked caller returns no row and so CANNOT extend its own lockout by hammering.
    */
-  async allowRequest(subject: string, limit: number): Promise<boolean> {
+  async allowRequest(subject: string, limit: number, identityKey: string | undefined): Promise<boolean> {
     if (!Number.isInteger(limit) || limit < 1 || limit > 100) throw new Error("Invalid public request limit")
-    const key = createHash("sha256").update(`drop-signup:${subject}`).digest("hex")
+    const key = hashSignupRequestSubject(subject, identityKey, "request")
     const result = await this.pool.query(
       `with cleanup_lock as (
          select pg_try_advisory_xact_lock(hashtextextended('public-request-attempt-cleanup', 0)) as acquired
@@ -60,7 +60,14 @@ export class PostgresDropSignupStore {
     email: string,
     source: string,
     signupIp: string | null,
-    sender: { from: string; replyTo: string; siteUrl: string; hourlyLimit?: number; requestSubject?: string }
+    sender: {
+      from: string
+      replyTo: string
+      siteUrl: string
+      hourlyLimit?: number
+      requestSubject?: string
+      identityKey?: string
+    }
   ) {
     return queueSignupConfirmation(this.pool, { email, source, signupIp, ...sender })
   }
