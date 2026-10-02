@@ -79,7 +79,7 @@ test("removing a selected test file cannot silently reduce commerce coverage", (
         "-e",
         `const { assertCommerceTestScope } = await import(${JSON.stringify(moduleUrl)}); assertCommerceTestScope();`,
       ],
-      { cwd: root, encoding: "utf8", timeout: 30_000 }
+      { cwd: root, env: { ...process.env, CI_TEST_SELECTION: "" }, encoding: "utf8", timeout: 30_000 }
     )
     assert.equal(result.error, undefined)
     assert.equal(result.status, 1)
