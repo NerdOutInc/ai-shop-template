@@ -26,6 +26,8 @@ export function DropSignupForm({ source }: DropSignupFormProps) {
     if (state.status === "sending") return
     // Hydration can preserve a DOM address before React receives its input event.
     const submittedEmail = new FormData(event.currentTarget).get("email")
+    // Adopt early typing before the controlled input renders again, including failed submissions.
+    if (typeof submittedEmail === "string") setEmail(submittedEmail)
     setState({ status: "sending" })
     try {
       const response = await fetch("/api/drop-signup", {
