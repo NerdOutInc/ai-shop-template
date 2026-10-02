@@ -155,3 +155,12 @@ describe("subscribeToDrops", () => {
     expect(after).not.toHaveBeenCalled()
   })
 })
+
+it("acknowledges saturation generically without scheduling an invalid request id or exposing an address", async () => {
+  const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+  store.subscribe.mockResolvedValue("limited")
+  expect(await subscribeToDrops({ email: "shopper@example.com", source: "footer" })).toBe("saved")
+  expect(after).not.toHaveBeenCalled()
+  expect(warn).toHaveBeenCalledWith("Signup confirmation hourly ceiling reached")
+  expect(JSON.stringify(warn.mock.calls)).not.toContain("shopper@example.com")
+})

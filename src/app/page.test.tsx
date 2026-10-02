@@ -1,3 +1,4 @@
+const confirmation = vi.hoisted(() => ({ sending: true }))
 import { render, screen } from "@testing-library/react"
 import { beforeEach, expect, it, vi } from "vitest"
 
@@ -10,6 +11,7 @@ vi.mock("./_components/design-of-the-week", () => ({ DesignOfTheWeek: () => <div
 vi.mock("@/features/drop-signup/drop-signup-form", () => ({ DropSignupForm: () => <div>Drop signup</div> }))
 
 beforeEach(() => {
+  confirmation.sending = true
   storeConfig.configured = true
   storeConfig.policies.published = true
   storeConfig.features.designOfTheWeek = false
@@ -42,6 +44,17 @@ it("mounts the weekly feature without a second signup form", () => {
 it("withholds independent signup before policy approval", () => {
   storeConfig.features.dropSignup = true
   storeConfig.policies.published = false
+  render(<HomePage />)
+  expect(screen.queryByText("Drop signup")).not.toBeInTheDocument()
+})
+
+vi.mock("@/features/drop-signup/read-signup-confirmation-setup.server", () => ({
+  readSignupConfirmationSetup: () => ({ sending: confirmation.sending }),
+}))
+
+it("hides the signup invitation when confirmation sending is unavailable", async () => {
+  confirmation.sending = false
+  storeConfig.features.dropSignup = true
   render(<HomePage />)
   expect(screen.queryByText("Drop signup")).not.toBeInTheDocument()
 })

@@ -9,6 +9,7 @@ import { DropEmailTestSend } from "@/features/drop-emails/drop-email-test-send"
 import { readDropEmailOverview } from "@/features/drop-emails/read-drop-email-overview.server"
 import { readDropEmailSetup } from "@/features/drop-emails/read-drop-email-setup.server"
 import { renderNextDropEmail, type NextDropEmail } from "@/features/drop-emails/render-next-drop-email.server"
+import { readSignupConfirmationSetup } from "@/features/drop-signup/read-signup-confirmation-setup.server"
 import { env } from "@/lib/env"
 import { formatStoreMoment } from "@/lib/format-store-moment"
 
@@ -22,6 +23,7 @@ export default async function AdminDropEmailsPage() {
   // First, before any read: the proxy only refreshes the session, so this call is the page's lock.
   await requireAdmin()
   const setup = readDropEmailSetup()
+  const confirmation = readSignupConfirmationSetup()
   const [overview, next] = await Promise.all([
     readDropEmailOverview(),
     renderNextDropEmail().catch((): NextDropEmail | { status: "unavailable" } => {
@@ -65,6 +67,18 @@ export default async function AdminDropEmailsPage() {
             ))}
           </ul>
         )}
+      </section>
+
+      <section aria-labelledby="signup-confirmation-sending" className="max-w-2xl rounded-lg border p-4">
+        <h2 id="signup-confirmation-sending" className="font-condensed text-xl font-semibold">
+          {confirmation.sending ? "Signup confirmation sending is on" : "Signup confirmation sending is off"}
+        </h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {confirmation.sending
+            ? `Confirmation requests are limited to ${confirmation.hourlyLimit} per rolling hour across this store.`
+            : "New signups are unavailable. Review the production sender, SIGNUP_CONFIRMATIONS_ENABLED and the authenticated 15-minute worker with setup:check before opening signup."}{" "}
+          Weekly sending is a separate switch.
+        </p>
       </section>
 
       <section aria-labelledby="drop-email-subscribers" className="max-w-2xl">

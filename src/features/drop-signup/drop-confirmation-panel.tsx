@@ -13,14 +13,17 @@ export function DropConfirmationPanel() {
   useEffect(() => {
     const readFragment = () => {
       const fragment = window.location.hash.slice(1)
+      // In-page anchors (including Skip to content) must not replace the email capability.
+      if (!/^[a-f0-9]{64}$/.test(fragment)) return false
       // Fragments never reach the server. Remove it before navigation, referrers or sharing.
       window.history.replaceState(null, "", window.location.pathname)
-      token.current = /^[a-f0-9]{64}$/.test(fragment) ? fragment : null
-      setState(token.current ? "ready" : "missing")
+      token.current = fragment
+      setState("ready")
+      return true
     }
     if (!read.current) {
       read.current = true
-      readFragment()
+      if (!readFragment()) setState("missing")
     }
     // A second email link can change only the fragment in an already open tab, without remounting.
     window.addEventListener("hashchange", readFragment)

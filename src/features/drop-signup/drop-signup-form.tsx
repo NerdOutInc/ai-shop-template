@@ -7,11 +7,11 @@ import { storeConfig } from "@/lib/store-config"
 import { dropConsentCopy } from "./drop-consent-copy"
 import { DropRemovalLink } from "./drop-removal-link"
 
-type DropSignupFormProps = { source: "design-of-the-week" | "footer" | "home" }
+type DropSignupFormProps = { ready?: boolean; source: "design-of-the-week" | "footer" | "home" }
 type State =
   { status: "idle" | "sending" } | { status: "done"; message: string } | { status: "failed"; message: string }
 
-export function DropSignupForm({ source }: DropSignupFormProps) {
+export function DropSignupForm({ source, ready = false }: DropSignupFormProps) {
   const emailId = useId()
   const consentId = useId()
   const honeypotId = useId()
@@ -19,7 +19,8 @@ export function DropSignupForm({ source }: DropSignupFormProps) {
   const [state, setState] = useState<State>({ status: "idle" })
   const honeypot = useRef<HTMLInputElement>(null)
 
-  if (!storeConfig.configured || !storeConfig.policies.published || !storeConfig.features.dropSignup) return null
+  if (!ready || !storeConfig.configured || !storeConfig.policies.published || !storeConfig.features.dropSignup)
+    return null
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()

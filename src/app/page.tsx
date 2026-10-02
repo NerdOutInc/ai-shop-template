@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { Suspense } from "react"
 
+import { readSignupConfirmationSetup } from "@/features/drop-signup/read-signup-confirmation-setup.server"
 import { DropSignupForm } from "@/features/drop-signup/drop-signup-form"
 import { storeConfig } from "@/lib/store-config"
 
@@ -50,9 +51,10 @@ export default function HomePage() {
       {storeConfig.features.dropSignup &&
         !storeConfig.features.designOfTheWeek &&
         storeConfig.configured &&
-        storeConfig.policies.published && (
+        storeConfig.policies.published &&
+        readSignupConfirmationSetup().sending && (
           <section aria-label="New design updates" className="page-width py-10 sm:py-14">
-            <DropSignupForm source="home" />
+            <DropSignupForm ready={readSignupConfirmationSetup().sending} source="home" />
           </section>
         )}
     </main>

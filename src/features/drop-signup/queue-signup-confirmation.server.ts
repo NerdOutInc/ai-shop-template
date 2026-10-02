@@ -8,6 +8,7 @@ import { renderSignupConfirmation } from "./render-signup-confirmation"
 export async function queueSignupConfirmation(
   pool: Pool,
   input: {
+    hourlyLimit?: number
     email: string
     source: string
     signupIp: string | null
@@ -16,6 +17,9 @@ export async function queueSignupConfirmation(
     siteUrl: string
   }
 ): Promise<string | null> {
+  const hourlyLimit = input.hourlyLimit ?? 20
+  if (!Number.isInteger(hourlyLimit) || hourlyLimit < 1 || hourlyLimit > 1000)
+    throw new Error("Invalid confirmation ceiling")
   const client = await pool.connect()
   try {
     await client.query("begin")
@@ -48,6 +52,22 @@ export async function queueSignupConfirmation(
       await client.query("commit")
       return null
     }
+    // Serialize the store-wide rolling budget after address checks; keep no recipient identifiers.
+    await client.query("select singleton from commerce.drop_signup_confirmation_budget for update")
+    const budget = (
+      await client.query<{ limited: boolean }>(
+        `update commerce.drop_signup_confirmation_budget set
+        queued_at = array(select stamp from unnest(queued_at) stamp where stamp > now() - interval '1 hour')
+       returning cardinality(queued_at) >= $1 as limited`,
+        [hourlyLimit]
+      )
+    ).rows[0]!
+    if (budget.limited) {
+      await client.query("update commerce.drop_signup_confirmation_budget set blocked_at = now()")
+      await client.query("commit")
+      return "limited"
+    }
+    await client.query("update commerce.drop_signup_confirmation_budget set queued_at = array_append(queued_at, now())")
     const token = randomBytes(32).toString("hex")
     const message = renderSignupConfirmation({ ...input, token })
     message.to = [input.email]

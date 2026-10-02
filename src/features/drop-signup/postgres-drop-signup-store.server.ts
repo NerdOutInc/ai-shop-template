@@ -60,7 +60,7 @@ export class PostgresDropSignupStore {
     email: string,
     source: string,
     signupIp: string | null,
-    sender: { from: string; replyTo: string; siteUrl: string }
+    sender: { from: string; replyTo: string; siteUrl: string; hourlyLimit?: number }
   ) {
     return queueSignupConfirmation(this.pool, { email, source, signupIp, ...sender })
   }

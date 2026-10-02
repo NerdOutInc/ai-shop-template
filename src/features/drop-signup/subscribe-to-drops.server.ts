@@ -36,11 +36,14 @@ export async function subscribeToDrops(input: DropSignupRequest): Promise<Subscr
     const store = getDropSignupStore()
     if (!(await store.allowRequest(identity.subject, identity.limit))) return "rate-limited"
     const id = await store.subscribe(normalizeEmail(input.email), input.source, identity.address, {
+      hourlyLimit: setup.hourlyLimit,
       from: setup.from,
       replyTo: storeConfig.supportEmail,
       siteUrl: getSiteUrl().origin,
     })
-    if (id) {
+    if (id === "limited") {
+      console.warn("Signup confirmation hourly ceiling reached")
+    } else if (id) {
       // Provider pacing and failures must not distinguish a new address from an eligible one.
       // The queue is durable before acknowledgment; cron retries if this prompt run cannot finish.
       try {

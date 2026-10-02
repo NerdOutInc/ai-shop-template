@@ -1,3 +1,4 @@
+const confirmation = vi.hoisted(() => ({ sending: true }))
 import { render, screen, within } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -35,6 +36,7 @@ const products = Array.from({ length: 7 }, (_, index) => ({
 const week = { liveAt: "2026-09-21T09:00:00.000Z", productIds: ["product-0", "product-2", "missing"] }
 
 beforeEach(() => {
+  confirmation.sending = true
   vi.clearAllMocks()
   store.features.designOfTheWeek = true
   store.features.dropSignup = true
@@ -131,4 +133,14 @@ it("keeps a populated weekly selection to its products and signup, without a sho
   expect(screen.getByRole("list", { name: "Design of the Week products" })).toBeVisible()
   // The page's introduction and footer already link to the shop.
   expect(screen.queryByRole("link", { name: "Browse the collection" })).not.toBeInTheDocument()
+})
+
+vi.mock("@/features/drop-signup/read-signup-confirmation-setup.server", () => ({
+  readSignupConfirmationSetup: () => ({ sending: confirmation.sending }),
+}))
+
+it("hides the signup invitation when confirmation sending is unavailable", async () => {
+  confirmation.sending = false
+  render(await DesignOfTheWeek())
+  expect(screen.queryByText("Drop signup")).not.toBeInTheDocument()
 })

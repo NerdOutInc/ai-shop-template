@@ -1,5 +1,7 @@
 // @vitest-environment node
-import { readFile, readdir } from "node:fs/promises"
+import { spawn } from "node:child_process"
+import { fileURLToPath } from "node:url"
+import { applyAllMigrations } from "../../../test/apply-all-migrations"
 import { Pool } from "pg"
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import { createAdminDatabaseFixture } from "../../../test/create-admin-database-fixture"
@@ -25,16 +27,12 @@ describe.skipIf(!databaseUrl)("drop signup confirmations", () => {
     if (!["localhost", "127.0.0.1"].includes(url.hostname) || url.pathname !== "/store_signup_test")
       throw new Error("Use isolated local store_signup_test")
     pool = await createAdminDatabaseFixture(databaseUrl!)
-    await pool.query(
-      "drop schema if exists commerce cascade; drop schema if exists private cascade; drop schema if exists public cascade; create schema public; grant usage on schema public to anon, authenticated, service_role"
-    )
-    for (const file of (await readdir("supabase/migrations")).filter((name) => name.endsWith(".sql")).sort()) {
+    await applyAllMigrations(pool, async (file) => {
       if (file.endsWith("_drop_signup_confirmations.sql")) {
         await pool.query(`insert into commerce.drop_subscribers (email,source,consent_copy_version,unsubscribed_at)
           values ('legacy@example.com','footer','v2',null), ('stopped@example.com','footer','v2',now())`)
       }
-      await pool.query(await readFile(`supabase/migrations/${file}`, "utf8"))
-    }
+    })
     historical = (
       await pool.query(
         `select subscription_state, confirmed_at, unsubscribed_at is not null as stopped from commerce.drop_subscribers order by email`
@@ -52,6 +50,7 @@ describe.skipIf(!databaseUrl)("drop signup confirmations", () => {
   })
   beforeEach(async () => {
     await pool.query("truncate commerce.drop_subscribers, commerce.public_request_attempts cascade")
+    await pool.query("update commerce.drop_signup_confirmation_budget set queued_at = '{}', blocked_at = null")
   })
   afterAll(async () => {
     await Promise.all([store?.close(), runtime?.end(), pool?.end()])
@@ -90,6 +89,89 @@ describe.skipIf(!databaseUrl)("drop signup confirmations", () => {
     expect(await subscribe()).toBeNull()
     expect(await read()).toEqual(first)
   })
+  it("honors the documented support-removal procedure without changing another subscriber", async () => {
+    await store.subscribe("customer@example.com", "footer", "203.0.113.7", sender)
+    await store.subscribe("other@example.com", "footer", "203.0.113.8", sender)
+    const script = fileURLToPath(new URL("../../../scripts/database/remove-drop-subscriber.psql", import.meta.url))
+    const runOperator = (address: string) =>
+      new Promise<{ code: number | null; output: string }>((resolve, reject) => {
+        const connection = new URL(runtimeConnection)
+        const child = spawn(
+          process.env.PSQL_BIN ?? "psql",
+          ["-X", "--no-readline", "--no-password", "--file", script],
+          {
+            env: {
+              // Do not let a developer's libpq service or host override redirect this local test.
+              ...Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("PG"))),
+              NODE_ENV: process.env.NODE_ENV,
+              PGHOST: connection.hostname,
+              PGPORT: connection.port,
+              PGDATABASE: connection.pathname.slice(1),
+              PGUSER: decodeURIComponent(connection.username),
+              PGPASSWORD: decodeURIComponent(connection.password),
+            },
+            stdio: ["pipe", "pipe", "pipe"],
+          }
+        )
+        let output = ""
+        child.stdout.on("data", (data: Buffer) => {
+          output += data.toString()
+        })
+        child.stderr.on("data", (data: Buffer) => {
+          output += data.toString()
+        })
+        child.on("error", reject)
+        child.on("close", (code) => resolve({ code, output }))
+        child.stdin.end(`${address}\n`)
+      })
+    const readSubscriber = async (email: string) =>
+      (await runtime.query("select * from commerce.drop_subscribers where email = $1", [email])).rows[0]
+    const otherBefore = await readSubscriber("other@example.com")
+
+    // Exercise the checked-in prompt and psql literal quoting, not a second copy of its SQL.
+    for (const address of ["missing@example.com", "customer@example.com' OR true--", ""]) {
+      const result = await runOperator(address)
+      expect(result.code, result.output).toBe(0)
+      expect(result.output).toContain("No matching subscriber")
+      if (address) expect(result.output).not.toContain(address)
+    }
+    expect(
+      (await runtime.query("select email from commerce.drop_subscribers where unsubscribed_at is null")).rows
+    ).toHaveLength(2)
+    const removal = await runOperator("  CUSTOMER@example.com  ")
+    expect(removal.code, removal.output).toBe(0)
+    expect(removal.output).toContain("Removal verified")
+    expect(removal.output).not.toContain("CUSTOMER@example.com")
+    // Both queued payloads initially existed; the removed address's link must be revoked by the trigger.
+    const owned = (
+      await pool.query(`select c.revoked_at, c.message from commerce.drop_signup_confirmations c
+      join commerce.drop_subscribers s on s.id=c.subscriber_id where s.email='customer@example.com'`)
+    ).rows[0]
+    expect(owned.revoked_at).toBeInstanceOf(Date)
+    expect(owned.message).toBeNull()
+    const timestamp = (await readSubscriber("customer@example.com")).unsubscribed_at
+    expect(timestamp).toBeInstanceOf(Date)
+    const repeat = await runOperator("customer@example.com")
+    expect(repeat.code, repeat.output).toBe(0)
+    expect(repeat.output).toContain("Removal verified")
+    expect((await readSubscriber("customer@example.com")).unsubscribed_at).toEqual(timestamp)
+    expect(await readSubscriber("other@example.com")).toEqual(otherBefore)
+    expect(
+      (await runtime.query("select email from commerce.drop_subscribers where unsubscribed_at is null")).rows
+    ).toEqual([{ email: "other@example.com" }])
+    expect((await runtime.query("select count(*) from commerce.drop_subscribers")).rows[0].count).toBe("2")
+
+    await pool.query("revoke update on commerce.drop_subscribers from store_app_runtime")
+    try {
+      const failure = await runOperator("other@example.com")
+      expect(failure.code).not.toBe(0)
+      expect(failure.output).not.toContain("Removal verified")
+      expect(await readSubscriber("other@example.com")).toEqual(otherBefore)
+    } finally {
+      await pool.query("grant update on commerce.drop_subscribers to store_app_runtime")
+    }
+  })
+
   it("rejects expired and invalid tokens without eligibility changes", async () => {
     await subscribe()
     const secret = await token()
@@ -162,7 +244,9 @@ describe.skipIf(!databaseUrl)("drop signup confirmations", () => {
     ).rejects.toThrow("Signup application upgrade required")
     await subscribe()
     await store.unsubscribe((await read()).id)
-    await runtime.query("update commerce.drop_subscribers set unsubscribed_at=null")
+    await expect(runtime.query("update commerce.drop_subscribers set unsubscribed_at=null")).rejects.toThrow(
+      "Fresh subscriber confirmation required"
+    )
     expect((await read()).unsubscribed_at).toBeInstanceOf(Date)
   })
   it("bounds concurrent resends by address, replaces old tokens and enforces the daily maximum", async () => {
@@ -178,6 +262,73 @@ describe.skipIf(!databaseUrl)("drop signup confirmations", () => {
     expect(await subscribe()).toBeNull()
     expect((await pool.query("select count(*) from commerce.drop_signup_confirmations")).rows[0].count).toBe("3")
   })
+
+  it("enforces the rolling store-wide ceiling across distinct concurrent addresses, including erased rows", async () => {
+    const stores = Array.from({ length: 6 }, () => new PostgresDropSignupStore(runtimeConnection))
+    try {
+      const results = await Promise.all(
+        stores.map((each, index) =>
+          each.subscribe(`burst-${index}@example.com`, "footer", null, { ...sender, hourlyLimit: 3 })
+        )
+      )
+      expect(results.filter((id) => id !== "limited")).toHaveLength(3)
+      expect(results.filter((id) => id === "limited")).toHaveLength(3)
+      expect((await pool.query("select count(*) from commerce.drop_signup_confirmations")).rows[0].count).toBe("3")
+      expect(
+        (await pool.query("select blocked_at from commerce.drop_signup_confirmation_budget")).rows[0].blocked_at
+      ).toBeInstanceOf(Date)
+      await pool.query("delete from commerce.drop_subscribers")
+      expect(await store.subscribe("new@example.com", "footer", null, { ...sender, hourlyLimit: 3 })).toBe("limited")
+      await pool.query(
+        "update commerce.drop_signup_confirmation_budget set queued_at = array[ now()-interval '61 minutes', now()-interval '30 minutes', now()-interval '10 minutes' ]"
+      )
+      expect(await store.subscribe("next@example.com", "footer", null, { ...sender, hourlyLimit: 3 })).not.toBe(
+        "limited"
+      )
+      expect(
+        (await pool.query("select cardinality(queued_at) as count from commerce.drop_signup_confirmation_budget"))
+          .rows[0].count
+      ).toBe(3)
+      await pool.query("set role anon")
+      try {
+        await expect(pool.query("select * from commerce.drop_signup_confirmation_budget")).rejects.toThrow()
+      } finally {
+        await pool.query("reset role")
+      }
+    } finally {
+      await Promise.all(stores.map((each) => each.close()))
+    }
+  })
+
+  it("waits for a busy prompt sender lock and sends the queued neighbour after release", async () => {
+    const id = await subscribe()
+    const holder = await runtime.connect()
+    await holder.query("select pg_advisory_lock(hashtextextended('signup-confirmations', 0))")
+    const send = vi.fn().mockResolvedValue({ status: "sent", providerEmailId: "burst-receipt" })
+    const pending = processSignupConfirmations({ pool: runtime, id: id!, send, pause: async () => {} })
+    await new Promise((resolve) => setTimeout(resolve, 150))
+    expect(send).not.toHaveBeenCalled()
+    await holder.query("select pg_advisory_unlock(hashtextextended('signup-confirmations', 0))")
+    holder.release()
+    expect(await pending).toEqual({ sent: 1, errors: 0 })
+    expect(send).toHaveBeenCalledOnce()
+  })
+
+  it("reports prompt deferral after its bounded lock wait and leaves the request queued", async () => {
+    const id = await subscribe()
+    const holder = await runtime.connect()
+    try {
+      await holder.query("select pg_advisory_lock(hashtextextended('signup-confirmations', 0))")
+      const send = vi.fn()
+      expect(await processSignupConfirmations({ pool: runtime, id: id!, send })).toEqual({ sent: 0, errors: 1 })
+      expect(send).not.toHaveBeenCalled()
+      expect((await request()).status).toBe("queued")
+    } finally {
+      await holder.query("select pg_advisory_unlock(hashtextextended('signup-confirmations', 0))")
+      holder.release()
+    }
+  }, 10_000)
+
   it("freezes provider payload and key across a lost response and a later domain change", async () => {
     const id = await subscribe()
     const send = vi

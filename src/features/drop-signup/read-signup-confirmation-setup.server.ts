@@ -11,6 +11,7 @@ export function readSignupConfirmationSetup() {
     (origin?.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(origin.hostname))
   const from = env.DROP_EMAIL_FROM_EMAIL ?? env.ORDER_ALERT_FROM_EMAIL
   return {
+    hourlyLimit: env.SIGNUP_CONFIRMATIONS_HOURLY_LIMIT,
     sending:
       env.SIGNUP_CONFIRMATIONS_ENABLED === "true" &&
       env.VERCEL_ENV === "production" &&

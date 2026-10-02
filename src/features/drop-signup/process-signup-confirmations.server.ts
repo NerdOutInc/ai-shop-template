@@ -15,13 +15,22 @@ export async function processSignupConfirmations(deps: {
   let destroy = false
   const result = { sent: 0, errors: 0 }
   try {
-    locked =
-      (
-        await client.query<{ locked: boolean }>(
-          "select pg_try_advisory_lock(hashtextextended('signup-confirmations', 0)) as locked"
-        )
-      ).rows[0]?.locked ?? false
-    if (!locked) return result
+    const lockDeadline = Date.now() + (deps.id ? 5_000 : 0)
+    do {
+      locked =
+        (
+          await client.query<{ locked: boolean }>(
+            "select pg_try_advisory_lock(hashtextextended('signup-confirmations', 0)) as locked"
+          )
+        ).rows[0]?.locked ?? false
+      if (locked || Date.now() >= lockDeadline) break
+      await new Promise<void>((resolve) => setTimeout(resolve, 100))
+    } while (!locked)
+    if (!locked) {
+      // Prompt contention is observable; the durable request remains available to cron.
+      if (deps.id) result.errors++
+      return result
+    }
     await client.query(`update commerce.drop_signup_confirmations set status = 'expired', message = null
       where status in ('queued', 'unconfirmed') and (expires_at <= now() or revoked_at is not null or used_at is not null
         or attempt_started_at < now() - interval '23 hours')`)

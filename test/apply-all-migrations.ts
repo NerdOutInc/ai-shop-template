@@ -30,7 +30,7 @@ async function applySerializably(pool: Pool, sql: string) {
 }
 
 /** Rebuild the store's application schemas from every migration in filename order, as production applies them. */
-export async function applyAllMigrations(pool: Pool) {
+export async function applyAllMigrations(pool: Pool, beforeMigration?: (file: string) => Promise<void>) {
   await pool.query(
     "drop schema if exists commerce cascade; drop schema if exists private cascade; drop schema if exists public cascade; create schema public; grant usage on schema public to anon, authenticated, service_role"
   )
@@ -41,6 +41,8 @@ export async function applyAllMigrations(pool: Pool) {
        create role store_app_runtime login nosuperuser nocreatedb nocreaterole noinherit noreplication nobypassrls;
      exception when duplicate_object or unique_violation then null; end $$`
   )
-  for (const file of (await readdir("supabase/migrations")).filter((name) => name.endsWith(".sql")).sort())
+  for (const file of (await readdir("supabase/migrations")).filter((name) => name.endsWith(".sql")).sort()) {
+    await beforeMigration?.(file)
     await applySerializably(pool, await readFile(`supabase/migrations/${file}`, "utf8"))
+  }
 }

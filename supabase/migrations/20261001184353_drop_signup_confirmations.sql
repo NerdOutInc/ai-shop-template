@@ -95,8 +95,8 @@ begin
   end if;
 end $$;
 
--- Older upserts clear unsubscribe but never change confirmed_at. Refuse that lift unless the
--- confirmation transaction just consumed a request. Older unsubscribe writes also revoke links.
+-- Refuse direct unsubscribe reversals unless the confirmation transaction just consumed a request.
+-- Old INSERT/upsert writers fail above; old unsubscribe UPDATEs still revoke links.
 create function commerce.guard_drop_subscriber_confirmation() returns trigger
 language plpgsql set search_path = '' as $$
 begin
@@ -112,8 +112,7 @@ begin
        where c.subscriber_id = old.id and c.used_at = new.confirmed_at and c.revoked_at is null
     )
   ) then
-    new.unsubscribed_at := old.unsubscribed_at;
-    new.last_unsubscribed_at := old.last_unsubscribed_at;
+    raise exception 'Fresh subscriber confirmation required';
   end if;
   if new.unsubscribed_at is not null then
     update commerce.drop_signup_confirmations set revoked_at = now(), message = null
