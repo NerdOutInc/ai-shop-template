@@ -14,6 +14,7 @@ const databaseVariables = {
     "PUBLISHING_TEST_DATABASE_URL",
     "SHIPPING_TEST_DATABASE_URL",
     "SIGNUP_TEST_DATABASE_URL",
+    "SUBSCRIBER_TEST_DATABASE_URL",
   ],
   baseline: ["TEMPLATE_TEST_DATABASE_URL"],
 } as const

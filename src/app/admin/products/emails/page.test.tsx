@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/lib/env", () => ({ env: mocks.env }))
 vi.mock("@/features/admin/require-admin.server", () => ({ requireAdmin: mocks.requireAdmin }))
 vi.mock("@/features/drop-emails/read-drop-email-setup.server", () => ({ readDropEmailSetup: mocks.setup }))
+vi.mock("@/features/subscribers/subscriber-manager", () => ({ SubscriberManager: () => <div>Subscriber support</div> }))
 vi.mock("@/features/drop-emails/read-drop-email-overview.server", () => ({ readDropEmailOverview: mocks.overview }))
 vi.mock("@/features/drop-emails/render-next-drop-email.server", () => ({ renderNextDropEmail: mocks.next }))
 

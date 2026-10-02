@@ -10,6 +10,7 @@ import { readDropEmailOverview } from "@/features/drop-emails/read-drop-email-ov
 import { readDropEmailSetup } from "@/features/drop-emails/read-drop-email-setup.server"
 import { renderNextDropEmail, type NextDropEmail } from "@/features/drop-emails/render-next-drop-email.server"
 import { readSignupConfirmationSetup } from "@/features/drop-signup/read-signup-confirmation-setup.server"
+import { SubscriberManager } from "@/features/subscribers/subscriber-manager"
 import { env } from "@/lib/env"
 import { formatStoreMoment } from "@/lib/format-store-moment"
 
@@ -97,7 +98,7 @@ export default async function AdminDropEmailsPage() {
             </AlertDescription>
           </Alert>
         )}
-        <p className="mt-1 text-sm text-muted-foreground">Counts only. Addresses never appear in the admin.</p>
+        <SubscriberManager />
       </section>
 
       <section aria-labelledby="drop-email-next" className="flex flex-col gap-4">
