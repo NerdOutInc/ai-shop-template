@@ -58,7 +58,8 @@ jobs:
   storefront:
     name: Storefront browser checks
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # Browser downloads can take 15 minutes; leave room for all three fixture builds and suites.
+    timeout-minutes: 45
     services:
       postgres:
         image: postgres:17
@@ -111,6 +112,22 @@ jobs:
       - name: Test enabled publishing through HTTP and browsers
         if: ${{ !cancelled() && steps.storefront-build.outcome == 'success' }}
         run: pnpm test:e2e:publishing
+      - name: Build the configured commerce fixture
+        if: ${{ !cancelled() && steps.storefront-build.outcome == 'success' }}
+        run: pnpm test:commerce:build
+      - name: Test essential customer commerce journeys
+        if: ${{ !cancelled() && steps.storefront-build.outcome == 'success' }}
+        run: pnpm test:e2e:commerce
+      - name: Upload commerce browser failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: commerce-browser-diagnostics
+          path: |
+            playwright-report/commerce/
+            test-results/commerce/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Upload publishing browser failure diagnostics
         if: failure()
         uses: actions/upload-artifact@v7.0.1

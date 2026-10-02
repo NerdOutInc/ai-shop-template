@@ -14,12 +14,15 @@ import { createStoreConfigSource } from "./create-store-config-source"
 // source stays untouched; the application has no switch that bypasses setup.
 const root = process.cwd()
 const admin = process.argv.includes("--admin") ? adminTestConfig() : undefined
-const fixtures = admin
-  ? [{ directory: "admin-storefront-e2e", config: configuredStoreConfig }]
-  : [
-      { directory: "unconfigured-storefront-e2e", config: storeConfig },
-      { directory: "storefront-e2e", config: configuredStoreConfig },
-    ]
+const commerce = process.argv.includes("--commerce")
+const fixtures = commerce
+  ? [{ directory: "commerce-storefront-e2e", config: configuredStoreConfig }]
+  : admin
+    ? [{ directory: "admin-storefront-e2e", config: configuredStoreConfig }]
+    : [
+        { directory: "unconfigured-storefront-e2e", config: storeConfig },
+        { directory: "storefront-e2e", config: configuredStoreConfig },
+      ]
 for (const fixture of fixtures) {
   const destination = path.join(root, ".tmp", fixture.directory)
   await rm(destination, { recursive: true, force: true })
@@ -55,7 +58,9 @@ for (const fixture of fixtures) {
     env: {
       ...process.env,
       ...offlineStoreEnvironment,
-      NEXT_PUBLIC_SITE_URL: admin?.baseURL ?? "https://example.com",
+      NEXT_PUBLIC_SITE_URL: commerce
+        ? `http://127.0.0.1:${process.env.COMMERCE_E2E_PORT ?? 34100}`
+        : (admin?.baseURL ?? "https://example.com"),
       NEXT_PUBLIC_SUPABASE_URL: admin?.authURL ?? "",
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: admin?.publishableKey ?? "",
       NEXT_TELEMETRY_DISABLED: "1",

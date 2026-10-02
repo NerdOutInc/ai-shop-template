@@ -34,7 +34,7 @@
     "test": "pnpm test:unit && pnpm test:branding && pnpm test:architecture && pnpm test:monitor && pnpm test:skills && pnpm test:artwork && pnpm test:design-agent && pnpm test:template && pnpm test:dependencies && pnpm test:database",
     "test:dependencies": "node --test scripts/dependencies/*.test.mjs",
     "check": "pnpm check:template && pnpm check:structure && pnpm check:migrations && pnpm check:migration-history && pnpm lint && pnpm typecheck && pnpm format:check && pnpm test",
-    "check:all": "pnpm check && pnpm test:stories && pnpm test:admin:prepare && tsx e2e/admin/run-with-config.ts pnpm build && pnpm build-storybook && pnpm test:e2e:prepare && pnpm test:e2e && pnpm test:e2e:publishing && pnpm test:admin:build && pnpm test:e2e:admin",
+    "check:all": "pnpm check && pnpm test:stories && pnpm test:admin:prepare && tsx e2e/admin/run-with-config.ts pnpm build && pnpm build-storybook && pnpm test:e2e:prepare && pnpm test:e2e && pnpm test:e2e:publishing && pnpm test:admin:build && pnpm test:e2e:admin && pnpm test:commerce:build && pnpm test:e2e:commerce",
     "design-agent": "node --conditions=react-server --import tsx scripts/design-agent/run.mjs",
     "test:design-agent": "node --conditions=react-server --import tsx --test scripts/design-agent/*.test.mjs",
     "setup:check": "node --conditions=react-server --import tsx -- scripts/template/setup-check.mjs",
@@ -43,7 +43,9 @@
     "test:database": "node --import tsx scripts/database/run-tests.mjs",
     "test:e2e:prepare": "tsx e2e/prepare-storefront.ts",
     "check:migration-history": "node scripts/template/check-migration-history.mjs",
-    "template:release:prepare": "node scripts/template/prepare-template-release.mjs"
+    "template:release:prepare": "node scripts/template/prepare-template-release.mjs",
+    "test:commerce:build": "tsx e2e/prepare-storefront.ts --commerce",
+    "test:e2e:commerce": "COMMERCE_E2E=true playwright test"
   },
   "dependencies": {
     "@base-ui/react": "1.8.0",
