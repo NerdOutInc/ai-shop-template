@@ -425,9 +425,9 @@
         "supabase/migrations/20261002210616_signup_confirmation_admission.sql"
       ],
       "reason": "Port remaining reviewed admission, pool-friendly worker health, aggregate admin status, intentional unsubscribe focus and paused-signup recovery. Keep owner values, optional gates, v1/v2/v3 consent, retained-list behavior, independent signup placement and the existing template budget/runtime role. Already-equivalent input recovery, skip-link capability protection, cleanup independence, fixture migration discovery and erasure tests are retained.",
-      "evidence": "Reviewed all 39 source PR paths at final head 6c57c3f2ebc0aec5b747e2671d482352f80214b7, merged as 2926c59. The source-only migration is replaced by a new receiving forward migration preserving recent template capacity; old merged SQL remains unchanged. Receiving validation and draft PR receipt follow in codex/port-signup-review-safety.",
+      "evidence": "Reviewed all 39 source PR paths at final head 6c57c3f2ebc0aec5b747e2671d482352f80214b7, merged as 2926c59. The source-only migration is replaced by a new receiving forward migration preserving recent template capacity; old merged SQL remains unchanged. Receiving implementation commit 232538a451f1fc836de88481fd1603d72ca0fc97 is prepared in draft NerdOutInc/ai-shop-template#39. Local validation includes 4006 unit tests, 20 database/permission checks, 146 stories and all public, publishing, commerce and both admin browser suites; three existing device-specific public gesture cases are skipped. Hosted Required checks remain pending.",
       "templateCommit": null,
-      "followUp": "Record receiving draft PR and merge receipt; production sender, inbox receipt and scheduled suppression remain unverified and separately authorized."
+      "followUp": "Review https://github.com/NerdOutInc/ai-shop-template/pull/39 and record its receiving merge receipt after authorized merge. Production sender, inbox receipt and scheduled suppression remain unverified and separately authorized."
     }
   ],
   "outboundPorts": [],
