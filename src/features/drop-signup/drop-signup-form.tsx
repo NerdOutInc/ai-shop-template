@@ -21,16 +21,20 @@ export function DropSignupForm({ source }: DropSignupFormProps) {
 
   if (!storeConfig.configured || !storeConfig.policies.published || !storeConfig.features.dropSignup) return null
 
-  async function submit(event: React.FormEvent) {
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (state.status === "sending") return
+    // Hydration can preserve a DOM address before React receives its input event.
+    const submittedEmail = new FormData(event.currentTarget).get("email")
+    // Adopt early typing before the controlled input renders again, including failed submissions.
+    if (typeof submittedEmail === "string") setEmail(submittedEmail)
     setState({ status: "sending" })
     try {
       const response = await fetch("/api/drop-signup", {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, source, company: honeypot.current?.value ?? "" }),
+        body: JSON.stringify({ email: submittedEmail, source, company: honeypot.current?.value ?? "" }),
       })
       if (!response.ok) {
         const body = (await response.json().catch(() => null)) as { error?: string } | null
