@@ -170,14 +170,30 @@ test("requires inbox confirmation, deduplicates signup and honors unsubscribe", 
   try {
     await page.goto("/#design-of-the-week", { waitUntil: "commit" })
     // A customer can type while JavaScript is still loading; submission must use the visible address.
-    await field.fill(email)
+    await field.pressSequentially(email)
   } finally {
     releaseScripts()
   }
   await page.waitForLoadState("networkidle")
+  const signup = page.locator("#design-of-the-week")
+  await expect(
+    signup.getByText(
+      "We'll send a confirmation email first. Once you confirm, we'll email you about new design drops. You can unsubscribe in every drop email or contact our support team."
+    )
+  ).toBeVisible()
+  await expect(signup.locator('input[name="company"]')).toBeHidden()
+  await expect(signup.getByRole("textbox", { name: "Company", exact: true })).toHaveCount(0)
+  expect((await new AxeBuilder({ page }).include("#design-of-the-week").analyze()).violations).toEqual([])
+  await field.focus()
   for (let attempt = 0; attempt < 2; attempt++) {
     if (attempt > 0) await field.fill(email)
-    await page.getByRole("button", { name: "Keep me posted" }).click()
+    await expect(field).toBeFocused()
+    expect(await field.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe("none")
+    await beginKeyboardNavigation(page, browserName)
+    const signupButton = page.getByRole("button", { name: "Keep me posted" })
+    await expect(signupButton).toBeFocused()
+    expect(await signupButton.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe("none")
+    await page.keyboard.press("Enter")
     await expect(page.getByRole("status").filter({ hasText: "Check your inbox" })).toBeVisible()
     await expect(field).toHaveValue("")
   }

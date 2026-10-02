@@ -12,7 +12,7 @@ export class PostgresDropSignupStore {
 
   constructor(connectionString: string) {
     // One connection: a marketing form must never compete with checkout or publishing for the
-    // database. Signup transactions hold only the short subscriber-first queue/consent locks.
+    // database. Signup transactions hold only the short admission-first queue/consent locks.
     this.pool = createPostgresPool(connectionString, 1)
   }
 
@@ -60,7 +60,7 @@ export class PostgresDropSignupStore {
     email: string,
     source: string,
     signupIp: string | null,
-    sender: { from: string; replyTo: string; siteUrl: string; hourlyLimit?: number }
+    sender: { from: string; replyTo: string; siteUrl: string; hourlyLimit?: number; requestSubject?: string }
   ) {
     return queueSignupConfirmation(this.pool, { email, source, signupIp, ...sender })
   }

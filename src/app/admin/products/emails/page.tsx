@@ -9,6 +9,8 @@ import { DropEmailTestSend } from "@/features/drop-emails/drop-email-test-send"
 import { readDropEmailOverview } from "@/features/drop-emails/read-drop-email-overview.server"
 import { readDropEmailSetup } from "@/features/drop-emails/read-drop-email-setup.server"
 import { renderNextDropEmail, type NextDropEmail } from "@/features/drop-emails/render-next-drop-email.server"
+import { getDropEmailPool } from "@/features/drop-emails/get-drop-email-pool.server"
+import { readSignupConfirmationBudget } from "@/features/drop-signup/read-signup-confirmation-budget.server"
 import { readSignupConfirmationSetup } from "@/features/drop-signup/read-signup-confirmation-setup.server"
 import { SubscriberManager } from "@/features/subscribers/subscriber-manager"
 import { env } from "@/lib/env"
@@ -25,12 +27,13 @@ export default async function AdminDropEmailsPage() {
   await requireAdmin()
   const setup = readDropEmailSetup()
   const confirmation = readSignupConfirmationSetup()
-  const [overview, next] = await Promise.all([
+  const [overview, next, budget] = await Promise.all([
     readDropEmailOverview(),
     renderNextDropEmail().catch((): NextDropEmail | { status: "unavailable" } => {
       console.warn("Next drop email unavailable", { reason: "storage" })
       return { status: "unavailable" }
     }),
+    env.DATABASE_URL ? readSignupConfirmationBudget(getDropEmailPool()).catch(() => null) : null,
   ])
   const off = [
     setup.missing.length > 0 && `Set ${setup.missing.join(", ")} in Vercel.`,
@@ -79,6 +82,13 @@ export default async function AdminDropEmailsPage() {
             ? `Confirmation requests are limited to ${confirmation.hourlyLimit} per rolling hour across this store.`
             : "New signups are unavailable. Review the production sender, SIGNUP_CONFIRMATIONS_ENABLED and the authenticated 15-minute worker with setup:check before opening signup."}{" "}
           Weekly sending is a separate switch.
+        </p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {budget
+            ? `${budget.accepted} signup request${budget.accepted === 1 ? "" : "s"} admitted in the past hour (store ceiling: ${confirmation.hourlyLimit}).`
+            : "Recent signup admission health is unavailable."}
+          {budget?.saturated &&
+            " The store ceiling was reached in the past hour. Excess requests were not queued; visitors were asked to retry in an hour."}
         </p>
       </section>
 

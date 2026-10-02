@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { readFile } from "node:fs/promises"
 import { spawn } from "node:child_process"
 import { fileURLToPath } from "node:url"
 import { applyAllMigrations } from "../../../test/apply-all-migrations"
@@ -6,6 +7,9 @@ import { Pool } from "pg"
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import { createAdminDatabaseFixture } from "../../../test/create-admin-database-fixture"
 import { PostgresDropSignupStore } from "./postgres-drop-signup-store.server"
+import { prunePendingSubscribers } from "@/features/subscribers/prune-pending-subscribers.server"
+import { queueSignupConfirmation } from "./queue-signup-confirmation.server"
+import { readSignupConfirmationBudget } from "./read-signup-confirmation-budget.server"
 import { processSignupConfirmations } from "./process-signup-confirmations.server"
 
 vi.mock("server-only", () => ({}))
@@ -22,17 +26,23 @@ describe.skipIf(!databaseUrl)("drop signup confirmations", () => {
   let store: PostgresDropSignupStore
   let runtimeConnection: string
   let historical: unknown[]
+  let upgradedBudget: { accepted_at: Date[]; subject_hashes: (string | null)[]; blocked_at: Date }
   beforeAll(async () => {
     const url = new URL(databaseUrl!)
     if (!["localhost", "127.0.0.1"].includes(url.hostname) || url.pathname !== "/store_signup_test")
       throw new Error("Use isolated local store_signup_test")
     pool = await createAdminDatabaseFixture(databaseUrl!)
     await applyAllMigrations(pool, async (file) => {
+      if (file.endsWith("_signup_confirmation_admission.sql")) {
+        await pool.query(`insert into commerce.drop_signup_confirmation_budget(singleton,queued_at,blocked_at)
+          values(true,array[now()-interval '61 minutes',now()-interval '30 minutes',now()-interval '10 minutes'],now())`)
+      }
       if (file.endsWith("_drop_signup_confirmations.sql")) {
         await pool.query(`insert into commerce.drop_subscribers (email,source,consent_copy_version,unsubscribed_at)
           values ('legacy@example.com','footer','v2',null), ('stopped@example.com','footer','v2',now())`)
       }
     })
+    upgradedBudget = (await pool.query("select * from commerce.drop_signup_confirmation_budget")).rows[0]
     historical = (
       await pool.query(
         `select subscription_state, confirmed_at, unsubscribed_at is not null as stopped from commerce.drop_subscribers order by email`
@@ -68,6 +78,53 @@ describe.skipIf(!databaseUrl)("drop signup confirmations", () => {
       { subscription_state: "legacy", confirmed_at: null, stopped: true },
     ])
   })
+  it("upgrades populated admission history without resetting capacity or inventing identities", async () => {
+    expect(upgradedBudget.accepted_at).toHaveLength(2)
+    expect(upgradedBudget.subject_hashes).toEqual([null, null])
+    expect(upgradedBudget.blocked_at).toBeInstanceOf(Date)
+    await expect(runtime.query("select queued_at from commerce.drop_signup_confirmation_budget")).rejects.toThrow(
+      /queued_at/
+    )
+    expect(upgradedBudget.accepted_at.every((stamp) => stamp instanceof Date)).toBe(true)
+    await expect(
+      runtime.query(`insert into commerce.drop_signup_confirmation_budget(singleton,accepted_at,subject_hashes)
+      values(true,array[now()],array[]::text[])`)
+    ).rejects.toThrow(/signup_admission_pairs/)
+    await expect(
+      runtime.query(`insert into commerce.drop_signup_confirmation_budget(singleton,accepted_at,subject_hashes)
+      values(true,array_fill(now(),array[1001]),array_fill(null::text,array[1001]))`)
+    ).rejects.toThrow(/signup_admission_capacity/)
+  })
+  it("seeds recent receipts only when the prior budget is absent", async () => {
+    const client = await pool.connect()
+    try {
+      await client.query("begin")
+      // Model a pre-upgrade store with receipts but no legacy budget row, inside a rolled-back fixture.
+      await client.query(`alter table commerce.drop_signup_confirmation_budget
+        drop constraint signup_admission_capacity, drop constraint signup_admission_pairs,
+        drop column subject_hashes`)
+      await client.query("alter table commerce.drop_signup_confirmation_budget rename column accepted_at to queued_at")
+      const subscriber = (
+        await client.query(`insert into commerce.drop_subscribers(email,source,consent_copy_version)
+        values('upgrade@example.com','footer','v3') returning id`)
+      ).rows[0].id
+      await client.query(
+        `insert into commerce.drop_signup_confirmations(subscriber_id,token_hash,source,consent_copy_version,created_at)
+        values($1,$2,'footer','v3',now()-interval '30 minutes'),($1,$3,'footer','v3',now()-interval '61 minutes')`,
+        [subscriber, "a".repeat(64), "b".repeat(64)]
+      )
+      await client.query(await readFile("supabase/migrations/20261002210616_signup_confirmation_admission.sql", "utf8"))
+      const budget = (
+        await client.query("select accepted_at,subject_hashes from commerce.drop_signup_confirmation_budget")
+      ).rows[0]
+      expect(budget.accepted_at).toHaveLength(1)
+      expect(budget.subject_hashes).toEqual([null])
+    } finally {
+      await client.query("rollback")
+      client.release()
+    }
+  })
+
   it("queues pending consent through runtime policies and confirms exactly once", async () => {
     expect(await subscribe()).toEqual(expect.any(String))
     expect(await read()).toMatchObject({
@@ -271,22 +328,20 @@ describe.skipIf(!databaseUrl)("drop signup confirmations", () => {
           each.subscribe(`burst-${index}@example.com`, "footer", null, { ...sender, hourlyLimit: 3 })
         )
       )
-      expect(results.filter((id) => id !== "limited")).toHaveLength(3)
-      expect(results.filter((id) => id === "limited")).toHaveLength(3)
+      expect(results.filter((id) => id !== "busy")).toHaveLength(3)
+      expect(results.filter((id) => id === "busy")).toHaveLength(3)
       expect((await pool.query("select count(*) from commerce.drop_signup_confirmations")).rows[0].count).toBe("3")
       expect(
         (await pool.query("select blocked_at from commerce.drop_signup_confirmation_budget")).rows[0].blocked_at
       ).toBeInstanceOf(Date)
       await pool.query("delete from commerce.drop_subscribers")
-      expect(await store.subscribe("new@example.com", "footer", null, { ...sender, hourlyLimit: 3 })).toBe("limited")
+      expect(await store.subscribe("new@example.com", "footer", null, { ...sender, hourlyLimit: 3 })).toBe("busy")
       await pool.query(
-        "update commerce.drop_signup_confirmation_budget set queued_at = array[ now()-interval '61 minutes', now()-interval '30 minutes', now()-interval '10 minutes' ]"
+        "update commerce.drop_signup_confirmation_budget set accepted_at = array[ now()-interval '61 minutes', now()-interval '30 minutes', now()-interval '10 minutes' ], subject_hashes = array[null,null,null]::text[]"
       )
-      expect(await store.subscribe("next@example.com", "footer", null, { ...sender, hourlyLimit: 3 })).not.toBe(
-        "limited"
-      )
+      expect(await store.subscribe("next@example.com", "footer", null, { ...sender, hourlyLimit: 3 })).not.toBe("busy")
       expect(
-        (await pool.query("select cardinality(queued_at) as count from commerce.drop_signup_confirmation_budget"))
+        (await pool.query("select cardinality(accepted_at) as count from commerce.drop_signup_confirmation_budget"))
           .rows[0].count
       ).toBe(3)
       await pool.query("set role anon")
@@ -300,42 +355,152 @@ describe.skipIf(!databaseUrl)("drop signup confirmations", () => {
     }
   })
 
-  it("waits for a busy prompt sender lock and sends the queued neighbour after release", async () => {
-    const id = await subscribe()
-    const holder = await runtime.connect()
-    await holder.query("select pg_advisory_lock(hashtextextended('signup-confirmations', 0))")
-    const send = vi.fn().mockResolvedValue({ status: "sent", providerEmailId: "burst-receipt" })
-    const pending = processSignupConfirmations({ pool: runtime, id: id!, send, pause: async () => {} })
-    await new Promise((resolve) => setTimeout(resolve, 150))
-    expect(send).not.toHaveBeenCalled()
-    await holder.query("select pg_advisory_unlock(hashtextextended('signup-confirmations', 0))")
-    holder.release()
-    expect(await pending).toEqual({ sent: 1, errors: 0 })
-    expect(send).toHaveBeenCalledOnce()
+  it("charges eligible and cooling-down addresses before admission, with a uniform busy response", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    await subscribe("eligible@example.com")
+    await store.confirm(await token())
+    await subscribe("cooldown@example.com")
+    expect(await subscribe("eligible@example.com")).toBeNull()
+    expect(await subscribe("cooldown@example.com")).toBeNull()
+    expect(await readSignupConfirmationBudget(runtime)).toEqual({ accepted: 4, saturated: false })
+    const input = { ...sender, source: "footer", signupIp: null, hourlyLimit: 4 }
+    for (const email of ["eligible@example.com", "cooldown@example.com", "new@example.com"])
+      expect(await queueSignupConfirmation(runtime, { ...input, email })).toBe("busy")
+    expect((await pool.query("select count(*) from commerce.drop_subscribers")).rows[0].count).toBe("2")
+    expect((await pool.query("select count(*) from commerce.drop_signup_confirmations")).rows[0].count).toBe("2")
+    expect(warn).toHaveBeenCalledTimes(3)
+  })
+  it("caps each request identity at a rolling-hour quarter, independently of subscriber erasure", async () => {
+    const input = { ...sender, source: "footer", signupIp: null, requestSubject: "203.0.113.7" }
+    const results = await Promise.all(
+      Array.from({ length: 8 }, (_, i) =>
+        queueSignupConfirmation(runtime, { ...input, email: `identity-${i}@example.com` })
+      )
+    )
+    expect(results.filter((id) => id !== "rate-limited")).toHaveLength(5)
+    expect(await readSignupConfirmationBudget(runtime)).toEqual({ accepted: 5, saturated: false })
+    await pool.query("delete from commerce.drop_subscribers")
+    expect(await queueSignupConfirmation(runtime, { ...input, email: "erased@example.com" })).toBe("rate-limited")
+    expect(
+      await queueSignupConfirmation(runtime, { ...input, requestSubject: "203.0.113.8", email: "other@example.com" })
+    ).not.toBe("rate-limited")
+    const budget = (await pool.query("select * from commerce.drop_signup_confirmation_budget")).rows[0]
+    expect(budget.subject_hashes).toHaveLength(6)
+    expect(JSON.stringify(budget)).not.toContain(input.requestSubject)
+    expect((await pool.query("select count(*) from commerce.drop_subscribers")).rows[0].count).toBe("1")
+    await pool.query(
+      "update commerce.drop_signup_confirmation_budget set accepted_at=array_fill(now()-interval '61 minutes',array[6])"
+    )
+    expect(await queueSignupConfirmation(runtime, { ...input, email: "later@example.com" })).not.toBe("rate-limited")
+    expect(await readSignupConfirmationBudget(runtime)).toEqual({ accepted: 1, saturated: false })
+  })
+  it("preserves admission capacity when automatic expiry removes pending identities", async () => {
+    const input = { ...sender, source: "footer", signupIp: null, requestSubject: "203.0.113.7", hourlyLimit: 4 }
+    await queueSignupConfirmation(runtime, { ...input, email: "expires@example.com" })
+    await pool.query("update commerce.drop_subscribers set created_at=now()-interval '25 hours'")
+    await pool.query(
+      "update commerce.drop_signup_confirmations set created_at=now()-interval '25 hours', expires_at=now()-interval '1 second'"
+    )
+    expect(await prunePendingSubscribers(runtime)).toBe(1)
+    expect(await queueSignupConfirmation(runtime, { ...input, email: "later@example.com" })).toBe("rate-limited")
+    expect(await readSignupConfirmationBudget(runtime)).toEqual({ accepted: 1, saturated: false })
+    expect((await pool.query("select count(*) from commerce.drop_subscribers")).rows[0].count).toBe("0")
   })
 
-  it("reports prompt deferral after its bounded lock wait and leaves the request queued", async () => {
-    const id = await subscribe()
-    const holder = await runtime.connect()
+  it("uses a configured ceiling and reports saturation while processing already queued mail", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    const input = { ...sender, email: "ceiling@example.com", source: "footer", signupIp: null, hourlyLimit: 1 }
+    const id = await queueSignupConfirmation(runtime, input)
+    expect(await queueSignupConfirmation(runtime, { ...input, email: "second@example.com" })).toBe("busy")
+    const send = vi.fn().mockResolvedValue({ status: "sent", providerEmailId: "receipt" })
+    expect(await processSignupConfirmations({ pool: runtime, send, pause: async () => {}, id: id! })).toEqual({
+      sent: 1,
+      errors: 0,
+      busy: false,
+      saturated: true,
+    })
+    expect(send).toHaveBeenCalledTimes(1)
+    expect(warn).toHaveBeenCalledWith("Signup confirmation hourly ceiling reached")
+    const browser = await pool.connect()
     try {
-      await holder.query("select pg_advisory_lock(hashtextextended('signup-confirmations', 0))")
-      const send = vi.fn()
-      expect(await processSignupConfirmations({ pool: runtime, id: id!, send })).toEqual({ sent: 0, errors: 1 })
-      expect(send).not.toHaveBeenCalled()
-      expect((await request()).status).toBe("queued")
+      for (const role of ["anon", "authenticated"]) {
+        await browser.query(`set role ${role}`)
+        await expect(browser.query("select * from commerce.drop_signup_confirmation_budget")).rejects.toThrow()
+        await browser.query("reset role")
+      }
     } finally {
-      await holder.query("select pg_advisory_unlock(hashtextextended('signup-confirmations', 0))")
+      await browser.query("reset role")
+      browser.release()
+    }
+  })
+  it("retries a busy prompt lock and delivers after the holder releases it", async () => {
+    const id = await subscribe()
+    const singleConnection = new Pool({ connectionString: runtimeConnection, max: 1 })
+    const holder = await pool.connect()
+    let work: Promise<unknown> | undefined
+    try {
+      await holder.query("select pg_advisory_lock(hashtextextended('signup-confirmations',0))")
+      const send = vi.fn().mockResolvedValue({ status: "sent", providerEmailId: "receipt" })
+      work = processSignupConfirmations({ pool: singleConnection, id: id!, send, pause: async () => {} })
+      await new Promise((resolve) => setTimeout(resolve, 350))
+      expect(send).not.toHaveBeenCalled()
+      // Another email operation can use the only connection while the prompt waits.
+      expect((await singleConnection.query("select 1 as available")).rows[0].available).toBe(1)
+      await holder.query("select pg_advisory_unlock(hashtextextended('signup-confirmations',0))")
+      expect(await work).toEqual({ sent: 1, errors: 0, busy: false, saturated: false })
+      expect(send).toHaveBeenCalledTimes(1)
+    } finally {
+      await holder.query("select pg_advisory_unlock_all()")
+      holder.release()
+      await work
+      await singleConnection.end()
+    }
+  })
+  it("reports bounded prompt deferral and leaves the request queued for cron", async () => {
+    const id = await subscribe()
+    const holder = await pool.connect()
+    try {
+      await holder.query("select pg_advisory_lock(hashtextextended('signup-confirmations',0))")
+      const send = vi.fn()
+      const start = Date.now()
+      expect(await processSignupConfirmations({ pool: runtime, id: id!, send })).toEqual({
+        sent: 0,
+        errors: 0,
+        busy: true,
+        saturated: false,
+      })
+      expect(Date.now() - start).toBeLessThan(6_500)
+      expect(send).not.toHaveBeenCalled()
+      expect(await request()).toMatchObject({ status: "queued", attempts: 0 })
+    } finally {
+      await holder.query("select pg_advisory_unlock_all()")
       holder.release()
     }
   }, 10_000)
-
+  it.each([0, 1001, 1.5])("rejects invalid hourly limit %s before writing", async (hourlyLimit) => {
+    await expect(
+      queueSignupConfirmation(runtime, {
+        ...sender,
+        email: "bad@example.com",
+        source: "footer",
+        signupIp: null,
+        hourlyLimit,
+      })
+    ).rejects.toThrow("Invalid confirmation hourly limit")
+    expect((await pool.query("select count(*) from commerce.drop_subscribers")).rows[0].count).toBe("0")
+  })
   it("freezes provider payload and key across a lost response and a later domain change", async () => {
     const id = await subscribe()
     const send = vi
       .fn()
       .mockResolvedValueOnce({ status: "unconfirmed" })
       .mockResolvedValueOnce({ status: "sent", providerEmailId: "receipt-123" })
-    expect(await processSignupConfirmations({ pool: runtime, send, id: id! })).toEqual({ sent: 0, errors: 1 })
+    expect(await processSignupConfirmations({ pool: runtime, send, id: id! })).toEqual({
+      sent: 0,
+      errors: 1,
+      busy: false,
+      saturated: false,
+    })
     expect(await request()).toMatchObject({ status: "unconfirmed", attempts: 1 })
     expect(
       await store.subscribe("shopper@example.com", "footer", null, {
@@ -344,9 +509,19 @@ describe.skipIf(!databaseUrl)("drop signup confirmations", () => {
         from: "Changed <changed@example.com>",
       })
     ).toBeNull()
-    expect(await processSignupConfirmations({ pool: runtime, send })).toEqual({ sent: 0, errors: 0 })
+    expect(await processSignupConfirmations({ pool: runtime, send })).toEqual({
+      sent: 0,
+      errors: 0,
+      busy: false,
+      saturated: false,
+    })
     await pool.query("update commerce.drop_signup_confirmations set next_attempt_at=now()-interval '1 second'")
-    expect(await processSignupConfirmations({ pool: runtime, send })).toEqual({ sent: 1, errors: 0 })
+    expect(await processSignupConfirmations({ pool: runtime, send })).toEqual({
+      sent: 1,
+      errors: 0,
+      busy: false,
+      saturated: false,
+    })
     expect(send.mock.calls[1]).toEqual(send.mock.calls[0])
     expect(send.mock.calls[0]![0].text).toContain("https://shop.example/confirm-signup#")
     expect(await request()).toMatchObject({
@@ -373,7 +548,12 @@ describe.skipIf(!databaseUrl)("drop signup confirmations", () => {
     await subscribe()
     await subscribe("friend@example.com")
     const send = vi.fn().mockResolvedValue({ status: "not-sent" })
-    expect(await processSignupConfirmations({ pool: runtime, send })).toEqual({ sent: 0, errors: 1 })
+    expect(await processSignupConfirmations({ pool: runtime, send })).toEqual({
+      sent: 0,
+      errors: 1,
+      busy: false,
+      saturated: false,
+    })
     expect(send).toHaveBeenCalledTimes(1)
     expect(
       (await pool.query("select attempts from commerce.drop_signup_confirmations order by created_at")).rows

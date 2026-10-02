@@ -144,3 +144,10 @@ it("hides the signup invitation when confirmation sending is unavailable", async
   render(await DesignOfTheWeek())
   expect(screen.queryByText("Drop signup")).not.toBeInTheDocument()
 })
+
+it("explains selected-but-paused signup without showing a form", async () => {
+  confirmation.sending = false
+  render(await DesignOfTheWeek())
+  expect(screen.getByText("New design email signups are paused right now. Check back soon.")).toBeVisible()
+  expect(screen.queryByText("Drop signup")).not.toBeInTheDocument()
+})

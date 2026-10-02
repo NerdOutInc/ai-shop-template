@@ -119,9 +119,21 @@ test("hides signup while confirmation sending is disabled and refuses a foreign 
   await expect(section.getByRole("textbox", { name: "Know when the next one drops" })).toHaveCount(0)
   await expect(section.getByRole("button", { name: "Keep me posted" })).toHaveCount(0)
   await expect(section.getByText(/We'll send a confirmation email first/)).toHaveCount(0)
+  await expect(section.getByText("New design email signups are paused right now. Check back soon.")).toBeVisible()
   const foreign = await request.post("/api/drop-signup", {
     headers: { origin: "https://foreign.example", "content-type": "application/json" },
     data: { email: "someone@example.com", source: "footer" },
   })
   expect(foreign.status()).toBe(403)
+})
+
+test("keeps expired-link recovery honest while signup is paused", async ({ page }) => {
+  await page.route("**/api/drop-confirm", (route) =>
+    route.fulfill({ status: 410, contentType: "application/json", body: "{}" })
+  )
+  await page.goto(`/confirm-signup#${"a".repeat(64)}`)
+  await page.getByRole("button", { name: "Confirm signup" }).click()
+  await expect(page.getByRole("heading", { name: "This link has expired" })).toBeFocused()
+  await expect(page.getByRole("status")).toContainText("New signups are paused right now")
+  await expect(page.getByRole("link", { name: "Back to the shop", exact: true })).toHaveAttribute("href", "/shop")
 })

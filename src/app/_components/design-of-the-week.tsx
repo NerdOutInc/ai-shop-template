@@ -18,11 +18,8 @@ export async function DesignOfTheWeek() {
   const [drop, catalog] = await Promise.all([reading, getCatalog({ productWeek: reading })])
   const dropIds = new Set(catalog.designOfTheWeekProductIds ?? [])
   const roster = catalog.products.filter((product) => dropIds.has(product.id))
-  const signupEnabled =
-    storeConfig.features.dropSignup &&
-    storeConfig.configured &&
-    storeConfig.policies.published &&
-    readSignupConfirmationSetup().sending
+  const signupSelected = storeConfig.features.dropSignup && storeConfig.configured && storeConfig.policies.published
+  const signupEnabled = signupSelected && readSignupConfirmationSetup().sending
 
   return (
     <>
@@ -35,6 +32,11 @@ export async function DesignOfTheWeek() {
           <Link href="/shop" className="button mt-7">
             {storeConfig.home.shopLabel}
           </Link>
+          {signupSelected && !signupEnabled && (
+            <p className="mt-8 text-sm text-muted-foreground">
+              New design email signups are paused right now. Check back soon.
+            </p>
+          )}
           {signupEnabled && (
             <div className="mt-12">
               <DropSignupForm ready={readSignupConfirmationSetup().sending} source="design-of-the-week" />
@@ -59,6 +61,11 @@ export async function DesignOfTheWeek() {
             />
           </section>
 
+          {signupSelected && !signupEnabled && (
+            <p className="mt-8 text-sm text-muted-foreground">
+              New design email signups are paused right now. Check back soon.
+            </p>
+          )}
           {signupEnabled && (
             <section aria-labelledby="drop-signup-heading" className="mt-14 sm:mt-20">
               <h3 id="drop-signup-heading" className="sr-only">

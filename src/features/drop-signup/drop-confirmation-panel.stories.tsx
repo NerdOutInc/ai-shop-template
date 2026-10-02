@@ -54,3 +54,15 @@ export const ReopenEmailAfterReload: Story = {
     await expect(canvas.queryByRole("button")).toBeNull()
   },
 }
+
+export const ExpiredWhileSignupsPaused: Story = {
+  args: { signupReady: false },
+  beforeEach: answering(410),
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Confirm signup" }))
+    await expect(await canvas.findByRole("heading", { name: "This link has expired" })).toHaveFocus()
+    await expect(canvas.getByRole("status")).toHaveTextContent("New signups are paused right now")
+    await expect(canvas.getByRole("link", { name: /^Back to the shop$/ })).toHaveAttribute("href", "/shop")
+    await expect(canvas.queryByText(/request a fresh one on the home page/)).toBeNull()
+  },
+}

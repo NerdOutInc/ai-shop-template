@@ -3,7 +3,7 @@ import Link from "next/link"
 import { storeConfig } from "@/lib/store-config"
 import { useEffect, useRef, useState } from "react"
 
-export function DropConfirmationPanel() {
+export function DropConfirmationPanel({ signupReady = true }: { signupReady?: boolean }) {
   const token = useRef<string | null>(null)
   const read = useRef(false)
   const heading = useRef<HTMLHeadingElement>(null)
@@ -69,7 +69,9 @@ export function DropConfirmationPanel() {
           : state === "missing"
             ? "This page no longer has your confirmation link. Open the link from your email again, then choose Confirm signup. You don't need to request another email."
             : state === "expired"
-              ? "This link has expired or been replaced. Use the latest link in your email, or request a fresh one on the home page after the 15-minute resend wait."
+              ? signupReady
+                ? "This link has expired or been replaced. Use the latest link in your email, or request a fresh one on the home page after the 15-minute resend wait."
+                : `This link has expired or been replaced. Use the latest link in your email. New signups are paused right now; contact ${storeConfig.supportEmail} if you need help.`
               : "Choose Confirm signup to receive future design-drop emails. Opening this page hasn't signed you up."}
       </p>
       {!["confirmed", "missing", "expired"].includes(state) && (
@@ -85,8 +87,11 @@ export function DropConfirmationPanel() {
         </p>
       )}
       <p className="mt-6">
-        <Link className="underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4" href="/">
-          Back to the shop and signup form
+        <Link
+          className="underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4"
+          href={signupReady ? "/" : "/shop"}
+        >
+          {signupReady ? "Back to the shop and signup form" : "Back to the shop"}
         </Link>
       </p>
       <noscript>

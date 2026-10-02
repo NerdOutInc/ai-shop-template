@@ -1,5 +1,6 @@
 import "server-only"
-import type { Pool } from "pg"
+import type { Pool, PoolClient } from "pg"
+import { readSignupConfirmationBudget } from "./read-signup-confirmation-budget.server"
 import type { SingleRecipientEmailMessage } from "@/lib/single-recipient-email-message"
 import type { SingleEmailSendOutcome } from "@/lib/send-single-email.server"
 
@@ -10,13 +11,19 @@ export async function processSignupConfirmations(deps: {
   send: (message: SingleRecipientEmailMessage, key: string) => Promise<SingleEmailSendOutcome>
   pause?: () => Promise<void>
 }) {
-  const client = await deps.pool.connect()
+  let client: PoolClient | undefined
   let locked = false
   let destroy = false
-  const result = { sent: 0, errors: 0 }
+  const result = {
+    sent: 0,
+    errors: 0,
+    busy: false,
+    saturated: (await readSignupConfirmationBudget(deps.pool)).saturated,
+  }
   try {
     const lockDeadline = Date.now() + (deps.id ? 5_000 : 0)
     do {
+      client = await deps.pool.connect()
       locked =
         (
           await client.query<{ locked: boolean }>(
@@ -24,13 +31,16 @@ export async function processSignupConfirmations(deps: {
           )
         ).rows[0]?.locked ?? false
       if (locked || Date.now() >= lockDeadline) break
-      await new Promise<void>((resolve) => setTimeout(resolve, 100))
-    } while (!locked)
+      // A lock waiter should not occupy the shared email pool between attempts.
+      client.release()
+      client = undefined
+      await new Promise<void>((resolve) => setTimeout(resolve, 250))
+    } while (Date.now() < lockDeadline)
     if (!locked) {
-      // Prompt contention is observable; the durable request remains available to cron.
-      if (deps.id) result.errors++
+      result.busy = true
       return result
     }
+    if (!client) throw new Error("Signup worker lock has no connection")
     await client.query(`update commerce.drop_signup_confirmations set status = 'expired', message = null
       where status in ('queued', 'unconfirmed') and (expires_at <= now() or revoked_at is not null or used_at is not null
         or attempt_started_at < now() - interval '23 hours')`)
@@ -86,15 +96,16 @@ export async function processSignupConfirmations(deps: {
         if (outcome.status === "not-sent") break
       }
     }
+    result.saturated = (await readSignupConfirmationBudget(client)).saturated
     return result
   } finally {
     if (locked) {
       try {
-        await client.query("select pg_advisory_unlock(hashtextextended('signup-confirmations', 0))")
+        await client?.query("select pg_advisory_unlock(hashtextextended('signup-confirmations', 0))")
       } catch {
         destroy = true
       }
     }
-    client.release(destroy)
+    client?.release(destroy)
   }
 }

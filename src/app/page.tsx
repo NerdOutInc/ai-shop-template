@@ -54,10 +54,15 @@ export default async function HomePage() {
       {storeConfig.features.dropSignup &&
         !storeConfig.features.designOfTheWeek &&
         storeConfig.configured &&
-        storeConfig.policies.published &&
-        readSignupConfirmationSetup().sending && (
+        storeConfig.policies.published && (
           <section aria-label="New design updates" className="page-width py-10 sm:py-14">
-            <DropSignupForm ready={readSignupConfirmationSetup().sending} source="home" />
+            {readSignupConfirmationSetup().sending ? (
+              <DropSignupForm ready source="home" />
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                New design email signups are paused right now. Check back soon.
+              </p>
+            )}
           </section>
         )}
     </main>

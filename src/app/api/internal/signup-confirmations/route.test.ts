@@ -99,3 +99,13 @@ it("continues expiry when store, policy and list presentation flags are closed",
   expect(prune).toHaveBeenCalledOnce()
   expect(run).not.toHaveBeenCalled()
 })
+
+it.each([
+  { sent: 0, errors: 0, busy: true, saturated: false },
+  { sent: 1, errors: 0, busy: false, saturated: true },
+])("reports contention and admission saturation as healthy worker outcomes", async (result) => {
+  run.mockResolvedValue(result)
+  const response = await GET(request())
+  expect(response.status).toBe(200)
+  expect(await response.json()).toEqual({ ...result, pruned: 0 })
+})

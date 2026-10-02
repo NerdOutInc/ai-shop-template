@@ -18,6 +18,8 @@ export const commerceTestConfig = {
     VERCEL: "",
     VERCEL_ENV: "production",
     SIGNUP_CONFIRMATIONS_ENABLED: "true",
+    // Offline browser projects share one identity; production-default limits have dedicated DB tests.
+    SIGNUP_CONFIRMATIONS_HOURLY_LIMIT: "60",
     RESEND_API_KEY: "commerce-confirmation-fixture-never-a-real-key",
     ORDER_ALERT_FROM_EMAIL: "drops@example.test",
     COMMERCE_E2E: "true",

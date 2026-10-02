@@ -97,7 +97,7 @@ describe("subscribeToDrops", () => {
       "shopper@example.com",
       "design-of-the-week",
       identity.address,
-      expect.objectContaining({ from: "Fixture Store <drops@example.com>" })
+      expect.objectContaining({ from: "Fixture Store <drops@example.com>", requestSubject: identity.subject })
     )
     expect(store.allowRequest.mock.invocationCallOrder[0]).toBeLessThan(store.subscribe.mock.invocationCallOrder[0]!)
   })
@@ -156,11 +156,17 @@ describe("subscribeToDrops", () => {
   })
 })
 
-it("acknowledges saturation generically without scheduling an invalid request id or exposing an address", async () => {
-  const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
-  store.subscribe.mockResolvedValue("limited")
-  expect(await subscribeToDrops({ email: "shopper@example.com", source: "footer" })).toBe("saved")
+it.each(["busy", "rate-limited"])("returns %s without scheduling provider work", async (status) => {
+  store.subscribe.mockResolvedValue(status)
+  expect(await subscribeToDrops({ email: "shopper@example.com", source: "footer" })).toBe(status)
   expect(after).not.toHaveBeenCalled()
-  expect(warn).toHaveBeenCalledWith("Signup confirmation hourly ceiling reached")
-  expect(JSON.stringify(warn.mock.calls)).not.toContain("shopper@example.com")
+})
+
+it("keeps successful prompt delivery quiet even when the store has been saturated", async () => {
+  const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+  store.subscribe.mockResolvedValue("request-id")
+  runSignupConfirmations.mockResolvedValue({ sent: 1, errors: 0, busy: false, saturated: true })
+  expect(await subscribeToDrops({ email: "shopper@example.com", source: "footer" })).toBe("saved")
+  await after.mock.calls[0]![0]()
+  expect(warn).not.toHaveBeenCalled()
 })

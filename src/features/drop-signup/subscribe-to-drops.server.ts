@@ -10,7 +10,7 @@ import { getDropSignupStore } from "./get-drop-signup-store.server"
 import { getPublicRequestIdentity } from "./get-public-request-identity.server"
 import { normalizeEmail } from "./normalize-email"
 
-export type SubscribeResult = "saved" | "unidentified" | "rate-limited" | "unavailable"
+export type SubscribeResult = "saved" | "busy" | "unidentified" | "rate-limited" | "unavailable"
 
 /**
  * Take a signup, or say why not.
@@ -37,19 +37,20 @@ export async function subscribeToDrops(input: DropSignupRequest): Promise<Subscr
     if (!(await store.allowRequest(identity.subject, identity.limit))) return "rate-limited"
     const id = await store.subscribe(normalizeEmail(input.email), input.source, identity.address, {
       hourlyLimit: setup.hourlyLimit,
+      requestSubject: identity.subject,
       from: setup.from,
       replyTo: storeConfig.supportEmail,
       siteUrl: getSiteUrl().origin,
     })
-    if (id === "limited") {
-      console.warn("Signup confirmation hourly ceiling reached")
-    } else if (id) {
+    if (id === "busy" || id === "rate-limited") return id
+    if (id) {
       // Provider pacing and failures must not distinguish a new address from an eligible one.
       // The queue is durable before acknowledgment; cron retries if this prompt run cannot finish.
       try {
         after(async () => {
           try {
-            if ((await runSignupConfirmations(id)).errors) console.warn("Signup confirmation deferred")
+            const result = await runSignupConfirmations(id)
+            if (result.busy || result.errors) console.warn("Signup confirmation deferred")
           } catch {
             console.warn("Signup confirmation deferred")
           }

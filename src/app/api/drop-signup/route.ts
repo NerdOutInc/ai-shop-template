@@ -35,7 +35,8 @@ export async function POST(request: Request) {
   if (!input.success) return respond({ error: "Check that email address and try again." }, 400)
 
   const result = await subscribeToDrops(input.data)
-  if (result === "rate-limited") return respond({ error: "That's a few tries in a row. Give it a few minutes." }, 429)
+  if (result === "rate-limited") return respond({ error: "That's a few tries in a row. Try again in an hour." }, 429)
+  if (result === "busy") return respond({ error: "Sign-ups are busy right now. Try again in an hour." }, 503)
   if (result === "unidentified") return respond({ error: "We couldn't take that sign-up. Please try again." }, 400)
   if (result === "unavailable") return respond({ error: "Sign-ups are taking a breather. Try again shortly." }, 503)
   return respond({ requested: true })

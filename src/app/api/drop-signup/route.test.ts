@@ -79,7 +79,7 @@ describe("drop signup route", () => {
     subscribeToDrops.mockResolvedValue("rate-limited")
     const result = await POST(request())
     expect(result.status).toBe(429)
-    expect(await result.json()).toEqual({ error: "That's a few tries in a row. Give it a few minutes." })
+    expect(await result.json()).toEqual({ error: "That's a few tries in a row. Try again in an hour." })
   })
 
   it("refuses a request it cannot attribute, rather than allowing it", async () => {
@@ -103,4 +103,12 @@ it("returns 404 when signup is disabled without consuming the body or collecting
   expect(response.headers.get("cache-control")).toContain("no-store")
   expect(input.bodyUsed).toBe(false)
   expect(subscribeToDrops).not.toHaveBeenCalled()
+})
+
+it("reports a shared admission ceiling as retryable busy instead of accepted", async () => {
+  subscribeToDrops.mockResolvedValue("busy")
+  const response = await POST(request())
+  expect(response.status).toBe(503)
+  expect(response.headers.get("cache-control")).toContain("no-store")
+  expect(await response.json()).toEqual({ error: "Sign-ups are busy right now. Try again in an hour." })
 })
