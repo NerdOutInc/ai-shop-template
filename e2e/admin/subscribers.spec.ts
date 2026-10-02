@@ -141,12 +141,23 @@ test("keeps private evidence out of URLs and safely erases only the reviewed ide
     expect(await lookup.text()).not.toContain("private-confirmation-secret")
     await page.getByRole("button", { name: "Unsubscribe", exact: true }).click()
     const confirmStop = page.getByRole("button", { name: "Confirm unsubscribe", exact: true })
-    await expect(confirmStop).toBeFocused()
+    const stopHeading = page.getByRole("heading", { name: "Unsubscribe this subscriber?" })
+    await expect(stopHeading).toBeFocused()
+    await expect(stopHeading).toHaveAccessibleDescription(/Only a fresh confirmation/)
+    await expect(confirmStop).toHaveAccessibleDescription(/already on its way cannot be recalled/)
+    await page.keyboard.press("Enter")
+    expect(
+      (await database.query("select unsubscribed_at from commerce.drop_subscribers where id=$1", [id])).rows[0]
+        .unsubscribed_at
+    ).toBeNull()
     await expect(page.getByText("Legacy consent", { exact: true })).toBeVisible()
     await page.getByRole("button", { name: "Cancel unsubscribe", exact: true }).click()
     await expect(page.getByRole("button", { name: "Unsubscribe", exact: true })).toBeFocused()
     await page.getByRole("button", { name: "Unsubscribe", exact: true }).click()
-    await confirmStop.click()
+    await expect(stopHeading).toBeFocused()
+    await page.keyboard.press("Tab")
+    await expect(confirmStop).toBeFocused()
+    await page.keyboard.press("Enter")
     await expect(page.getByRole("button", { name: "Keep unsubscribed / revoke new links" })).toBeVisible()
     expect(
       (

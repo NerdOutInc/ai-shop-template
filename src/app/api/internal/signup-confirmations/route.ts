@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "node:crypto"
 import { getDropEmailPool } from "@/features/drop-emails/get-drop-email-pool.server"
+import { pruneSignupConfirmationBudget } from "@/features/drop-signup/prune-signup-confirmation-budget.server"
 import { prunePendingSubscribers } from "@/features/subscribers/prune-pending-subscribers.server"
 import { runSignupConfirmations } from "@/features/drop-signup/run-signup-confirmations.server"
 import { env } from "@/lib/env"
@@ -24,7 +25,13 @@ export async function GET(request: Request) {
     cleanupFailed = true
     console.error("Pending signup cleanup needs attention")
   }
-  const cleanup = { pruned, ...(cleanupFailed ? { cleanupError: "Pending signup cleanup needs attention" } : {}) }
+  try {
+    await pruneSignupConfirmationBudget(getDropEmailPool())
+  } catch {
+    cleanupFailed = true
+    console.error("Signup admission cleanup needs attention")
+  }
+  const cleanup = { pruned, ...(cleanupFailed ? { cleanupError: "Signup housekeeping needs attention" } : {}) }
   try {
     if (env.SIGNUP_CONFIRMATIONS_ENABLED !== "true")
       return Response.json(
@@ -32,7 +39,11 @@ export async function GET(request: Request) {
         { status: cleanupFailed ? 503 : 200, headers }
       )
     const result = await runSignupConfirmations()
-    return Response.json({ ...result, ...cleanup }, { status: result.errors || cleanupFailed ? 503 : 200, headers })
+    if (result.saturationNeedsAttention) console.error("Signup admission has remained saturated for three hours")
+    return Response.json(
+      { ...result, ...cleanup },
+      { status: result.errors || cleanupFailed || result.saturationNeedsAttention ? 503 : 200, headers }
+    )
   } catch {
     console.error("Signup confirmations need attention")
     return Response.json({ error: "Signup confirmations need attention" }, { status: 503, headers })

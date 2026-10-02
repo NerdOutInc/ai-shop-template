@@ -12,13 +12,14 @@ export function readSignupConfirmationSetup() {
   const from = env.DROP_EMAIL_FROM_EMAIL ?? env.ORDER_ALERT_FROM_EMAIL
   return {
     hourlyLimit: env.SIGNUP_CONFIRMATIONS_HOURLY_LIMIT,
+    identityKey: env.CRON_SECRET,
     sending:
       env.SIGNUP_CONFIRMATIONS_ENABLED === "true" &&
       env.VERCEL_ENV === "production" &&
       storeConfig.configured &&
       storeConfig.policies.published &&
       (storeConfig.features.dropSignup || storeConfig.privacy.retainedDropSubscribers) &&
-      Boolean(secureOrigin && env.DATABASE_URL && env.RESEND_API_KEY && from),
+      Boolean(secureOrigin && env.DATABASE_URL && env.RESEND_API_KEY && from && env.CRON_SECRET),
     from: from ? formatDropEmailSender(storeConfig.name, from) : null,
     apiKey: env.RESEND_API_KEY,
   }

@@ -2,6 +2,11 @@ name: Integration checks
 
 on:
   workflow_call:
+    inputs:
+      selection:
+        type: string
+        required: false
+        default: ""
   workflow_dispatch:
 
 permissions:
@@ -10,7 +15,7 @@ permissions:
 # Check owns cancellation for PR/main runs. Reusing its concurrency group here
 # would cancel the caller because a reusable workflow shares github.workflow.
 concurrency:
-  group: integration-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: integration-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 env:
@@ -18,9 +23,11 @@ env:
   NEXT_TELEMETRY_DISABLED: 1
   NEXT_PUBLIC_PRODUCT_IMAGE_BLOB_HOST: publishinge2e.public.blob.vercel-storage.com
   STORYBOOK_DISABLE_TELEMETRY: 1
+  CI_TEST_SELECTION: ${{ inputs.selection }}
 
 jobs:
   storybook:
+    if: inputs.selection == '' || fromJSON(inputs.selection).stories[0] != null
     name: Storybook checks
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -39,9 +46,12 @@ jobs:
         run: |
           # Pinned Playwright browsers do not use the image's unrelated Chrome apt feed.
           sudo rm -f /etc/apt/sources.list.d/google-chrome*.list /etc/apt/sources.list.d/google-chrome*.sources
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i '/azure\.archive\.ubuntu\.com/d' /etc/apt/apt-mirrors.txt
+          fi
           pnpm exec playwright install --with-deps chromium
       - name: Test component stories
-        run: pnpm test:stories
+        run: node scripts/ci/run-selected-tests.mjs stories
       - name: Build Storybook
         run: pnpm build-storybook
       - name: Upload Storybook failure diagnostics
@@ -56,6 +66,7 @@ jobs:
           retention-days: 7
 
   storefront:
+    if: inputs.selection == '' || fromJSON(inputs.selection).public[0] != null || fromJSON(inputs.selection).publishing[0] != null
     name: Storefront browser checks
     runs-on: ubuntu-latest
     # Browser downloads can take 15 minutes; leave room for all three fixture builds and suites.
@@ -93,12 +104,15 @@ jobs:
       - name: Install test browsers
         run: |
           sudo rm -f /etc/apt/sources.list.d/google-chrome*.list /etc/apt/sources.list.d/google-chrome*.sources
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i '/azure\.archive\.ubuntu\.com/d' /etc/apt/apt-mirrors.txt
+          fi
           pnpm exec playwright install --with-deps chromium webkit
       - name: Build the unconfigured and configured storefront fixtures
         id: storefront-build
         run: pnpm test:e2e:prepare
       - name: Test production pages
-        run: pnpm test:e2e
+        run: node scripts/ci/run-selected-tests.mjs public
       - name: Upload storefront browser failure diagnostics
         if: failure()
         uses: actions/upload-artifact@v7.0.1
@@ -110,13 +124,13 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
       - name: Test enabled publishing through HTTP and browsers
-        if: ${{ !cancelled() && steps.storefront-build.outcome == 'success' }}
-        run: pnpm test:e2e:publishing
+        if: ${{ !cancelled() && steps.storefront-build.outcome == 'success' && (inputs.selection == '' || fromJSON(inputs.selection).publishing[0] != null) }}
+        run: node scripts/ci/run-selected-tests.mjs publishing
       - name: Build the configured commerce fixture
-        if: ${{ !cancelled() && steps.storefront-build.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.storefront-build.outcome == 'success' && inputs.selection == '' }}
         run: pnpm test:commerce:build
       - name: Test essential customer commerce journeys
-        if: ${{ !cancelled() && steps.storefront-build.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.storefront-build.outcome == 'success' && inputs.selection == '' }}
         run: pnpm test:e2e:commerce
       - name: Upload commerce browser failure diagnostics
         if: failure()
@@ -140,6 +154,7 @@ jobs:
           retention-days: 7
 
   admin:
+    if: inputs.selection == '' || fromJSON(inputs.selection).admin[0] != null
     name: Admin browser checks (signup ${{ matrix.public-signup }})
     strategy:
       fail-fast: false
@@ -163,6 +178,9 @@ jobs:
       - name: Install Chromium
         run: |
           sudo rm -f /etc/apt/sources.list.d/google-chrome*.list /etc/apt/sources.list.d/google-chrome*.sources
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i '/azure\.archive\.ubuntu\.com/d' /etc/apt/apt-mirrors.txt
+          fi
           pnpm exec playwright install --with-deps chromium
       - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3
         id: setup-supabase
@@ -176,7 +194,7 @@ jobs:
       - name: Build with the local admin origin
         run: pnpm test:admin:build
       - name: Test private library and Supabase sign-in
-        run: pnpm test:e2e:admin
+        run: node scripts/ci/run-selected-tests.mjs admin
       - name: Stop isolated Supabase Auth
         if: always() && steps.setup-supabase.outcome == 'success'
         run: supabase stop --workdir .tmp/admin-e2e --no-backup

@@ -25,7 +25,7 @@ Paths below are relative to the repository root. They describe where code belong
 
 Use the official shadcn **Base UI** variants with the `base-nova` preset in `components.json`. Keep future primitives on this foundation; introducing Radix is a stack change that must be discussed first.
 
-Keep tool configuration, `.storybook/`, documentation, and maintenance scripts at the repository root. Framework entrypoints may also live directly in `src/` when required: `proxy.ts`, `instrumentation.ts`, `instrumentation-client.ts`, and `mdx-components.tsx`. Do not create them until they have a job.
+Keep tool configuration, `.storybook/`, documentation, and maintenance scripts at the repository root. `vitest.commerce.config.ts` is the explicitly scoped commerce-tool configuration; the default Vitest config owns ordinary unit files once. Framework entrypoints may also live directly in `src/` when required: `proxy.ts`, `instrumentation.ts`, `instrumentation-client.ts`, and `mdx-components.tsx`. Do not create them until they have a job.
 
 Keep a new feature flat:
 
@@ -161,4 +161,4 @@ The existing Python tools in `scripts/artwork/` keep their established naming an
 
 When changing conventions or enforcement, include fixtures that demonstrate the intended acceptance and rejection. Preserve coverage of alias and relative imports, route-private ownership, type-only dependencies, static and dynamic cycles, overloads, associated type exports, framework filenames, and narrowly scoped exceptions. Fix the underlying issue rather than adding broad ignores or disabling a rule to clear CI.
 
-Browser verification remains necessary for UI changes: check narrow and wide layouts, keyboard navigation, visible focus, and changed interactions. A successful build does not establish that those interactions work. Full CI must pass before merge; report skipped or unavailable checks explicitly.
+Browser verification remains necessary for UI changes: check narrow and wide layouts, keyboard navigation, visible focus, and changed interactions. A successful build does not establish that those interactions work. The documented PR CI suite and Required checks must pass before merge; full verification is required before production release; report skipped or unavailable checks explicitly.

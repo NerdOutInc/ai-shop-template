@@ -4,12 +4,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import AdminDropEmailsPage from "./page"
 
 const mocks = vi.hoisted(() => ({
-  env: { DROP_EMAILS_ENABLED: "true", VERCEL_ENV: "production" },
+  budget: vi.fn(),
+  env: { DATABASE_URL: "fixture", DROP_EMAILS_ENABLED: "true", VERCEL_ENV: "production" },
   requireAdmin: vi.fn(),
   confirmation: vi.fn(),
   setup: vi.fn(),
   overview: vi.fn(),
   next: vi.fn(),
+}))
+vi.mock("@/features/drop-emails/get-drop-email-pool.server", () => ({ getDropEmailPool: () => ({}) }))
+vi.mock("@/features/drop-signup/read-signup-confirmation-budget.server", () => ({
+  readSignupConfirmationBudget: mocks.budget,
 }))
 vi.mock("@/lib/env", () => ({ env: mocks.env }))
 vi.mock("@/features/admin/require-admin.server", () => ({ requireAdmin: mocks.requireAdmin }))
@@ -19,6 +24,7 @@ vi.mock("@/features/drop-emails/read-drop-email-overview.server", () => ({ readD
 vi.mock("@/features/drop-emails/render-next-drop-email.server", () => ({ renderNextDropEmail: mocks.next }))
 
 beforeEach(() => {
+  mocks.budget.mockResolvedValue({ accepted: 0, saturated: false })
   mocks.confirmation.mockReturnValue({ sending: false, hourlyLimit: 20 })
   mocks.env.DROP_EMAILS_ENABLED = "true"
   mocks.env.VERCEL_ENV = "production"
@@ -65,6 +71,7 @@ describe("admin drop emails page", () => {
   it("reads nothing for a visitor the admin gate turns away", async () => {
     mocks.requireAdmin.mockRejectedValue(new Error("NEXT_REDIRECT"))
     await expect(AdminDropEmailsPage()).rejects.toThrow("NEXT_REDIRECT")
+    expect(mocks.budget).not.toHaveBeenCalled()
     expect(mocks.overview).not.toHaveBeenCalled()
     expect(mocks.next).not.toHaveBeenCalled()
   })
@@ -126,4 +133,10 @@ it("distinguishes signup confirmation readiness from weekly sending", async () =
   expect(screen.getByRole("heading", { name: "Sending is on" })).toBeVisible()
   expect(screen.getByRole("heading", { name: "Signup confirmation sending is off" })).toBeVisible()
   expect(screen.getByText(/New signups are unavailable/)).toBeVisible()
+})
+
+it("shows aggregate admitted requests and explains that excess requests were not queued", async () => {
+  mocks.budget.mockResolvedValue({ accepted: 1, saturated: true })
+  render(await AdminDropEmailsPage())
+  expect(screen.getByText(/1 signup request admitted/)).toHaveTextContent("Excess requests were not queued")
 })

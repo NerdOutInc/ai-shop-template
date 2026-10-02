@@ -160,3 +160,11 @@ test("ignored root output and asset names cannot hide source files in nested dir
     )
   assert.ok(errors.every((error) => /^(?:src|test|e2e)\//.test(error)))
 })
+
+test("the commerce tool config is a narrow root exception", (t) => {
+  const root = fixture(t, ["vitest.commerce.config.ts", "vitest.other.config.ts", "commerce.ts"])
+  const errors = checkStructure(root)
+  assert.ok(!errors.some((error) => error.startsWith("vitest.commerce.config.ts:")))
+  assert.ok(errors.some((error) => error.startsWith("vitest.other.config.ts:")))
+  assert.ok(errors.some((error) => error.startsWith("commerce.ts:")))
+})

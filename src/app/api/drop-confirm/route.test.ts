@@ -6,7 +6,7 @@ import { POST } from "./route"
 const { store, identity, env } = vi.hoisted(() => ({
   store: { confirm: vi.fn(), allowRequest: vi.fn() },
   identity: vi.fn(),
-  env: { VERCEL_ENV: "production" },
+  env: { VERCEL_ENV: "production", CRON_SECRET: "fixture-confirmation-identity-secret" },
 }))
 vi.mock("server-only", () => ({}))
 vi.mock("@/features/drop-signup/get-drop-signup-store.server", () => ({ getDropSignupStore: () => store }))
@@ -59,4 +59,9 @@ it("denies an unconfigured or closed undisclosed list before storage", async () 
   storeConfig.configured = false
   expect((await POST(request())).status).toBe(503)
   expect(store.confirm).not.toHaveBeenCalled()
+})
+
+it("uses the server key for the confirmation request limiter", async () => {
+  await POST(request())
+  expect(store.allowRequest).toHaveBeenCalledWith("confirmation:ip", 5, "fixture-confirmation-identity-secret")
 })

@@ -11,18 +11,17 @@ vi.mock("./read-signup-confirmation-setup.server", () => ({ readSignupConfirmati
 vi.mock("@/lib/send-single-email.server", () => ({ sendSingleEmail: vi.fn() }))
 beforeEach(() => {
   mocks.setup.mockReturnValue({ sending: true, apiKey: "fixture" })
-  mocks.process.mockResolvedValue({ sent: 1, errors: 0 })
+  mocks.process.mockResolvedValue({ sent: 1, errors: 0, busy: false, saturated: false })
   mocks.query.mockResolvedValue({ rows: [{ limited: false }] })
 })
-it("makes recent saturation visible in worker health while still processing durable requests", async () => {
-  vi.spyOn(console, "warn").mockImplementation(() => {})
-  mocks.query.mockResolvedValue({ rows: [{ limited: true }] })
-  expect(await runSignupConfirmations()).toEqual({ sent: 1, errors: 1 })
+it("passes aggregate saturation through without reporting a delivery error", async () => {
+  mocks.process.mockResolvedValue({ sent: 1, errors: 0, busy: false, saturated: true })
+  expect(await runSignupConfirmations()).toEqual({ sent: 1, errors: 0, busy: false, saturated: true })
   expect(mocks.process).toHaveBeenCalledOnce()
-  expect(console.warn).toHaveBeenCalledWith("Signup confirmation hourly ceiling reached")
+  expect(mocks.query).not.toHaveBeenCalled()
 })
 it("returns healthy delivery results without recent saturation", async () => {
-  expect(await runSignupConfirmations()).toEqual({ sent: 1, errors: 0 })
+  expect(await runSignupConfirmations()).toEqual({ sent: 1, errors: 0, busy: false, saturated: false })
 })
 it("never processes the queue when the sender is disabled", async () => {
   mocks.setup.mockReturnValue({ sending: false })

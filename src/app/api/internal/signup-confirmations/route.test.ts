@@ -4,7 +4,7 @@ import { beforeEach, expect, it, vi } from "vitest"
 
 import { GET } from "./route"
 
-const { settings, run, prune } = vi.hoisted(() => ({
+const { settings, run, prune, pruneBudget } = vi.hoisted(() => ({
   settings: {
     DATABASE_URL: "fixture",
     CRON_SECRET: "test-secret",
@@ -13,10 +13,14 @@ const { settings, run, prune } = vi.hoisted(() => ({
   },
   run: vi.fn(),
   prune: vi.fn(),
+  pruneBudget: vi.fn(),
 }))
 vi.mock("server-only", () => ({}))
 vi.mock("@/features/drop-emails/get-drop-email-pool.server", () => ({ getDropEmailPool: () => ({}) }))
 vi.mock("@/features/subscribers/prune-pending-subscribers.server", () => ({ prunePendingSubscribers: prune }))
+vi.mock("@/features/drop-signup/prune-signup-confirmation-budget.server", () => ({
+  pruneSignupConfirmationBudget: pruneBudget,
+}))
 vi.mock("@/lib/env", () => ({ env: settings }))
 vi.mock("@/features/drop-signup/run-signup-confirmations.server", () => ({ runSignupConfirmations: run }))
 
@@ -25,6 +29,7 @@ beforeEach(() => {
   settings.SIGNUP_CONFIRMATIONS_ENABLED = "true"
   settings.VERCEL_ENV = "production"
   prune.mockReset().mockResolvedValue(0)
+  pruneBudget.mockReset().mockResolvedValue(undefined)
   run.mockReset().mockResolvedValue({ sent: 2, errors: 0 })
 })
 const request = (token = "test-secret") =>
@@ -68,7 +73,7 @@ it("reports failed housekeeping without blocking confirmation sending", async ()
     sent: 2,
     errors: 0,
     pruned: 0,
-    cleanupError: "Pending signup cleanup needs attention",
+    cleanupError: "Signup housekeeping needs attention",
   })
   settings.SIGNUP_CONFIRMATIONS_ENABLED = "false"
   const disabled = await GET(request())
@@ -76,7 +81,7 @@ it("reports failed housekeeping without blocking confirmation sending", async ()
   expect(await disabled.json()).toMatchObject({
     processed: false,
     reason: "disabled",
-    cleanupError: "Pending signup cleanup needs attention",
+    cleanupError: "Signup housekeeping needs attention",
   })
   expect(run).toHaveBeenCalledTimes(1)
 })
@@ -98,4 +103,34 @@ it("continues expiry when store, policy and list presentation flags are closed",
   expect(response.status).toBe(200)
   expect(prune).toHaveBeenCalledOnce()
   expect(run).not.toHaveBeenCalled()
+})
+
+it.each([
+  { sent: 0, errors: 0, busy: true, saturated: false },
+  { sent: 1, errors: 0, busy: false, saturated: true },
+])("reports contention and admission saturation as healthy worker outcomes", async (result) => {
+  run.mockResolvedValue(result)
+  const response = await GET(request())
+  expect(response.status).toBe(200)
+  expect(await response.json()).toEqual({ ...result, pruned: 0 })
+})
+
+it("reports sustained saturation to cron monitoring without calling it a delivery error", async () => {
+  run.mockResolvedValue({ sent: 1, errors: 0, busy: false, saturated: true, saturationNeedsAttention: true })
+  const error = vi.spyOn(console, "error").mockImplementation(() => {})
+  const response = await GET(request())
+  expect(response.status).toBe(503)
+  expect(await response.json()).toMatchObject({ sent: 1, errors: 0, saturationNeedsAttention: true })
+  expect(error).toHaveBeenCalledWith("Signup admission has remained saturated for three hours")
+})
+
+it("prunes budget identities while sending is disabled and reports cleanup failure without blocking delivery", async () => {
+  settings.SIGNUP_CONFIRMATIONS_ENABLED = "false"
+  expect((await GET(request())).status).toBe(200)
+  expect(pruneBudget).toHaveBeenCalledOnce()
+  expect(run).not.toHaveBeenCalled()
+  settings.SIGNUP_CONFIRMATIONS_ENABLED = "true"
+  pruneBudget.mockRejectedValue(new Error("private database body"))
+  expect((await GET(request())).status).toBe(503)
+  expect(run).toHaveBeenCalledOnce()
 })

@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState, type FormEvent } from "react"
+import { useEffect, useRef, useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -20,7 +20,8 @@ const moment = (value: string | null) =>
 export function SubscriberManager() {
   const router = useRouter()
   const unsubscribeButton = useRef<HTMLButtonElement>(null)
-  const confirmationButton = useRef<HTMLButtonElement>(null)
+  const stopHeading = useRef<HTMLHeadingElement>(null)
+  const stopFocusTarget = useRef<"heading" | "unsubscribe" | null>(null)
   const [confirmUnsubscribe, setConfirmUnsubscribe] = useState(false)
   const resultRef = useRef<HTMLDivElement>(null)
   const [email, setEmail] = useState("")
@@ -29,6 +30,15 @@ export function SubscriberManager() {
   const [message, setMessage] = useState("")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState("")
+
+  useEffect(() => {
+    if (busy || !stopFocusTarget.current) return
+    const target = stopFocusTarget.current === "heading" ? stopHeading.current : unsubscribeButton.current
+    if (target) {
+      target.focus()
+      stopFocusTarget.current = null
+    }
+  }, [busy, confirmUnsubscribe])
 
   async function request(input: { action: "lookup"; email: string } | { action: "unsubscribe"; id: string }) {
     setBusy(true)
@@ -174,7 +184,7 @@ export function SubscriberManager() {
                 ref={unsubscribeButton}
                 onClick={() => {
                   setConfirmUnsubscribe(true)
-                  requestAnimationFrame(() => confirmationButton.current?.focus())
+                  stopFocusTarget.current = "heading"
                 }}
                 className="self-start"
               >
@@ -183,16 +193,26 @@ export function SubscriberManager() {
               {confirmUnsubscribe && (
                 <div
                   role="group"
-                  aria-label="Confirm unsubscribe"
+                  aria-labelledby="subscriber-stop-heading"
                   className="flex flex-col gap-3 rounded-lg border p-4"
                 >
-                  <p className="text-sm break-words">
-                    Stop future emails to {subscriber.email} and revoke open confirmation links? Only this subscriber
-                    can resume by signing up and confirming again.
+                  <h3
+                    ref={stopHeading}
+                    id="subscriber-stop-heading"
+                    tabIndex={-1}
+                    aria-describedby="subscriber-stop-warning"
+                    className="font-semibold"
+                  >
+                    Unsubscribe this subscriber?
+                  </h3>
+                  <p id="subscriber-stop-warning" className="text-sm break-words">
+                    This stops future drop emails and revokes open confirmation links for {subscriber.email}. Only a
+                    fresh confirmation by the subscriber can resume emails; an admin cannot undo this stop. A send
+                    already on its way cannot be recalled.
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <Button
-                      ref={confirmationButton}
+                      aria-describedby="subscriber-stop-warning"
                       disabled={busy}
                       onClick={() => {
                         setConfirmUnsubscribe(false)
@@ -206,7 +226,7 @@ export function SubscriberManager() {
                       disabled={busy}
                       onClick={() => {
                         setConfirmUnsubscribe(false)
-                        unsubscribeButton.current?.focus()
+                        stopFocusTarget.current = "unsubscribe"
                       }}
                     >
                       Cancel unsubscribe

@@ -10,6 +10,7 @@ const { env } = vi.hoisted(() => ({
     NEXT_PUBLIC_SITE_URL: "https://fixture.example",
     DATABASE_URL: "configured",
     RESEND_API_KEY: "fixture",
+    CRON_SECRET: "fixture-cron-secret",
     DROP_EMAIL_FROM_EMAIL: "drops@example.com",
     ORDER_ALERT_FROM_EMAIL: "owner@example.com",
   },
@@ -20,6 +21,7 @@ beforeEach(() => {
   env.SIGNUP_CONFIRMATIONS_ENABLED = "true"
   env.VERCEL_ENV = "production"
   env.RESEND_API_KEY = "fixture"
+  env.CRON_SECRET = "fixture-cron-secret"
 })
 it("requires explicit production activation and complete sender credentials", () => {
   expect(readSignupConfirmationSetup().sending).toBe(true)
@@ -40,5 +42,10 @@ it("uses owner branding and refuses unreviewed policy or disabled list", () => {
   storeConfig.privacy.retainedDropSubscribers = true
   expect(readSignupConfirmationSetup().sending).toBe(true)
   storeConfig.policies.published = false
+  expect(readSignupConfirmationSetup().sending).toBe(false)
+})
+
+it("refuses confirmation activation without the server identity key", () => {
+  env.CRON_SECRET = ""
   expect(readSignupConfirmationSetup().sending).toBe(false)
 })
