@@ -35,7 +35,7 @@ describe("DropSignupForm", () => {
   it("sends the address with the surface that collected it, and says so", async () => {
     const request = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ subscribed: true }) })
     vi.stubGlobal("fetch", request)
-    render(<DropSignupForm source="design-of-the-week" />)
+    render(<DropSignupForm ready source="design-of-the-week" />)
     await userEvent.type(field(), "shopper@example.com")
     await userEvent.click(submit())
 
@@ -44,7 +44,11 @@ describe("DropSignupForm", () => {
       source: "design-of-the-week",
       company: "",
     })
-    expect(await screen.findByText("You're on the list. See you at the next drop.")).toBeInTheDocument()
+    expect(
+      await screen.findByText(
+        "Check your inbox for a confirmation link. Opening it won't sign you up; choose Confirm signup."
+      )
+    ).toBeInTheDocument()
     // The field clears so a second person on a shared screen does not resend the first one's address.
     expect(field()).toHaveValue("")
   })
@@ -52,12 +56,16 @@ describe("DropSignupForm", () => {
   it("submits a DOM address that React has not received yet", async () => {
     const request = vi.fn().mockResolvedValue({ ok: true })
     vi.stubGlobal("fetch", request)
-    render(<DropSignupForm source="footer" />)
+    render(<DropSignupForm ready source="footer" />)
     const input = field() as HTMLInputElement
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "early@example.com")
     fireEvent.submit(input.closest("form")!)
     expect(JSON.parse(String(request.mock.calls[0]?.[1]?.body))).toMatchObject({ email: "early@example.com" })
-    expect(await screen.findByText("You're on the list. See you at the next drop.")).toBeInTheDocument()
+    expect(
+      await screen.findByText(
+        "Check your inbox for a confirmation link. Opening it won't sign you up; choose Confirm signup."
+      )
+    ).toBeInTheDocument()
   })
 
   it.each(["refusal", "offline"])(
@@ -68,7 +76,7 @@ describe("DropSignupForm", () => {
       else request.mockResolvedValueOnce({ ok: false, status: 503, json: async () => ({ error: "Try again" }) })
       request.mockResolvedValueOnce({ ok: true })
       vi.stubGlobal("fetch", request)
-      render(<DropSignupForm source="footer" />)
+      render(<DropSignupForm ready source="footer" />)
       const input = field() as HTMLInputElement
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "early@example.com")
       fireEvent.submit(input.closest("form")!)
@@ -76,7 +84,7 @@ describe("DropSignupForm", () => {
       expect(input).toHaveValue("early@example.com")
       await userEvent.click(submit())
       expect(JSON.parse(String(request.mock.calls[1]?.[1]?.body))).toMatchObject({ email: "early@example.com" })
-      await screen.findByText("You're on the list. See you at the next drop.")
+      await screen.findByText(/Check your inbox for a confirmation link/)
       expect(input).toHaveValue("")
     }
   )
@@ -90,7 +98,7 @@ describe("DropSignupForm", () => {
         json: async () => ({ error: "That's a few tries in a row. Give it a few minutes." }),
       })
     )
-    render(<DropSignupForm source="footer" />)
+    render(<DropSignupForm ready source="footer" />)
     await userEvent.type(field(), "shopper@example.com")
     await userEvent.click(submit())
     expect(await screen.findByRole("alert")).toHaveTextContent("Give it a few minutes")
@@ -98,7 +106,7 @@ describe("DropSignupForm", () => {
 
   it("says something useful when the request never lands", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("offline")))
-    render(<DropSignupForm source="home" />)
+    render(<DropSignupForm ready source="home" />)
     await userEvent.type(field(), "shopper@example.com")
     await userEvent.click(submit())
     expect(await screen.findByRole("alert")).toHaveTextContent("Check your connection")
@@ -106,13 +114,13 @@ describe("DropSignupForm", () => {
 
   // Before hydration the browser submits the form itself, and a `get` would put the address in the URL.
   it("posts, so a submit that beats hydration keeps the address out of the page URL", () => {
-    const { container } = render(<DropSignupForm source="footer" />)
+    const { container } = render(<DropSignupForm ready source="footer" />)
     expect(container.querySelector("form")).toHaveAttribute("method", "post")
   })
 
   // A visitor never sees it, so it must not be announced, focusable, or fail an audit.
   it("hides the honeypot from everyone except a script", () => {
-    const { container } = render(<DropSignupForm source="footer" />)
+    const { container } = render(<DropSignupForm ready source="footer" />)
     const honeypot = container.querySelector('input[name="company"]')
     expect(honeypot).not.toBeNull()
     expect(honeypot).not.toBeVisible()
@@ -125,8 +133,8 @@ describe("DropSignupForm", () => {
   })
 
   it("tells the visitor exactly what they are agreeing to, beside the field", () => {
-    render(<DropSignupForm source="design-of-the-week" />)
-    expect(dropConsentCopy.version).toBe("v2")
+    render(<DropSignupForm ready source="design-of-the-week" />)
+    expect(dropConsentCopy.version).toBe("v3")
     expect(field()).toHaveAccessibleDescription(expect.stringContaining(dropConsentCopy.text))
     expect(screen.getByRole("link", { name: "Email help@sample.test to request removal" })).toHaveAttribute(
       "href",
@@ -138,7 +146,7 @@ describe("DropSignupForm", () => {
 
   it("uses the current store's removal contact", () => {
     storeConfig.supportEmail = "hello@another-brand.test"
-    render(<DropSignupForm source="footer" />)
+    render(<DropSignupForm ready source="footer" />)
     expect(screen.getByRole("link", { name: "Email hello@another-brand.test to request removal" })).toHaveAttribute(
       "href",
       "mailto:hello@another-brand.test?subject=Remove%20me%20from%20design-drop%20emails"
@@ -149,17 +157,22 @@ describe("DropSignupForm", () => {
     if (state === "unconfigured") storeConfig.configured = false
     if (state === "unreviewed policies") storeConfig.policies.published = false
     if (state === "disabled feature") storeConfig.features.dropSignup = false
-    const { container } = render(<DropSignupForm source="footer" />)
+    const { container } = render(<DropSignupForm ready source="footer" />)
     expect(container).toBeEmptyDOMElement()
   })
 
   it("does not send twice while a send is in flight", async () => {
     const request = vi.fn(() => new Promise(() => {}))
     vi.stubGlobal("fetch", request)
-    render(<DropSignupForm source="footer" />)
+    render(<DropSignupForm ready source="footer" />)
     await userEvent.type(field(), "shopper@example.com")
     await userEvent.click(submit())
     expect(submit()).toBeDisabled()
     expect(request).toHaveBeenCalledTimes(1)
   })
+})
+
+it("does not offer a form when the server reports confirmation sending unavailable", () => {
+  const { container } = render(<DropSignupForm source="home" />)
+  expect(container).toBeEmptyDOMElement()
 })

@@ -1,7 +1,9 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import { connection } from "next/server"
 import { Suspense } from "react"
 
+import { readSignupConfirmationSetup } from "@/features/drop-signup/read-signup-confirmation-setup.server"
 import { DropSignupForm } from "@/features/drop-signup/drop-signup-form"
 import { storeConfig } from "@/lib/store-config"
 
@@ -10,7 +12,9 @@ import { StoreStructuredData } from "./_components/store-structured-data"
 
 export const metadata: Metadata = { alternates: { canonical: "/" } }
 
-export default function HomePage() {
+export default async function HomePage() {
+  // Read sender readiness at request time, including when signup is independent of the weekly feature.
+  if (storeConfig.features.dropSignup) await connection()
   return (
     <main id="main-content" tabIndex={-1}>
       <StoreStructuredData />
@@ -50,9 +54,10 @@ export default function HomePage() {
       {storeConfig.features.dropSignup &&
         !storeConfig.features.designOfTheWeek &&
         storeConfig.configured &&
-        storeConfig.policies.published && (
+        storeConfig.policies.published &&
+        readSignupConfirmationSetup().sending && (
           <section aria-label="New design updates" className="page-width py-10 sm:py-14">
-            <DropSignupForm source="home" />
+            <DropSignupForm ready={readSignupConfirmationSetup().sending} source="home" />
           </section>
         )}
     </main>

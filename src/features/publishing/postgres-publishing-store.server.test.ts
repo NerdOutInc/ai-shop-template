@@ -2172,6 +2172,8 @@ describe.skipIf(!databaseUrl)("durable Printify publishing", () => {
       "design_product_artwork",
       "drop_email_deliveries",
       "drop_emails",
+      "drop_signup_confirmation_budget",
+      "drop_signup_confirmations",
       "drop_subscribers",
       "garment_models",
       "order_shipping_alerts",

@@ -8,9 +8,10 @@ import { hasSameOrigin } from "@/lib/has-same-origin"
 import { privateResponseHeaders } from "@/lib/private-response-headers"
 
 export const dynamic = "force-dynamic"
+export const maxDuration = 60
 
 /**
- * The drop list's only write.
+ * The public request for inbox confirmation.
  *
  * A Route Handler rather than a Server Action so the whole guard chain is testable as ordinary code.
  * Progressive enhancement was considered and deferred: this repo's existing action is called
@@ -37,5 +38,5 @@ export async function POST(request: Request) {
   if (result === "rate-limited") return respond({ error: "That's a few tries in a row. Give it a few minutes." }, 429)
   if (result === "unidentified") return respond({ error: "We couldn't take that sign-up. Please try again." }, 400)
   if (result === "unavailable") return respond({ error: "Sign-ups are taking a breather. Try again shortly." }, 503)
-  return respond({ subscribed: true })
+  return respond({ requested: true })
 }

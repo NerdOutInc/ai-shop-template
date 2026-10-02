@@ -374,9 +374,13 @@ export const GarmentSetupMissing: Story = {
   beforeEach: mockSave(200),
   play: async ({ canvas, canvasElement, userEvent }) => {
     const page = within(canvasElement.ownerDocument.body)
-    await userEvent.click(canvas.getByRole("button", { name: "Actions for Crop Life" }))
+    const blockedTrigger = canvas.getByRole("button", { name: "Actions for Crop Life" })
+    await userEvent.click(blockedTrigger)
     await expect(await page.findByRole("menuitem", { name: "Show in shop" })).toHaveAttribute("aria-disabled", "true")
     await userEvent.keyboard("{Escape}")
+    // Finish the first menu's focus restoration before opening the next one.
+    await waitFor(() => expect(page.queryByRole("menu", { hidden: true })).toBeNull())
+    await waitFor(() => expect(blockedTrigger).toHaveFocus())
     await expect(canvas.getByRole("link", { name: /Set up Next Level 5080\s+for Crop Life/ })).toHaveAttribute(
       "href",
       "/admin/products/garments#garment-1312"

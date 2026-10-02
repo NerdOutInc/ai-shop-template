@@ -6,6 +6,7 @@ import AdminDropEmailsPage from "./page"
 const mocks = vi.hoisted(() => ({
   env: { DROP_EMAILS_ENABLED: "true", VERCEL_ENV: "production" },
   requireAdmin: vi.fn(),
+  confirmation: vi.fn(),
   setup: vi.fn(),
   overview: vi.fn(),
   next: vi.fn(),
@@ -17,6 +18,7 @@ vi.mock("@/features/drop-emails/read-drop-email-overview.server", () => ({ readD
 vi.mock("@/features/drop-emails/render-next-drop-email.server", () => ({ renderNextDropEmail: mocks.next }))
 
 beforeEach(() => {
+  mocks.confirmation.mockReturnValue({ sending: false, hourlyLimit: 20 })
   mocks.env.DROP_EMAILS_ENABLED = "true"
   mocks.env.VERCEL_ENV = "production"
   mocks.requireAdmin.mockResolvedValue({ userId: "owner" })
@@ -30,6 +32,7 @@ beforeEach(() => {
   mocks.overview.mockResolvedValue({
     status: "ready",
     subscribed: 2,
+    pending: 3,
     unsubscribed: 1,
     history: [
       {
@@ -71,7 +74,7 @@ describe("admin drop emails page", () => {
     expect(screen.getByRole("link", { name: "Drop emails" })).toHaveAttribute("aria-current", "page")
     expect(screen.getByRole("heading", { name: "Sending is on" })).toBeVisible()
     expect(screen.getByText("Emails go out from Fixture Store <drops@fixture.example>.")).toBeVisible()
-    expect(screen.getByText("2 subscribed · 1 unsubscribed")).toBeVisible()
+    expect(screen.getByText("2 eligible · 3 awaiting confirmation · 1 unsubscribed")).toBeVisible()
     expect(screen.getByText("For the Monday, October 12 drop, going out at 9:00 AM CDT.")).toBeVisible()
     expect(screen.getByText("New this week: Fern Study")).toBeVisible()
     expect(screen.getByTitle("Preview of the email for the Monday, October 12 drop")).toHaveAttribute(
@@ -112,4 +115,14 @@ describe("admin drop emails page", () => {
     expect(screen.getByText("The send history is unavailable right now.")).toBeVisible()
     expect(screen.queryByTitle(/Preview of the email/)).not.toBeInTheDocument()
   })
+})
+
+vi.mock("@/features/drop-signup/read-signup-confirmation-setup.server", () => ({
+  readSignupConfirmationSetup: mocks.confirmation,
+}))
+it("distinguishes signup confirmation readiness from weekly sending", async () => {
+  render(await AdminDropEmailsPage())
+  expect(screen.getByRole("heading", { name: "Sending is on" })).toBeVisible()
+  expect(screen.getByRole("heading", { name: "Signup confirmation sending is off" })).toBeVisible()
+  expect(screen.getByText(/New signups are unavailable/)).toBeVisible()
 })

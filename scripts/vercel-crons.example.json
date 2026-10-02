@@ -13,7 +13,17 @@
       "path": "/api/internal/catalog-sync/popularity",
       "schedule": "0 */6 * * *"
     },
-    { "path": "/api/internal/order-alerts", "schedule": "0 * * * *" },
-    { "path": "/api/internal/drop-emails", "schedule": "5,20,35,50 * * * *" }
+    {
+      "path": "/api/internal/order-alerts",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/internal/drop-emails",
+      "schedule": "5,20,35,50 * * * *"
+    },
+    {
+      "path": "/api/internal/signup-confirmations",
+      "schedule": "*/15 * * * *"
+    }
   ]
 }

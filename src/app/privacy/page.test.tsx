@@ -44,7 +44,7 @@ describe("privacy disclosures", () => {
     expect(screen.getByText(/bounded campaign labels/)).toBeVisible()
     expect(screen.getByText(/do not switch off the separate Vercel measurement/)).toBeVisible()
     expect(screen.getByText(/signup IP address/)).toBeVisible()
-    expect(screen.getByText(/Signing up again renews consent/)).toBeVisible()
+    expect(screen.getByText(/Signing up again requests fresh inbox confirmation/)).toBeVisible()
     expect(screen.getByText(`The signup form’s current consent wording is: “${dropConsentCopy.text}”`)).toBeVisible()
   })
 
@@ -52,7 +52,9 @@ describe("privacy disclosures", () => {
     storeConfig.privacy.retainedDropEmailRecords = true
     environment.DROP_EMAILS_ENABLED = "true"
     render(<PrivacyPage />)
-    expect(screen.getByText(/the store emails subscribers about it once\. That is the only email/)).toBeVisible()
+    expect(
+      screen.getByText(/the store emails subscribers about it once\. Those are the only marketing messages/)
+    ).toBeVisible()
     expect(screen.getByText(/Every drop email has an unsubscribe link/)).toBeVisible()
     expect(
       screen.getByText(/Resend, the store’s email provider, which receives each recipient’s address/)
@@ -111,7 +113,7 @@ describe("privacy disclosures", () => {
     expect(screen.getByText(/New signups are currently closed/)).toBeVisible()
     expect(screen.getByText(/signup IP address/)).toBeVisible()
     expect(screen.queryByText(/current consent wording/)).not.toBeInTheDocument()
-    expect(screen.queryByText(/Signing up again renews consent/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Signing up again requests fresh inbox confirmation/)).not.toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Email support@another-brand.test to request removal" })).toHaveAttribute(
       "href",
       "mailto:support@another-brand.test?subject=Remove%20me%20from%20design-drop%20emails"
@@ -141,7 +143,7 @@ describe("privacy disclosures", () => {
     storeConfig.privacy.retainedDropSubscribers = true
     render(<PrivacyPage />)
     expect(screen.getByText(/New signups are currently closed/)).toBeVisible()
-    expect(screen.queryByText(/Signing up again renews consent/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Signing up again requests fresh inbox confirmation/)).not.toBeInTheDocument()
     expect(screen.queryByText(/current consent wording/)).not.toBeInTheDocument()
   })
 

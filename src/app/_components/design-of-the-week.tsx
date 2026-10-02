@@ -5,6 +5,7 @@ import { storeConfig } from "@/lib/store-config"
 
 import { getCatalog } from "@/features/catalog/get-catalog.server"
 import { readProductWeek } from "@/features/design-of-the-week/read-product-week.server"
+import { readSignupConfirmationSetup } from "@/features/drop-signup/read-signup-confirmation-setup.server"
 import { DropSignupForm } from "@/features/drop-signup/drop-signup-form"
 
 import { DropProductGrid } from "./drop-product-grid"
@@ -17,7 +18,11 @@ export async function DesignOfTheWeek() {
   const [drop, catalog] = await Promise.all([reading, getCatalog({ productWeek: reading })])
   const dropIds = new Set(catalog.designOfTheWeekProductIds ?? [])
   const roster = catalog.products.filter((product) => dropIds.has(product.id))
-  const signupEnabled = storeConfig.features.dropSignup && storeConfig.configured && storeConfig.policies.published
+  const signupEnabled =
+    storeConfig.features.dropSignup &&
+    storeConfig.configured &&
+    storeConfig.policies.published &&
+    readSignupConfirmationSetup().sending
 
   return (
     <>
@@ -32,7 +37,7 @@ export async function DesignOfTheWeek() {
           </Link>
           {signupEnabled && (
             <div className="mt-12">
-              <DropSignupForm source="design-of-the-week" />
+              <DropSignupForm ready={readSignupConfirmationSetup().sending} source="design-of-the-week" />
             </div>
           )}
         </section>
@@ -59,7 +64,7 @@ export async function DesignOfTheWeek() {
               <h3 id="drop-signup-heading" className="sr-only">
                 Get told about the next drop
               </h3>
-              <DropSignupForm source="design-of-the-week" />
+              <DropSignupForm ready={readSignupConfirmationSetup().sending} source="design-of-the-week" />
             </section>
           )}
         </>

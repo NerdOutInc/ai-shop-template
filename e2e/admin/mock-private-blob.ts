@@ -1,5 +1,6 @@
-import { readFileSync } from "node:fs"
+import { readFileSync, writeFileSync } from "node:fs"
 import path from "node:path"
+import { storeConfig } from "../../test/store-config"
 
 import { MockAgent, setGlobalDispatcher } from "undici"
 
@@ -89,6 +90,23 @@ dispatcher
         },
       },
     }
+  })
+  .persist()
+// Capture only synthetic confirmation messages for the browser's inbox fixture.
+const confirmationMessages: unknown[] = []
+dispatcher
+  .get("https://api.resend.com")
+  .intercept({ path: "/emails", method: "POST", headers: { authorization: "Bearer signup-confirmation-fixture" } })
+  .reply(async ({ body }) => {
+    const message = JSON.parse(await new Response(body as BodyInit).text()) as { subject: string; to: string[] }
+    if (
+      message.subject !== `Confirm your ${storeConfig.name} signup` ||
+      !message.to.every((email) => email.endsWith("@example.test"))
+    )
+      throw new Error("Unexpected message in the confirmation fixture")
+    confirmationMessages.push(message)
+    writeFileSync(".tmp/admin-e2e/confirmation-emails.json", JSON.stringify(confirmationMessages), { mode: 0o600 })
+    return { statusCode: 200, data: { id: `confirmation-fixture-${confirmationMessages.length}` } }
   })
   .persist()
 setGlobalDispatcher(dispatcher)

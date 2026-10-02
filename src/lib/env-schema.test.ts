@@ -73,3 +73,10 @@ describe("drop email settings", () => {
     expect(envSchema.server.DROP_EMAILS_ENABLED.safeParse("yes").success).toBe(false)
   })
 })
+
+it("defaults confirmation queueing to 20 per hour and bounds owner overrides", () => {
+  const schema = envSchema.server.SIGNUP_CONFIRMATIONS_HOURLY_LIMIT
+  expect(schema.parse(undefined)).toBe(20)
+  expect(schema.parse("35")).toBe(35)
+  for (const value of ["0", "1001", "1.5", "junk"]) expect(schema.safeParse(value).success).toBe(false)
+})

@@ -302,13 +302,20 @@
     {
       "sourceCommit": "dd85bfb73ef884057920393c5abc0e47a83836e0",
       "parentCommit": "30a585e483b306134c1fe7b5c73bd44dff7766a8",
-      "disposition": "deferred",
+      "disposition": "accepted",
       "classification": "inbox-confirmation",
-      "paths": [],
-      "reason": "Prepare a neutral default-off confirmation port under the owner's October 1 instruction. Preserve historical template consent versions. Source live proof remains a release-readiness follow-up.",
+      "paths": [
+        "src/features/drop-signup",
+        "src/app/api/drop-confirm",
+        "src/app/api/internal/signup-confirmations",
+        "src/features/drop-emails",
+        "src/lib/env-schema.ts",
+        "docs/drop-signup.md"
+      ],
+      "reason": "Ported inbox confirmation as optional default-off sending, template v3 wording with immutable v1/v2 registry, neutral branding and runtime grants, incremental template migration, and existing store/privacy gates. Source live proof remains a release-readiness follow-up.",
       "evidence": "Pinned source parent-to-commit review against template main d69db5615f1ced24f18f07604b9836cbda1eb2a2; implementation and validation receipts follow in the native draft stack.",
       "templateCommit": null,
-      "followUp": "Draft layer codex/port-signup-confirmation."
+      "followUp": "Validate draft layer codex/port-signup-confirmation; record its PR and merge receipt, plus source production proof."
     },
     {
       "sourceCommit": "2bc50de03b1ac1f803f5b52c668ac70ed7e6d67c",

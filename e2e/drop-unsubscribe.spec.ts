@@ -21,8 +21,8 @@ test.afterAll(async () => {
 /** A subscriber of this test's own, so browsers running in parallel never share a row. */
 async function subscribe() {
   const { rows } = await pool.query<{ id: string }>(
-    `insert into commerce.drop_subscribers (email, source, consent_copy_version)
-     values ($1, 'design-of-the-week', 'v2') returning id`,
+    `insert into commerce.drop_subscribers (email, source, consent_copy_version, subscription_state)
+     values ($1, 'design-of-the-week', 'v2', 'legacy') returning id`,
     [`subscriber-${randomUUID()}@example.com`]
   )
   return rows[0]!.id

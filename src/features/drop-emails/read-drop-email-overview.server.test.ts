@@ -22,7 +22,9 @@ describe.skipIf(!databaseUrl)("drop email overview", () => {
     runtime = await createRuntimeLoginPool(database, databaseUrl!)
   })
   beforeEach(async () => {
-    await database.query("truncate commerce.drop_email_deliveries, commerce.drop_emails, commerce.drop_subscribers")
+    await database.query(
+      "truncate commerce.drop_email_deliveries, commerce.drop_emails, commerce.drop_subscribers cascade"
+    )
   })
   afterAll(async () => {
     await runtime?.end()
@@ -32,14 +34,17 @@ describe.skipIf(!databaseUrl)("drop email overview", () => {
   it("counts the list and summarizes each drop email through the runtime role, newest first", async () => {
     const ids = (
       await database.query<{ id: string; email: string }>(
-        `insert into commerce.drop_subscribers (email, source, consent_copy_version, unsubscribed_at)
-         values ('a@example.com', 'design-of-the-week', 'v1', null),
-                ('b@example.com', 'design-of-the-week', 'v1', null),
-                ('c@example.com', 'design-of-the-week', 'v1', now()),
-                ('d@example.com', 'design-of-the-week', 'v1', null)
+        `insert into commerce.drop_subscribers (email, source, consent_copy_version, unsubscribed_at, subscription_state)
+         values ('a@example.com', 'design-of-the-week', 'v1', null, 'legacy'),
+                ('b@example.com', 'design-of-the-week', 'v1', null, 'legacy'),
+                ('c@example.com', 'design-of-the-week', 'v1', now(), 'legacy'),
+                ('d@example.com', 'design-of-the-week', 'v1', null, 'legacy')
          returning id, email`
       )
     ).rows
+    await database.query(
+      `insert into commerce.drop_subscribers (email,source,consent_copy_version) values ('pending@example.com','footer','v3')`
+    )
     const id = (email: string) => ids.find((row) => row.email === email)!.id
     for (const [liveAt, subject] of [
       ["2026-10-05T09:00:00Z", "New this week: Abstract Lines"],
@@ -65,6 +70,7 @@ describe.skipIf(!databaseUrl)("drop email overview", () => {
     expect(await readDropEmailOverview(runtime)).toEqual({
       status: "ready",
       subscribed: 3,
+      pending: 1,
       unsubscribed: 1,
       history: [
         {
@@ -99,6 +105,7 @@ describe.skipIf(!databaseUrl)("drop email overview", () => {
     expect(await readDropEmailOverview(runtime)).toEqual({
       status: "ready",
       subscribed: 0,
+      pending: 0,
       unsubscribed: 0,
       history: [],
     })

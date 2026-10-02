@@ -97,10 +97,8 @@ export async function processDropEmails(deps: {
       // One statement, so the email and its recipients exist together or not at all. Recipients are
       // whoever was signed up when the drop went live: someone who joins after that has already seen it.
       //
-      // A return keeps created_at, so a returning subscriber counts from the consent their return
-      // refreshed instead: the same cutoff as someone new. Submitting the form again once back
-      // refreshes that consent too and reads as a later return, so when this errs, it errs toward a
-      // skipped drop rather than an unwanted email.
+      // Confirmed subscriptions count from inbox proof, including returns after unsubscribe.
+      // Legacy subscriptions retain their historical cutoff; duplicates never refresh it.
       const queued = await client.query(
         `with frozen as (
            insert into commerce.drop_emails
@@ -112,9 +110,7 @@ export async function processDropEmails(deps: {
          insert into commerce.drop_email_deliveries (drop_live_at, subscriber_id, created_at, updated_at)
          select frozen.live_at, subscriber.id, $8, $8
            from frozen cross join commerce.drop_subscribers subscriber
-          where subscriber.unsubscribed_at is null
-            and case when subscriber.last_unsubscribed_at is null then subscriber.created_at
-                     else subscriber.consented_at end < frozen.live_at`,
+          where commerce.is_drop_subscriber_eligible(subscriber, frozen.live_at)`,
         [
           week.liveAt,
           deps.from,
@@ -173,7 +169,8 @@ export async function processDropEmails(deps: {
                 updated_at = $3
            from commerce.drop_subscribers subscriber
           where delivery.drop_live_at = $1 and delivery.subscriber_id = $2
-            and subscriber.id = delivery.subscriber_id and subscriber.unsubscribed_at is null
+            and subscriber.id = delivery.subscriber_id
+            and commerce.is_drop_subscriber_eligible(subscriber, delivery.drop_live_at)
             and delivery.status in ('queued', 'unconfirmed')
           returning subscriber.email`,
         [...key, now]

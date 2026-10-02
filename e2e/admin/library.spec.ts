@@ -888,37 +888,66 @@ test("a tee on a garment nobody has set up stays off the wall until the owner fi
 
 // Here rather than in the public suite because this build uses the local origin, so the form's
 // same-origin guard lets a real browser submission through and the whole path can be exercised.
-test("takes an email for the next drop and records the consent it showed", async ({ browser }) => {
-  const context = await browser.newContext({ baseURL: config.baseURL })
+test("confirms a pending signup only by explicit keyboard action at narrow width", async ({ browser }) => {
+  const context = await browser.newContext({ baseURL: config.baseURL, viewport: { width: 375, height: 812 } })
   const page = await context.newPage()
   await pool.query("delete from commerce.drop_subscribers")
-
   await page.goto("/#design-of-the-week")
-  // Home streams this form; label lookup can also match React's hidden staged HTML.
-  const field = page.getByRole("textbox", { name: "Know when the next one drops" })
-  await field.fill("Customer@Example.com")
+  await page.getByRole("textbox", { name: "Know when the next one drops" }).fill("Shopper@Example.test")
   await page.getByRole("button", { name: "Keep me posted" }).click()
-  await expect(page.getByRole("status").filter({ hasText: "You're on the list" })).toBeVisible()
-  await expect(field).toHaveValue("")
-
-  const saved = (
-    await pool.query("select email, source, consent_copy_version, confirmed_at from commerce.drop_subscribers")
-  ).rows
-  // Stored normalized, with what they were shown, and confirmed by nothing -- signing up is the opt-in.
-  expect(saved).toEqual([
-    { email: "customer@example.com", source: "design-of-the-week", consent_copy_version: "v2", confirmed_at: null },
-  ])
-
-  // Signing up again refreshes consent rather than erroring or making a twin.
-  await field.fill("customer@example.com")
-  await page.getByRole("button", { name: "Keep me posted" }).click()
-  await expect(page.getByRole("status").filter({ hasText: "You're on the list" })).toBeVisible()
-  expect((await pool.query("select count(*) from commerce.drop_subscribers")).rows[0].count).toBe("1")
+  await expect(page.getByRole("status").filter({ hasText: "Check your inbox" })).toBeVisible()
+  const row = (await pool.query("select id,email,subscription_state,confirmed_at from commerce.drop_subscribers"))
+    .rows[0]
+  expect(row).toMatchObject({ email: "shopper@example.test", subscription_state: "pending", confirmed_at: null })
+  // after() acknowledges the durable request before pacing and provider I/O complete.
+  await expect
+    .poll(
+      async () =>
+        (await pool.query("select status from commerce.drop_signup_confirmations where subscriber_id=$1", [row.id]))
+          .rows[0]?.status
+    )
+    .toBe("sent")
+  const messages = JSON.parse(await readFile(".tmp/admin-e2e/confirmation-emails.json", "utf8")) as { text: string }[]
+  const token = messages.at(-1)!.text.match(/confirm-signup#([a-f0-9]{64})/)![1]!
+  expect((await context.request.get("/api/drop-confirm")).status()).toBe(405)
+  let confirmations = 0
+  page.on("request", (request) => {
+    if (request.url().endsWith("/api/drop-confirm") && request.method() === "POST") confirmations++
+  })
+  await page.goto(`/confirm-signup#${token}`)
+  const button = page.getByRole("button", { name: "Confirm signup" })
+  await expect(button).toBeEnabled()
+  expect(page.url()).toBe(`${config.baseURL}/confirm-signup`)
+  expect(confirmations).toBe(0)
+  expect(
+    (await pool.query("select confirmed_at from commerce.drop_subscribers where id=$1", [row.id])).rows[0].confirmed_at
+  ).toBeNull()
+  await page.reload()
+  await expect(page.getByRole("heading", { name: "Open your email link again" })).toBeVisible()
+  await expect(page.getByRole("status")).toContainText("You don't need to request another email.")
+  expect(confirmations).toBe(0)
+  await page.goto(`/confirm-signup#${token}`)
+  await expect(button).toBeEnabled()
+  await page.getByRole("heading", { name: "Confirm your signup" }).focus()
+  await page.keyboard.press("Tab")
+  await expect(button).toBeFocused()
+  expect(await button.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe("none")
+  await page.screenshot({ path: "test-results/admin/confirmation-narrow.png", fullPage: true })
+  await page.keyboard.press("Enter")
+  await expect(page.getByRole("heading", { name: "You're on the list" })).toBeFocused()
+  expect(confirmations).toBe(1)
+  expect(
+    (await pool.query("select subscription_state,confirmed_at from commerce.drop_subscribers where id=$1", [row.id]))
+      .rows[0]
+  ).toMatchObject({ subscription_state: "confirmed", confirmed_at: expect.any(Date) })
+  await page.goto(`/confirm-signup#${"f".repeat(64)}`)
+  await page.getByRole("button", { name: "Confirm signup" }).click()
+  await expect(page.getByRole("heading", { name: "This link has expired" })).toBeFocused()
   await context.close()
 })
 
 const dropEmailProducts = catalogProducts.slice(0, 2)
-// Shaped like a real production fingerprint but derived from nothing real, so only this journey's rows match it.
+// Shape matches real production fingerprints; only this journey’s stock rows match.
 const dropEmailFingerprint = (variant: { id: number }) =>
   `${productionFingerprintVersion}:${createHash("sha256").update(`drop-email-fixture-${variant.id}`).digest("hex")}`
 
@@ -989,11 +1018,14 @@ test("shows the owner the drop list, the next drop's email and what went out, wi
       [product.id, nextWeek]
     )
   }
-  // The signup journey above left one subscriber; add one who has left, and last week's email to them.
-  const [subscriber] = (await pool.query<{ id: string }>("select id from commerce.drop_subscribers")).rows
+  await pool.query("delete from commerce.drop_subscribers")
+  const [subscriber] = (
+    await pool.query<{ id: string }>(
+      `insert into commerce.drop_subscribers(email,source,consent_copy_version,subscription_state) values ('customer@example.com','footer','v2','legacy') returning id`
+    )
+  ).rows
   await pool.query(
-    `insert into commerce.drop_subscribers (email, source, consent_copy_version, unsubscribed_at)
-     values ('left@example.com', 'design-of-the-week', 'v2', now())`
+    `insert into commerce.drop_subscribers(email,source,consent_copy_version,unsubscribed_at,subscription_state) values ('left@example.com','footer','v2',now(),'legacy')`
   )
   const lastWeek = listCadenceSlots({
     from: new Date(Date.now() - 8 * 86_400_000),
@@ -1024,10 +1056,10 @@ test("shows the owner the drop list, the next drop's email and what went out, wi
     .getByRole("link", { name: "Drop emails", exact: true })
     .click()
   await expect(page.getByRole("heading", { level: 1, name: "Drop emails" })).toBeVisible()
-  // This build has no Resend key, sender or mailing address, and says so by name.
+  // Confirmation uses a synthetic sender; weekly drops remain disabled without their postal/disclosure setup.
   await expect(page.getByRole("heading", { name: "Sending is off" })).toBeVisible()
-  await expect(page.getByText(/^Set .*RESEND_API_KEY.*STORE_POSTAL_ADDRESS.* in Vercel\.$/)).toBeVisible()
-  await expect(page.getByText("1 subscribed · 1 unsubscribed")).toBeVisible()
+  await expect(page.getByText(/^Set .*STORE_POSTAL_ADDRESS.* in Vercel\.$/)).toBeVisible()
+  await expect(page.getByText("1 eligible · 0 awaiting confirmation · 1 unsubscribed")).toBeVisible()
 
   const names = drop.map((product) => product.title)
   await expect(page.getByText(`New this week: ${names.join(" and ")}`)).toBeVisible()
@@ -1048,4 +1080,31 @@ test("shows the owner the drop list, the next drop's email and what went out, wi
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
   await page.screenshot({ path: "test-results/admin/drop-emails-narrow.png", fullPage: true })
   await context.close()
+})
+
+test("keeps an email field focused when JavaScript loads after typing begins", async ({ page }) => {
+  let releaseScripts!: () => void
+  const scriptsReleased = new Promise<void>((resolve) => {
+    releaseScripts = resolve
+  })
+  await page.route("**/_next/static/**/*.js", async (route) => {
+    await scriptsReleased
+    await route.continue()
+  })
+
+  try {
+    await page.goto("/#design-of-the-week", { waitUntil: "commit" })
+    const field = page.locator("#design-of-the-week").getByRole("textbox", { name: "Know when the next one drops" })
+    await field.click()
+    await field.pressSequentially("customer@exa")
+    releaseScripts()
+    // All deferred chunks must finish and hydration settle before typing the rest of the address.
+    await page.waitForLoadState("networkidle")
+
+    await expect(field).toBeFocused()
+    await page.keyboard.type("mple.com")
+    await expect(field).toHaveValue("customer@example.com")
+  } finally {
+    releaseScripts()
+  }
 })

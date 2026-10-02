@@ -6,7 +6,7 @@ import type { DropEmailHistoryEntry } from "./drop-email-history-entry"
 import { getDropEmailPool } from "./get-drop-email-pool.server"
 
 export type DropEmailOverview =
-  | { status: "ready"; subscribed: number; unsubscribed: number; history: DropEmailHistoryEntry[] }
+  | { status: "ready"; subscribed: number; pending: number; unsubscribed: number; history: DropEmailHistoryEntry[] }
   | { status: "unavailable" }
 
 type HistoryRow = {
@@ -27,10 +27,11 @@ export async function readDropEmailOverview(pool?: Pool): Promise<DropEmailOverv
   try {
     const database = pool ?? getDropEmailPool()
     const [counts, history] = await Promise.all([
-      database.query<{ subscribed: number; unsubscribed: number }>(
-        `select count(*) filter (where unsubscribed_at is null)::int as subscribed,
+      database.query<{ subscribed: number; pending: number; unsubscribed: number }>(
+        `select count(*) filter (where commerce.is_drop_subscriber_eligible(subscriber))::int as subscribed,
+                count(*) filter (where unsubscribed_at is null and subscription_state = 'pending')::int as pending,
                 count(*) filter (where unsubscribed_at is not null)::int as unsubscribed
-           from commerce.drop_subscribers`
+           from commerce.drop_subscribers subscriber`
       ),
       database.query<HistoryRow>(
         `select email.live_at, email.subject, cardinality(email.product_ids) as product_count,
@@ -50,6 +51,7 @@ export async function readDropEmailOverview(pool?: Pool): Promise<DropEmailOverv
     return {
       status: "ready",
       subscribed: counts.rows[0]?.subscribed ?? 0,
+      pending: counts.rows[0]?.pending ?? 0,
       unsubscribed: counts.rows[0]?.unsubscribed ?? 0,
       history: history.rows.map((row) => ({
         liveAt: row.live_at.toISOString(),

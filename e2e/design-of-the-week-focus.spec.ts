@@ -21,10 +21,10 @@ test("does not show a section focus ring when a tap on the footer link moves foc
   }
 })
 
-test.describe("configured signup fixture", () => {
+test.describe("configured sender-disabled fixture", () => {
   test.use({ baseURL: `http://127.0.0.1:${Number(process.env.PLAYWRIGHT_FIXTURE_PORT ?? 3200)}` })
 
-  test("keeps an email field focused when JavaScript loads after typing begins", async ({ page }) => {
+  test("does not invite signup before or after hydration when its sender is disabled", async ({ page }) => {
     let releaseScripts!: () => void
     const scriptsReleased = new Promise<void>((resolve) => {
       releaseScripts = resolve
@@ -33,19 +33,14 @@ test.describe("configured signup fixture", () => {
       await scriptsReleased
       await route.continue()
     })
-
     try {
       await page.goto("/#design-of-the-week", { waitUntil: "commit" })
-      const field = page.locator("#design-of-the-week").getByRole("textbox", { name: "Know when the next one drops" })
-      await field.click()
-      await field.pressSequentially("customer@exa")
+      const field = page.getByRole("textbox", { name: "Know when the next one drops" })
+      await expect(field).toHaveCount(0)
       releaseScripts()
-      // All deferred chunks must finish and hydration settle before typing the rest of the address.
       await page.waitForLoadState("networkidle")
-
-      await expect(field).toBeFocused()
-      await page.keyboard.type("mple.com")
-      await expect(field).toHaveValue("customer@example.com")
+      await expect(field).toHaveCount(0)
+      await expect(page.getByRole("button", { name: "Keep me posted" })).toHaveCount(0)
     } finally {
       releaseScripts()
     }

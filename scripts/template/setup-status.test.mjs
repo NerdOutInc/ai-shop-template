@@ -631,3 +631,25 @@ test("capacity overrides use the runtime parser without exposing values", () => 
   assert.equal(hidden.unreadable, true)
   assert.deepEqual(hidden.unreadableKeys, ["CHECKOUT_CAPACITY_LIMITS"])
 })
+
+test("signup confirmation needs explicit sending, a disclosed list and its worker schedule", () => {
+  const list = { ...config, features: { ...config.features, dropSignup: true } }
+  const enabled = {
+    ...environment,
+    SIGNUP_CONFIRMATIONS_ENABLED: "true",
+    RESEND_API_KEY: "i".repeat(32),
+    DROP_EMAIL_FROM_EMAIL: "drops@newbrand.com",
+  }
+  const confirmation = (env, value = list, options) => ready("Signup inbox confirmation", status(env, value, options))
+  assert.equal(confirmation(enabled), true)
+  assert.equal(confirmation({ ...enabled, SIGNUP_CONFIRMATIONS_ENABLED: "false" }), false)
+  assert.equal(confirmation({ ...enabled, RESEND_API_KEY: undefined }), false)
+  assert.equal(
+    confirmation(enabled, list, {
+      schedules: schedules.filter((entry) => entry.path !== "/api/internal/signup-confirmations"),
+    }),
+    false
+  )
+  assert.equal(confirmation(enabled, { ...list, policies: { ...list.policies, published: false } }), false)
+  assert.equal(confirmation(enabled, { ...list, features: { ...list.features, dropSignup: false } }), false)
+})

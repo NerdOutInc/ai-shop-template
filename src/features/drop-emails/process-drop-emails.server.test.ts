@@ -53,8 +53,8 @@ describe.skipIf(!databaseUrl)("weekly drop email outbox", () => {
     })
   async function subscribe(email: string, createdAt: string, unsubscribedAt: string | null = null) {
     const { rows } = await database.query<{ id: string }>(
-      `insert into commerce.drop_subscribers (email, source, consent_copy_version, created_at, consented_at, unsubscribed_at)
-       values ($1, 'design-of-the-week', 'v1', $2, $2, $3) returning id`,
+      `insert into commerce.drop_subscribers (email, source, consent_copy_version, created_at, consented_at, unsubscribed_at, subscription_state)
+       values ($1, 'design-of-the-week', 'v1', $2, $2, $3, 'legacy') returning id`,
       [email, createdAt, unsubscribedAt]
     )
     return rows[0]!.id
@@ -69,13 +69,55 @@ describe.skipIf(!databaseUrl)("weekly drop email outbox", () => {
       )
     ).rows
 
+  // Exact snapshot and claim SQL from pre-confirmation main (21bea1d1). A rollback must remain
+  // safe even though that worker knows nothing about subscription_state or confirmed_at.
+  const oldFreeze = () =>
+    runtime.query(
+      `with frozen as (
+       insert into commerce.drop_emails
+         (live_at, from_address, reply_to, subject, html, text_body, product_ids, frozen_at, site_origin)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       on conflict (live_at) do nothing returning live_at
+     )
+     insert into commerce.drop_email_deliveries (drop_live_at, subscriber_id, created_at, updated_at)
+     select frozen.live_at, subscriber.id, $8, $8
+       from frozen cross join commerce.drop_subscribers subscriber
+      where subscriber.unsubscribed_at is null
+        and case when subscriber.last_unsubscribed_at is null then subscriber.created_at
+                 else subscriber.consented_at end < frozen.live_at`,
+      [
+        liveAt,
+        "drops@example.com",
+        "support@example.com",
+        "Drop",
+        "<p>Drop</p>",
+        "Drop",
+        ["tee"],
+        nineCentral,
+        "https://store.example",
+      ]
+    )
+  const oldClaim = (id: string) =>
+    runtime.query(
+      `update commerce.drop_email_deliveries delivery
+        set status = 'unconfirmed', attempt_started_at = coalesce(delivery.attempt_started_at, $3), updated_at = $3
+       from commerce.drop_subscribers subscriber
+      where delivery.drop_live_at = $1 and delivery.subscriber_id = $2
+        and subscriber.id = delivery.subscriber_id and subscriber.unsubscribed_at is null
+        and delivery.status in ('queued', 'unconfirmed')
+      returning subscriber.email`,
+      [liveAt, id, nineCentral]
+    )
+
   beforeAll(async () => {
     database = await createAdminDatabaseFixture(databaseUrl!)
     await applyAllMigrations(database)
     runtime = await createRuntimeLoginPool(database, databaseUrl!)
   })
   beforeEach(async () => {
-    await database.query("truncate commerce.drop_email_deliveries, commerce.drop_emails, commerce.drop_subscribers")
+    await database.query(
+      "truncate commerce.drop_email_deliveries, commerce.drop_emails, commerce.drop_subscribers cascade"
+    )
     readWeek.mockReset().mockResolvedValue({ liveAt, productIds: products.map((product) => product.id) })
     readProducts.mockReset().mockResolvedValue(products)
     let receipt = 0
@@ -84,6 +126,44 @@ describe.skipIf(!databaseUrl)("weekly drop email outbox", () => {
   afterAll(async () => {
     await runtime?.end()
     await database?.end()
+  })
+
+  it("guards the old worker snapshot against pending and confirmed-after-cutoff recipients", async () => {
+    await subscribe("legacy@example.com", "2026-09-23T21:18:32Z")
+    const pending = await subscribe("pending@example.com", "2026-09-23T21:18:32Z")
+    const confirmed = await subscribe("confirmed-after@example.com", "2026-09-23T21:18:32Z")
+    await database.query("update commerce.drop_subscribers set subscription_state='pending' where id=$1", [pending])
+    await database.query(
+      "update commerce.drop_subscribers set subscription_state='confirmed', confirmed_at=$2 where id=$1",
+      [confirmed, nineCentral]
+    )
+    expect((await oldFreeze()).rowCount).toBe(1)
+    expect(await deliveries()).toMatchObject([{ email: "legacy@example.com", status: "queued" }])
+  })
+
+  it.each(["pending", "confirmed-after"])("guards an old claim when a frozen recipient becomes %s", async (state) => {
+    const id = await subscribe("recipient@example.com", "2026-09-23T21:18:32Z")
+    expect((await oldFreeze()).rowCount).toBe(1)
+    await database.query("update commerce.drop_subscribers set subscription_state=$2, confirmed_at=$3 where id=$1", [
+      id,
+      state === "pending" ? "pending" : "confirmed",
+      state === "pending" ? null : nineCentral,
+    ])
+    expect((await oldClaim(id)).rowCount).toBe(0)
+    expect(await deliveries()).toMatchObject([{ status: "queued" }])
+  })
+
+  it("allows eligible old claims and records a provider receipt even if they stop during I/O", async () => {
+    const id = await subscribe("recipient@example.com", "2026-09-23T21:18:32Z")
+    await oldFreeze()
+    expect((await oldClaim(id)).rows).toEqual([{ email: "recipient@example.com" }])
+    await database.query("update commerce.drop_subscribers set unsubscribed_at=now() where id=$1", [id])
+    expect((await oldClaim(id)).rowCount).toBe(0)
+    await runtime.query(
+      "update commerce.drop_email_deliveries set status='sent',sent_at=$2,provider_email_id='receipt' where subscriber_id=$1",
+      [id, nineCentral]
+    )
+    expect(await deliveries()).toMatchObject([{ status: "sent", provider_email_id: "receipt" }])
   })
 
   it("freezes the email once and sends it to everyone who had signed up before the drop", async () => {
@@ -267,51 +347,66 @@ describe.skipIf(!databaseUrl)("weekly drop email outbox", () => {
     expect(send).not.toHaveBeenCalled()
   })
 
-  // Through the signup store, so the rows are what a real return leaves behind: created_at kept,
-  // consent refreshed, the old unsubscribe moved to last_unsubscribed_at.
-  it("counts a returning subscriber from when they came back, the same cutoff as someone new", async () => {
+  it("excludes pending addresses and counts a confirmed return from its confirmation time", async () => {
     const signup = new PostgresDropSignupStore(databaseUrl!)
-    const emails = ["back-after@example.com", "back-before@example.com", "stayed@example.com"]
+    const sender = {
+      from: "Fixture Store <drops@example.com>",
+      replyTo: "support@example.com",
+      siteUrl: "https://shop.example",
+    }
+    const confirm = async (email: string) => {
+      await signup.subscribe(email, "footer", "203.0.113.7", sender)
+      const row = (
+        await database.query<{ message: DropEmailMessage }>(
+          `select c.message from commerce.drop_signup_confirmations c join commerce.drop_subscribers s on s.id=c.subscriber_id where s.email=$1 order by c.created_at desc limit 1`,
+          [email]
+        )
+      ).rows[0]!
+      await signup.confirm(row.message.text.match(/confirm-signup#([a-f0-9]{64})/)![1]!)
+    }
     try {
-      for (const email of emails) await signup.subscribe(email, "design-of-the-week", "203.0.113.7")
+      for (const email of ["back-after@example.com", "back-before@example.com", "stayed@example.com"])
+        await confirm(email)
       const ids = (
-        await database.query<{ id: string; email: string }>("select id, email from commerce.drop_subscribers")
+        await database.query<{ id: string; email: string }>("select id,email from commerce.drop_subscribers")
       ).rows
       for (const email of ["back-after@example.com", "back-before@example.com"]) {
         await signup.unsubscribe(ids.find((row) => row.email === email)!.id)
-        await signup.subscribe(email, "design-of-the-week", "203.0.113.7")
+        await database.query(
+          "update commerce.drop_signup_confirmations set created_at=created_at-interval '16 minutes'"
+        )
+        await confirm(email)
       }
-      // Never left; just submitted the form again that morning.
-      await signup.subscribe("stayed@example.com", "design-of-the-week", "203.0.113.7")
+      await signup.subscribe("pending@example.com", "footer", null, sender)
+      await database.query(`update commerce.drop_subscribers set created_at='2026-09-20T12:00:00Z',
+        confirmed_at=case when subscription_state='pending' then null when email='back-after@example.com' then '2026-10-05T10:00:00Z'::timestamptz else '2026-10-01T12:00:00Z'::timestamptz end`)
+      await signup.subscribe("stayed@example.com", "footer", null, sender)
+      expect(await run(later(5))).toMatchObject({ queued: 2, sent: 2 })
+      expect(send.mock.calls.map(([message]) => message.to[0]).sort()).toEqual([
+        "back-before@example.com",
+        "stayed@example.com",
+      ])
+      expect(
+        (
+          await database.query(
+            "select unsubscribed_at,last_unsubscribed_at from commerce.drop_subscribers where email='back-before@example.com'"
+          )
+        ).rows[0]
+      ).toMatchObject({ unsubscribed_at: null, last_unsubscribed_at: expect.any(Date) })
     } finally {
       await signup.close()
     }
-    expect(
-      (
-        await database.query(
-          `select email, unsubscribed_at, last_unsubscribed_at is not null as returned
-             from commerce.drop_subscribers order by email`
-        )
-      ).rows
-    ).toEqual([
-      { email: "back-after@example.com", unsubscribed_at: null, returned: true },
-      { email: "back-before@example.com", unsubscribed_at: null, returned: true },
-      { email: "stayed@example.com", unsubscribed_at: null, returned: false },
-    ])
-    // Onto this test's calendar: everyone joined in September; two left on the 25th and came back on
-    // either side of the 4 AM reveal, and the one who never left submitted again at 5 AM.
-    await database.query(
-      `update commerce.drop_subscribers
-          set created_at = '2026-09-20T12:00:00Z',
-              last_unsubscribed_at = case when last_unsubscribed_at is null then null else '2026-09-25T12:00:00Z'::timestamptz end,
-              consented_at = case email when 'back-before@example.com' then '2026-10-01T12:00:00Z'::timestamptz
-                                        else '2026-10-05T10:00:00Z'::timestamptz end`
-    )
-    expect(await run(later(5))).toMatchObject({ queued: 2, sent: 2 })
-    expect(send.mock.calls.map(([message]) => message.to[0]).sort()).toEqual([
-      "back-before@example.com",
-      "stayed@example.com",
-    ])
+  })
+
+  it("rechecks pending eligibility before each claim even for an already frozen queue", async () => {
+    await subscribe("early@example.com", "2026-09-23T21:18:32Z")
+    const late = await subscribe("late@example.com", "2026-09-27T22:39:58Z")
+    send.mockImplementation(async () => {
+      await database.query("update commerce.drop_subscribers set subscription_state='pending' where id=$1", [late])
+      return { status: "sent", providerEmailId: "receipt" }
+    })
+    expect(await run(later(5))).toMatchObject({ queued: 2, sent: 1 })
+    expect(send).toHaveBeenCalledTimes(1)
   })
 
   // Midnight alone would leave this drop five minutes and no cron run at all.

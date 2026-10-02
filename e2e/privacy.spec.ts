@@ -14,10 +14,11 @@ test("explains active signup data and keeps the manual removal contact keyboard 
   const main = page.getByRole("main")
   await expect(main.getByRole("heading", { name: "Design-drop emails" })).toBeVisible()
   await expect(main).toContainText("signup IP address")
-  await expect(main).toContainText("Signing up again renews consent")
+  await expect(main).toContainText("Signing up again requests fresh inbox confirmation")
   await expect(main).toContainText("Supabase")
   await expect(main).toContainText("Vercel")
-  await expect(main).not.toContainText("Resend")
+  await expect(main).toContainText("Confirmation messages go through Resend")
+  await expect(main).toContainText("An earlier unsubscribe stays in effect until you confirm")
   const removal = main.getByRole("link", {
     name: `Email ${configuredStoreConfig.supportEmail} to request removal`,
   })

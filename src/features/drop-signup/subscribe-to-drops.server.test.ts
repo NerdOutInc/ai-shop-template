@@ -5,11 +5,24 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { subscribeToDrops } from "./subscribe-to-drops.server"
 
-const { getPublicRequestIdentity, getDropSignupStore, store } = vi.hoisted(() => ({
+const {
+  getPublicRequestIdentity,
+  getDropSignupStore,
+  store,
+  readSignupConfirmationSetup,
+  runSignupConfirmations,
+  after,
+} = vi.hoisted(() => ({
+  readSignupConfirmationSetup: vi.fn(),
+  runSignupConfirmations: vi.fn(),
+  after: vi.fn(),
   getPublicRequestIdentity: vi.fn(),
   getDropSignupStore: vi.fn(),
   store: { allowRequest: vi.fn(), subscribe: vi.fn() },
 }))
+vi.mock("next/server", () => ({ after }))
+vi.mock("./read-signup-confirmation-setup.server", () => ({ readSignupConfirmationSetup }))
+vi.mock("./run-signup-confirmations.server", () => ({ runSignupConfirmations }))
 vi.mock("server-only", () => ({}))
 vi.mock("./get-public-request-identity.server", () => ({ getPublicRequestIdentity }))
 vi.mock("./get-drop-signup-store.server", () => ({ getDropSignupStore }))
@@ -22,7 +35,9 @@ beforeEach(() => {
   getPublicRequestIdentity.mockResolvedValue(identity)
   getDropSignupStore.mockReturnValue(store)
   store.allowRequest.mockResolvedValue(true)
-  store.subscribe.mockResolvedValue(undefined)
+  store.subscribe.mockResolvedValue(null)
+  readSignupConfirmationSetup.mockReturnValue({ sending: true, from: "Fixture Store <drops@example.com>" })
+  runSignupConfirmations.mockResolvedValue({ sent: 1, errors: 0 })
 })
 afterEach(() => vi.restoreAllMocks())
 
@@ -78,7 +93,12 @@ describe("subscribeToDrops", () => {
       "saved"
     )
     expect(store.allowRequest).toHaveBeenCalledWith(identity.subject, identity.limit)
-    expect(store.subscribe).toHaveBeenCalledWith("shopper@example.com", "design-of-the-week", identity.address)
+    expect(store.subscribe).toHaveBeenCalledWith(
+      "shopper@example.com",
+      "design-of-the-week",
+      identity.address,
+      expect.objectContaining({ from: "Fixture Store <drops@example.com>" })
+    )
     expect(store.allowRequest.mock.invocationCallOrder[0]).toBeLessThan(store.subscribe.mock.invocationCallOrder[0]!)
   })
 
@@ -99,4 +119,48 @@ describe("subscribeToDrops", () => {
     })
     await expect(subscribeToDrops({ email: "shopper@example.com", source: "footer" })).resolves.toBe("unavailable")
   })
+  it("does not write or mail while confirmation sending is disabled", async () => {
+    readSignupConfirmationSetup.mockReturnValue({ sending: false })
+    expect(await subscribeToDrops({ email: "shopper@example.com", source: "footer" })).toBe("unavailable")
+    expect(store.subscribe).not.toHaveBeenCalled()
+    expect(runSignupConfirmations).not.toHaveBeenCalled()
+  })
+  it("acknowledges the durable request before running provider work", async () => {
+    store.subscribe.mockResolvedValue("request-id")
+    expect(await subscribeToDrops({ email: "shopper@example.com", source: "footer" })).toBe("saved")
+    expect(runSignupConfirmations).not.toHaveBeenCalled()
+    await after.mock.calls[0]![0]()
+    expect(runSignupConfirmations).toHaveBeenCalledWith("request-id")
+  })
+  it.each(["reported", "thrown"])("keeps the accepted response for a %s deferred provider failure", async (failure) => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    store.subscribe.mockResolvedValue("request-id")
+    if (failure === "reported") runSignupConfirmations.mockResolvedValue({ sent: 0, errors: 1 })
+    else runSignupConfirmations.mockRejectedValue(new Error("private provider body shopper@example.com"))
+    expect(await subscribeToDrops({ email: "shopper@example.com", source: "footer" })).toBe("saved")
+    await after.mock.calls[0]![0]()
+    expect(warn.mock.calls).toEqual([["Signup confirmation deferred"]])
+  })
+  it("keeps the durable request accepted when a prompt run cannot be scheduled", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {})
+    store.subscribe.mockResolvedValue("request-id")
+    after.mockImplementation(() => {
+      throw new Error("scheduler unavailable")
+    })
+    expect(await subscribeToDrops({ email: "shopper@example.com", source: "footer" })).toBe("saved")
+    expect(runSignupConfirmations).not.toHaveBeenCalled()
+  })
+  it("does not schedule provider work for eligible addresses or cooldowns", async () => {
+    expect(await subscribeToDrops({ email: "shopper@example.com", source: "footer" })).toBe("saved")
+    expect(after).not.toHaveBeenCalled()
+  })
+})
+
+it("acknowledges saturation generically without scheduling an invalid request id or exposing an address", async () => {
+  const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+  store.subscribe.mockResolvedValue("limited")
+  expect(await subscribeToDrops({ email: "shopper@example.com", source: "footer" })).toBe("saved")
+  expect(after).not.toHaveBeenCalled()
+  expect(warn).toHaveBeenCalledWith("Signup confirmation hourly ceiling reached")
+  expect(JSON.stringify(warn.mock.calls)).not.toContain("shopper@example.com")
 })
