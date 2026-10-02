@@ -58,7 +58,8 @@ jobs:
   storefront:
     name: Storefront browser checks
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # Browser downloads can take 15 minutes; leave room for all three fixture builds and suites.
+    timeout-minutes: 45
     services:
       postgres:
         image: postgres:17

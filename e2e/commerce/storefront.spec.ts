@@ -6,6 +6,7 @@ import { expect } from "@playwright/test"
 import { Pool } from "pg"
 import Stripe from "stripe"
 
+import { beginKeyboardNavigation } from "../../test/begin-keyboard-navigation"
 import { catalogProducts } from "../catalog-products"
 import { commerceTestConfig as config } from "./test-config"
 import { test } from "./storefront-test"
@@ -151,7 +152,11 @@ test("finds a shirt, changes options and images, edits the cart, pays and prints
   ).toBeVisible()
 })
 
-test("requires inbox confirmation, deduplicates signup and honors unsubscribe", async ({ page, request }) => {
+test("requires inbox confirmation, deduplicates signup and honors unsubscribe", async ({
+  page,
+  request,
+  browserName,
+}) => {
   const email = `Shopper-${randomUUID()}@Example.com`
   let releaseScripts!: () => void
   const scriptsReleased = new Promise<void>((resolve) => {
@@ -207,8 +212,14 @@ test("requires inbox confirmation, deduplicates signup and honors unsubscribe", 
     (await pool.query("select subscription_state from commerce.drop_subscribers where id=$1", [rows[0].id])).rows[0]
       .subscription_state
   ).toBe("pending")
-  await page.keyboard.press("Tab")
-  await confirm.focus()
+  const tabKey = await beginKeyboardNavigation(page, browserName)
+  const skip = page.getByRole("link", { name: "Skip to content", exact: true })
+  await expect(skip).toBeFocused()
+  await page.keyboard.press("Enter")
+  await expect(page.getByRole("main")).toBeFocused()
+  await expect(confirm).toBeEnabled()
+  expect(confirmationPosts).toBe(0)
+  await page.keyboard.press(tabKey)
   await expect(confirm).toBeFocused()
   expect(await confirm.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe("none")
   await page.keyboard.press("Enter")
@@ -291,4 +302,62 @@ test("rejects forged payment and changed prices; reconciles a lost print respons
   expect(
     (await pool.query("select state from commerce.checkout_orders where session_id=$1", [sessionId])).rows[0].state
   ).toBe("submitted")
+})
+
+test("retains pre-hydration typing through a failed signup and clears it after retry", async ({
+  browser,
+  browserName,
+}, testInfo) => {
+  const context = await browser.newContext({ baseURL: config.baseURL, viewport: { width: 375, height: 812 } })
+  const page = await context.newPage()
+  const errors: string[] = []
+  page.on("pageerror", (error) => errors.push(error.message))
+  const submitted: unknown[] = []
+  let releaseScripts!: () => void
+  const scriptsReleased = new Promise<void>((resolve) => {
+    releaseScripts = resolve
+  })
+  await page.route("**/*", (route) => {
+    if (new URL(route.request().url()).origin === config.baseURL) return route.continue()
+    return route.abort()
+  })
+  await page.route("**/_next/static/**/*.js", async (route) => {
+    await scriptsReleased
+    await route.fallback()
+  })
+  await page.route("**/api/drop-signup", async (route) => {
+    submitted.push(route.request().postDataJSON())
+    return route.fulfill({
+      status: submitted.length === 1 ? 503 : 200,
+      contentType: "application/json",
+      body: JSON.stringify(submitted.length === 1 ? { error: "Try again shortly" } : { subscribed: true }),
+    })
+  })
+  try {
+    await page.goto("/#design-of-the-week", { waitUntil: "commit" })
+    const field = page.getByRole("textbox", { name: "Know when the next one drops" })
+    await field.fill("early@example.com")
+    releaseScripts()
+    await page.waitForLoadState("networkidle")
+    await page.getByRole("button", { name: "Keep me posted" }).click()
+    await expect(page.getByRole("alert").filter({ hasText: "Try again shortly" })).toBeVisible()
+    await expect(field).toHaveValue("early@example.com")
+    await field.focus()
+    await beginKeyboardNavigation(page, browserName)
+    const retry = page.getByRole("button", { name: "Keep me posted" })
+    await expect(retry).toBeFocused()
+    expect(await retry.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe("none")
+    await page.screenshot({ path: testInfo.outputPath("early-signup-retry-narrow.png"), fullPage: true })
+    await page.keyboard.press("Enter")
+    await expect(page.getByRole("status").filter({ hasText: "Check your inbox" })).toBeVisible()
+    await expect(field).toHaveValue("")
+    expect(submitted).toEqual(
+      Array.from({ length: 2 }, () => ({ email: "early@example.com", source: "design-of-the-week", company: "" }))
+    )
+    expect(errors).toEqual([])
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  } finally {
+    releaseScripts()
+    await context.close()
+  }
 })
