@@ -5,6 +5,7 @@ import react from "@vitejs/plugin-react"
 import { playwright } from "@vitest/browser-playwright"
 import { defineConfig } from "vitest/config"
 
+import commerceScope from "./scripts/ci/commerce-test-scope.json"
 import { storeConfigPlugin } from "./test/store-config-plugin.ts"
 
 export default defineConfig({
@@ -30,6 +31,20 @@ export default defineConfig({
           // Nine database-backed suites each apply every migration in beforeAll, and vitest runs
           // them in parallel. That is legitimately slow work, and the 10s default turns a busy
           // machine into eight "failing" suites that have nothing to do with the code under test.
+          hookTimeout: 60_000,
+        },
+      },
+      {
+        extends: true,
+        plugins: [react()],
+        test: {
+          name: "commerce",
+          environment: "jsdom",
+          globalSetup: ["./test/require-commerce-test-databases.ts"],
+          setupFiles: ["./test/setup.ts"],
+          include: commerceScope.files,
+          clearMocks: true,
+          restoreMocks: true,
           hookTimeout: 60_000,
         },
       },

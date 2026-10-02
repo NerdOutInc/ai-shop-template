@@ -10,7 +10,7 @@ permissions:
 # Check owns cancellation for PR/main runs. Reusing its concurrency group here
 # would cancel the caller because a reusable workflow shares github.workflow.
 concurrency:
-  group: integration-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: integration-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 env:
@@ -39,6 +39,9 @@ jobs:
         run: |
           # Pinned Playwright browsers do not use the image's unrelated Chrome apt feed.
           sudo rm -f /etc/apt/sources.list.d/google-chrome*.list /etc/apt/sources.list.d/google-chrome*.sources
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i '/azure\.archive\.ubuntu\.com/d' /etc/apt/apt-mirrors.txt
+          fi
           pnpm exec playwright install --with-deps chromium
       - name: Test component stories
         run: pnpm test:stories
@@ -93,6 +96,9 @@ jobs:
       - name: Install test browsers
         run: |
           sudo rm -f /etc/apt/sources.list.d/google-chrome*.list /etc/apt/sources.list.d/google-chrome*.sources
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i '/azure\.archive\.ubuntu\.com/d' /etc/apt/apt-mirrors.txt
+          fi
           pnpm exec playwright install --with-deps chromium webkit
       - name: Build the unconfigured and configured storefront fixtures
         id: storefront-build
@@ -163,6 +169,9 @@ jobs:
       - name: Install Chromium
         run: |
           sudo rm -f /etc/apt/sources.list.d/google-chrome*.list /etc/apt/sources.list.d/google-chrome*.sources
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i '/azure\.archive\.ubuntu\.com/d' /etc/apt/apt-mirrors.txt
+          fi
           pnpm exec playwright install --with-deps chromium
       - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3
         id: setup-supabase

@@ -1,25 +1,61 @@
 name: Check
 
 on:
-  # Pull requests run once; the default branch is checked again after merge.
   push:
     branches: [main]
   pull_request:
   merge_group:
+  schedule:
+    - cron: "17 8 * * 0"
   workflow_dispatch:
+    inputs:
+      suite:
+        description: Verification scope
+        type: choice
+        options: [commerce, full]
+        default: commerce
 
 permissions:
   contents: read
 
 concurrency:
-  group: check-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: check-${{ github.workflow }}-${{ github.event_name }}-${{ inputs.suite || 'commerce' }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
+  lint:
+    name: Lint and formatting
+    if: github.event_name != 'schedule' && !(github.event_name == 'workflow_dispatch' && inputs.suite == 'full')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6.1.0
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.12.13"
+          cache: pip
+          cache-dependency-path: scripts/skills/requirements.txt
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install pinned formatter
+        run: python3 -m pip install --disable-pip-version-check "$(sed -n '/^ruff==/p' scripts/skills/requirements.txt)"
+      - name: Lint
+        run: pnpm lint
+      - name: Check formatting
+        run: pnpm format:check
+
   check:
     name: Foundation checks
+    if: github.event_name != 'schedule' && !(github.event_name == 'workflow_dispatch' && inputs.suite == 'full')
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     services:
       postgres:
         image: postgres:17
@@ -42,17 +78,10 @@ jobs:
       CHECKOUT_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_commerce_test
       ADMIN_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_admin_test
       AGENT_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_agent_test
-      DRAFTS_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_drafts_test
-      GARMENTS_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_garments_test
-      LIBRARY_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_library_test
-      CATALOG_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_catalog_test
       PUBLISHING_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_publishing_test
       SUBSCRIBER_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_subscriber_test
       SIGNUP_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_signup_test
-      SHIPPING_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_shipping_test
-      ORDERS_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_orders_test
       DROP_EMAIL_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_drop_email_test
-      DROP_EMAIL_OVERVIEW_TEST_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_drop_email_overview_test
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -82,21 +111,19 @@ jobs:
           fi
           psql --version
       - name: Create isolated test databases
-        run: node --input-type=module -e 'import { Pool } from "pg"; const pool = new Pool({connectionString:process.env.CHECKOUT_TEST_DATABASE_URL}); for (const database of ["store_capacity_test", "store_template_test", "store_catalog_test", "store_publishing_test", "store_admin_test", "store_library_test", "store_agent_test", "store_drafts_test", "store_garments_test", "store_signup_test", "store_subscriber_test", "store_orders_test", "store_shipping_test", "store_drop_email_test", "store_drop_email_overview_test"]) await pool.query("create database " + database); await pool.end();'
+        run: node --input-type=module -e 'import { Pool } from "pg"; const pool = new Pool({connectionString:process.env.CHECKOUT_TEST_DATABASE_URL}); for (const database of ["store_admin_test", "store_agent_test", "store_capacity_test", "store_drop_email_test", "store_publishing_test", "store_signup_test", "store_subscriber_test", "store_template_test"]) await pool.query("create database " + database); await pool.end();'
       - name: Check repository structure
         run: pnpm check:structure
       - name: Protect merged migration history
         env:
           MIGRATION_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before || github.sha }}
         run: pnpm check:migration-history
-      - name: Lint
-        run: pnpm lint
       - name: Check TypeScript
         run: pnpm typecheck
-      - name: Check formatting
-        run: pnpm format:check
-      - name: Test unit behavior
-        run: pnpm test:unit
+      - name: Test CI contracts
+        run: pnpm test:ci
+      - name: Test critical commerce, consent and access behavior
+        run: pnpm test:commerce
       - name: Test fresh template database and runtime permissions
         env:
           SUPABASE_PRIVILEGES_TEST: "true"
@@ -119,30 +146,84 @@ jobs:
         run: pnpm test:design-agent
       - name: Verify template portability
         run: pnpm check:template
-      - name: Build the merchant storefront
-        env:
-          NEXT_PUBLIC_SITE_URL: https://example.com
-        run: pnpm build
 
-  integration:
-    name: Integration checks
-    needs: check
-    uses: ./.github/workflows/integration.yml
+  commerce:
+    name: Commerce browser checks
+    if: github.event_name != 'schedule' && !(github.event_name == 'workflow_dispatch' && inputs.suite == 'full')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: local-commerce-test
+          POSTGRES_DB: store_catalog_e2e
+        ports:
+          - 55479:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d store_catalog_e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      CI: true
+      NEXT_TELEMETRY_DISABLED: 1
+      NEXT_PUBLIC_PRODUCT_IMAGE_BLOB_HOST: publishinge2e.public.blob.vercel-storage.com
+      CATALOG_E2E_DATABASE_URL: postgresql://postgres:local-commerce-test@localhost:55479/store_catalog_e2e
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6.1.0
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install test browsers
+        run: |
+          sudo rm -f /etc/apt/sources.list.d/google-chrome*.list /etc/apt/sources.list.d/google-chrome*.sources
+          # Azure downloads have exhausted runner budgets; use Ubuntu's remaining HTTPS mirrors.
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i '/azure\.archive\.ubuntu\.com/d' /etc/apt/apt-mirrors.txt
+          fi
+          pnpm exec playwright install --with-deps chromium webkit
+      - name: Build the configured commerce fixture
+        run: pnpm test:commerce:build
+      - name: Test desktop and phone commerce journeys
+        run: pnpm test:e2e:commerce
+      - name: Upload commerce browser failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: commerce-browser-diagnostics
+          path: |
+            playwright-report/commerce/
+            test-results/commerce/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  full:
+    name: Full suite
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.suite == 'full')
+    uses: ./.github/workflows/full.yml
 
   required:
     name: Required checks
     if: always()
-    needs: [check, integration]
+    needs: [lint, check, commerce, full]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Require every suite to succeed
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - name: Require the selected suite to succeed
         env:
+          CI_SUITE: ${{ (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.suite == 'full')) && 'full' || 'commerce' }}
+          LINT_RESULT: ${{ needs.lint.result }}
           FOUNDATION_RESULT: ${{ needs.check.result }}
-          INTEGRATION_RESULT: ${{ needs.integration.result }}
-        run: |
-          printf 'Foundation checks: %s\nIntegration checks: %s\n' "$FOUNDATION_RESULT" "$INTEGRATION_RESULT"
-          if [[ "$FOUNDATION_RESULT" != "success" || "$INTEGRATION_RESULT" != "success" ]]; then
-            echo '::error::All foundation, Storybook, storefront, publishing, and admin suites must pass. Open the failed job for its logs and diagnostics.'
-            exit 1
-          fi
+          COMMERCE_RESULT: ${{ needs.commerce.result }}
+          FULL_RESULT: ${{ needs.full.result }}
+        run: node scripts/ci/require-check-results.mjs

@@ -292,16 +292,20 @@
       "sourceCommit": "30a585e483b306134c1fe7b5c73bd44dff7766a8",
       "parentCommit": "21bea1d10e28aae50a7c08db3c753e945ce18c01",
       "disposition": "accepted",
-      "classification": "signup-input-and-commerce-testing",
+      "classification": "signup-input-commerce-testing-and-focused-ci",
       "paths": [
         "src/features/drop-signup/drop-signup-form.tsx",
         "e2e/commerce",
         "e2e/prepare-storefront.ts",
         "playwright.config.ts",
-        ".github/workflows/integration.yml"
+        ".github/workflows/integration.yml",
+        ".github/workflows/check.yml",
+        ".github/workflows/full.yml",
+        "scripts/ci",
+        "test/require-commerce-test-databases.ts"
       ],
-      "reason": "Ported DOM-value signup fix and customer commerce journeys with template branding, isolated configured builds, loopback synthetic providers and v3 confirmation. Retained full Required checks; skipped source narrower CI policy and instruction changes.",
-      "evidence": "Reviewed against template main d69db5615f1ced24f18f07604b9836cbda1eb2a2; GitHub verifies receiving PR #36 and #37 merged at the recorded templateCommit. Final PR #161 review and remaining safety behavior are accounted below.",
+      "reason": "Ported DOM-value signup fix and customer commerce journeys with template branding, isolated configured builds, loopback synthetic providers and v3 confirmation. The October 2 owner instruction now authorizes focused PR CI: parallel lint, template safety checks and commerce browsers; exhaustive verification is retained weekly/manual and before production release. Drafts retain the complete focused Required checks gate.",
+      "evidence": "Reviewed against template main d69db5615f1ced24f18f07604b9836cbda1eb2a2; GitHub verifies receiving PR #36 and #37 merged at the recorded templateCommit. Final PR #161 review and remaining safety behavior are accounted below. Focused CI adoption is prepared in draft NerdOutInc/ai-shop-template#39; the earlier receiving merge receipt above covers the input and browser ports, not this pending workflow change.",
       "templateCommit": "6a62d46e4bdb5aba5cd69d9bd062d102f6eb1ac5",
       "followUp": "Source and receiving production activation, inbox receipt, support access and scheduled suppression remain unverified; record actual deployment evidence before release readiness."
     },
