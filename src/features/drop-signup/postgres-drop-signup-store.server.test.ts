@@ -50,7 +50,7 @@ describe.skipIf(!databaseUrl)("drop signup confirmations", () => {
   })
   beforeEach(async () => {
     await pool.query("truncate commerce.drop_subscribers, commerce.public_request_attempts cascade")
-    await pool.query("update commerce.drop_signup_confirmation_budget set queued_at = '{}', blocked_at = null")
+    await pool.query("truncate commerce.drop_signup_confirmation_budget")
   })
   afterAll(async () => {
     await Promise.all([store?.close(), runtime?.end(), pool?.end()])

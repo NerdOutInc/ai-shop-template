@@ -53,6 +53,9 @@ export async function queueSignupConfirmation(
       return null
     }
     // Serialize the store-wide rolling budget after address checks; keep no recipient identifiers.
+    await client.query(
+      "insert into commerce.drop_signup_confirmation_budget(singleton) values (true) on conflict do nothing"
+    )
     await client.query("select singleton from commerce.drop_signup_confirmation_budget for update")
     const budget = (
       await client.query<{ limited: boolean }>(

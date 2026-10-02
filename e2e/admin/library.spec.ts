@@ -1081,3 +1081,30 @@ test("shows the owner the drop list, the next drop's email and what went out, wi
   await page.screenshot({ path: "test-results/admin/drop-emails-narrow.png", fullPage: true })
   await context.close()
 })
+
+test("keeps an email field focused when JavaScript loads after typing begins", async ({ page }) => {
+  let releaseScripts!: () => void
+  const scriptsReleased = new Promise<void>((resolve) => {
+    releaseScripts = resolve
+  })
+  await page.route("**/_next/static/**/*.js", async (route) => {
+    await scriptsReleased
+    await route.continue()
+  })
+
+  try {
+    await page.goto("/#design-of-the-week", { waitUntil: "commit" })
+    const field = page.locator("#design-of-the-week").getByRole("textbox", { name: "Know when the next one drops" })
+    await field.click()
+    await field.pressSequentially("customer@exa")
+    releaseScripts()
+    // All deferred chunks must finish and hydration settle before typing the rest of the address.
+    await page.waitForLoadState("networkidle")
+
+    await expect(field).toBeFocused()
+    await page.keyboard.type("mple.com")
+    await expect(field).toHaveValue("customer@example.com")
+  } finally {
+    releaseScripts()
+  }
+})
