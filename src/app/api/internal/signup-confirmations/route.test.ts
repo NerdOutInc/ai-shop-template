@@ -5,7 +5,12 @@ import { beforeEach, expect, it, vi } from "vitest"
 import { GET } from "./route"
 
 const { settings, run, prune } = vi.hoisted(() => ({
-  settings: { CRON_SECRET: "test-secret", SIGNUP_CONFIRMATIONS_ENABLED: "true", VERCEL_ENV: "production" },
+  settings: {
+    DATABASE_URL: "fixture",
+    CRON_SECRET: "test-secret",
+    SIGNUP_CONFIRMATIONS_ENABLED: "true",
+    VERCEL_ENV: "production",
+  },
   run: vi.fn(),
   prune: vi.fn(),
 }))
@@ -16,6 +21,7 @@ vi.mock("@/lib/env", () => ({ env: settings }))
 vi.mock("@/features/drop-signup/run-signup-confirmations.server", () => ({ runSignupConfirmations: run }))
 
 beforeEach(() => {
+  settings.DATABASE_URL = "fixture"
   settings.SIGNUP_CONFIRMATIONS_ENABLED = "true"
   settings.VERCEL_ENV = "production"
   prune.mockReset().mockResolvedValue(0)
@@ -75,14 +81,16 @@ it("reports failed housekeeping without blocking confirmation sending", async ()
   expect(run).toHaveBeenCalledTimes(1)
 })
 
-it("does not clean up an unconfigured store", async () => {
-  storeConfig.configured = false
-  await GET(request())
+it("does not clean up without the production database", async () => {
+  settings.DATABASE_URL = ""
+  expect((await GET(request())).status).toBe(503)
   expect(prune).not.toHaveBeenCalled()
   expect(run).not.toHaveBeenCalled()
 })
 
-it("continues automatic expiry when signup and retained-list disclosure are both closed", async () => {
+it("continues expiry when store, policy and list presentation flags are closed", async () => {
+  storeConfig.configured = false
+  storeConfig.policies.published = false
   storeConfig.features.dropSignup = false
   storeConfig.privacy.retainedDropSubscribers = false
   settings.SIGNUP_CONFIRMATIONS_ENABLED = "false"

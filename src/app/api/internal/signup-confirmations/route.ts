@@ -3,7 +3,6 @@ import { getDropEmailPool } from "@/features/drop-emails/get-drop-email-pool.ser
 import { prunePendingSubscribers } from "@/features/subscribers/prune-pending-subscribers.server"
 import { runSignupConfirmations } from "@/features/drop-signup/run-signup-confirmations.server"
 import { env } from "@/lib/env"
-import { storeConfig } from "@/lib/store-config"
 
 export const runtime = "nodejs"
 export const maxDuration = 120
@@ -15,8 +14,8 @@ export async function GET(request: Request) {
   const expected = Buffer.from(`Bearer ${env.CRON_SECRET}`, "utf8")
   if (received.length !== expected.length || !timingSafeEqual(received, expected))
     return Response.json({ error: "Unauthorized" }, { status: 401, headers })
-  if (env.VERCEL_ENV !== "production" || !storeConfig.configured || !storeConfig.policies.published)
-    return Response.json({ processed: false, reason: "disabled" }, { headers })
+  if (env.VERCEL_ENV !== "production") return Response.json({ processed: false, reason: "disabled" }, { headers })
+  if (!env.DATABASE_URL) return Response.json({ error: "Not configured" }, { status: 503, headers })
   let pruned = 0
   let cleanupFailed = false
   try {
