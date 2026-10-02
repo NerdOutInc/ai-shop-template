@@ -159,6 +159,11 @@ test("keeps private evidence out of URLs and safely erases only the reviewed ide
     await page.getByRole("button", { name: "Preview erasure", exact: true }).click()
     const typed = page.getByLabel("Type the email to confirm erasure")
     await expect(typed).toBeFocused()
+    await page.getByRole("button", { name: "Cancel", exact: true }).click()
+    const previewButton = page.getByRole("button", { name: "Preview erasure", exact: true })
+    await expect(previewButton).toBeFocused()
+    await page.keyboard.press("Enter")
+    await expect(typed).toBeFocused()
     await typed.fill("support-target@example.com")
     // A repeat stop invalidates the open preview, even if the first stop time stays unchanged.
     await context.request.post("/api/admin/subscribers", {
@@ -168,6 +173,7 @@ test("keeps private evidence out of URLs and safely erases only the reviewed ide
     await page.getByRole("button", { name: "Erase subscriber", exact: true }).click()
     await expect(page.getByRole("alert").filter({ hasText: "This record changed" })).toBeVisible()
     await expect(typed).toHaveValue("")
+    await expect(typed).toBeFocused()
     await typed.fill("support-target@example.com")
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
     await page.screenshot({ path: ".tmp/subscribers/erasure-mobile.png", fullPage: true })
@@ -187,7 +193,8 @@ test("keeps private evidence out of URLs and safely erases only the reviewed ide
     })
     await page.getByRole("button", { name: "Erase subscriber", exact: true }).click()
     await expect(page.getByRole("alert").filter({ hasText: "response was lost" })).toBeVisible()
-    await page.getByRole("button", { name: "Check original record", exact: true }).click()
+    await expect(page.getByRole("button", { name: "Check original record", exact: true })).toBeFocused()
+    await page.keyboard.press("Enter")
     await expect(page.getByText(/original subscriber record is no longer present/)).toBeVisible()
     expect(
       (await database.query("select count(*) from commerce.drop_signup_confirmations where subscriber_id=$1", [id]))

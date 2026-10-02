@@ -1,5 +1,5 @@
 "use client"
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -23,6 +23,16 @@ export function SubscriberErasure({
   const [uncertain, setUncertain] = useState(false)
   const confirmationRef = useRef<HTMLInputElement>(null)
   const previewButtonRef = useRef<HTMLButtonElement>(null)
+  const focusTarget = useRef<"confirmation" | "preview" | null>(null)
+  useEffect(() => {
+    // Async preview and refresh work can commit after an animation frame; focus only enabled, mounted controls.
+    if (busy || !focusTarget.current) return
+    const target = focusTarget.current === "confirmation" ? confirmationRef.current : previewButtonRef.current
+    if (target) {
+      target.focus()
+      focusTarget.current = null
+    }
+  }, [busy, preview, uncertain])
   async function post(body: unknown) {
     const response = await fetch("/api/admin/subscribers", {
       method: "POST",
@@ -52,7 +62,7 @@ export function SubscriberErasure({
       setPreview(data.subscriber)
       setAddress("")
       setUncertain(false)
-      requestAnimationFrame(() => confirmationRef.current?.focus())
+      focusTarget.current = "confirmation"
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "The record could not be checked.")
     } finally {
@@ -81,7 +91,7 @@ export function SubscriberErasure({
         setPreview(data.subscriber)
         setAddress("")
         setError("This record changed. Review the fresh preview and type the address again.")
-        requestAnimationFrame(() => confirmationRef.current?.focus())
+        focusTarget.current = "confirmation"
         return
       }
       if (data.status !== "erased" && data.status !== "absent") throw new Error("The erasure could not be confirmed.")
@@ -94,7 +104,7 @@ export function SubscriberErasure({
       setAddress("")
       setUncertain(true)
       setError("The erasure response was lost or unavailable. Check the original record before taking another action.")
-      requestAnimationFrame(() => previewButtonRef.current?.focus())
+      focusTarget.current = "preview"
     } finally {
       setBusy(false)
       onBusyChange(false)
@@ -158,7 +168,7 @@ export function SubscriberErasure({
                 onClick={() => {
                   setPreview(null)
                   setAddress("")
-                  requestAnimationFrame(() => previewButtonRef.current?.focus())
+                  focusTarget.current = "preview"
                 }}
               >
                 Cancel
