@@ -75,14 +75,19 @@ it("reports failed housekeeping without blocking confirmation sending", async ()
   expect(run).toHaveBeenCalledTimes(1)
 })
 
-it("does not clean up an unconfigured or undisclosed list", async () => {
+it("does not clean up an unconfigured store", async () => {
   storeConfig.configured = false
   await GET(request())
   expect(prune).not.toHaveBeenCalled()
   expect(run).not.toHaveBeenCalled()
-  storeConfig.configured = true
+})
+
+it("continues automatic expiry when signup and retained-list disclosure are both closed", async () => {
   storeConfig.features.dropSignup = false
   storeConfig.privacy.retainedDropSubscribers = false
-  await GET(request())
-  expect(prune).not.toHaveBeenCalled()
+  settings.SIGNUP_CONFIRMATIONS_ENABLED = "false"
+  const response = await GET(request())
+  expect(response.status).toBe(200)
+  expect(prune).toHaveBeenCalledOnce()
+  expect(run).not.toHaveBeenCalled()
 })

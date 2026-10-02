@@ -140,6 +140,13 @@ test("keeps private evidence out of URLs and safely erases only the reviewed ide
     })
     expect(await lookup.text()).not.toContain("private-confirmation-secret")
     await page.getByRole("button", { name: "Unsubscribe", exact: true }).click()
+    const confirmStop = page.getByRole("button", { name: "Confirm unsubscribe", exact: true })
+    await expect(confirmStop).toBeFocused()
+    await expect(page.getByText("Legacy consent", { exact: true })).toBeVisible()
+    await page.getByRole("button", { name: "Cancel unsubscribe", exact: true }).click()
+    await expect(page.getByRole("button", { name: "Unsubscribe", exact: true })).toBeFocused()
+    await page.getByRole("button", { name: "Unsubscribe", exact: true }).click()
+    await confirmStop.click()
     await expect(page.getByRole("button", { name: "Keep unsubscribed / revoke new links" })).toBeVisible()
     expect(
       (

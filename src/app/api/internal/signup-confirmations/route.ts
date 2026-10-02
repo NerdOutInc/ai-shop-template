@@ -15,12 +15,7 @@ export async function GET(request: Request) {
   const expected = Buffer.from(`Bearer ${env.CRON_SECRET}`, "utf8")
   if (received.length !== expected.length || !timingSafeEqual(received, expected))
     return Response.json({ error: "Unauthorized" }, { status: 401, headers })
-  if (
-    env.VERCEL_ENV !== "production" ||
-    !storeConfig.configured ||
-    !storeConfig.policies.published ||
-    (!storeConfig.features.dropSignup && !storeConfig.privacy.retainedDropSubscribers)
-  )
+  if (env.VERCEL_ENV !== "production" || !storeConfig.configured || !storeConfig.policies.published)
     return Response.json({ processed: false, reason: "disabled" }, { headers })
   let pruned = 0
   let cleanupFailed = false
