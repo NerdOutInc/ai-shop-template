@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
+import { expect, userEvent } from "storybook/test"
 import { SubscriberManager } from "./subscriber-manager"
 import type { SubscriberRecord } from "./subscriber-record"
 
@@ -41,4 +42,23 @@ const meta = {
 } satisfies Meta<typeof SubscriberManager>
 export default meta
 type Story = StoryObj<typeof meta>
-export const Lookup: Story = {}
+export const LookupAndUnsubscribe: Story = {
+  play: async ({ canvas }) => {
+    await userEvent.type(canvas.getByLabelText("Subscriber email"), record.email)
+    await userEvent.click(canvas.getByRole("button", { name: "Look up subscriber" }))
+    await expect(await canvas.findByText("Legacy consent")).toBeVisible()
+    await userEvent.click(canvas.getByText("Consent evidence"))
+    await expect(
+      canvas.getByText("We'll email you when a new design drops. Nothing else, and you can stop any time.")
+    ).toBeVisible()
+    await userEvent.click(canvas.getByRole("button", { name: /^Unsubscribe$/ }))
+    const confirmation = await canvas.findByRole("button", { name: "Confirm unsubscribe" })
+    await expect(confirmation).toHaveFocus()
+    await expect(canvas.getByText("Legacy consent")).toBeVisible()
+    await userEvent.click(canvas.getByRole("button", { name: "Cancel unsubscribe" }))
+    await expect(canvas.getByRole("button", { name: /^Unsubscribe$/ })).toHaveFocus()
+    await userEvent.click(canvas.getByRole("button", { name: /^Unsubscribe$/ }))
+    await userEvent.click(await canvas.findByRole("button", { name: "Confirm unsubscribe" }))
+    await expect(await canvas.findByRole("button", { name: "Keep unsubscribed / revoke new links" })).toBeEnabled()
+  },
+}

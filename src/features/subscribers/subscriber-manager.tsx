@@ -18,6 +18,9 @@ const moment = (value: string | null) =>
 
 export function SubscriberManager() {
   const router = useRouter()
+  const unsubscribeButton = useRef<HTMLButtonElement>(null)
+  const confirmationButton = useRef<HTMLButtonElement>(null)
+  const [confirmUnsubscribe, setConfirmUnsubscribe] = useState(false)
   const resultRef = useRef<HTMLDivElement>(null)
   const [email, setEmail] = useState("")
   const [subscriber, setSubscriber] = useState<SubscriberRecord | null>(null)
@@ -53,6 +56,7 @@ export function SubscriberManager() {
 
   function lookup(event: FormEvent) {
     event.preventDefault()
+    setConfirmUnsubscribe(false)
     setSubscriber(null)
     setSearched(false)
     void request({ action: "lookup", email })
@@ -76,6 +80,7 @@ export function SubscriberManager() {
               value={email}
               onChange={(event) => {
                 setEmail(event.target.value)
+                setConfirmUnsubscribe(false)
                 setSubscriber(null)
                 setSearched(false)
               }}
@@ -157,16 +162,55 @@ export function SubscriberManager() {
               </details>
               <p className="text-sm text-muted-foreground">
                 Unsubscribe stops future drop emails and revokes open confirmation links. It keeps the consent and stop
-                record. A send already on its way cannot be recalled.
+                record. A send already on its way cannot be recalled. Only a fresh signup and inbox confirmation can
+                resume emails; admins cannot undo this stop.
               </p>
               <Button
                 variant="outline"
                 disabled={busy}
-                onClick={() => void request({ action: "unsubscribe", id: subscriber.id })}
+                ref={unsubscribeButton}
+                onClick={() => {
+                  setConfirmUnsubscribe(true)
+                  requestAnimationFrame(() => confirmationButton.current?.focus())
+                }}
                 className="self-start"
               >
                 {subscriber.unsubscribedAt ? "Keep unsubscribed / revoke new links" : "Unsubscribe"}
               </Button>
+              {confirmUnsubscribe && (
+                <div
+                  role="group"
+                  aria-label="Confirm unsubscribe"
+                  className="flex flex-col gap-3 rounded-lg border p-4"
+                >
+                  <p className="text-sm break-words">
+                    Stop future emails to {subscriber.email} and revoke open confirmation links? Only this subscriber
+                    can resume by signing up and confirming again.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      ref={confirmationButton}
+                      disabled={busy}
+                      onClick={() => {
+                        setConfirmUnsubscribe(false)
+                        void request({ action: "unsubscribe", id: subscriber.id })
+                      }}
+                    >
+                      Confirm unsubscribe
+                    </Button>
+                    <Button
+                      variant="outline"
+                      disabled={busy}
+                      onClick={() => {
+                        setConfirmUnsubscribe(false)
+                        unsubscribeButton.current?.focus()
+                      }}
+                    >
+                      Cancel unsubscribe
+                    </Button>
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <p>No subscriber matches that address.</p>
