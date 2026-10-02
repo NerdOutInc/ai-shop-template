@@ -29,7 +29,7 @@ export function DropEmailHistory({ entries }: { entries: DropEmailHistoryEntry[]
             <p className="mt-1 break-words">{entry.subject}</p>
             <p className="mt-2 text-sm text-muted-foreground">
               {entry.recipients === 0
-                ? "Nobody was on the list yet."
+                ? "No recipient records remain."
                 : `Sent to ${entry.sent} of ${plural(entry.recipients, "subscriber", "subscribers")}.`}{" "}
               {plural(entry.productCount, "product", "products")}.
               {entry.firstSentAt

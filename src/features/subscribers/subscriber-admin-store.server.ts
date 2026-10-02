@@ -1,6 +1,7 @@
 import "server-only"
 import type { Pool, PoolClient } from "pg"
 
+import type { SubscriberErasurePreview } from "./subscriber-erasure-preview"
 import type { SubscriberRecord } from "./subscriber-record"
 
 type Row = {
@@ -60,6 +61,9 @@ async function read(
   }
 }
 
+export type SubscriberErasureResult =
+  { status: "erased" | "absent" | "busy" } | { status: "stale"; subscriber: SubscriberRecord }
+
 /** Trusted server access. Each route must verify the current admin before calling this store. */
 export class SubscriberAdminStore {
   constructor(private readonly pool: Pool) {}
@@ -69,5 +73,49 @@ export class SubscriberAdminStore {
   }
   readById(id: string) {
     return read(this.pool, "id", id)
+  }
+  async erase(preview: SubscriberErasurePreview, email: string): Promise<SubscriberErasureResult> {
+    const client = await this.pool.connect()
+    try {
+      await client.query("begin")
+      await client.query("set local lock_timeout = '1s'")
+      // Same namespace as both workers' session locks: a provider call must finish before erasure.
+      for (const worker of ["drop-emails", "signup-confirmations"]) {
+        const acquired = (
+          await client.query<{ locked: boolean }>(
+            "select pg_try_advisory_xact_lock(hashtextextended($1, 0)) as locked",
+            [worker]
+          )
+        ).rows[0]?.locked
+        if (!acquired) {
+          await client.query("rollback")
+          return { status: "busy" }
+        }
+      }
+      await client.query("select id from commerce.drop_subscribers where id = $1 for update", [preview.id])
+      const current = await read(client, "id", preview.id)
+      if (!current) {
+        await client.query("commit")
+        return { status: "absent" }
+      }
+      if (
+        current.email !== email ||
+        current.updatedAt !== preview.updatedAt ||
+        current.deliveries !== preview.deliveries ||
+        current.confirmations !== preview.confirmations
+      ) {
+        await client.query("commit")
+        return { status: "stale", subscriber: current }
+      }
+      await client.query("delete from commerce.drop_subscribers where id = $1", [preview.id])
+      await client.query("commit")
+      return { status: "erased" }
+    } catch (error) {
+      await client.query("rollback")
+      if (error && typeof error === "object" && "code" in error && error.code === "55P03") return { status: "busy" }
+      throw error
+    } finally {
+      client.release()
+    }
   }
 }

@@ -26,14 +26,16 @@ const meta = {
   parameters: { layout: "padded" },
   beforeEach: () => {
     const original = globalThis.fetch
+    let current: SubscriberRecord | null = record
     globalThis.fetch = async (_url, init) => {
       const input = JSON.parse(String(init?.body)) as { action: string }
-      return Response.json({
-        subscriber:
-          input.action === "unsubscribe"
-            ? { ...record, unsubscribedAt: new Date().toISOString(), eligible: false }
-            : record,
-      })
+      if (input.action === "erase") {
+        current = null
+        return Response.json({ status: "erased" })
+      }
+      if (input.action === "unsubscribe")
+        current = { ...record, unsubscribedAt: new Date().toISOString(), eligible: false }
+      return Response.json({ subscriber: current })
     }
     return () => {
       globalThis.fetch = original
@@ -60,5 +62,22 @@ export const LookupAndUnsubscribe: Story = {
     await userEvent.click(canvas.getByRole("button", { name: /^Unsubscribe$/ }))
     await userEvent.click(await canvas.findByRole("button", { name: "Confirm unsubscribe" }))
     await expect(await canvas.findByRole("button", { name: "Keep unsubscribed / revoke new links" })).toBeEnabled()
+  },
+}
+export const ReviewedErasure: Story = {
+  play: async ({ canvas }) => {
+    await userEvent.type(canvas.getByLabelText("Subscriber email"), record.email)
+    await userEvent.click(canvas.getByRole("button", { name: "Look up subscriber" }))
+    await userEvent.click(await canvas.findByRole("button", { name: "Preview erasure" }))
+    const address = await canvas.findByLabelText("Type the email to confirm erasure")
+    await expect(address).toHaveFocus()
+    const commit = canvas.getByRole("button", { name: "Erase subscriber" })
+    await expect(commit).toBeDisabled()
+    await userEvent.type(address, "wrong@example.com")
+    await expect(commit).toBeDisabled()
+    await userEvent.clear(address)
+    await userEvent.type(address, record.email)
+    await userEvent.click(commit)
+    await expect(await canvas.findByText(/original subscriber and its associated records are removed/)).toBeVisible()
   },
 }

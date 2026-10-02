@@ -34,6 +34,11 @@ export async function POST(request: Request) {
     const input = parsed.data
     const store = new SubscriberAdminStore(getDropEmailPool())
     if (input.action === "lookup") return respond({ subscriber: await store.lookup(input.email) })
+    if (input.action === "preview") return respond({ subscriber: await store.readById(input.id) })
+    if (input.action === "erase") {
+      const result = await store.erase(input.preview, input.email)
+      return respond(result, result.status === "stale" || result.status === "busy" ? 409 : 200)
+    }
     await getDropSignupStore().unsubscribe(input.id)
     return respond({ subscriber: await store.readById(input.id) })
   } catch {

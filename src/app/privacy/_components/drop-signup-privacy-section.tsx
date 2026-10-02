@@ -51,12 +51,17 @@ export function DropSignupPrivacySection() {
       <p>
         Confirmation messages go through Resend. The store keeps private confirmation tokens and delivery-attempt
         evidence while confirmation is pending. Used or ended requests clear their message payload; request evidence
-        stays until erasure.
+        stays until erasure. Never-confirmed pending signups and their owned records are removed automatically after the
+        latest 24-hour confirmation request expires. Confirmed, historical and unsubscribed records are kept until a
+        reviewed erasure request.
       </p>
       <p>
         <DropRemovalLink />. Send your request from the address that receives the emails. Requests are handled by the
-        store’s support team; opening the email link does not remove an address automatically. This request concerns
-        design-drop emails, not order receipts or support messages.
+        store’s support team; opening the email link does not remove an address automatically. You can also request
+        erasure of your subscriber email, signup IP, consent evidence, confirmation records and drop delivery records.
+        Orders, payments, fulfillment and shared drop templates are kept separately. Provider records, earlier backups,
+        hosting logs and support messages may remain under their own retention policies. A later signup needs fresh
+        confirmation. This request concerns design-drop emails, not order receipts or support messages.
       </p>
     </>
   )

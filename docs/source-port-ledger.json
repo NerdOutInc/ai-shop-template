@@ -336,13 +336,19 @@
     {
       "sourceCommit": "39b1f39f251b2f0002c87dc74ac570efb1b9b117",
       "parentCommit": "2bc50de03b1ac1f803f5b52c668ac70ed7e6d67c",
-      "disposition": "deferred",
+      "disposition": "accepted",
       "classification": "subscriber-erasure-and-expiry",
-      "paths": [],
-      "reason": "Depends on confirmation and support. Owner selected automatic pending expiry cleanup by default; retain independent production verification.",
+      "paths": [
+        "src/features/subscribers",
+        "src/app/api/admin/subscribers",
+        "src/app/api/internal/signup-confirmations",
+        "supabase/migrations/20261002133308_subscriber_erasure.sql",
+        "docs/subscriber-admin.md"
+      ],
+      "reason": "Ported reviewed erasure with immutable identity, preview freshness, bounded locks and child cascades; automatic never-confirmed expiry cleanup by owner choice, independent of sending. Preserves checkout evidence and template privacy/configuration gates.",
       "evidence": "Pinned source parent-to-commit review against template main d69db5615f1ced24f18f07604b9836cbda1eb2a2; implementation and validation receipts follow in the native draft stack.",
       "templateCommit": null,
-      "followUp": "Draft layer codex/port-subscriber-erasure."
+      "followUp": "Validate draft layer codex/port-subscriber-erasure; record PR/merge receipt and live source proof."
     },
     {
       "sourceCommit": "c4ebdba5882731be899c08cec5598260c8cfad54",

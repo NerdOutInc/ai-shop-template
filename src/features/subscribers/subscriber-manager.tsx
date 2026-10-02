@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { dropConsentWording } from "@/features/drop-signup/drop-consent-wording"
 import { formatStoreMoment } from "@/lib/format-store-moment"
 
+import { SubscriberErasure } from "./subscriber-erasure"
 import type { SubscriberRecord } from "./subscriber-record"
 
 const moment = (value: string | null) =>
@@ -25,12 +26,14 @@ export function SubscriberManager() {
   const [email, setEmail] = useState("")
   const [subscriber, setSubscriber] = useState<SubscriberRecord | null>(null)
   const [searched, setSearched] = useState(false)
+  const [message, setMessage] = useState("")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState("")
 
   async function request(input: { action: "lookup"; email: string } | { action: "unsubscribe"; id: string }) {
     setBusy(true)
     setError("")
+    setMessage("")
     try {
       const response = await fetch("/api/admin/subscribers", {
         method: "POST",
@@ -211,9 +214,20 @@ export function SubscriberManager() {
                   </div>
                 </div>
               )}
+              <SubscriberErasure
+                key={subscriber.id}
+                subscriber={subscriber}
+                onBusyChange={setBusy}
+                onChange={(record, notice) => {
+                  setSubscriber(record)
+                  setMessage(notice ?? "")
+                  router.refresh()
+                  if (!record) requestAnimationFrame(() => resultRef.current?.focus())
+                }}
+              />
             </>
           ) : (
-            <p>No subscriber matches that address.</p>
+            <p>{message || "No subscriber matches that address."}</p>
           )}
         </div>
       )}

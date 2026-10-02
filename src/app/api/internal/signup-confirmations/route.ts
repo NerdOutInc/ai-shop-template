@@ -1,4 +1,6 @@
 import { timingSafeEqual } from "node:crypto"
+import { getDropEmailPool } from "@/features/drop-emails/get-drop-email-pool.server"
+import { prunePendingSubscribers } from "@/features/subscribers/prune-pending-subscribers.server"
 import { runSignupConfirmations } from "@/features/drop-signup/run-signup-confirmations.server"
 import { env } from "@/lib/env"
 
@@ -12,11 +14,25 @@ export async function GET(request: Request) {
   const expected = Buffer.from(`Bearer ${env.CRON_SECRET}`, "utf8")
   if (received.length !== expected.length || !timingSafeEqual(received, expected))
     return Response.json({ error: "Unauthorized" }, { status: 401, headers })
-  if (env.SIGNUP_CONFIRMATIONS_ENABLED !== "true" || env.VERCEL_ENV !== "production")
-    return Response.json({ processed: false, reason: "disabled" }, { headers })
+  if (env.VERCEL_ENV !== "production") return Response.json({ processed: false, reason: "disabled" }, { headers })
+  if (!env.DATABASE_URL) return Response.json({ error: "Not configured" }, { status: 503, headers })
+  let pruned = 0
+  let cleanupFailed = false
   try {
+    pruned = await prunePendingSubscribers(getDropEmailPool())
+  } catch {
+    cleanupFailed = true
+    console.error("Pending signup cleanup needs attention")
+  }
+  const cleanup = { pruned, ...(cleanupFailed ? { cleanupError: "Pending signup cleanup needs attention" } : {}) }
+  try {
+    if (env.SIGNUP_CONFIRMATIONS_ENABLED !== "true")
+      return Response.json(
+        { processed: false, reason: "disabled", ...cleanup },
+        { status: cleanupFailed ? 503 : 200, headers }
+      )
     const result = await runSignupConfirmations()
-    return Response.json(result, { status: result.errors ? 503 : 200, headers })
+    return Response.json({ ...result, ...cleanup }, { status: result.errors || cleanupFailed ? 503 : 200, headers })
   } catch {
     console.error("Signup confirmations need attention")
     return Response.json({ error: "Signup confirmations need attention" }, { status: 503, headers })

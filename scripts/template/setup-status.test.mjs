@@ -653,3 +653,17 @@ test("signup confirmation needs explicit sending, a disclosed list and its worke
   assert.equal(confirmation(enabled, { ...list, policies: { ...list.policies, published: false } }), false)
   assert.equal(confirmation(enabled, { ...list, features: { ...list.features, dropSignup: false } }), false)
 })
+
+test("pending expiry requires its authenticated worker for retained lists even with both senders off", () => {
+  const retained = { ...config, privacy: { ...config.privacy, retainedDropSubscribers: true } }
+  const disabled = { ...environment, SIGNUP_CONFIRMATIONS_ENABLED: "false", DROP_EMAILS_ENABLED: "false" }
+  const expiry = (env = disabled, value = retained, options) =>
+    status(env, value, options).find((check) => check.name === "Pending signup expiry")
+  assert.equal(expiry().active, true)
+  assert.equal(expiry().ready, true)
+  assert.equal(expiry(disabled, retained, { schedules: [] }).ready, false)
+  assert.equal(expiry({ ...disabled, CRON_SECRET: undefined }).ready, false)
+  assert.equal(expiry(disabled, { ...retained, policies: { ...retained.policies, published: false } }).ready, false)
+  assert.equal(expiry(disabled, config).active, false)
+  assert.equal(expiry(disabled, retained, { mode: "sandbox" }).active, false)
+})
