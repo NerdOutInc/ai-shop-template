@@ -305,8 +305,8 @@
         "test/require-commerce-test-databases.ts"
       ],
       "reason": "Ported DOM-value signup fix and customer commerce journeys with template branding, isolated configured builds, loopback synthetic providers and v3 confirmation. The October 2 owner instruction now authorizes focused PR CI: parallel lint, template safety checks and commerce browsers; exhaustive verification is retained on main pushes, weekly/manual and before production release. Drafts retain the complete focused Required checks gate.",
-      "evidence": "Reviewed against template main d69db5615f1ced24f18f07604b9836cbda1eb2a2. Receiving PR #36 merged as c191c82970f0f0c8ebf9a27ab637b32224c43d2f and #37 as the recorded templateCommit. Focused CI adoption subsequently merged in PR #39 as 9422ee52b520375f5bc02a49b47139fdc361dce5; the original input/browser receipt alone did not cover that workflow change. The full hosted Check run 37081972863 passed on merged template main b170f59734bdddfb6074858b345a9c02bbae4907. Final source PR #161 review and remaining safety behavior are accounted below; production proof remains separate.",
-      "templateCommit": "6a62d46e4bdb5aba5cd69d9bd062d102f6eb1ac5",
+      "evidence": "Receiving PR #36 supplied the DOM-value fix, #37 the customer commerce journeys, and #39 completed the accepted focused CI paths. The recorded templateCommit is the first receiving main commit containing the complete port. Validation is recorded in validationEvidence (template-main-after-admin-fixture-fix); production proof remains separate.",
+      "templateCommit": "9422ee52b520375f5bc02a49b47139fdc361dce5",
       "followUp": "Source and receiving production activation, inbox receipt, support access and scheduled suppression remain unverified; record actual deployment evidence before release readiness."
     },
     {
@@ -367,7 +367,7 @@
       "classification": "store-specific-historical-conversion",
       "paths": [],
       "reason": "Do not port the deployment-only conversion of exactly two source historical signups, its cutoff, owner approval, or owner-approval basis. Review any independent regression improvements during the erasure port.",
-      "evidence": "Pinned source parent-to-commit review against template main d69db5615f1ced24f18f07604b9836cbda1eb2a2; implementation and validation receipts follow in the native draft stack.",
+      "evidence": "The deployment-only historical conversion was intentionally excluded from the template. The reusable confirmation/support/erasure ports merged; their receiving receipts are recorded in the preceding entries.",
       "templateCommit": null,
       "followUp": null
     },
@@ -429,11 +429,20 @@
         "supabase/migrations/20261002210616_signup_confirmation_admission.sql"
       ],
       "reason": "Port remaining reviewed admission, pool-friendly worker health, aggregate admin status, intentional unsubscribe focus and paused-signup recovery. Keep owner values, optional gates, v1/v2/v3 consent, retained-list behavior, independent signup placement and the existing template budget/runtime role. Already-equivalent input recovery, skip-link capability protection, cleanup independence, fixture migration discovery and erasure tests are retained.",
-      "evidence": "Reviewed all 39 source PR paths at final head 6c57c3f2ebc0aec5b747e2671d482352f80214b7, merged as 2926c59. The source-only migration is replaced by receiving forward migrations preserving recent template capacity; old merged SQL remains unchanged. Receiving PR #39 final head 2794ea3a4b65d7db7c7a2eec6cb476fbf7234766 merged as the recorded templateCommit. The full hosted Check run 37081972863 passed on merged template main b170f59734bdddfb6074858b345a9c02bbae4907 after #40 supplied the missing cron key to the admin browser fixture. Device-specific public gesture skips remain skips. PR #39 review hardening adds separate commerce configuration, changed-test PR coverage, full main-push verification, keyed/wider-prefix request identities, scheduled budget pruning, sustained saturation monitoring and advisory health reads. This is receiving-template hardening, not a claim that those additional changes exist in the source store; synthetic checks do not establish live source or receiving-store delivery.",
+      "evidence": "Reviewed all 39 source PR paths at final head 6c57c3f2ebc0aec5b747e2671d482352f80214b7, merged as 2926c59. Receiving PR #39 final head 2794ea3a4b65d7db7c7a2eec6cb476fbf7234766 merged as the recorded templateCommit. Forward migrations preserve recent template capacity and leave old merged SQL unchanged. Validation is recorded in validationEvidence (template-main-after-admin-fixture-fix). Receiving hardening includes separate commerce configuration, changed-test coverage, full main-push verification, keyed request identities, scheduled budget pruning, sustained saturation monitoring and advisory health reads; it is not a claim that those changes exist in the source store.",
       "templateCommit": "9422ee52b520375f5bc02a49b47139fdc361dce5",
       "followUp": "Production sender, inbox receipt, owner support access and scheduled suppression remain unverified. Record source-store live proof before adopting the completed bundle into a release; receiving-store activation and deployment verification remain separately authorized."
     }
   ],
   "outboundPorts": [],
-  "outboundStatus": "No template-to-operating-store port was authorized or performed by this change. Create a private receiving-store port receipt for each proposed fix under the update contract."
+  "outboundStatus": "No template-to-operating-store port was authorized or performed by this change. Create a private receiving-store port receipt for each proposed fix under the update contract.",
+  "validationEvidence": [
+    {
+      "id": "template-main-after-admin-fixture-fix",
+      "templateCommit": "b170f59734bdddfb6074858b345a9c02bbae4907",
+      "fullCheckRun": "https://github.com/NerdOutInc/ai-shop-template/actions/runs/37081972863",
+      "result": "passed",
+      "limits": "Synthetic/disposable environments only; device-specific public gesture skips remain skips. No live source or receiving-store provider/deployment proof."
+    }
+  ]
 }

@@ -43,19 +43,50 @@ export function prepareTemplateRelease(root, { ref, tag, candidate = false }) {
   } catch {
     throw new Error("Fetch origin/main with full history before preparing metadata")
   }
-  const historyPullRequests = [
-    ...new Set(
-      git("log", "--first-parent", "--format=%s", commit)
-        .toString()
-        .split("\n")
-        .flatMap((subject) => {
-          const match = subject.match(/\(#([1-9]\d*)\)\s*$/)
+  if (candidate) {
+    try {
+      git("merge-base", "--is-ancestor", mainCommit, commit)
+    } catch {
+      throw new Error("Candidate must include fetched origin/main; update the branch and release inventory")
+    }
+  }
+  const history = git("log", "--first-parent", "--format=%H %s", commit).toString().trim().split("\n")
+  const mainHistory = git("log", "--first-parent", "--format=%H %s", mainCommit).toString().trim().split("\n")
+  // Rebase merges can lose PR labels. An operator verifies these receipts against GitHub;
+  // require merged main commits within the pinned ancestry; a branch cannot supply a receipt.
+  const receipts = record.rebasedPullRequests === undefined ? [] : record.rebasedPullRequests
+  if (
+    !Array.isArray(receipts) ||
+    receipts.some(
+      (item) =>
+        !item ||
+        !Number.isSafeInteger(item.number) ||
+        !record.includedPullRequests.includes(item.number) ||
+        !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(item.commit ?? "") ||
+        (!candidate && !history.some((line) => line.startsWith(`${item.commit} `))) ||
+        !mainHistory.some((line) => line.startsWith(`${item.commit} `))
+    ) ||
+    new Set(receipts.map((item) => item.number)).size !== receipts.length ||
+    new Set(receipts.map((item) => item.commit)).size !== receipts.length
+  )
+    throw new Error("Rebased PR receipts need distinct listed PRs and full commits in pinned and fetched main history")
+  const pullRequests = (lines) =>
+    [
+      ...new Set([
+        ...lines.flatMap((line) => {
+          const subject = line.slice(line.indexOf(" ") + 1)
+          const match = subject.match(/\(#([1-9]\d*)\)\s*$/) ?? subject.match(/^Merge pull request #([1-9]\d*) from /)
           return match ? [Number(match[1])] : []
-        })
-    ),
-  ].sort((a, b) => a - b)
+        }),
+        ...receipts.map((item) => item.number),
+      ]),
+    ].sort((a, b) => a - b)
+  const historyPullRequests = candidate
+    ? [...new Set([...pullRequests(history), ...pullRequests(mainHistory)])].sort((a, b) => a - b)
+    : pullRequests(history)
+  const mergedPullRequests = candidate ? pullRequests(mainHistory) : historyPullRequests
   const unmergedListedPullRequests = record.includedPullRequests.filter(
-    (number) => !historyPullRequests.includes(number)
+    (number) => !mergedPullRequests.includes(number)
   )
   const unlistedHistoryPullRequests = historyPullRequests.filter(
     (number) => !record.includedPullRequests.includes(number)
@@ -66,11 +97,25 @@ export function prepareTemplateRelease(root, { ref, tag, candidate = false }) {
     } catch {
       throw new Error("Pinned commit is not on fetched origin/main; use --candidate only for unmerged review")
     }
-    if (unmergedListedPullRequests.length || unlistedHistoryPullRequests.length)
-      throw new Error(
-        `PR record/history mismatch: listed but absent ${unmergedListedPullRequests.join(",") || "none"}; merged but unlisted ${unlistedHistoryPullRequests.join(",") || "none"}`
-      )
   }
+  if (unlistedHistoryPullRequests.length || (!candidate && unmergedListedPullRequests.length))
+    throw new Error(
+      `PR record/history mismatch: listed but absent ${unmergedListedPullRequests.join(",") || "none"}; merged but unlisted ${unlistedHistoryPullRequests.join(",") || "none"}`
+    )
+  const publicationBlockers = record.publicationBlockers === undefined ? [] : record.publicationBlockers
+  if (
+    !Array.isArray(publicationBlockers) ||
+    publicationBlockers.some(
+      (item) =>
+        !item ||
+        typeof item.id !== "string" ||
+        !item.id.trim() ||
+        typeof item.reason !== "string" ||
+        !item.reason.trim()
+    ) ||
+    new Set(publicationBlockers.map((item) => item.id)).size !== publicationBlockers.length
+  )
+    throw new Error("Publication blockers need distinct nonempty ids and reasons")
   const notes = read(record.upgradeNotes)
   if (!notes.toString().trim()) throw new Error("Upgrade notes must not be empty")
   const entries = git("ls-tree", "-r", "-z", commit, "--", "supabase/migrations").toString().split("\0").filter(Boolean)
@@ -101,9 +146,11 @@ export function prepareTemplateRelease(root, { ref, tag, candidate = false }) {
     migrations,
     includedPullRequests: historyPullRequests,
     proposedPullRequests: record.includedPullRequests,
+    rebasedPullRequests: receipts,
     pullRequestVerification: {
       mode: candidate ? "unmerged-candidate" : "main-history",
       mainCommit,
+      mergedPullRequests,
       unmergedListedPullRequests,
       unlistedHistoryPullRequests,
     },
@@ -113,6 +160,14 @@ export function prepareTemplateRelease(root, { ref, tag, candidate = false }) {
     pendingSourcePortReceipts: sourceLedger.dispositions
       .filter((item) => item.disposition === "accepted" && !item.templateCommit)
       .map((item) => ({ sourceCommit: item.sourceCommit, followUp: item.followUp })),
+    pendingSourcePortFollowUps: sourceLedger.dispositions
+      .filter((item) => item.disposition === "accepted" && item.followUp)
+      .map((item) => ({
+        sourceCommit: item.sourceCommit,
+        templateCommit: item.templateCommit,
+        followUp: item.followUp,
+      })),
+    publicationBlockers,
   }
 }
 
