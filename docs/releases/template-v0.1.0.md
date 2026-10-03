@@ -39,6 +39,7 @@ Status: prepared for review, **not published**. This is the first template relea
 | [#37](https://github.com/NerdOutInc/ai-shop-template/pull/37) | Add isolated offline customer commerce browser journeys            |
 | [#39](https://github.com/NerdOutInc/ai-shop-template/pull/39) | Add signup admission/worker safety and focused parallel PR checks  |
 | [#40](https://github.com/NerdOutInc/ai-shop-template/pull/40) | Supply the cron key in the admin signup confirmation fixture       |
+| [#41](https://github.com/NerdOutInc/ai-shop-template/pull/41) | Refresh release records and migration notes (proposed; unmerged)   |
 
 The initial AI-first snapshot and its subsequent local-mail configuration commit are also included. Source-store changes are sanitized ports recorded separately in the source ledger; source consent/legal decisions are not inherited. The canonical template continues to use opt-in marketing consent.
 
@@ -89,6 +90,7 @@ This preparation changes documentation and release records only. Its draft PR re
 
 - The compatibility/guard and subscriber layers are merged. Merge this preparation PR only under explicit authority, reconcile its proposed inclusion with first-parent history, and regenerate the final manifest; accepted source-port merge receipts must be complete.
 - Source-store confirmation/admin/scheduled-suppression production proof remains an unresolved release-readiness follow-up in the [source ledger](../source-port-ledger.json) and rollout guides. Preparation does not resolve it; record that evidence before publishing this completed bundle. Each receiving store still needs its own activation/deployment proof.
+- Triage the open [Dependabot alert #1](https://github.com/NerdOutInc/ai-shop-template/security/dependabot/1) before publication. On October 2, 2026, GitHub reports high-severity [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) for `braces@3.0.3`, with no patched version listed. The current dependency path is development lint tooling (`eslint-config-next` → `@next/eslint-plugin-next` → `fast-glob` → `micromatch` → `braces`); production exposure has not been established. Record the exposure assessment and reviewed remediation or disposition; successful CI does not resolve the alert.
 - Obtain authority for the tag/release. Use `template-v0.1.0`; do not enable immutable releases or change visibility/license without the owner's decision. Immutable tag names cannot be reused once that setting applies.
 - Pin the final full commit, require its complete CI, recompute metadata and review the notes. Record a separately verified deployment receipt for any operating-store port.
 - After approval for the rehearsal repository, use GitHub's template generator only while `main` exactly equals the verified R1 commit. Capture root/template commit and tree before customization. Between releases, keep `originRelease` null and record the exact commit; an earlier release is only a comparison anchor.
