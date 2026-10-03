@@ -110,20 +110,209 @@ test("CLI rejects a mutable ref and the workflow runs only in the canonical repo
   assert.doesNotMatch(workflow, /contents: write|pull_request_target|secrets\.|gh release create/)
 })
 
-test("main metadata rejects missing and extra PRs; unmerged mode exposes both differences", (t) => {
+test("candidate and main preparation reject unlisted history; only candidates allow pending listed PRs", (t) => {
   const { root, git, write, record } = fixture(t)
   write(`docs/releases/${tag}.json`, JSON.stringify({ ...record, includedPullRequests: [27, 29, 99] }))
   git("add", ".")
   git("commit", "--quiet", "-m", "Unmerged candidate")
-  const ref = git("rev-parse", "HEAD")
+  let ref = git("rev-parse", "HEAD")
   assert.throws(() => prepareTemplateRelease(root, { ref, tag }), /not on fetched origin\/main/)
+  assert.throws(() => prepareTemplateRelease(root, { ref, tag, candidate: true }), /merged but unlisted 28/)
+  write(`docs/releases/${tag}.json`, JSON.stringify({ ...record, includedPullRequests: [27, 28, 29, 99] }))
+  git("add", ".")
+  git("commit", "--quiet", "-m", "Account for all merged PRs")
+  ref = git("rev-parse", "HEAD")
   const candidate = prepareTemplateRelease(root, { ref, tag, candidate: true })
-  assert.deepEqual(candidate.includedPullRequests, [27, 28, 29])
-  assert.deepEqual(candidate.proposedPullRequests, [27, 29, 99])
   assert.deepEqual(candidate.pullRequestVerification.unmergedListedPullRequests, [99])
-  assert.deepEqual(candidate.pullRequestVerification.unlistedHistoryPullRequests, [28])
+  assert.deepEqual(candidate.pullRequestVerification.unlistedHistoryPullRequests, [])
   git("update-ref", "refs/remotes/origin/main", ref)
-  assert.throws(() => prepareTemplateRelease(root, { ref, tag }), /PR record\/history mismatch/)
+  assert.throws(() => prepareTemplateRelease(root, { ref, tag }), /listed but absent 99/)
+})
+
+test("a concurrent main merge invalidates the candidate until the branch and inventory catch up", (t) => {
+  const { root, git, write, record, ref: base } = fixture(t)
+  git("commit", "--quiet", "--allow-empty", "-m", "Candidate edits")
+  const candidateRef = git("rev-parse", "HEAD")
+  const concurrent = git("commit-tree", git("rev-parse", `${base}^{tree}`), "-p", base, "-m", "Dependency update (#42)")
+  git("update-ref", "refs/remotes/origin/main", concurrent)
+  assert.throws(
+    () => prepareTemplateRelease(root, { ref: candidateRef, tag, candidate: true }),
+    /include fetched origin\/main/
+  )
+  // Main is a second parent here, so first-parent candidate history alone is insufficient.
+  git("merge", "--quiet", "--no-ff", concurrent, "-m", "Update candidate from main")
+  assert.throws(
+    () => prepareTemplateRelease(root, { ref: git("rev-parse", "HEAD"), tag, candidate: true }),
+    /merged but unlisted 42/
+  )
+  write(
+    `docs/releases/${tag}.json`,
+    JSON.stringify({ ...record, includedPullRequests: [...record.includedPullRequests, 42] })
+  )
+  git("add", ".")
+  git("commit", "--quiet", "-m", "Refresh inventory")
+  const result = prepareTemplateRelease(root, { ref: git("rev-parse", "HEAD"), tag, candidate: true })
+  assert.deepEqual(result.includedPullRequests, [27, 28, 29, 42])
+})
+
+test("squash, merge commits and labeled rebase commits retain the preparation PR", (t) => {
+  const { root, git, write, record } = fixture(t)
+  write(`docs/releases/${tag}.json`, JSON.stringify({ ...record, includedPullRequests: [27, 28, 29, 41] }))
+  git("add", ".")
+  git("commit", "--quiet", "-m", "Prepare release (#41)")
+  const ref = git("rev-parse", "HEAD")
+  const candidate = prepareTemplateRelease(root, { ref, tag, candidate: true })
+  assert.deepEqual(candidate.pullRequestVerification.unmergedListedPullRequests, [41])
+  const base = git("rev-parse", "origin/main")
+  const tree = git("rev-parse", `${ref}^{tree}`)
+  for (const subject of [
+    "Prepare release (#41)",
+    "Merge pull request #41 from fixture/release",
+    "Rebased preparation (#41)",
+  ]) {
+    const parents = subject.startsWith("Merge pull request") ? ["-p", base, "-p", ref] : ["-p", base]
+    const merged = git("commit-tree", tree, ...parents, "-m", subject)
+    git("update-ref", "refs/remotes/origin/main", merged)
+    const result = prepareTemplateRelease(root, { ref: merged, tag })
+    assert.deepEqual(result.includedPullRequests, [27, 28, 29, 41])
+    assert.deepEqual(result.pullRequestVerification.unmergedListedPullRequests, [])
+  }
+})
+
+test("unlabeled rebase history can be repaired with a verified committed receipt", (t) => {
+  const { root, git, write, record } = fixture(t)
+  git("commit", "--quiet", "--allow-empty", "-m", "Rebased fix without a PR label")
+  const rebased = git("rev-parse", "HEAD")
+  git("update-ref", "refs/remotes/origin/main", rebased)
+  const inventory = {
+    ...record,
+    includedPullRequests: [27, 28, 29, 41, 42],
+    rebasedPullRequests: [{ number: 41, commit: rebased }],
+  }
+  write(`docs/releases/${tag}.json`, JSON.stringify(inventory))
+  git("add", ".")
+  git("commit", "--quiet", "-m", "Record independently verified rebase receipt (#42)")
+  const ref = git("rev-parse", "HEAD")
+  git("update-ref", "refs/remotes/origin/main", ref)
+  const result = prepareTemplateRelease(root, { ref, tag })
+  assert.deepEqual(result.includedPullRequests, inventory.includedPullRequests)
+  assert.deepEqual(result.rebasedPullRequests, inventory.rebasedPullRequests)
+  for (const receipts of [
+    null,
+    [{ number: 41, commit: "a".repeat(40) }],
+    [{ number: 41, commit: "HEAD" }],
+    [{ number: 99, commit: rebased }],
+    [
+      { number: 41, commit: rebased },
+      { number: 41, commit: rebased },
+    ],
+  ]) {
+    write(`docs/releases/${tag}.json`, JSON.stringify({ ...inventory, rebasedPullRequests: receipts }))
+    git("add", ".")
+    git("commit", "--quiet", "-m", "Invalid receipt")
+    assert.throws(
+      () => prepareTemplateRelease(root, { ref: git("rev-parse", "HEAD"), tag, candidate: true }),
+      /Rebased PR receipts/
+    )
+  }
+})
+
+test("candidate rebase receipts remain valid when merged main is a second parent", (t) => {
+  const { root, git, write, record, ref: base } = fixture(t)
+  git("commit", "--quiet", "--allow-empty", "-m", "Candidate work")
+  const rebased = git(
+    "commit-tree",
+    git("rev-parse", `${base}^{tree}`),
+    "-p",
+    base,
+    "-m",
+    "Unlabeled rebased main change"
+  )
+  git("update-ref", "refs/remotes/origin/main", rebased)
+  git("merge", "--quiet", "--no-ff", rebased, "-m", "Update from main")
+  write(
+    `docs/releases/${tag}.json`,
+    JSON.stringify({
+      ...record,
+      includedPullRequests: [27, 28, 29, 41],
+      rebasedPullRequests: [{ number: 41, commit: rebased }],
+    })
+  )
+  git("add", ".")
+  git("commit", "--quiet", "-m", "Record verified receipt")
+  const result = prepareTemplateRelease(root, { ref: git("rev-parse", "HEAD"), tag, candidate: true })
+  assert.deepEqual(result.pullRequestVerification.mergedPullRequests, [27, 28, 29, 41])
+})
+
+test("rebase receipts cannot use unmerged commits or a merged side-branch commit", (t) => {
+  const { root, git, write, record, ref: base } = fixture(t)
+  const side = git("commit-tree", git("rev-parse", `${base}^{tree}`), "-p", base, "-m", "Side change")
+  const merge = git(
+    "commit-tree",
+    git("rev-parse", `${base}^{tree}`),
+    "-p",
+    base,
+    "-p",
+    side,
+    "-m",
+    "Merge pull request #30 from fixture/side"
+  )
+  git("update-ref", "refs/remotes/origin/main", merge)
+  git("reset", "--quiet", "--hard", merge)
+  git("commit", "--quiet", "--allow-empty", "-m", "Unmerged receipt target")
+  const unmerged = git("rev-parse", "HEAD")
+  for (const receiptCommit of [side, unmerged]) {
+    write(
+      `docs/releases/${tag}.json`,
+      JSON.stringify({
+        ...record,
+        includedPullRequests: [27, 28, 29, 30, 41],
+        rebasedPullRequests: [{ number: 41, commit: receiptCommit }],
+      })
+    )
+    git("add", ".")
+    git("commit", "--quiet", "-m", "Invalid receipt anchor")
+    assert.throws(
+      () => prepareTemplateRelease(root, { ref: git("rev-parse", "HEAD"), tag, candidate: true }),
+      /Rebased PR receipts/
+    )
+  }
+})
+
+test("recording a merge receipt preserves live follow-ups and explicit publication blockers", (t) => {
+  const { root, git, write, record, ref: base } = fixture(t)
+  const blockers = [{ id: "source-live-proof", reason: "Record actual inbox and suppression proof" }]
+  write(`docs/releases/${tag}.json`, JSON.stringify({ ...record, publicationBlockers: blockers }))
+  write(
+    "docs/source-port-ledger.json",
+    JSON.stringify({
+      coverage: { reviewedThroughSourceCommit: "a".repeat(40) },
+      dispositions: [
+        {
+          disposition: "accepted",
+          sourceCommit: "b".repeat(40),
+          templateCommit: base,
+          followUp: "Live proof still missing",
+        },
+      ],
+    })
+  )
+  git("add", ".")
+  git("commit", "--quiet", "-m", "Record merge while retaining publication blocker")
+  const result = prepareTemplateRelease(root, { ref: git("rev-parse", "HEAD"), tag, candidate: true })
+  assert.deepEqual(result.pendingSourcePortReceipts, [])
+  assert.equal(result.pendingSourcePortFollowUps.length, 1)
+  assert.equal(result.pendingSourcePortFollowUps[0].followUp, "Live proof still missing")
+  assert.deepEqual(result.publicationBlockers, blockers)
+  for (const invalid of [null, [{ id: "source-live-proof", reason: "" }], [...blockers, ...blockers]]) {
+    write(`docs/releases/${tag}.json`, JSON.stringify({ ...record, publicationBlockers: invalid }))
+    git("add", ".")
+    git("commit", "--quiet", "-m", "Malformed blocker")
+    assert.throws(
+      () => prepareTemplateRelease(root, { ref: git("rev-parse", "HEAD"), tag, candidate: true }),
+      /Publication blockers/
+    )
+  }
 })
 
 test("preparation handles lockfiles and migration blobs larger than one MiB", (t) => {
