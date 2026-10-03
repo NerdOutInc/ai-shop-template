@@ -44,6 +44,7 @@ export function adminBrowserConfig(): PlaywrightTestConfig {
         STRIPE_WEBHOOK_SECRET: "",
         STRIPE_TAX_ENABLED: "false",
         SIGNUP_CONFIRMATIONS_ENABLED: "true",
+        CRON_SECRET: "local-only-admin-cron-secret-12345678",
         VERCEL_ENV: "production",
         RESEND_API_KEY: "signup-confirmation-fixture",
         ORDER_ALERT_FROM_EMAIL: "drops@example.test",
