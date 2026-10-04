@@ -18,12 +18,13 @@ Post-repair reads verified bounded, paired budget timestamps, application access
 | Re-signup after a stop | A new public signup sent a fresh confirmation email while preserving the original stop and ineligibility. Signup alone did not resume delivery.                                                                              |
 | Repeated stop          | The private support control preserved the first stop, revoked the new link and removed its frozen confirmation message.                                                                                                      |
 | Revoked-link rejection | Owner pressed Confirm in that newest, revoked email and reported “THIS LINK HAS EXPIRED”. A fresh database read still showed the original stop and ineligibility. This proves revocation rejection, not elapsed-time expiry. |
+| Consumed-link replay   | Owner reopened the first, already consumed confirmation email and pressed Confirm again, reporting “THIS LINK HAS EXPIRED”. A fresh read preserved the original stop and ineligibility.                                      |
 | Cutoff eligibility     | A read using the production eligibility predicate and the October 5 reveal cutoff returned false for the stopped test record. This is not a completed scheduled-send observation.                                            |
 
 ## Outstanding live checks
 
 - Fresh explicit reconfirmation after a stop, including retained stop-history evidence, followed by another requested stop so the controlled record remains available for the suppression check. Respect the production resend cooldown and daily request cap.
-- Replayed consumed-link rejection and elapsed-time expiry/cleanup evidence. Do not change production clocks or manufacture old timestamps to count a synthetic check as live proof.
+- Elapsed-time expiry/cleanup evidence. Do not change production clocks or manufacture old timestamps to count a synthetic check as live proof.
 - A normal scheduled production drop excluding the stopped owner-controlled test record. At the last observation there were no normal drop receipts; the next configured drop is October 5 at 9 AM Central. Do not force a customer campaign to test this gate.
 - Reviewed erasure of an owner-approved test record, followed by original-identity/owned-row readback and verification that unrelated orders and shared templates remain. Preserve the stopped record until scheduled suppression evidence has been captured, and obtain the owner's concrete approval before irreversible erasure.
 
