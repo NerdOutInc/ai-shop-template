@@ -9,10 +9,6 @@
     {
       "id": "source-store-live-proof",
       "reason": "Source-store inbox confirmation, owner support access and normal scheduled-drop suppression proof must be recorded before releasing the subscriber bundle."
-    },
-    {
-      "id": "braces-advisory-triage",
-      "reason": "Record the exposure assessment and reviewed remediation or disposition for GHSA-vfj7-8cjw-p6xm before publication."
     }
   ]
 }
