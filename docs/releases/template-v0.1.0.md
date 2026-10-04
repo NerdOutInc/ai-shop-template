@@ -42,6 +42,7 @@ The Change column contains editorial summaries, not literal PR titles. The manif
 | [#39](https://github.com/NerdOutInc/ai-shop-template/pull/39) | Add signup admission/worker safety and focused parallel PR checks  |
 | [#40](https://github.com/NerdOutInc/ai-shop-template/pull/40) | Supply the cron key in the admin signup confirmation fixture       |
 | [#41](https://github.com/NerdOutInc/ai-shop-template/pull/41) | Refresh release preparation, history checks and migration notes    |
+| [#42](https://github.com/NerdOutInc/ai-shop-template/pull/42) | Record the development-tooling advisory exposure and disposition   |
 
 The initial AI-first snapshot and its subsequent local-mail configuration commit are also included. Source-store changes are sanitized ports recorded separately in the source ledger; source consent/legal decisions are not inherited. The canonical template continues to use opt-in marketing consent.
 
