@@ -307,7 +307,7 @@
       "reason": "Ported DOM-value signup fix and customer commerce journeys with template branding, isolated configured builds, loopback synthetic providers and v3 confirmation. The October 2 owner instruction now authorizes focused PR CI: parallel lint, template safety checks and commerce browsers; exhaustive verification is retained on main pushes, weekly/manual and before production release. Drafts retain the complete focused Required checks gate.",
       "evidence": "Receiving PR #36 supplied the DOM-value fix, #37 the customer commerce journeys, and #39 completed the accepted focused CI paths. The recorded templateCommit is the first receiving main commit containing the complete port. Validation is recorded in validationEvidence (template-main-after-admin-fixture-fix); production proof remains separate.",
       "templateCommit": "9422ee52b520375f5bc02a49b47139fdc361dce5",
-      "followUp": "Partial source production evidence is recorded in docs/releases/template-v0.1.0-source-proof.md; its outstanding live checks still block release readiness. Receiving-store activation and deployment verification remain separate."
+      "followUp": "Required source production checks passed; completed evidence is recorded in docs/releases/template-v0.1.0-source-proof.md. Remaining follow-up is receiving-store-only migration, configuration, activation and deployment verification under separate owner authority."
     },
     {
       "sourceCommit": "dd85bfb73ef884057920393c5abc0e47a83836e0",
@@ -322,10 +322,10 @@
         "src/lib/env-schema.ts",
         "docs/drop-signup.md"
       ],
-      "reason": "Ported inbox confirmation as optional default-off sending, template v3 wording with immutable v1/v2 registry, neutral branding and runtime grants, incremental template migration, and existing store/privacy gates. Source live proof remains a release-readiness follow-up.",
+      "reason": "Ported inbox confirmation as optional default-off sending, template v3 wording with immutable v1/v2 registry, neutral branding and runtime grants, incremental template migration, and existing store/privacy gates. Source live proof is completed in the release receipt; receiving-store activation remains separate.",
       "evidence": "Reviewed against template main d69db5615f1ced24f18f07604b9836cbda1eb2a2; GitHub verifies receiving PR #32 merged at the recorded templateCommit. Final PR #161 review and remaining safety behavior are accounted below.",
       "templateCommit": "161a1f232eefaef47a70679215b66f1e0ec219f4",
-      "followUp": "Partial source production evidence is recorded in docs/releases/template-v0.1.0-source-proof.md; its outstanding live checks still block release readiness. Receiving-store activation and deployment verification remain separate."
+      "followUp": "Required source production checks passed; completed evidence is recorded in docs/releases/template-v0.1.0-source-proof.md. Remaining follow-up is receiving-store-only migration, configuration, activation and deployment verification under separate owner authority."
     },
     {
       "sourceCommit": "2bc50de03b1ac1f803f5b52c668ac70ed7e6d67c",
@@ -341,7 +341,7 @@
       "reason": "Ported exact-email private support and shared unsubscribe, preserving current admin authorization, owner list/privacy gates and the template immutable consent registry. No browsing, export, or design-agent access.",
       "evidence": "Reviewed against template main d69db5615f1ced24f18f07604b9836cbda1eb2a2; GitHub verifies receiving PR #33 merged at the recorded templateCommit. Final PR #161 review and remaining safety behavior are accounted below.",
       "templateCommit": "3d753980021250238c7cb9f0ab8fad49b0065e8b",
-      "followUp": "Partial source production evidence is recorded in docs/releases/template-v0.1.0-source-proof.md; its outstanding live checks still block release readiness. Receiving-store activation and deployment verification remain separate."
+      "followUp": "Required source production checks passed; completed evidence is recorded in docs/releases/template-v0.1.0-source-proof.md. Remaining follow-up is receiving-store-only migration, configuration, activation and deployment verification under separate owner authority."
     },
     {
       "sourceCommit": "39b1f39f251b2f0002c87dc74ac570efb1b9b117",
@@ -358,7 +358,7 @@
       "reason": "Ported reviewed erasure with immutable identity, preview freshness, bounded locks and child cascades; automatic never-confirmed expiry cleanup by owner choice, independent of sending. Preserves checkout evidence and template privacy/configuration gates.",
       "evidence": "Reviewed against template main d69db5615f1ced24f18f07604b9836cbda1eb2a2; GitHub verifies receiving PR #34 merged at the recorded templateCommit. Final PR #161 review and remaining safety behavior are accounted below.",
       "templateCommit": "ea98949f003e31f7c0d6934d2c06eef6cf4b95c0",
-      "followUp": "Partial source production evidence is recorded in docs/releases/template-v0.1.0-source-proof.md; its outstanding live checks still block release readiness. Receiving-store activation and deployment verification remain separate."
+      "followUp": "Required source production checks passed; completed evidence is recorded in docs/releases/template-v0.1.0-source-proof.md. Remaining follow-up is receiving-store-only migration, configuration, activation and deployment verification under separate owner authority."
     },
     {
       "sourceCommit": "c4ebdba5882731be899c08cec5598260c8cfad54",
@@ -431,7 +431,7 @@
       "reason": "Port remaining reviewed admission, pool-friendly worker health, aggregate admin status, intentional unsubscribe focus and paused-signup recovery. Keep owner values, optional gates, v1/v2/v3 consent, retained-list behavior, independent signup placement and the existing template budget/runtime role. Already-equivalent input recovery, skip-link capability protection, cleanup independence, fixture migration discovery and erasure tests are retained.",
       "evidence": "Reviewed all 39 source PR paths at final head 6c57c3f2ebc0aec5b747e2671d482352f80214b7, merged as 2926c59. Receiving PR #39 final head 2794ea3a4b65d7db7c7a2eec6cb476fbf7234766 merged as the recorded templateCommit. Forward migrations preserve recent template capacity and leave old merged SQL unchanged. Validation is recorded in validationEvidence (template-main-after-admin-fixture-fix). Receiving hardening includes separate commerce configuration, changed-test coverage, full main-push verification, keyed request identities, scheduled budget pruning, sustained saturation monitoring and advisory health reads; it is not a claim that those changes exist in the source store.",
       "templateCommit": "9422ee52b520375f5bc02a49b47139fdc361dce5",
-      "followUp": "Source sender repair, inbox confirmation and owner support checks are recorded in docs/releases/template-v0.1.0-source-proof.md; outstanding live checks, including normal scheduled suppression, still block release readiness. Receiving-store activation and deployment verification remain separately authorized."
+      "followUp": "Required source production checks passed; completed evidence is recorded in docs/releases/template-v0.1.0-source-proof.md. Remaining follow-up is receiving-store-only migration, configuration, activation and deployment verification under separate owner authority."
     }
   ],
   "outboundPorts": [],

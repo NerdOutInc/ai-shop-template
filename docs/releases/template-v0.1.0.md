@@ -6,44 +6,45 @@ These notes describe the first template release line. Publication is recorded by
 
 The Change column contains editorial summaries, not literal PR titles. The manifest separates history-derived inclusion from proposed PRs and pending merges.
 
-| Template PR                                                   | Change                                                              |
-| ------------------------------------------------------------- | ------------------------------------------------------------------- |
-| [#1](https://github.com/NerdOutInc/ai-shop-template/pull/1)   | Bump supabase/setup-cli in the actions group across 1 directory     |
-| [#2](https://github.com/NerdOutInc/ai-shop-template/pull/2)   | Bump the dependencies group with 14 updates                         |
-| [#3](https://github.com/NerdOutInc/ai-shop-template/pull/3)   | Run browser Storybook and admin checks on every PR                  |
-| [#4](https://github.com/NerdOutInc/ai-shop-template/pull/4)   | Keep Next patches compatible with patch updates                     |
-| [#5](https://github.com/NerdOutInc/ai-shop-template/pull/5)   | Reject ambiguous store time zone values                             |
-| [#6](https://github.com/NerdOutInc/ai-shop-template/pull/6)   | Restrict inherited Supabase browser privileges                      |
-| [#7](https://github.com/NerdOutInc/ai-shop-template/pull/7)   | Keep test stores independent of merchant rebranding                 |
-| [#8](https://github.com/NerdOutInc/ai-shop-template/pull/8)   | Plan maintainable multi-brand store updates                         |
-| [#9](https://github.com/NerdOutInc/ai-shop-template/pull/9)   | Remove prior-store checkout recovery namespace                      |
-| [#10](https://github.com/NerdOutInc/ai-shop-template/pull/10) | Protect checkout capacity and preserve payment identity             |
-| [#11](https://github.com/NerdOutInc/ai-shop-template/pull/11) | Remove source fixtures and strengthen template hygiene              |
-| [#12](https://github.com/NerdOutInc/ai-shop-template/pull/12) | Make setup checks and provider guidance trustworthy                 |
-| [#13](https://github.com/NerdOutInc/ai-shop-template/pull/13) | Make storefront policies and optional features match configuration  |
-| [#15](https://github.com/NerdOutInc/ai-shop-template/pull/15) | Make brand configuration and website assets reliable                |
-| [#19](https://github.com/NerdOutInc/ai-shop-template/pull/19) | Bump @supabase/supabase-js in the dependencies group                |
-| [#20](https://github.com/NerdOutInc/ai-shop-template/pull/20) | Prevent existing accounts from being adopted during owner setup     |
-| [#21](https://github.com/NerdOutInc/ai-shop-template/pull/21) | Wait for measurement requests instead of trusting networkidle       |
-| [#22](https://github.com/NerdOutInc/ai-shop-template/pull/22) | Call the crop top a plain "Crop top" on its product page            |
-| [#23](https://github.com/NerdOutInc/ai-shop-template/pull/23) | Focus the weekly home section on the week's products                |
-| [#24](https://github.com/NerdOutInc/ai-shop-template/pull/24) | Email subscribers when the Design of the Week drops                 |
-| [#25](https://github.com/NerdOutInc/ai-shop-template/pull/25) | Record the reviewed source changes through 1082c12                  |
-| [#26](https://github.com/NerdOutInc/ai-shop-template/pull/26) | Keep the Ruff cache inside the repository                           |
-| [#27](https://github.com/NerdOutInc/ai-shop-template/pull/27) | Reconcile source ports and prevent duplicate Meta route views       |
-| [#28](https://github.com/NerdOutInc/ai-shop-template/pull/28) | Separate owner configuration and preserve update compatibility      |
-| [#29](https://github.com/NerdOutInc/ai-shop-template/pull/29) | Protect merged migrations and resolve forward-port references       |
-| [#31](https://github.com/NerdOutInc/ai-shop-template/pull/31) | Prepare pinned template release metadata without publishing         |
-| [#32](https://github.com/NerdOutInc/ai-shop-template/pull/32) | Require explicit inbox confirmation for new drop subscriptions      |
-| [#33](https://github.com/NerdOutInc/ai-shop-template/pull/33) | Add private exact-email lookup and shared unsubscribe               |
-| [#34](https://github.com/NerdOutInc/ai-shop-template/pull/34) | Add reviewed subscriber erasure and automatic pending expiry        |
-| [#36](https://github.com/NerdOutInc/ai-shop-template/pull/36) | Read signup input from the submitted form before hydration          |
-| [#37](https://github.com/NerdOutInc/ai-shop-template/pull/37) | Add isolated offline customer commerce browser journeys             |
-| [#39](https://github.com/NerdOutInc/ai-shop-template/pull/39) | Add signup admission/worker safety and focused parallel PR checks   |
-| [#40](https://github.com/NerdOutInc/ai-shop-template/pull/40) | Supply the cron key in the admin signup confirmation fixture        |
-| [#41](https://github.com/NerdOutInc/ai-shop-template/pull/41) | Refresh release preparation, history checks and migration notes     |
-| [#42](https://github.com/NerdOutInc/ai-shop-template/pull/42) | Record the development-tooling advisory exposure and disposition    |
-| [#43](https://github.com/NerdOutInc/ai-shop-template/pull/43) | Record source subscriber production evidence and outstanding checks |
+| Template PR                                                   | Change                                                                              |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| [#1](https://github.com/NerdOutInc/ai-shop-template/pull/1)   | Bump supabase/setup-cli in the actions group across 1 directory                     |
+| [#2](https://github.com/NerdOutInc/ai-shop-template/pull/2)   | Bump the dependencies group with 14 updates                                         |
+| [#3](https://github.com/NerdOutInc/ai-shop-template/pull/3)   | Run browser Storybook and admin checks on every PR                                  |
+| [#4](https://github.com/NerdOutInc/ai-shop-template/pull/4)   | Keep Next patches compatible with patch updates                                     |
+| [#5](https://github.com/NerdOutInc/ai-shop-template/pull/5)   | Reject ambiguous store time zone values                                             |
+| [#6](https://github.com/NerdOutInc/ai-shop-template/pull/6)   | Restrict inherited Supabase browser privileges                                      |
+| [#7](https://github.com/NerdOutInc/ai-shop-template/pull/7)   | Keep test stores independent of merchant rebranding                                 |
+| [#8](https://github.com/NerdOutInc/ai-shop-template/pull/8)   | Plan maintainable multi-brand store updates                                         |
+| [#9](https://github.com/NerdOutInc/ai-shop-template/pull/9)   | Remove prior-store checkout recovery namespace                                      |
+| [#10](https://github.com/NerdOutInc/ai-shop-template/pull/10) | Protect checkout capacity and preserve payment identity                             |
+| [#11](https://github.com/NerdOutInc/ai-shop-template/pull/11) | Remove source fixtures and strengthen template hygiene                              |
+| [#12](https://github.com/NerdOutInc/ai-shop-template/pull/12) | Make setup checks and provider guidance trustworthy                                 |
+| [#13](https://github.com/NerdOutInc/ai-shop-template/pull/13) | Make storefront policies and optional features match configuration                  |
+| [#15](https://github.com/NerdOutInc/ai-shop-template/pull/15) | Make brand configuration and website assets reliable                                |
+| [#19](https://github.com/NerdOutInc/ai-shop-template/pull/19) | Bump @supabase/supabase-js in the dependencies group                                |
+| [#20](https://github.com/NerdOutInc/ai-shop-template/pull/20) | Prevent existing accounts from being adopted during owner setup                     |
+| [#21](https://github.com/NerdOutInc/ai-shop-template/pull/21) | Wait for measurement requests instead of trusting networkidle                       |
+| [#22](https://github.com/NerdOutInc/ai-shop-template/pull/22) | Call the crop top a plain "Crop top" on its product page                            |
+| [#23](https://github.com/NerdOutInc/ai-shop-template/pull/23) | Focus the weekly home section on the week's products                                |
+| [#24](https://github.com/NerdOutInc/ai-shop-template/pull/24) | Email subscribers when the Design of the Week drops                                 |
+| [#25](https://github.com/NerdOutInc/ai-shop-template/pull/25) | Record the reviewed source changes through 1082c12                                  |
+| [#26](https://github.com/NerdOutInc/ai-shop-template/pull/26) | Keep the Ruff cache inside the repository                                           |
+| [#27](https://github.com/NerdOutInc/ai-shop-template/pull/27) | Reconcile source ports and prevent duplicate Meta route views                       |
+| [#28](https://github.com/NerdOutInc/ai-shop-template/pull/28) | Separate owner configuration and preserve update compatibility                      |
+| [#29](https://github.com/NerdOutInc/ai-shop-template/pull/29) | Protect merged migrations and resolve forward-port references                       |
+| [#31](https://github.com/NerdOutInc/ai-shop-template/pull/31) | Prepare pinned template release metadata without publishing                         |
+| [#32](https://github.com/NerdOutInc/ai-shop-template/pull/32) | Require explicit inbox confirmation for new drop subscriptions                      |
+| [#33](https://github.com/NerdOutInc/ai-shop-template/pull/33) | Add private exact-email lookup and shared unsubscribe                               |
+| [#34](https://github.com/NerdOutInc/ai-shop-template/pull/34) | Add reviewed subscriber erasure and automatic pending expiry                        |
+| [#36](https://github.com/NerdOutInc/ai-shop-template/pull/36) | Read signup input from the submitted form before hydration                          |
+| [#37](https://github.com/NerdOutInc/ai-shop-template/pull/37) | Add isolated offline customer commerce browser journeys                             |
+| [#39](https://github.com/NerdOutInc/ai-shop-template/pull/39) | Add signup admission/worker safety and focused parallel PR checks                   |
+| [#40](https://github.com/NerdOutInc/ai-shop-template/pull/40) | Supply the cron key in the admin signup confirmation fixture                        |
+| [#41](https://github.com/NerdOutInc/ai-shop-template/pull/41) | Refresh release preparation, history checks and migration notes                     |
+| [#42](https://github.com/NerdOutInc/ai-shop-template/pull/42) | Record the development-tooling advisory exposure and disposition                    |
+| [#43](https://github.com/NerdOutInc/ai-shop-template/pull/43) | Record source subscriber production evidence and outstanding checks                 |
+| [#47](https://github.com/NerdOutInc/ai-shop-template/pull/47) | Complete source live proof, close the blocker and retain receiving-store follow-ups |
 
 The initial AI-first snapshot and its subsequent local-mail configuration commit are also included. Source-store changes are sanitized ports recorded separately in the source ledger; source consent/legal decisions are not inherited. The canonical template continues to use opt-in marketing consent.
 
@@ -91,8 +92,8 @@ The preparation PR's checks report its exact candidate head. Before publication,
 ## Publication and rehearsal gates
 
 - The compatibility/guard and subscriber layers are merged. Merge preparation and readiness follow-up PRs only under explicit authority, keeping each actual PR number in the inventory and following the [merge/receipt procedure](../template-releases.md#prepare-a-candidate); accepted source-port merge receipts must be complete.
-- Source-store confirmation/admin/scheduled-suppression production proof remains an unresolved release-readiness follow-up in the [source ledger](../source-port-ledger.json) and rollout guides. The [partial production receipt](template-v0.1.0-source-proof.md) distinguishes completed checks from outstanding live proof. Record the remaining evidence before publishing this completed bundle. Each receiving store still needs its own activation/deployment proof.
-- The [October 3 advisory assessment](template-v0.1.0-advisory-assessment.md) records the development-only dependency path and operator-controlled lint-pattern input for [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm). Accept that scoped tooling exposure for this release while retaining the open Dependabot alert: no upstream patched version is listed, and no override or alert suppression is introduced. Reassess before each release and if untrusted runtime patterns become reachable. The affected upstream package remains vulnerable; successful CI is not a fix.
+- The [completed source production receipt](template-v0.1.0-source-proof.md) records inbox confirmation, private owner support, revoked/consumed-link rejection, fresh confirmation with retained unsubscribe history, normal scheduled suppression, approved erasure and natural expiry/cleanup. This resolves the source live-proof blocker. The [source ledger](../source-port-ledger.json) retains receiving-store-only migration, configuration, activation and deployment follow-ups.
+- The [advisory assessment rechecked October 6](template-v0.1.0-advisory-assessment.md) records the development-only dependency path and operator-controlled lint-pattern input for [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm). Accept that scoped tooling exposure for this release while retaining the open Dependabot alert: no upstream patched version is listed, and no override or alert suppression is introduced. Reassess before each release and if untrusted runtime patterns become reachable. The affected upstream package remains vulnerable; successful CI is not a fix.
 - Obtain authority for the tag/release. Use `template-v0.1.0`; do not enable immutable releases or change visibility/license without the owner's decision. Immutable tag names cannot be reused once that setting applies.
 - Record the live-proof and advisory decisions in follow-up PRs, update the notes/inventory, and remove a `publicationBlockers` entry only when its reviewed evidence is recorded. The release commit is the final reviewed `main` commit containing those decisions, not necessarily this preparation PR's merge commit. Pin it, require its complete CI, recompute metadata and review the notes. Record a separately verified deployment receipt for any operating-store port.
 - After approval for the rehearsal repository, use GitHub's template generator only while `main` exactly equals the verified R1 commit. Capture root/template commit and tree before customization. Between releases, keep `originRelease` null and record the exact commit; an earlier release is only a comparison anchor.

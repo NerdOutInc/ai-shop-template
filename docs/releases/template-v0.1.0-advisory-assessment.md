@@ -1,6 +1,6 @@
 # First-release dependency assessment
 
-Assessment date: October 3, 2026. Scope: the committed dependency graph and lint configuration for `template-v0.1.0`. Recheck this assessment after dependency or lint-configuration changes.
+Assessment date: October 3, 2026; rechecked October 6, 2026. Scope: the committed dependency graph and lint configuration for `template-v0.1.0`. Recheck this assessment after dependency or lint-configuration changes.
 
 ## GHSA-vfj7-8cjw-p6xm
 
@@ -35,5 +35,6 @@ The release maintainer owns follow-up: recheck the advisory and dependency chain
 - `pnpm install --frozen-lockfile` completed with the pinned pnpm version and unchanged lockfile.
 - `pnpm why braces` and `pnpm why --prod braces` established the graph above.
 - Reviewed the installed Next plugin's root-directory helper and fast-glob's pattern expansion, plus repository imports and lint settings.
+- October 6 recheck confirmed the unchanged dependency graph and open development-scope alert with no patched version.
 - Read the current GitHub advisory and authenticated Dependabot alert #1; both still report no patched version.
 - Full release verification remains required on the final reviewed release commit, after all publication blockers are resolved.
