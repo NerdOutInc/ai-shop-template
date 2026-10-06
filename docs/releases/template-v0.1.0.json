@@ -5,10 +5,5 @@
     39, 40, 41, 42, 43
   ],
   "upgradeNotes": "docs/releases/template-v0.1.0.md",
-  "publicationBlockers": [
-    {
-      "id": "source-store-live-proof",
-      "reason": "Source-store inbox confirmation, owner support access and normal scheduled-drop suppression proof must be recorded before releasing the subscriber bundle."
-    }
-  ]
+  "publicationBlockers": []
 }
