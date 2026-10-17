@@ -21,20 +21,23 @@ Draw a temporary grid over the shirt and reference: neckline baseline, garment c
 
 Record whether bounds refer to the complete transparent canvas or the visible alpha bounding box. Do not trim transparent margins later without updating the transform. Preserve the original aspect ratio and scale directly from the master for each export. Do not enlarge only the ink because a scene has a large empty opening.
 
-For a flat photo cutout, keep a single authoritative source measurement:
+For a flat photo cutout, keep a single authoritative source measurement. Preserve floating-point coordinates through the scene transform:
 
 ```text
 inkLeftOnCutout = measuredInkLeftInPhoto - cutoutLeftInPhoto
 inkTopOnCutout  = measuredInkTopInPhoto  - cutoutTopInPhoto
 sceneScale     = finalGarmentWidth / cutoutWidth
-scaledInkLeft  = round(inkLeftOnCutout * sceneScale)
-scaledInkTop   = round(inkTopOnCutout * sceneScale)
-finalInkWidth  = round(measuredInkWidth * sceneScale)
-heroInkLeft    = garmentLeftInHero + scaledInkLeft
-heroInkTop     = garmentTopInHero + scaledInkTop
+heroInkLeft   = garmentLeftInHero + inkLeftOnCutout * sceneScale
+heroInkTop    = garmentTopInHero  + inkTopOnCutout  * sceneScale
+heroInkRight  = garmentLeftInHero + (inkLeftOnCutout + measuredInkWidth) * sceneScale
+heroInkBottom = garmentTopInHero  + (inkTopOnCutout  + measuredInkHeight) * sceneScale
+finalInkWidth  = heroInkRight - heroInkLeft
+finalInkHeight = heroInkBottom - heroInkTop
 ```
 
-The scaled offsets are relative to the resized garment; the last two lines add the garment’s scene translation for an unrotated cutout. Rotated or warped garments need the same transform applied to cloth and ink. Avoid separately editable duplicate offsets. Scale the assembled garment uniformly when positioning it in the hero. Scene alignment and ink-on-shirt alignment are different operations.
+Assemble the calibrated cloth and ink before applying one scale-and-translate transform to the garment. These formulas describe the resulting bounds for an unrotated cutout; do not resize or position the ink independently from them. Rotated or warped garments need the same transform applied to cloth and ink, including all four corners. Avoid separately editable duplicate offsets. Scene alignment and ink-on-shirt alignment are different operations.
+
+If an export needs integer diagnostic bounds, quantize the transformed edges only at final rasterization using an explicit rule: `pixelEdge = floor(edge + 0.5)` (nearest integer, ties toward positive infinity). Then compute integer width as `rightPixel - leftPixel` and height as `bottomPixel - topPixel`. Do not round the offset and width separately or use a language's default `round`. For example, source left 101 and width 401 at scale 0.5 with zero translation yield edges 50.5 and 251; quantized edges are 51 and 251, so width is 200. Record the transform, rounding rule, resampling and renderer/library versions. Matching geometry across languages does not guarantee byte-identical pixels; use the same pinned renderer for exact replay.
 
 ## Keep the print photographic
 

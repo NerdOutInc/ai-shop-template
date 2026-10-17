@@ -7,8 +7,17 @@ import math
 from pathlib import Path
 
 
+def finite_number(value):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return False
+    try:
+        return math.isfinite(value)
+    except OverflowError:
+        return False
+
+
 def positive(value, name):
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
+    if not finite_number(value) or value <= 0:
         raise ValueError(f"{name} must be a finite positive number")
     return value
 
@@ -18,7 +27,7 @@ def rectangle(value, name, canvas):
         raise ValueError(f"{name} must be [left, top, width, height] in source pixels")
     x, y, width, height = value
     for offset in (x, y):
-        if isinstance(offset, bool) or not isinstance(offset, (int, float)) or not math.isfinite(offset) or offset < 0:
+        if not finite_number(offset) or offset < 0:
             raise ValueError(f"{name} offsets must be finite nonnegative numbers")
     positive(width, f"{name}.width")
     positive(height, f"{name}.height")
@@ -51,6 +60,10 @@ def measure(plan):
     output = {}
     identities = None
     for view, layout in plan.items():
+        if not isinstance(layout, dict):
+            raise ValueError(f"{view} must be a layout object")
+        if set(layout) - {"canvas", "safeArea", "regions"}:
+            raise ValueError(f"{view} only accepts canvas, safeArea and regions")
         canvas = layout.get("canvas")
         if not isinstance(canvas, list) or len(canvas) != 2:
             raise ValueError(f"{view}.canvas must be [width, height]")
@@ -74,13 +87,22 @@ def measure(plan):
                 raise ValueError(f"{view}.{label} overlaps another link region")
             accepted.append(rect)
             measured[label] = {
-                "left": 100 * rect[0] / width,
-                "top": 100 * rect[1] / height,
-                "width": 100 * rect[2] / width,
-                "height": 100 * rect[3] / height,
+                "left": rect[0] / width * 100,
+                "top": rect[1] / height * 100,
+                "width": rect[2] / width * 100,
+                "height": rect[3] / height * 100,
             }
         output[view] = measured
     return {"status": "arithmetic-only-not-visual-approval", "percentages": output}
+
+
+def unique_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"Duplicate JSON key: {key!r}")
+        result[key] = value
+    return result
 
 
 def main():
@@ -88,7 +110,7 @@ def main():
     parser.add_argument("layout", type=Path, help="JSON with desktop/mobile source pixel geometry")
     args = parser.parse_args()
     try:
-        result = measure(json.loads(args.layout.read_text()))
+        result = measure(json.loads(args.layout.read_text(encoding="utf-8"), object_pairs_hook=unique_object))
     except (ValueError, TypeError, AttributeError, OSError) as error:
         parser.exit(1, f"Layout rejected: {error}\n")
     print(json.dumps(result, indent=2, allow_nan=False))

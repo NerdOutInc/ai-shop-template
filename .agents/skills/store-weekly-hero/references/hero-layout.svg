@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="850" viewBox="0 0 1200 850" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="850" viewBox="0 0 1200 850" role="img" aria-labelledby="title" aria-describedby="desc">
 <title id="title">Illustrative paired hero coordinate maps</title>
 <desc id="desc">A desktop panorama uses full source coordinates with the central half marked safe. A separate mobile composition has its own product regions. No real products or model photos appear.</desc>
 <rect width="1200" height="850" fill="#f8f6f0"/>

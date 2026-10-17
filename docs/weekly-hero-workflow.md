@@ -8,7 +8,7 @@ The package covers release evidence, original print identity, garment-specific c
 
 Copy the complete `.agents/skills/store-weekly-hero/` directory to the skill directory your agent host supports. Do not copy only `SKILL.md`: its relative references and helper are part of the package. In hosts with a GitHub skill installer, request installation from `NerdOutInc/ai-shop-template`, path `.agents/skills/store-weekly-hero`, at a reviewed commit or release ref. The repository's access rules still apply. This change does not change repository visibility or licensing.
 
-The instructions require only host-provided image/browser/file capabilities appropriate to the task. The optional click-region helper uses Python 3.9+ and no third-party packages. It can be run from the copied skill folder:
+The instructions require only host-provided image/browser/file capabilities appropriate to the task. The optional click-region helper is supported and tested on Python 3.12 (CI pins 3.12.13) with no third-party packages. It can be run from the copied skill folder using that interpreter:
 
 ```bash
 python3 scripts/measure-click-areas.py references/layout-example.json
@@ -25,7 +25,12 @@ The template's cadence comes from `storeConfig.timeZone` and `storeConfig.weekly
 
 ## Focused runtime catch-up work
 
-A later runtime port is a separate application change. The source implementation and subsequent fixes need review together; copying one documentation commit would not provide the feature. Its minimal acceptance scope is:
+The runtime port is a separate application change tracked in [template PR #55](https://github.com/NerdOutInc/ai-shop-template/pull/55). Its source baseline (`original-store` in the [source-port ledger](source-port-ledger.json)) is pinned to these reviewed changes:
+
+- Source PR #192, commit `977920bd2ffa708c4bf49f2cd2fbe61288d0bfd5`, parent `9b9616010a29056d0de6cd568c269603059b61f1`: responsive hero runtime, private uploads, editor, approval and scheduled rendering. Relevant paths are `src/features/weekly-heroes/`, `src/app/admin/products/heroes/`, `src/app/api/admin/weekly-heroes/`, `src/app/api/weekly-hero/`, `src/app/page.tsx` and `src/features/featured-order/`.
+- Source PR #193, commit `8cb3eb5aa5009b18a584c760e1d0ee512a998431`, parent `977920bd2ffa708c4bf49f2cd2fbe61288d0bfd5`: follow-up product facts and shop action in `src/features/weekly-heroes/weekly-design-details.tsx` and its test.
+
+PR #55 records the adaptation, migration identity and verification in its source-port ledger. It was open and unmerged when this receipt was checked on 2026-10-17; re-read its current state before relying on the runtime. This skill PR defers those application paths to that receiving PR and imports none of the source store's images, models, artwork or settings. Review the implementation and follow-up together; copying one documentation commit would not provide the feature. The runtime's minimal acceptance scope is:
 
 | Area                               | Receiving requirements                                                                                                                                                                                                                            |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
