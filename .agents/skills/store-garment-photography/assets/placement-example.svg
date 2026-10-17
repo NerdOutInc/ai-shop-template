@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="540" viewBox="0 0 1000 540">
+<rect width="1000" height="540" fill="#f2efe7"/>
+<defs><pattern id="grid" width="35" height="35" patternUnits="userSpaceOnUse"><path d="M35 0H0V35" fill="none" stroke="#596c73" stroke-width="0.5"/></pattern></defs>
+<g font-family="sans-serif" fill="#203539"><text x="35" y="42" font-size="25">Start with the blank garment, before placing ink</text>
+<text x="35" y="76" font-size="15">Schematic only. A grid describes pixels; it does not establish inches or physical fit.</text></g>
+<rect x="35" y="100" width="430" height="365" fill="#d4d8d2"/>
+<path d="M149 147L210 126Q238 169 268 132L342 161L379 221L333 241L315 421L139 408L158 223L113 211Z" fill="#34494a"/>
+<rect x="35" y="100" width="430" height="365" fill="url(#grid)"/>
+<path d="M250 100V465" stroke="white" stroke-width="2" stroke-dasharray="5 5"/>
+<path d="M239 152Q234 258 224 410" fill="none" stroke="#16c5d4" stroke-width="4"/>
+<path d="M183 220L292 225L280 358L173 347Z" fill="none" stroke="#ffc247" stroke-width="3"/>
+<path d="M239 152L237 222" stroke="#f48db4" stroke-width="4"/>
+<path d="M200 238L272 241L264 332L193 326Z" fill="#e4c798" opacity="0.7"/>
+<g font-family="sans-serif" fill="#203539"><text x="510" y="140" font-size="22">Trace the garment axis</text><text x="510" y="169" font-size="16">Collar, front panel and hem guide the centerline.</text><text x="510" y="195" font-size="16">Do not center the design on the photograph.</text>
+<text x="510" y="245" font-size="22">Project the original canvas</text><text x="510" y="274" font-size="16">Gold outline includes transparent margins.</text><text x="510" y="300" font-size="16">Check visible ink separately from canvas bounds.</text>
+<text x="510" y="350" font-size="22">Check collar clearance and scale</text><text x="510" y="379" font-size="16">Use matching provider evidence and perspective.</text><text x="510" y="405" font-size="16">Never treat visible torso width as laid-flat chest width.</text>
+<text x="35" y="505" font-size="17">Then trace folds and foreground masks. Review the final unmarked photo, too.</text></g></svg>
