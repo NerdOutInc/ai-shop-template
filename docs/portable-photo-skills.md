@@ -30,11 +30,19 @@ For Codex's `skill-installer` helper, the equivalent arguments are:
 ```sh
 python3 /path/to/skill-installer/scripts/install-skill-from-github.py \
   --repo NerdOutInc/ai-shop-template \
-  --ref <reviewed-commit> \
+  --ref <accessible-tag-or-branch> \
   --path .agents/skills/store-model-casting .agents/skills/store-garment-photography
 ```
 
-Or copy either complete skill folder into your agent host's supported skills directory. Keep `SKILL.md`, `references/`, `scripts/`, `assets/` when present, and `agents/` together. Neither package needs this application, its database, Node dependencies or repository-relative documents. Follow your host's reload/restart instructions after installation. Do not overwrite a locally modified installed skill without reviewing the update.
+The installer's private-repository Git fallback may only resolve advertised branches/tags; an arbitrary commit SHA can fail even when you have access. For an exact commit, make a detached checkout first and copy the complete folders from it:
+
+```sh
+git clone --filter=blob:none --no-checkout git@github.com:NerdOutInc/ai-shop-template.git /path/to/new-source-checkout
+git -C /path/to/new-source-checkout fetch origin FULL_REVIEWED_COMMIT_SHA
+git -C /path/to/new-source-checkout checkout --detach FETCH_HEAD
+```
+
+Then copy either complete skill folder into your agent host's supported skills directory. Keep `SKILL.md`, `references/`, `scripts/`, `assets/` when present, and `agents/` together. Neither package needs this application, its database, Node dependencies or repository-relative documents. Follow your host's reload/restart instructions after installation. Do not overwrite a locally modified installed skill without reviewing the update.
 
 Casting validation uses Python's standard library. The compositor/guide requires its own isolated Python environment with [pinned dependencies](../.agents/skills/store-garment-photography/scripts/requirements.txt); it does not share the repository's lint environment. Image generation/editing still requires a supported host tool and any authorization that tool requires.
 
