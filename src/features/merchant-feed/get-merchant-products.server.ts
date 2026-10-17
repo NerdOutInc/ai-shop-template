@@ -48,6 +48,7 @@ export async function getMerchantProducts(): Promise<MerchantProduct[]> {
         const current = new Map(observations[display.id]!.map((variant) => [variant.id, variant]))
         const saved = new Map(production.variants.map((variant) => [variant.id, variant]))
         return {
+          ...merchantProduct,
           product: normalizeCatalogProduct({
             ...display,
             variants: display.variants.map((variant) => ({
@@ -56,7 +57,6 @@ export async function getMerchantProducts(): Promise<MerchantProduct[]> {
                 saved.has(variant.id) && isPublishedVariantAvailable(saved.get(variant.id)!, current.get(variant.id)),
             })),
           }),
-          apparel: merchantProduct.apparel,
         }
       })
   } catch (error) {

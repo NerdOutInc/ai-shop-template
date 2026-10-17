@@ -125,6 +125,9 @@ test("visitors cannot read gallery data or artwork", async ({ page, request }) =
     ["PUT", "/api/admin/products/garments/9999", garmentSetup],
     // The name lookup checks no origin, because a browser sends none on a same-origin GET.
     ["GET", "/api/admin/products/garments/9999/catalog", undefined],
+    ["GET", "/api/admin/products/anything/google-copy", undefined],
+    ["POST", "/api/admin/products/anything/google-copy/preview", {}],
+    ["PUT", "/api/admin/products/anything/google-copy", {}],
   ] as const) {
     const refused = await request.fetch(path, {
       method,
@@ -477,7 +480,7 @@ test("owner arranges the featured lineup and the shop follows it", async ({ brow
   await nav.getByRole("link", { name: "Products", exact: true }).click()
   await expect(page.getByRole("heading", { name: "Shop lineup" })).toBeVisible()
   await expect(nav.getByRole("link", { name: "Products", exact: true })).toHaveAttribute("aria-current", "page")
-  const rows = page.getByRole("list", { name: "Available products" }).getByRole("link")
+  const rows = page.getByRole("list", { name: "Available products" }).getByRole("link", { name: /^View in shop\s*:/ })
   await expect(rows).toHaveText([firstDesign, secondDesign, newestDesign].map((title) => `View in shop: ${title}`))
 
   const saved = () =>
@@ -707,7 +710,9 @@ test("owner arranges the featured lineup and the shop follows it", async ({ brow
   const currentWeek = page.getByRole("list", { name: "Design of the Week products" })
   await expect(page.getByRole("heading", { level: 2, name: "This week", exact: true })).toBeVisible()
   await expect(page.getByRole("heading", { level: 2, name: "Design of the Week", exact: true })).toHaveCount(1)
-  await expect(currentWeek.getByRole("link")).toHaveText([`View in shop: ${secondDesign}`])
+  await expect(currentWeek.getByRole("link", { name: /^View in shop\s*:/ })).toHaveText([
+    `View in shop: ${secondDesign}`,
+  ])
   await expect(rows).toHaveText([newestDesign, firstDesign].map((title) => `View in shop: ${title}`))
   expect((await context.request.get(`/shop/${lineup[1]!.id}`)).status()).toBe(200)
   await page.goto("/#design-of-the-week")
@@ -855,7 +860,7 @@ test("a tee on a garment nobody has set up stays off the wall until the owner fi
   )
   await show.click()
   expect((await visibility).status()).toBe(200)
-  await expect(available.getByRole("link")).toHaveText(
+  await expect(available.getByRole("link", { name: /^View in shop\s*:/ })).toHaveText(
     [selling.title, waiting.title].map((title) => `View in shop: ${title}`)
   )
   await expect(hidden).toHaveCount(0)

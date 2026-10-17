@@ -531,6 +531,40 @@
       "templateCommit": null,
       "followUp": "Draft receiving PR #53; record the eventual merge receipt. Not merged or deployed.",
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/53"
+    },
+    {
+      "sourceCommit": "abcf7fb05c95d05c9f9c689fe086c85711c67a2d",
+      "parentCommit": "6610e3b4de89e2c98176c8bc9be1c06428c8c790",
+      "disposition": "accepted",
+      "classification": "reviewed-google-merchant-descriptions",
+      "paths": [
+        "src/features/merchant-feed",
+        "src/features/publishing/postgres-publishing-store.server.ts",
+        "src/features/publishing/postgres-garment-store.server.ts",
+        "scripts/printify/google-merchant-copy.ts",
+        "docs/google-merchant-copy.md"
+      ],
+      "reason": "Port Google-only reviewed descriptions with variant/facts binding, XML bounds, stale fallback, generated-origin history and guarded apply/clear. Preserve configured brand identity and destination gates. Omit source pilot IDs, product prose, account state and operational evidence.",
+      "evidence": "Selective forward port against template main 9a345a98549926443e6ed5a413ccb329d37525ad. No SQL migration is required: existing template snapshots, revision history and runtime grants support the metadata. Receiving draft PR https://github.com/NerdOutInc/ai-shop-template/pull/54 records validation; this is not production activation or Merchant import evidence.",
+      "templateCommit": null,
+      "followUp": "Merge the reviewed receiving PR, then verify deployment and any copy/feed activation under receiving-store authority. No gap before these source commits has been marked reviewed."
+    },
+    {
+      "sourceCommit": "a320a3f39a906ef7443e33cfade9c93c2d56453f",
+      "parentCommit": "abcf7fb05c95d05c9f9c689fe086c85711c67a2d",
+      "disposition": "accepted",
+      "classification": "private-google-merchant-copy-editor",
+      "paths": [
+        "src/app/admin/products/[id]",
+        "src/app/api/admin/products/[product]/google-copy",
+        "src/features/merchant-feed",
+        "src/features/featured-order/featured-product-content.tsx",
+        "e2e/admin/library.spec.ts"
+      ],
+      "reason": "Port private current-admin preview/apply editor with same-origin protection, bounded requests, frozen copy review, exact revision guards, draft retention and unknown-outcome readback. Use neutral fixture copy, retain template runtime permissions and keep storefront/Meta copy separate.",
+      "evidence": "Selective forward port against template main 9a345a98549926443e6ed5a413ccb329d37525ad. No SQL migration is required: existing template snapshots, revision history and runtime grants support the metadata. Receiving draft PR https://github.com/NerdOutInc/ai-shop-template/pull/54 records validation; this is not production activation or Merchant import evidence.",
+      "templateCommit": null,
+      "followUp": "Merge the reviewed receiving PR, then verify deployment and any copy/feed activation under receiving-store authority. No gap before these source commits has been marked reviewed."
     }
   ],
   "outboundPorts": [],

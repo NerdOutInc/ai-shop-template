@@ -15,6 +15,10 @@ The publishing pipeline supplies hosted garment mockups to the published catalog
 
 Hide/delete remove products on the next successful refresh; stock depletion keeps variants as `out_of_stock`. Changed printable production settings can pause eligibility until the merchant publishes a matching snapshot. Provider failures must not become empty catalogs, partial catalogs, or false stock updates. Diagnose 503 failures using sanitized reason codes and the publishing health check. Correct the diagnosed configuration, provider, code, or snapshot problem; republish only when published product data needs changing and publication is authorized. Do not bypass validation to make an import green.
 
+## Reviewed Google copy
+
+Use the [private Google copy editor and maintenance guide](../../../../docs/google-merchant-copy.md) for separately reviewed Google descriptions. Bind approval to the current saved facts and exact color/size identities. Generated copy retains its origin after human edits or guarded clear and uses Google structured descriptions. Changed facts, unreviewed variants or invalid saved copy fall back to the published description; they never silently remove feed items. This metadata does not edit storefront storytelling or Meta copy and does not activate a feed. Preview is read-only; applying or clearing production copy requires the owner's existing explicit authorization. Do not import another store's products, prose or pilot approvals.
+
 ## Meta import acceptance
 
 Activation and real-import evidence remain pending until these steps are completed under the existing production/account authorization:

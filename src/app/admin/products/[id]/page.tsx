@@ -6,6 +6,8 @@ import { connection } from "next/server"
 import { getAdminCatalogProduct } from "@/features/catalog/get-admin-catalog-product.server"
 import { ProductDetails } from "@/features/catalog/product-details"
 
+import { GoogleMerchantCopyEditor } from "./_components/google-merchant-copy-editor"
+
 export const metadata: Metadata = {
   title: "Product preview",
   robots: { index: false, follow: false },
@@ -32,7 +34,10 @@ export default async function AdminProductPreviewPage({ params }: { params: Prom
         </p>
       </aside>
       {result.status === "ready" ? (
-        <ProductDetails key={result.product.id} product={result.product} preview />
+        <>
+          <ProductDetails key={result.product.id} product={result.product} preview />
+          <GoogleMerchantCopyEditor key={`google-copy-${result.product.id}`} productId={result.product.id} />
+        </>
       ) : (
         <div className="py-16">
           <h1 className="display-heading">This preview is taking a breather.</h1>
