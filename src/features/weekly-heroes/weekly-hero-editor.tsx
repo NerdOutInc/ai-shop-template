@@ -5,8 +5,9 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
+import { findHeroLinkSpace } from "./find-hero-link-space"
 import { HeroLinkAreaEditor } from "./hero-link-area-editor"
-import { weeklyHeroSchema, type HeroAsset, type WeeklyHero, type WeeklyHeroManifest } from "./weekly-hero-schema"
+import { weeklyHeroSchema, type HeroAsset, type WeeklyHeroDraft, type WeeklyHeroManifest } from "./weekly-hero-schema"
 
 export function WeeklyHeroEditor({
   liveAt,
@@ -16,12 +17,12 @@ export function WeeklyHeroEditor({
 }: {
   now: number
   liveAt: string
-  initial: WeeklyHero | null
+  initial: WeeklyHeroDraft | null
   products: { productId: string; title: string; colors: string[] }[]
 }) {
   const [saved, setSaved] = useState(initial)
   const [manifest, setManifest] = useState<WeeklyHeroManifest>(
-    initial?.manifest ?? {
+    initial?.hero?.manifest ?? {
       title: "",
       alt: "",
       offer: "",
@@ -37,13 +38,13 @@ export function WeeklyHeroEditor({
     }
   )
   const [assets, setAssets] = useState<{ desktop: HeroAsset | null; mobile: HeroAsset | null }>({
-    desktop: initial?.desktop ?? null,
-    mobile: initial?.mobile ?? null,
+    desktop: initial?.hero?.desktop ?? null,
+    mobile: initial?.hero?.mobile ?? null,
   })
   const [busy, setBusy] = useState(false),
     [message, setMessage] = useState(""),
     [error, setError] = useState("")
-  const dirty = JSON.stringify(manifest) !== JSON.stringify(saved?.manifest)
+  const dirty = JSON.stringify(manifest) !== JSON.stringify(saved?.hero?.manifest)
   const updateLink = (index: number, patch: Partial<WeeklyHeroManifest["links"][number]>) =>
     setManifest((m) => ({ ...m, links: m.links.map((link, i) => (i === index ? { ...link, ...patch } : link)) }))
   async function upload(kind: "desktop" | "mobile", file: File) {
@@ -82,10 +83,12 @@ export function WeeklyHeroEditor({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ liveAt, version: saved?.version ?? null, scheduled, manifest: parsed.data }),
       })
-      const result = (await response.json()) as { error?: string; hero: WeeklyHero }
+      const result = (await response.json()) as { error?: string; draft: WeeklyHeroDraft }
       if (!response.ok) throw new Error(result.error ?? "The hero could not be saved.")
-      setSaved(result.hero)
-      setManifest(result.hero.manifest)
+      setSaved(result.draft)
+      if (!result.draft?.hero)
+        throw new Error("The saved hero could not be read. Reload to recover its current revision.")
+      setManifest(result.draft.hero.manifest)
       setMessage(
         scheduled
           ? "Hero approved for this week. It appears only during its week, with all linked products in the lineup and visible in the shop."
@@ -108,9 +111,9 @@ export function WeeklyHeroEditor({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ liveAt, version: saved.version }),
       })
-      const result = (await response.json()) as { hero: WeeklyHero; error?: string }
+      const result = (await response.json()) as { draft: WeeklyHeroDraft; error?: string }
       if (!response.ok) throw new Error(result.error ?? "Could not withdraw the hero.")
-      setSaved(result.hero)
+      setSaved(result.draft)
       setMessage("Hero withdrawn. New public image requests are blocked; unsaved editor changes are preserved.")
     } catch (error) {
       setError(error instanceof Error ? error.message : "Could not withdraw the hero.")
@@ -126,6 +129,12 @@ export function WeeklyHeroEditor({
         {dirty && "Unsaved changes. "}Products and hero share {formatWeeklyCadence()}. An absent or mismatched hero
         shows the configured store homepage with a Shop link.
       </p>
+      {saved && !saved.hero && (
+        <p role="alert" className="rounded border border-destructive p-4">
+          This saved hero cannot be previewed. Upload valid images and save a replacement draft, or withdraw the
+          approved hero. Its saved revision is retained so another tab’s changes stay protected.
+        </p>
+      )}
       {products.length < 1 || missing ? (
         <p role="alert" className="rounded border border-destructive p-4">
           Schedule all featured products in this week first. If you moved a product, update these links before
@@ -240,6 +249,20 @@ export function WeeklyHeroEditor({
           onClick={() => {
             const product = products.find((p) => !manifest.links.some((link) => link.productId === p.productId))
             if (!product) return
+            const desktop = findHeroLinkSpace(
+              manifest.links.map((link) => link.desktop),
+              "desktop"
+            )
+            const mobile = findHeroLinkSpace(
+              manifest.links.map((link) => link.mobile),
+              "mobile"
+            )
+            if (!desktop || !mobile) {
+              setError("Make room for another destination in both images before adding it.")
+              return
+            }
+            setError("")
+            setMessage("Destination added in free space. Draw its actual product area before approving the hero.")
             setManifest((m) => ({
               ...m,
               links: [
@@ -248,8 +271,8 @@ export function WeeklyHeroEditor({
                   productId: product.productId,
                   color: "",
                   label: `Shop ${product.title}`.slice(0, 120),
-                  desktop: { x: 26, y: 10, width: 10, height: 10 },
-                  mobile: { x: 2, y: 10, width: 10, height: 10 },
+                  desktop,
+                  mobile,
                 },
               ],
             }))
@@ -293,7 +316,7 @@ export function WeeklyHeroEditor({
             Withdraw approved hero
           </Button>
         )}
-        {saved && !dirty && (
+        {saved?.hero && !dirty && (
           <Link
             className="inline-flex min-h-11 items-center underline underline-offset-4"
             href={`/admin/products/heroes/${encodeURIComponent(liveAt)}/preview`}

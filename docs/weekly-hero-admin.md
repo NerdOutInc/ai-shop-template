@@ -11,15 +11,17 @@ The weekly feature can show a separately approved desktop and mobile composition
 5. **Save private draft**, then open **Preview saved hero**. Resize to phone and desktop sizes. Tab through the actual product links and check their visible focus. Private preview links open admin product previews. Changes require another save before the preview link reappears.
 6. With the owner's approval for the exact composition, copy and destinations, choose **Approve and schedule hero** or **Publish this week’s hero**. This is a real storefront publication action; preparing or saving a private draft does not grant that approval.
 
+The full weekly product grid remains below an approved hero, including products not pictured in it. The hero lookup streams behind the configured introduction so it does not hold up the homepage shell.
+
 A hero appears only during its release interval and only while every linked product is still active, visible, in that release and offers the chosen color. It expires at the next configured weekly boundary, including across daylight-saving transitions. An absent, invalid, withdrawn or unavailable hero falls back to the configured introduction and existing weekly product section. Changing the configured cadence does not rewrite stored timestamps: review queued product and hero dates before making that configuration change.
 
-**Withdraw approved hero** revokes subsequent image requests even if products have moved or the cadence changed. Images are served without shared or image-optimizer caching. Copies already downloaded or captured by a viewer cannot be recalled. Saving an edited approved hero as a private draft also withdraws it. A stale tab cannot replace or withdraw a newer revision.
+**Withdraw approved hero** revokes subsequent image requests even if products have moved or the cadence changed. Browser copies use private caching with mandatory revalidation. The server checks current eligibility before accepting a matching image ETag; a 304 avoids another private Blob download. Shared and image-optimizer caching remain disabled. Hero draft changes do not invalidate the product catalog cache. Copies already downloaded or captured by a viewer cannot be recalled. Saving an edited approved hero as a private draft also withdraws it. A stale tab cannot replace or withdraw a newer revision. If a saved composition no longer validates or its image receipt is missing, the editor retains its revision and offers replacement or withdrawal instead of treating it as a new hero.
 
 ## Private storage and access
 
 Original hero images live in the existing private Blob store, under immutable UUID paths. Their database receipts record dimensions, byte length and SHA-256. The server checks integrity when reading bytes. Future and draft sources are never copied to public Blob storage or `public/`. Admin routes require current admin membership and same-origin mutations; disabling the weekly feature denies editor, preview and asset routes. Public routes expose only assets belonging to the current approved, eligible hero.
 
-Uploads that fail after Blob storage succeeds may leave an unreferenced private object. Do not delete assets speculatively: inspect database references and archive needs before any separately authorized cleanup. Approval is not a claim that the artwork has been fact-checked automatically.
+Upload configuration is checked before writing bytes; corrupt images are rejected as invalid input. Uploads that fail after Blob storage succeeds may leave an unreferenced private object. Do not delete assets speculatively: inspect database references and archive needs before any separately authorized cleanup. Approval is not a claim that the artwork has been fact-checked automatically.
 
 ## Schema rollout and verification
 

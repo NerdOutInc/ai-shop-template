@@ -24,6 +24,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
 import type { ProductScheduleEntry, ProductScheduleReceipt } from "@/features/publishing/product-schedule-entry"
+import { isCurrentCadenceWeek } from "@/features/publishing/is-current-cadence-week"
 import { listCadenceSlots } from "@/features/publishing/list-cadence-slots"
 import { resolveProductWeek } from "@/features/publishing/resolve-product-week"
 import { hasRevealArrived } from "@/features/publishing/has-reveal-arrived"
@@ -186,10 +187,7 @@ export function FeaturedOrderList({
   // keeps its slot relative to everything it did not step over -- which is what lets a hidden tee,
   // or one whose drop has ended, come back exactly where it was.
   const currentWeek = resolveProductWeek(entries, now)
-  const currentHero = heroes?.find(
-    (hero) =>
-      Date.parse(hero.liveAt) <= now && listCadenceSlots({ from: new Date(hero.liveAt), count: 1 })[0]!.getTime() > now
-  )
+  const currentHero = heroes?.find((hero) => isCurrentCadenceWeek(hero.liveAt, now))
   const currentHeroWeek = currentWeek?.liveAt ?? currentHero?.liveAt
   const drop = new Set(schedule ? (currentWeek?.productIds ?? []) : designOfWeekProductIds)
   const designOfWeek = products.filter((product) => drop.has(product.id) && isProductOnTheWall(product, now))

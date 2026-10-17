@@ -1,5 +1,5 @@
 .agents/
-assets/
+/assets/
 scripts/artwork/
 node_modules/
 .next/

@@ -13,8 +13,10 @@ export default async function HeroPreviewPage({ params }: { params: Promise<{ we
   await requireAdmin()
   if (!storeConfig.features.designOfTheWeek) notFound()
   const week = await readHeroWeekParam(params)
-  const hero = await getWeeklyHeroStore().read(week)
-  if (!hero) notFound()
+  const result = await Promise.resolve()
+    .then(async () => ({ hero: await getWeeklyHeroStore().read(week) }))
+    .catch(() => null)
+  const hero = result?.hero
   return (
     <main id="main-content" tabIndex={-1}>
       <div className="border-b bg-background px-6 py-3 text-center text-sm">
@@ -26,7 +28,15 @@ export default async function HeroPreviewPage({ params }: { params: Promise<{ we
           Return to editor
         </Link>
       </div>
-      <WeeklyHeroPoster hero={hero} privatePreview />
+      {hero ? (
+        <WeeklyHeroPoster hero={hero} privatePreview />
+      ) : (
+        <p role="alert" className="page-width py-10">
+          {result
+            ? "This saved hero cannot be previewed. Return to the editor to replace or withdraw it."
+            : "Weekly hero storage is unavailable. Apply the weekly hero migration and configure private image storage before saving."}
+        </p>
+      )}
     </main>
   )
 }

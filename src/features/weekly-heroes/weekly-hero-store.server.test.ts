@@ -213,6 +213,44 @@ describe.skipIf(!url)("weekly hero release boundary", () => {
       "release dates"
     )
   })
+  it.each(["manifest", "missing image", "wrong image kind"])(
+    "recovers an unreadable %s with version-protected withdrawal and replacement",
+    async (fault) => {
+      const saved = await store.save({ liveAt: current, version: null, scheduled: true, manifest }, actor)
+      if (fault === "manifest") await pool.query("update commerce.weekly_heroes set manifest=manifest-'title'")
+      else
+        await pool.query(
+          "update commerce.weekly_heroes set manifest=jsonb_set(manifest,'{mobileAssetId}',to_jsonb($1::text))",
+          [fault === "missing image" ? randomUUID() : desktop]
+        )
+      expect(await store.read(current)).toBeNull()
+      expect(await store.current()).toBeNull()
+      const draft = await store.readDraft(current)
+      expect(draft).toEqual({ version: saved!.version, scheduled: true, hero: null })
+      const withdrawn = await store.withdraw({ liveAt: current, version: draft!.version }, actor)
+      expect(withdrawn).toMatchObject({ scheduled: false, hero: null })
+      await expect(
+        store.save({ liveAt: current, version: draft!.version, scheduled: false, manifest }, actor)
+      ).rejects.toThrow("another tab")
+      const replacement = await store.save(
+        { liveAt: current, version: withdrawn!.version, scheduled: false, manifest },
+        actor
+      )
+      expect(replacement?.hero?.manifest).toEqual(manifest)
+      expect(replacement?.scheduled).toBe(false)
+    }
+  )
+  it("accepts uppercase UUID input and can hydrate legacy uppercase manifests", async () => {
+    const upper = { ...manifest, desktopAssetId: desktop.toUpperCase(), mobileAssetId: mobile.toUpperCase() }
+    const saved = await store.save({ liveAt: current, version: null, scheduled: true, manifest: upper }, actor)
+    expect(saved?.hero?.manifest.desktopAssetId).toBe(desktop)
+    await pool.query("update commerce.printify_products set hidden_at=null,reveal_at=null")
+    expect(await store.currentAsset(desktop.toUpperCase())).not.toBeNull()
+    await pool.query("update commerce.weekly_heroes set manifest=$1::jsonb", [JSON.stringify(upper)])
+    expect((await store.read(current))?.desktop.id).toBe(desktop)
+    expect((await store.current())?.desktop.id).toBe(desktop)
+    expect(await store.currentAsset(desktop)).not.toBeNull()
+  })
   it("denies browser-role database access and allows only the intended runtime operations", async () => {
     for (const role of ["anon", "authenticated"])
       for (const table of ["weekly_heroes", "weekly_hero_assets"])

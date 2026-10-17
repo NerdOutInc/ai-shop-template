@@ -4,9 +4,16 @@ import type { Pool, PoolClient } from "pg"
 import { normalizeCatalogProduct } from "@/features/catalog/normalize-catalog-product"
 import { displayProductTitle } from "@/features/catalog/display-product-title"
 import { DOTW_CADENCE } from "@/features/publishing/dotw-cadence"
+import { isCurrentCadenceWeek } from "@/features/publishing/is-current-cadence-week"
 import { listCadenceSlots } from "@/features/publishing/list-cadence-slots"
 import { productVisibilitySql } from "@/features/publishing/product-visibility-sql"
-import { weeklyHeroSchema, type HeroAsset, type WeeklyHero, type WeeklyHeroManifest } from "./weekly-hero-schema"
+import {
+  weeklyHeroSchema,
+  type HeroAsset,
+  type WeeklyHero,
+  type WeeklyHeroManifest,
+  type WeeklyHeroDraft,
+} from "./weekly-hero-schema"
 
 import { WeeklyHeroError } from "./weekly-hero-error"
 
@@ -135,11 +142,17 @@ export class WeeklyHeroStore {
   }
 
   async read(liveAt: string): Promise<WeeklyHero | null> {
+    return (await this.readDraft(liveAt))?.hero ?? null
+  }
+
+  /** Preserve revision guards even when a stored composition cannot be hydrated. */
+  async readDraft(liveAt: string): Promise<WeeklyHeroDraft | null> {
     const result = await this.pool.query<Row>(
       `select live_at,version,scheduled,manifest from commerce.weekly_heroes where shop_id=$1 and live_at=$2`,
       [this.shopId, liveAt]
     )
-    return result.rows[0] ? this.hydrate(result.rows[0]) : null
+    const row = result.rows[0]
+    return row ? { version: row.version, scheduled: row.scheduled, hero: await this.hydrate(row) } : null
   }
 
   async summaries() {
@@ -161,7 +174,7 @@ export class WeeklyHeroStore {
       (select jsonb_agg(jsonb_build_object('id',id,'kind',kind,'width',width,'height',height,
         'pathname',pathname,'sha256',sha256,'contentType',content_type,'bytes',bytes))
         from commerce.weekly_hero_assets where shop_id=hero.shop_id
-        and id::text in (hero.manifest->>'desktopAssetId',hero.manifest->>'mobileAssetId')) as assets,
+        and id::text in (lower(hero.manifest->>'desktopAssetId'),lower(hero.manifest->>'mobileAssetId'))) as assets,
       (select jsonb_agg(${productProjectionSql})
         from commerce.printify_products product join commerce.product_week_schedule schedule using(shop_id,product_id)
         where product.shop_id=hero.shop_id and schedule.live_at=hero.live_at and schedule.ended_at is null and product.active) as products
@@ -171,8 +184,7 @@ export class WeeklyHeroStore {
       [this.shopId]
     )
     const row = result.rows[0]
-    if (!row || row.evaluated_at >= listCadenceSlots({ cadence: this.cadence, from: row.live_at, count: 1 })[0]!)
-      return null
+    if (!row || !isCurrentCadenceWeek(row.live_at.toISOString(), row.evaluated_at.getTime(), this.cadence)) return null
     const assets = row.assets ?? []
     const hero = toHero(row, assets)
     if (!hero) return null
@@ -184,7 +196,7 @@ export class WeeklyHeroStore {
   }
 
   async currentAsset(id: string): Promise<StoredHeroAsset | null> {
-    return (await this.currentSelection())?.assets.find((asset) => asset.id === id) ?? null
+    return (await this.currentSelection())?.assets.find((asset) => asset.id === id.toLowerCase()) ?? null
   }
 
   /** Withdrawal must remain possible after products move or the configured cadence changes. */
@@ -195,13 +207,16 @@ export class WeeklyHeroStore {
       [this.shopId, input.liveAt, input.version, randomUUID(), actor]
     )
     if (!result.rowCount) throw new WeeklyHeroError("This hero changed in another tab. Reload before withdrawing.")
-    return this.read(input.liveAt)
+    return this.readDraft(input.liveAt)
   }
 
   async save(
     input: { liveAt: string; version: string | null; scheduled: boolean; manifest: WeeklyHeroManifest },
     actor: string
   ) {
+    const parsed = weeklyHeroSchema.safeParse(input.manifest)
+    if (!parsed.success) throw new WeeklyHeroError(parsed.error.issues[0]?.message ?? "Check the hero details.")
+    input = { ...input, manifest: parsed.data }
     const client = await this.pool.connect()
     try {
       await client.query("begin")
@@ -256,7 +271,7 @@ export class WeeklyHeroStore {
           )
       if (!result.rowCount) throw new WeeklyHeroError("This hero changed in another tab. Reload before saving.")
       await client.query("commit")
-      return this.read(input.liveAt)
+      return this.readDraft(input.liveAt)
     } catch (error) {
       await client.query("rollback").catch(() => undefined)
       throw error

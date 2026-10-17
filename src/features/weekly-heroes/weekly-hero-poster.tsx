@@ -7,33 +7,31 @@ import styles from "./weekly-hero-poster.module.css"
 
 /** Uploads are complete compositions; link rectangles are measured against each full source. */
 export function WeeklyHeroPoster({ hero, privatePreview = false }: { hero: WeeklyHero; privatePreview?: boolean }) {
-  const image = (asset: WeeklyHero["desktop"], sizes: string) =>
+  const image = (asset: WeeklyHero["desktop"]) =>
     getImageProps({
       src: `${privatePreview ? "/api/admin/weekly-heroes/assets" : "/api/weekly-hero"}/${asset.id}`,
       width: asset.width,
       height: asset.height,
-      sizes,
       alt: hero.manifest.alt,
       loading: "eager",
       fetchPriority: "high",
       unoptimized: true,
     }).props
-  const layout = getWeeklyHeroLayout(2)
-  const desktop = image(hero.desktop, layout.sizes)
-  const mobile = image(hero.mobile, "100vw")
+  const layout = getWeeklyHeroLayout()
+  const desktop = image(hero.desktop)
+  const mobile = image(hero.mobile)
   return (
-    <section id="design-of-the-week" className={styles.hero} aria-labelledby="weekly-hero-heading">
+    <section id="weekly-hero" className={styles.hero} aria-labelledby="weekly-hero-heading">
       <div className="sr-only">
         <h1 id="weekly-hero-heading">Design of the week: {hero.manifest.title}</h1>
         <p>A new design every week</p>
         <p>{hero.manifest.offer}</p>
       </div>
-      <div className={styles.frame} style={layout.frameStyle}>
+      <div className={styles.frame} style={layout}>
         <picture>
           <source
             media="(max-width: 700px)"
             srcSet={mobile.srcSet ?? mobile.src}
-            sizes={mobile.sizes}
             width={mobile.width}
             height={mobile.height}
           />

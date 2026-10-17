@@ -1,5 +1,4 @@
 import { z } from "zod"
-import { refreshStorefront } from "@/features/design-of-the-week/refresh-storefront.server"
 import { authorizeHeroAdmin } from "@/features/weekly-heroes/authorize-hero-admin.server"
 import { getWeeklyHeroStore } from "@/features/weekly-heroes/get-weekly-hero-store.server"
 import { weeklyHeroSchema } from "@/features/weekly-heroes/weekly-hero-schema"
@@ -25,9 +24,8 @@ export async function PUT(request: Request) {
       { status: 400, headers: privateResponseHeaders }
     )
   try {
-    const hero = await getWeeklyHeroStore().save(input.data, actor.userId)
-    refreshStorefront()
-    return Response.json({ hero }, { headers: privateResponseHeaders })
+    const draft = await getWeeklyHeroStore().save(input.data, actor.userId)
+    return Response.json({ draft }, { headers: privateResponseHeaders })
   } catch (error) {
     return Response.json(
       { error: error instanceof WeeklyHeroError ? error.message : "The hero could not be saved. Try again shortly." },
@@ -49,9 +47,8 @@ export async function DELETE(request: Request) {
       { status: 400, headers: privateResponseHeaders }
     )
   try {
-    const hero = await getWeeklyHeroStore().withdraw(input.data, actor.userId)
-    refreshStorefront()
-    return Response.json({ hero }, { headers: privateResponseHeaders })
+    const draft = await getWeeklyHeroStore().withdraw(input.data, actor.userId)
+    return Response.json({ draft }, { headers: privateResponseHeaders })
   } catch (error) {
     return Response.json(
       { error: error instanceof WeeklyHeroError ? error.message : "The hero could not be withdrawn." },

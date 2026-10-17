@@ -18,7 +18,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
           headers: {
             ...privateResponseHeaders,
             "Content-Type": image.contentType,
-            "X-Content-Type-Options": "nosniff",
           },
         })
       : new Response(null, { status: 404, headers: privateResponseHeaders })

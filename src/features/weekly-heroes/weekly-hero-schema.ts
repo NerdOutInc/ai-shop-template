@@ -27,8 +27,8 @@ export const weeklyHeroSchema = z
     title: z.string().trim().min(1).max(120),
     alt: z.string().trim().min(10).max(600),
     offer: z.string().trim().max(120),
-    desktopAssetId: z.uuid(),
-    mobileAssetId: z.uuid(),
+    desktopAssetId: z.uuid().transform((id) => id.toLowerCase()),
+    mobileAssetId: z.uuid().transform((id) => id.toLowerCase()),
     links: z.array(link).min(1).max(6),
   })
   .strict()
@@ -56,3 +56,5 @@ export type WeeklyHero = {
   desktop: HeroAsset
   mobile: HeroAsset
 }
+
+export type WeeklyHeroDraft = { version: string; scheduled: boolean; hero: WeeklyHero | null }

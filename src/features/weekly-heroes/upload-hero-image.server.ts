@@ -12,6 +12,7 @@ export async function uploadHeroImage(request: Request, actor: string) {
   if ((kind !== "desktop" && kind !== "mobile") || !request.body)
     throw new WeeklyHeroError("Choose a desktop or mobile image.")
   if (!env.PRIVATE_BLOB_READ_WRITE_TOKEN) throw new Error("Private image storage is not configured")
+  const store = getWeeklyHeroStore()
   let bytes: Buffer
   try {
     const length = Number(request.headers.get("x-hero-bytes"))
@@ -43,7 +44,11 @@ export async function uploadHeroImage(request: Request, actor: string) {
         ? "Use a 3:1 desktop panorama at least 1800 pixels wide."
         : "Use a separate 4:7 mobile composition at least 800 pixels wide."
     )
-  await sharp(bytes, { limitInputPixels: 40_000_000, failOn: "truncated" }).timeout({ seconds: 5 }).stats()
+  try {
+    await sharp(bytes, { limitInputPixels: 40_000_000, failOn: "truncated" }).timeout({ seconds: 5 }).stats()
+  } catch {
+    throw new WeeklyHeroError("Use a single PNG, JPEG or WebP image.")
+  }
   const id = randomUUID(),
     extension = metadata.format === "jpeg" ? "jpg" : metadata.format
   const pathname = `weekly-heroes/v1/${id}.${extension}`,
@@ -65,6 +70,6 @@ export async function uploadHeroImage(request: Request, actor: string) {
     bytes: bytes.length,
     sha256: createHash("sha256").update(bytes).digest("hex"),
   }
-  await getWeeklyHeroStore().addAsset(asset, actor)
+  await store.addAsset(asset, actor)
   return { id, kind, width: asset.width, height: asset.height }
 }

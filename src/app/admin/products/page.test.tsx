@@ -9,10 +9,13 @@ import AdminProductsPage from "./page"
 
 const mocks = vi.hoisted(() => ({
   requireAdmin: vi.fn(),
+  heroStore: vi.fn(),
+  heroSummaries: vi.fn(),
   listFeaturedOrder: vi.fn(),
   readAdminProductSchedule: vi.fn(),
   listProductGarmentStatus: vi.fn(),
 }))
+vi.mock("@/features/weekly-heroes/get-weekly-hero-store.server", () => ({ getWeeklyHeroStore: mocks.heroStore }))
 vi.mock("@/features/admin/require-admin.server", () => ({ requireAdmin: mocks.requireAdmin }))
 vi.mock("@/features/featured-order/list-featured-order.server", () => ({
   listFeaturedOrder: mocks.listFeaturedOrder,
@@ -43,6 +46,8 @@ const products: FeaturedOrderProduct[] = [
 beforeEach(() => {
   storeConfig.features.designOfTheWeek = true
   mocks.requireAdmin.mockResolvedValue({ userId: "owner" })
+  mocks.heroStore.mockReturnValue({ summaries: mocks.heroSummaries })
+  mocks.heroSummaries.mockResolvedValue([])
   mocks.listFeaturedOrder.mockResolvedValue({ status: "ready", products, now })
   mocks.readAdminProductSchedule.mockResolvedValue({ status: "ready", entries: [], now })
   mocks.listProductGarmentStatus.mockResolvedValue([
@@ -66,6 +71,7 @@ describe("admin products page", () => {
     mocks.requireAdmin.mockRejectedValue(new Error("NEXT_REDIRECT"))
     await expect(AdminProductsPage()).rejects.toThrow("NEXT_REDIRECT")
     expect(mocks.listFeaturedOrder).not.toHaveBeenCalled()
+    expect(mocks.heroStore).not.toHaveBeenCalled()
     expect(mocks.listProductGarmentStatus).not.toHaveBeenCalled()
   })
 
@@ -243,6 +249,7 @@ it("keeps lineup management while removing disabled scheduling and its data read
   storeConfig.features.designOfTheWeek = false
   render(await AdminProductsPage())
   expect(mocks.readAdminProductSchedule).not.toHaveBeenCalled()
+  expect(mocks.heroStore).not.toHaveBeenCalled()
   expect(screen.getByText(/^2 products are waiting on garment setup/)).not.toHaveTextContent("scheduled")
   expect(screen.getByRole("list", { name: "Available products" })).toBeVisible()
   expect(screen.queryByRole("region", { name: /^Week of / })).not.toBeInTheDocument()

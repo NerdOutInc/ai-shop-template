@@ -33,3 +33,10 @@ it("rejects duplicate, overlapping, out-of-frame or desktop-cropped destinations
   ])
     expect(weeklyHeroSchema.safeParse({ ...manifest, links }).success).toBe(false)
 })
+
+it("canonicalizes UUID casing before persistence and hydration", () => {
+  const id = "ABCDEF12-ABCD-4ABC-8ABC-ABCDEF123456"
+  const result = weeklyHeroSchema.parse({ ...manifest, desktopAssetId: id, mobileAssetId: id })
+  expect(result.desktopAssetId).toBe(id.toLowerCase())
+  expect(result.mobileAssetId).toBe(id.toLowerCase())
+})

@@ -17,8 +17,8 @@ export default async function HeroEditorPage({ params }: { params: Promise<{ wee
   const result = await (async () => {
     try {
       const store = getWeeklyHeroStore()
-      const [hero, products, now] = await Promise.all([store.read(week), store.products(week), store.clock()])
-      return { hero, products, now }
+      const [draft, products, now] = await Promise.all([store.readDraft(week), store.products(week), store.clock()])
+      return { draft, products, now }
     } catch {
       return null
     }
@@ -34,7 +34,7 @@ export default async function HeroEditorPage({ params }: { params: Promise<{ wee
         compositions.
       </p>
       {result ? (
-        <WeeklyHeroEditor now={result.now} liveAt={week} initial={result.hero} products={result.products} />
+        <WeeklyHeroEditor now={result.now} liveAt={week} initial={result.draft} products={result.products} />
       ) : (
         <p role="alert">
           Weekly hero storage is unavailable. Apply the weekly hero migration and configure private image storage before
