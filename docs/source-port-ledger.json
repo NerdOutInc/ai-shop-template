@@ -446,7 +446,7 @@
         "docs/google-merchant-copy.md"
       ],
       "reason": "Port Google-only reviewed descriptions with variant/facts binding, XML bounds, stale fallback, generated-origin history and guarded apply/clear. Preserve configured brand identity and destination gates. Omit source pilot IDs, product prose, account state and operational evidence.",
-      "evidence": "Selective forward port against template main 9a345a98549926443e6ed5a413ccb329d37525ad. No SQL migration is required: existing template snapshots, revision history and runtime grants support the metadata. Validation is recorded in the receiving PR; this is not production activation or Merchant import evidence.",
+      "evidence": "Selective forward port against template main 9a345a98549926443e6ed5a413ccb329d37525ad. No SQL migration is required: existing template snapshots, revision history and runtime grants support the metadata. Receiving draft PR https://github.com/NerdOutInc/ai-shop-template/pull/54 records validation; this is not production activation or Merchant import evidence.",
       "templateCommit": null,
       "followUp": "Merge the reviewed receiving PR, then verify deployment and any copy/feed activation under receiving-store authority. No gap before these source commits has been marked reviewed."
     },
@@ -463,7 +463,7 @@
         "e2e/admin/library.spec.ts"
       ],
       "reason": "Port private current-admin preview/apply editor with same-origin protection, bounded requests, frozen copy review, exact revision guards, draft retention and unknown-outcome readback. Use neutral fixture copy, retain template runtime permissions and keep storefront/Meta copy separate.",
-      "evidence": "Selective forward port against template main 9a345a98549926443e6ed5a413ccb329d37525ad. No SQL migration is required: existing template snapshots, revision history and runtime grants support the metadata. Validation is recorded in the receiving PR; this is not production activation or Merchant import evidence.",
+      "evidence": "Selective forward port against template main 9a345a98549926443e6ed5a413ccb329d37525ad. No SQL migration is required: existing template snapshots, revision history and runtime grants support the metadata. Receiving draft PR https://github.com/NerdOutInc/ai-shop-template/pull/54 records validation; this is not production activation or Merchant import evidence.",
       "templateCommit": null,
       "followUp": "Merge the reviewed receiving PR, then verify deployment and any copy/feed activation under receiving-store authority. No gap before these source commits has been marked reviewed."
     }
