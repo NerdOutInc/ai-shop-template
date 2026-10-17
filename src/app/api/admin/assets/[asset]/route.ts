@@ -11,7 +11,8 @@ export const dynamic = "force-dynamic"
 export async function GET(request: Request, context: { params: Promise<{ asset: string }> }) {
   const { asset: assetId } = await context.params
   return servePrivateLibraryAsset(request, assetId, {
-    authenticate: () => request.headers.has("authorization") ? getDesignAgentActor(request, "library:read") : getAdminAssetActor(),
+    authenticate: () =>
+      request.headers.has("authorization") ? getDesignAgentActor(request, "library:read") : getAdminAssetActor(),
     getAsset: (userId, id, sessionId) => createPostgresLibraryStore().getAsset(userId, id, sessionId),
     readAsset: readPrivateAsset,
     readDisplay: (asset, size) => readDisplayImage(asset, size),

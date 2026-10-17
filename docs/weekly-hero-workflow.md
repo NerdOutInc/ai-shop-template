@@ -19,18 +19,18 @@ No application checkout, sibling skill, store login or network is needed for tha
 
 ## Current application boundary
 
-At template base `9a345a98549926443e6ed5a413ccb329d37525ad`, the application has a weekly product lineup and release cadence, but **does not have a weekly hero asset upload, editor, approval store, preview or scheduled renderer**. Read [Design of the Week](admin-design-library.md#design-of-the-week) for the implemented product workflow. The skill can prepare and review selected assets now; it must report hero scheduling unavailable here until a runtime is implemented.
+The application provides private hero uploads, a desktop/mobile editor, saved previews and separately approved scheduling on the existing weekly product lineup. Follow [scheduled homepage heroes](weekly-hero-admin.md) for the editor, image requirements, access rules and migration rollout. Read [Design of the Week](admin-design-library.md#design-of-the-week) for the underlying product workflow. A code merge does not establish that a receiving store has applied the migration, configured private storage or approved a hero for publication.
 
-The template's cadence comes from `storeConfig.timeZone` and `storeConfig.weeklyFeature`; do not copy the source store's weekday/hour or derive a fixed UTC offset. Hero dimensions and safe areas must come from the eventual receiver, not from an illustrative skill diagram.
+The template's cadence comes from `storeConfig.timeZone` and `storeConfig.weeklyFeature`; do not copy the source store's weekday/hour or derive a fixed UTC offset. Use the runtime's documented dimensions and safe areas here. When installing the skill elsewhere, read that receiver's requirements instead of treating the illustrative skill diagram as a contract.
 
-## Focused runtime catch-up work
+## Runtime provenance and verification
 
 The runtime port is a separate application change tracked in [template PR #55](https://github.com/NerdOutInc/ai-shop-template/pull/55). Its source baseline (`original-store` in the [source-port ledger](source-port-ledger.json)) is pinned to these reviewed changes:
 
 - Source PR #192, commit `977920bd2ffa708c4bf49f2cd2fbe61288d0bfd5`, parent `9b9616010a29056d0de6cd568c269603059b61f1`: responsive hero runtime, private uploads, editor, approval and scheduled rendering. Relevant paths are `src/features/weekly-heroes/`, `src/app/admin/products/heroes/`, `src/app/api/admin/weekly-heroes/`, `src/app/api/weekly-hero/`, `src/app/page.tsx` and `src/features/featured-order/`.
 - Source PR #193, commit `8cb3eb5aa5009b18a584c760e1d0ee512a998431`, parent `977920bd2ffa708c4bf49f2cd2fbe61288d0bfd5`: follow-up product facts and shop action in `src/features/weekly-heroes/weekly-design-details.tsx` and its test.
 
-PR #55 records the adaptation, migration identity and verification in its source-port ledger. It was open and unmerged when this receipt was checked on 2026-10-17; re-read its current state before relying on the runtime. This skill PR defers those application paths to that receiving PR and imports none of the source store's images, models, artwork or settings. Review the implementation and follow-up together; copying one documentation commit would not provide the feature. The runtime's minimal acceptance scope is:
+PR #55 records the adaptation, migration identity and verification in its source-port ledger. The runtime and portable skill import none of the source store's images, models, artwork or settings. Review the implementation and follow-up together; installing only the portable skill does not install these application paths or database tables. The runtime's acceptance scope is:
 
 | Area                               | Receiving requirements                                                                                                                                                                                                                            |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -40,4 +40,4 @@ PR #55 records the adaptation, migration identity and verification in its source
 | Rendering and access               | Separate desktop/mobile sources, verified crop/safe regions, native links and equivalent accessible text. Preserve existing signup, weekly content, structured data and product privacy.                                                          |
 | Deployment and evidence            | An authorized migration and deployment are distinct from a code merge. Test draft/future privacy, current-week eligibility, stale saves, time-zone boundaries and changed visibility; verify the saved preview and actual live state separately.  |
 
-Keep that port scoped to the runtime and necessary schema/configuration changes. It does not need operational product photographs, source model portraits, a generated concept archive or hardcoded weekly product IDs. Until those contracts are implemented and verified, a concept package must not be described as scheduled or live.
+Keep receiving-store rollout scoped to the runtime and necessary schema/configuration changes. It does not need another store's product photographs, model portraits, concept archive or hardcoded weekly product IDs. Verify migration, configuration, saved preview and current publication state in the receiving store before describing a concept package as scheduled or live.

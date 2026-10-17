@@ -16,6 +16,7 @@ export async function createAdminDatabaseFixture(connectionString: string) {
       "/store_signup_test",
       "/store_subscriber_test",
       "/store_admin_test",
+      "/store_hero_test",
       "/store_library_test",
       "/store_agent_test",
       "/store_drafts_test",

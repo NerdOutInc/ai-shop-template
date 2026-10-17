@@ -6,7 +6,7 @@ const revealedAt = (clock: string) => `hidden_at is not null and reveal_at is no
 /**
  * Every form of "the shop shows this product", split by what makes each go stale rather than by
  * where it is convenient. Interpolated by the publishing, garment, and product-schedule Postgres
- * stores in src/features/publishing and nowhere else.
+ * stores and the weekly hero release gate.
  *
  * `active` stays Printify's own answer and is ANDed here rather than merged: activate() rewrites it
  * from the provider snapshot on every publish, so the owner's decision has to live beside it.

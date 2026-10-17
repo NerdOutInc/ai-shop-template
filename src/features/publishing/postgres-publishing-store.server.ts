@@ -7,6 +7,7 @@ import type { PoolClient } from "pg"
 
 import { readGoogleCopyProvenance } from "@/features/merchant-feed/read-google-copy-provenance.server"
 import { validateGoogleCopyApproval } from "@/features/merchant-feed/validate-google-copy-approval"
+import { WeeklyHeroStore } from "@/features/weekly-heroes/weekly-hero-store.server"
 import { createPostgresPool } from "@/lib/create-postgres-pool.server"
 
 import { PostgresGarmentStore } from "./postgres-garment-store.server"
@@ -35,6 +36,7 @@ export class PostgresPublishingStore implements PublishingStore {
    */
   readonly garments: PostgresGarmentStore
   readonly productSchedule: PostgresProductScheduleStore
+  readonly weeklyHeroes: WeeklyHeroStore
 
   constructor(
     connectionString: string,
@@ -46,6 +48,7 @@ export class PostgresPublishingStore implements PublishingStore {
     this.workerPool = createPostgresPool(connectionString, 1)
     this.garments = new PostgresGarmentStore(this.pool, shopId)
     this.productSchedule = new PostgresProductScheduleStore(this.pool, shopId)
+    this.weeklyHeroes = new WeeklyHeroStore(this.pool, shopId)
   }
 
   async enqueue(event: PublishingEvent) {

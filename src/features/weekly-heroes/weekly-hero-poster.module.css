@@ -1,0 +1,47 @@
+.hero {
+  overflow: clip;
+  position: relative;
+}
+.frame {
+  position: relative;
+  width: min(100%, var(--weekly-hero-width));
+  margin-inline: auto;
+  aspect-ratio: 3/2;
+}
+.scene {
+  position: absolute;
+  left: -50%;
+  width: 200%;
+  max-width: none;
+  height: 100%;
+}
+.link {
+  position: absolute;
+  display: block;
+  left: calc(var(--desktop-x) * 2% - 50%);
+  top: calc(var(--desktop-y) * 1%);
+  width: calc(var(--desktop-width) * 2%);
+  height: calc(var(--desktop-height) * 1%);
+  border-radius: 8px;
+}
+.link:focus-visible {
+  outline: 4px solid var(--background);
+  outline-offset: -4px;
+  box-shadow: inset 0 0 0 8px var(--foreground);
+}
+@media (max-width: 700px) {
+  .frame {
+    width: 100%;
+    aspect-ratio: 4/7;
+  }
+  .scene {
+    left: 0;
+    width: 100%;
+  }
+  .link {
+    left: calc(var(--mobile-x) * 1%);
+    top: calc(var(--mobile-y) * 1%);
+    width: calc(var(--mobile-width) * 1%);
+    height: calc(var(--mobile-height) * 1%);
+  }
+}

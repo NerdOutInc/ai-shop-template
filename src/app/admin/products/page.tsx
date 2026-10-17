@@ -13,6 +13,8 @@ import { listFeaturedOrder } from "@/features/featured-order/list-featured-order
 import { listProductGarmentStatus } from "@/features/garment-catalog/list-product-garment-status.server"
 import { hasRevealArrived } from "@/features/publishing/has-reveal-arrived"
 
+import { getWeeklyHeroStore } from "@/features/weekly-heroes/get-weekly-hero-store.server"
+
 import { ProductsSectionNav } from "./_components/products-section-nav"
 
 export const metadata: Metadata = { title: "Products", robots: { index: false, follow: false } }
@@ -22,10 +24,15 @@ export default async function AdminProductsPage() {
   await requireAdmin()
   // Three separate caught reads. The garment one answers null when it cannot tell (its migration
   // may be merged but not pushed), and then the lineup simply carries no garment notices.
-  const [result, drop, garmentStatus] = await Promise.all([
+  const [result, drop, garmentStatus, heroes] = await Promise.all([
     listFeaturedOrder(),
     storeConfig.features.designOfTheWeek ? readAdminProductSchedule() : null,
     listProductGarmentStatus(),
+    storeConfig.features.designOfTheWeek
+      ? Promise.resolve()
+          .then(() => getWeeklyHeroStore().summaries())
+          .catch(() => null)
+      : null,
   ])
   // `complete` is the database's answer and is only ever passed along here, never worked out again.
   const waiting = new Map(
@@ -119,6 +126,7 @@ export default async function AdminProductsPage() {
               : [storeConfig.features.designOfTheWeek ? "schedule-unavailable" : "schedule-disabled"]),
             ...slots.map((slot) => slot.value),
           ].join("\n")}
+          heroes={heroes}
           products={lineup}
           now={now}
           designOfWeekProductIds={designOfWeekProductIds}

@@ -26,6 +26,7 @@ import type { ProductScheduleSlot } from "./product-schedule-dialog"
 
 export function WeeklyProductSchedule({
   products,
+  heroes,
   now,
   slots,
   entries,
@@ -35,6 +36,7 @@ export function WeeklyProductSchedule({
   onRemove,
 }: {
   products: FeaturedOrderProduct[]
+  heroes?: { liveAt: string; scheduled: boolean; title: string }[] | null
   now: number
   slots: ProductScheduleSlot[]
   entries: ProductScheduleEntry[]
@@ -66,6 +68,8 @@ export function WeeklyProductSchedule({
             now={now}
             slot={slot}
             index={index}
+            hero={heroes?.find((h) => h.liveAt === slot.value)}
+            heroesAvailable={heroes !== null}
             products={products.filter((product) =>
               entries.some((entry) => entry.productId === product.id && entry.liveAt === slot.value)
             )}
@@ -112,6 +116,8 @@ function Week({
   slot,
   index,
   editable = true,
+  hero,
+  heroesAvailable = true,
   products,
   busyIds,
   onAdd,
@@ -122,6 +128,8 @@ function Week({
   now: number
   index: number
   editable?: boolean
+  hero?: { scheduled: boolean; title: string }
+  heroesAvailable?: boolean
   products: FeaturedOrderProduct[]
   busyIds: string[]
   onAdd: () => void
@@ -167,6 +175,26 @@ function Week({
             />
           ))}
         </ul>
+      )}
+      {editable && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded border bg-muted/30 p-3">
+          <div>
+            <p className="text-sm font-semibold">Homepage hero</p>
+            <p className="text-sm text-muted-foreground">
+              {!heroesAvailable
+                ? "Hero storage unavailable"
+                : hero
+                  ? `${hero.scheduled ? "Scheduled" : "Private draft"} · ${hero.title}`
+                  : "No hero yet · store homepage will show"}
+            </p>
+          </div>
+          <Link
+            className="inline-flex min-h-11 items-center underline underline-offset-4"
+            href={`/admin/products/heroes/${encodeURIComponent(slot.value)}`}
+          >
+            {hero ? "Edit hero" : "Add hero"}
+          </Link>
+        </div>
       )}
       {editable && (
         <Button variant="outline" className="min-h-12 justify-start border-dashed" onClick={onAdd}>

@@ -24,6 +24,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
 import type { ProductScheduleEntry, ProductScheduleReceipt } from "@/features/publishing/product-schedule-entry"
+import { isCurrentCadenceWeek } from "@/features/publishing/is-current-cadence-week"
 import { listCadenceSlots } from "@/features/publishing/list-cadence-slots"
 import { resolveProductWeek } from "@/features/publishing/resolve-product-week"
 import { hasRevealArrived } from "@/features/publishing/has-reveal-arrived"
@@ -51,6 +52,7 @@ type FeaturedOrderListProps = {
   products: FeaturedOrderProduct[]
   now: number
   designOfWeekProductIds?: string[]
+  heroes?: { liveAt: string; scheduled: boolean; title: string }[] | null
   schedule?: { entries: ProductScheduleEntry[]; slots: ProductScheduleSlot[] }
 }
 
@@ -75,6 +77,7 @@ export function FeaturedOrderList({
   now: initialNow,
   designOfWeekProductIds = [],
   schedule,
+  heroes,
 }: FeaturedOrderListProps) {
   const router = useRouter()
   const [now, setNow] = useState(initialNow)
@@ -183,7 +186,10 @@ export function FeaturedOrderList({
   // Three lists, one array. Reordering within any of them permutes the single lineup, so a product
   // keeps its slot relative to everything it did not step over -- which is what lets a hidden tee,
   // or one whose drop has ended, come back exactly where it was.
-  const drop = new Set(schedule ? (resolveProductWeek(entries, now)?.productIds ?? []) : designOfWeekProductIds)
+  const currentWeek = resolveProductWeek(entries, now)
+  const currentHero = heroes?.find((hero) => isCurrentCadenceWeek(hero.liveAt, now))
+  const currentHeroWeek = currentWeek?.liveAt ?? currentHero?.liveAt
+  const drop = new Set(schedule ? (currentWeek?.productIds ?? []) : designOfWeekProductIds)
   const designOfWeek = products.filter((product) => drop.has(product.id) && isProductOnTheWall(product, now))
   const available = products.filter((product) => !drop.has(product.id) && isProductOnTheWall(product, now))
   const hidden = products.filter((product) => !isProductOnTheWall(product, now))
@@ -587,11 +593,20 @@ export function FeaturedOrderList({
             products={products}
             slots={slots}
             entries={futureEntries}
+            heroes={heroes}
             busyIds={pending}
             onAdd={(week) => openPicker(undefined, week)}
             onChange={(product) => openPicker(product, undefined, "schedule")}
             onRemove={(product) => void removeSchedule(product)}
           />
+        )}
+        {schedule && currentHeroWeek && (
+          <Link
+            className="inline-flex min-h-11 items-center underline"
+            href={`/admin/products/heroes/${encodeURIComponent(currentHeroWeek)}`}
+          >
+            Manage this week’s homepage hero
+          </Link>
         )}
         <div className="flex min-h-6 flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
           <p>Changes save as soon as you make them.</p>
@@ -631,6 +646,7 @@ export function FeaturedOrderList({
             <p className="text-sm text-muted-foreground">
               This week&rsquo;s products appear first in the shop. They stay for sale when the next week begins.
             </p>
+
             <SortableProductSection
               label="Design of the Week products"
               products={designOfWeek}
