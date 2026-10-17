@@ -26,6 +26,10 @@ For an owner with an idea rather than finished files, start with `store-design-c
 
 The publishing skill includes [Blob image operations](../../store-publishing-recovery/references/product-images.md): new-store binding, immutable mockup uploads, exact approved-artwork derivatives pinned to publication snapshots, frozen-snapshot mockup backfill, partial recovery and direct-image verification. This workflow is implemented; rollout evidence must still be checked for the target environment.
 
+## Portable photography skills
+
+[store-model-casting](../../store-model-casting/SKILL.md) creates and preserves fictional identities; [store-garment-photography](../../store-garment-photography/SKILL.md) directs exposures and fits original artwork to garments with reviewed placement and cloth response. These two packages work outside this repository and contain no shop's models or artwork. See [installation and prerequisites](../../../../docs/portable-photo-skills.md). Together with `store-weekly-hero`, these are the portable packages; the remaining operational skills above retain their repository-specific contracts.
+
 ## Further skills to consider after real use
 
 | Candidate                         | When to extract it                                                                                                                                                                                   |
