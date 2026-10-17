@@ -70,6 +70,10 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Install store skill dependencies
         run: python3 -m pip install --disable-pip-version-check --requirement scripts/skills/requirements.txt
+      - name: Install isolated photo skill dependencies
+        run: |
+          python3 -m venv .tmp/photo-skills-venv
+          .tmp/photo-skills-venv/bin/python -m pip install --disable-pip-version-check --requirement .agents/skills/store-garment-photography/scripts/requirements.txt
       - name: Ensure PostgreSQL client is available
         run: |
           if ! command -v psql >/dev/null 2>&1; then

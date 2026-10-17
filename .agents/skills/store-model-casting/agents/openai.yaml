@@ -1,0 +1,4 @@
+interface:
+  display_name: "Model casting and continuity"
+  short_description: "Create a cast and preserve recurring identities"
+  default_prompt: "Use $store-model-casting to create or continue a cast of fictional apparel models for this brand."
