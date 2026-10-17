@@ -1,0 +1,4 @@
+interface:
+  display_name: "Natural garment photography"
+  short_description: "Natural model photos with faithful printed artwork"
+  default_prompt: "Use $store-garment-photography to make natural studio and lifestyle garment mockups from these identity, garment, and artwork references."
