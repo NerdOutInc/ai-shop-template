@@ -134,7 +134,7 @@ export function MetaCartReview({ items, importKey }: { items: CartItem[]; import
           {shippingReady && (
             <div className="flex justify-between gap-4">
               <dt>US shipping for this selection</dt>
-              <dd>{usd.format(shipping / 100)}</dd>
+              <dd>{shipping === 0 ? "Free" : usd.format(shipping / 100)}</dd>
             </div>
           )}
           {shippingReady && (

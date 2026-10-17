@@ -1,7 +1,7 @@
 "use client"
 
 import { useSearchParams } from "next/navigation"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 
 import type { CatalogProduct } from "./catalog-product"
 
@@ -18,6 +18,11 @@ function replaceSelection(color: string | null, size: string | null) {
 }
 
 export function useProductSelection(product: CatalogProduct) {
+  const [clearedSelection, setClearedSelection] = useState<{
+    productId: string
+    color: string
+    size: string
+  } | null>(null)
   const searchParams = useSearchParams()
   const query = searchParams.toString()
   const requestedColor = searchParams.get("color")
@@ -57,12 +62,21 @@ export function useProductSelection(product: CatalogProduct) {
     )
       ? size
       : null
+    if (nextColor !== color || nextSize !== size) {
+      setClearedSelection(size !== null && nextSize === null ? { productId: product.id, color: nextColor, size } : null)
+    }
     replaceSelection(nextColor, nextSize)
   }
 
   function selectSize(nextSize: string) {
+    setClearedSelection(null)
     replaceSelection(color, nextSize)
   }
 
-  return { color, size, selectColor, selectSize }
+  const unavailableSize =
+    clearedSelection?.productId === product.id && clearedSelection.color === color && size === null
+      ? clearedSelection.size
+      : null
+
+  return { color, size, unavailableSize, selectColor, selectSize }
 }

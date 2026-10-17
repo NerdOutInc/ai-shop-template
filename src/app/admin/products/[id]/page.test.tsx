@@ -19,6 +19,9 @@ vi.mock("@/features/catalog/get-admin-catalog-product.server", () => ({ getAdmin
 vi.mock("@/features/catalog/product-details", () => ({
   ProductDetails: vi.fn(() => <div>Shared product options</div>),
 }))
+vi.mock("./_components/google-merchant-copy-editor", () => ({
+  GoogleMerchantCopyEditor: () => <section aria-label="Google Merchant copy editor" />,
+}))
 const props = { params: Promise.resolve({ id: "hidden-published-product" }) }
 
 beforeEach(() => {
@@ -47,6 +50,7 @@ describe("admin product preview page", () => {
     expect(screen.getByRole("complementary", { name: "Admin preview" })).toHaveTextContent("Only admins")
     expect(screen.getByRole("link", { name: "Back to shop lineup" })).toHaveAttribute("href", "/admin/products")
     expect(ProductDetails).toHaveBeenCalledWith({ product, preview: true }, undefined)
+    expect(screen.getByRole("region", { name: "Google Merchant copy editor" })).toBeVisible()
     expect(container.querySelector('script[type="application/ld+json"]')).not.toBeInTheDocument()
     expect(metadata).toMatchObject({ title: "Product preview", robots: { index: false, follow: false } })
   })

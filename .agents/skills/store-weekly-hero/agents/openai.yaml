@@ -1,0 +1,4 @@
+interface:
+  display_name: "Weekly store heroes"
+  short_description: "Create faithful desktop and mobile release heroes"
+  default_prompt: "Use $store-weekly-hero to prepare paired homepage hero concepts for my next product release."

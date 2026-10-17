@@ -110,6 +110,7 @@ export const storeConfigSchema = z
       published: z.boolean(),
       shippingText: z.array(text),
       returnsText: z.array(text),
+      returnsSummary: z.string().trim().max(240).default(""),
       privacyText: z.array(text),
     }),
   })

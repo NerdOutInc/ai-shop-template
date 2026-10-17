@@ -64,8 +64,8 @@ export class PostgresGarmentStore {
   }
 
   /** Read once per feed or health check; incomplete garments have no usable feed profile. */
-  async listFeedProfiles(): Promise<ReadonlyMap<number, GarmentFeedProfile>> {
-    const { rows } = await this.pool.query<GarmentFeedProfile & { blueprintId: number }>(
+  async listFeedProfiles(client: Pick<Pool, "query"> = this.pool): Promise<ReadonlyMap<number, GarmentFeedProfile>> {
+    const { rows } = await client.query<GarmentFeedProfile & { blueprintId: number }>(
       `select blueprint_id as "blueprintId",google_product_category as "googleProductCategory",
               gender,age_group as "ageGroup",size_system as "sizeSystem"
          from commerce.garment_models where shop_id=$1 and complete`,

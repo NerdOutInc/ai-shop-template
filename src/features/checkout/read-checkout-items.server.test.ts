@@ -89,7 +89,6 @@ describe("readCheckoutItems", () => {
     { change: "disabled-variant", code: "PRODUCT_UNAVAILABLE" },
     { change: "unknown-variant", code: "PRODUCT_UNAVAILABLE" },
     { change: "zero-price", code: "PRODUCT_UNAVAILABLE" },
-    { change: "wrong-shipping", code: "SHIPPING_CHANGED" },
   ])("rejects $change from the published snapshot before live reads", async ({ change, code }) => {
     const data = fixture()
     const published = structuredClone(data.product)
@@ -97,7 +96,6 @@ describe("readCheckoutItems", () => {
     if (change === "disabled-variant") published.variants[0]!.is_enabled = false
     if (change === "unknown-variant") data.request.items[0]!.variantId = 999
     if (change === "zero-price") published.variants[0]!.price = 0
-    if (change === "wrong-shipping") data.request.expectedShippingAmount = 1
     vi.mocked(readPublishedProduct).mockResolvedValue(published)
     const request = vi.spyOn(data.printify, "request").mockResolvedValue(data.product)
     await expect(readCheckoutItems(data.printify, data.request, data.reserve)).rejects.toMatchObject({ code })

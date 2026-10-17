@@ -5,6 +5,7 @@ import { normalizeCatalogProduct } from "@/features/catalog/normalize-catalog-pr
 import type { GarmentFeedProfile } from "@/features/garment-catalog/garment-feed-profile-schema"
 import { parsePrintifyProduct } from "@/lib/printify/parse-printify-product"
 
+import { resolveGoogleMerchantCopy } from "./resolve-google-merchant-copy"
 import { createMerchantFeed } from "./create-merchant-feed"
 import { MerchantFeedError } from "./merchant-feed-error"
 import type { MerchantProduct } from "./merchant-product"
@@ -27,6 +28,8 @@ export function prepareMerchantProduct(
     product: normalizeCatalogProduct(display),
     apparel,
   }
+  const copy = resolveGoogleMerchantCopy(snapshot.google_merchant_copy, merchantProduct.product, production, apparel)
+  merchantProduct.googleCopy = copy.variants
   // Run the actual output constraints before stock reads, including every color's mockup.
   createMerchantFeed([merchantProduct], siteUrl)
   return { display, production, merchantProduct }

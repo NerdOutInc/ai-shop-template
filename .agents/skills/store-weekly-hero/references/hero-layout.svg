@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="850" viewBox="0 0 1200 850" role="img" aria-labelledby="title" aria-describedby="desc">
+<title id="title">Illustrative paired hero coordinate maps</title>
+<desc id="desc">A desktop panorama uses full source coordinates with the central half marked safe. A separate mobile composition has its own product regions. No real products or model photos appear.</desc>
+<rect width="1200" height="850" fill="#f8f6f0"/>
+<g font-family="system-ui, sans-serif" fill="#233731">
+<text x="40" y="44" font-size="24" font-weight="700">Measure the final source, not the visible crop</text>
+<text x="40" y="80" font-size="16">Illustration only: use the actual renderer’s dimensions and crop contract.</text>
+<rect x="40" y="110" width="1120" height="373" fill="#e1e5df" stroke="#233731"/>
+<rect x="320" y="110" width="560" height="373" fill="#fff" stroke="#233731" stroke-dasharray="8 6"/>
+<text x="56" y="140" font-size="17">Scenery</text><text x="900" y="140" font-size="17">Scenery</text>
+<text x="425" y="140" font-size="17" font-weight="700">Safe center: x = 600…1800</text>
+<rect x="348" y="166" width="224" height="280" rx="2" fill="#cbdacf" stroke="#233731"/>
+<rect x="628" y="166" width="224" height="280" rx="2" fill="#d8cdbf" stroke="#233731"/>
+<text x="382" y="286" font-size="18">Product A</text><text x="662" y="286" font-size="18">Product B</text>
+<text x="373" y="314" font-size="14">including label</text><text x="653" y="314" font-size="14">including label</text>
+<text x="40" y="514" font-size="16">Desktop example: 2400 × 800 source; A begins at x=660 → 27.5% of full width</text>
+<rect x="40" y="550" width="144" height="252" fill="#fff" stroke="#233731"/>
+<rect x="47.2" y="600.4" width="61.2" height="162" fill="#cbdacf" stroke="#233731"/>
+<rect x="115.6" y="600.4" width="61.2" height="162" fill="#d8cdbf" stroke="#233731"/>
+<text x="70" y="688" font-size="16">A</text><text x="138" y="688" font-size="16">B</text>
+<text x="215" y="584" font-size="20" font-weight="700">Mobile is a separate composition</text>
+<text x="215" y="622" font-size="17">Example: 800 × 1400 source, its own hierarchy and measured links.</text>
+<text x="215" y="664" font-size="17">1. Calibrate print on the actual garment/color reference.</text>
+<text x="215" y="696" font-size="17">2. Scale the assembled garment uniformly into each scene.</text>
+<text x="215" y="728" font-size="17">3. Measure final product + label regions and inspect the browser.</text>
+<text x="215" y="778" font-size="16">Arithmetic checks do not approve garment placement or visual quality.</text>
+</g></svg>
