@@ -53,5 +53,5 @@ It checks unique IDs, required provenance/review fields, existing nonempty origi
 Run the included focused failure checks with:
 
 ```sh
-python3 /path/to/store-model-casting/scripts/test_validate_cast.py
+python3 /path/to/store-model-casting/scripts/validate-cast.test.py
 ```

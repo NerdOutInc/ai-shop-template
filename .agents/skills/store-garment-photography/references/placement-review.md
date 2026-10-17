@@ -81,9 +81,9 @@ This deliberately generic schematic contains no model or product artwork. On an 
 ```
 
 ```sh
-python3 /path/to/store-garment-photography/scripts/placement-guide.py --job /path/to/job.json --landmarks /path/to/landmarks.json --output /path/to/new-guide.png
+/path/to/photo-env/bin/python /path/to/store-garment-photography/scripts/placement-guide.py --job /path/to/job.json --landmarks /path/to/landmarks.json --output /path/to/new-guide.png
 ```
 
-Numbers above are illustrative, not reusable placement. Cyan marks the traced garment axis, gold the full artwork canvas, pink the collar-to-canvas gap, and white the photograph's center. A 100-pixel grid is not a physical ruler. Transparent margins mean the visible ink may begin below the gold edge. Save a final ink overlay too, and inspect the unmarked image: a convincing rectangle cannot rescue misplaced artwork.
+Use the isolated environment from [job-format.md](job-format.md). Crop coordinates follow the EXIF-oriented photograph. The guide adds a 120-pixel legend above the photo, making a 1200×1620 diagnostic; photo coordinates start at diagnostic pixel (0, 120). This keeps even top-edge collar landmarks visible. Numbers above are illustrative, not reusable placement. Cyan marks the traced garment axis, gold the full unbent artwork canvas, pink the collar-to-canvas gap, and white the photograph's center. A 100-pixel grid is not a physical ruler. Transparent margins mean the visible ink may begin below the gold edge. Save a final ink overlay too, and inspect the unmarked image: a convincing rectangle cannot rescue misplaced artwork.
 
 Establish this geometry before repeated detailed renders. If collar/front-panel landmarks are hidden or disagree, obtain a clearer blank or evidence instead of trying many arbitrary translations. A reviewed proposal can be useful, but do not call it verified production placement.

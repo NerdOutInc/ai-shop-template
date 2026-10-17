@@ -21,7 +21,7 @@ def validate(manifest_path, asset_root=None):
     root = Path(asset_root).resolve() if asset_root is not None else manifest_path.parent
     if not root.is_dir():
         raise ValueError("Asset root must be an existing directory")
-    manifest = json.loads(manifest_path.read_text())
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     if not isinstance(manifest, dict) or manifest.get("schemaVersion") != 1:
         raise ValueError("Expected cast manifest schemaVersion 1")
     models = manifest.get("models")

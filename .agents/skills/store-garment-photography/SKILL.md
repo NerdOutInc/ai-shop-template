@@ -31,7 +31,7 @@ Mark collar and front-panel landmarks on the blank first. Account for the actual
 
 Read [job format and execution](references/job-format.md). The bundled [compositor](scripts/composite.py) accepts caller-supplied blank, original artwork, print geometry, texture patches and optional fold/mask data. Its fixed output is 1200×1500; use the documented final-image coordinate system.
 
-The selected-20 preset preserves sharp source art while varying ink coverage with cloth texture and small sampled gaps, transferring fabric lighting, and applying restrained fold displacement. It does not blur artwork or add a raised edge. The preset is an empirical 2D treatment calibrated from a particular printed fabric sample, not universal DTG physics. Supply appropriate texture patches and inspect the result for the new fabric/material. Clean provider views use a gentler response. An artwork-only slide is the original transparent PNG over its chosen background color, without fabric simulation.
+The sample-calibrated-dtg-v1 preset preserves sharp source art while varying ink coverage with cloth texture and small sampled gaps, transferring fabric lighting, and applying restrained fold displacement. It does not blur artwork or add a raised edge. The preset is an empirical 2D treatment calibrated from a particular printed fabric sample, not universal DTG physics. Supply appropriate texture patches and inspect the result for the new fabric/material. Clean provider views use a gentler response. An artwork-only slide is the original transparent PNG over its chosen background color, without fabric simulation.
 
 ## Review, then select
 

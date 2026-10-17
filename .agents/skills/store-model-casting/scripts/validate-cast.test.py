@@ -49,13 +49,20 @@ class CastValidation(unittest.TestCase):
         }
 
     def write_manifest(self, models=None):
-        self.manifest.write_text(json.dumps({"schemaVersion": 1, "models": models or [self.model]}))
+        self.manifest.write_text(json.dumps({"schemaVersion": 1, "models": models or [self.model]}), encoding="utf-8")
 
     def test_arbitrary_roster_and_explicit_unknown_metadata(self):
         self.write_manifest()
         result = VALIDATOR.validate(self.manifest)
         self.assertEqual(len(result["models"]), 1)
         self.assertEqual(result["models"][0]["dimensionCheck"], "png-header-matches")
+
+    def test_utf8_prompt(self):
+        self.model["originalPrompt"] = "An ordinary afternoon — ‘énergie’ on a sign."
+        self.manifest.write_text(
+            json.dumps({"schemaVersion": 1, "models": [self.model]}, ensure_ascii=False), encoding="utf-8"
+        )
+        self.assertEqual(len(VALIDATOR.validate(self.manifest)["models"]), 1)
 
     def test_missing_anchor(self):
         self.write_manifest()

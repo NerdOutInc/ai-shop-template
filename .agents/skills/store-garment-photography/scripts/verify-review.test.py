@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+import subprocess
+import sys
 
 spec = importlib.util.spec_from_file_location("review_gate", Path(__file__).with_name("verify-review.py"))
 gate = importlib.util.module_from_spec(spec)
@@ -31,7 +33,7 @@ class ReviewGateTests(unittest.TestCase):
             "blank": "blank.png",
             "texturePatches": {"cream": "texture.png", "red": "texture.png"},
         }
-        (self.root / "job.json").write_text(json.dumps(job))
+        (self.root / "job.json").write_text(json.dumps(job), encoding="utf-8")
         receipt = {
             "portableJobSha256": entry("job.json")["sha256"],
             "inputSha256": {
@@ -42,7 +44,7 @@ class ReviewGateTests(unittest.TestCase):
             },
             "outputSha256": {"png": entry("final.png")["sha256"]},
         }
-        (self.root / "receipt.json").write_text(json.dumps(receipt))
+        (self.root / "receipt.json").write_text(json.dumps(receipt), encoding="utf-8")
         self.review = {
             "schemaVersion": 1,
             "status": "approved",
@@ -55,11 +57,35 @@ class ReviewGateTests(unittest.TestCase):
         }
 
     def run_gate(self):
-        self.path.write_text(json.dumps(self.review))
+        self.path.write_text(json.dumps(self.review), encoding="utf-8")
         return gate.verify(self.path, True)
 
     def test_current_record(self):
         self.assertEqual(self.run_gate()["status"], "review-record-current")
+
+    def test_malformed_nested_records_report_errors_without_tracebacks(self):
+        for key, value in (
+            ("checks", []),
+            ("checks", {"centerline": "pass"}),
+            ("renderReceipt", []),
+            ("finalFiles", "photo.png"),
+            ("evidence", [None]),
+        ):
+            with self.subTest(key=key, value=value):
+                original = self.review.copy()
+                self.review[key] = value
+                self.path.write_text(json.dumps(self.review), encoding="utf-8")
+                result = subprocess.run(
+                    [sys.executable, str(Path(gate.__file__)), str(self.path)], capture_output=True, text=True
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertNotIn("Traceback", result.stderr)
+                self.review = original
+
+    def test_utf8_review_text(self):
+        self.review["reviewer"] = "Zoë — independent reviewer"
+        self.path.write_text(json.dumps(self.review, ensure_ascii=False), encoding="utf-8")
+        self.assertEqual(gate.verify(self.path)["reviewer"], self.review["reviewer"])
 
     def test_each_uncertain_check_blocks(self):
         for name in gate.CHECKS:

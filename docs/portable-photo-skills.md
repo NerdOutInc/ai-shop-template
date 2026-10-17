@@ -46,12 +46,22 @@ Then copy either complete skill folder into your agent host's supported skills d
 
 Casting validation uses Python's standard library. The compositor/guide requires its own isolated Python environment with [pinned dependencies](../.agents/skills/store-garment-photography/scripts/requirements.txt); it does not share the repository's lint environment. Image generation/editing still requires a supported host tool and any authorization that tool requires.
 
+For repository development, create the same isolated environment before running `pnpm test:skills`:
+
+```sh
+python3.12 -m venv .tmp/photo-skills-venv
+.tmp/photo-skills-venv/bin/python -m pip install -r .agents/skills/store-garment-photography/scripts/requirements.txt
+pnpm test:skills
+```
+
+The command runs the existing design suite and all casting, review-gate and compositor tests. Both CI workflows provision the photo environment separately from lint/artwork dependencies. `PHOTO_SKILLS_PYTHON` can point to an existing pinned interpreter; missing or mismatched dependencies fail the command instead of silently skipping tests. On Windows, a venv's interpreter is under `Scripts/python.exe`.
+
 ## Validate a standalone installation
 
 From a copied skill directory, read its entrypoint and check that its links resolve. Run:
 
 ```sh
-python3 /installed/store-model-casting/scripts/test_validate_cast.py
+python3 /installed/store-model-casting/scripts/validate-cast.test.py
 python3 /installed/store-garment-photography/scripts/verify-review.test.py
 /path/to/photo-env/bin/python /installed/store-garment-photography/scripts/composite.test.py
 ```

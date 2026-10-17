@@ -4,30 +4,17 @@ Called by composite.py with explicit isolated project inputs. The reference tuni
 was selected from one physical-sample experiment; it is not a universal textile model.
 """
 
-from pathlib import Path
-import json
-import hashlib
 import numpy as np
 from PIL import Image, ImageFilter
 
-ROOT = Path.cwd()
-PARENT = ROOT
-STUDY = ROOT / "sources"
-ART = None
+from imaging import load_image, srgb_profile_bytes
+
 OUT = (1200, 1500)
 
 
-def sha(path):
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def write_json(path, value):
-    path.write_text(json.dumps(value, indent=2) + "\n")
-
-
-def inverse_perspective(quad):
+def inverse_perspective(quad, art):
     rows, targets = [], []
-    for (x, y), (u, v) in zip(quad, [(0, 0), (ART.width, 0), (ART.width, ART.height), (0, ART.height)]):
+    for (x, y), (u, v) in zip(quad, [(0, 0), (art.width, 0), (art.width, art.height), (0, art.height)]):
         rows.extend([[x, y, 1, 0, 0, 0, -u * x, -u * y], [0, 0, 0, x, y, 1, -v * x, -v * y]])
         targets.extend([u, v])
     return np.linalg.solve(np.asarray(rows), np.asarray(targets)).tolist()
@@ -46,8 +33,8 @@ def smooth(field, radius):
 
 
 def blur(field, radius):
-    # Preserve the selected #10 texture calculation; filtering touches cloth
-    # analysis fields only. Original artwork colors/alpha are never blurred.
+    # Quantize cloth-analysis fields to uint8 before smoothing to preserve the
+    # sample-calibrated response. This filter never receives artwork pixels.
     return np.asarray(
         Image.fromarray(np.uint8(np.clip(field, 0, 255))).filter(ImageFilter.GaussianBlur(radius)), dtype=np.float32
     )
@@ -84,15 +71,6 @@ def curve_field(points, width, amplitude, kind, xx, yy, envelope):
     return nx * amount, ny * amount
 
 
-def guide(points, width, amplitude, weight, kind="compress"):
-    return dict(points=points, width=width, amplitude=amplitude, weight=weight, kind=kind)
-
-
-# Centerlines traced separately from each contrast-enhanced blank photograph.
-# These are 2D visual estimates, not measured 3D cloth geometry or strain.
-GUIDES = {}
-
-
 def sample(field, x, y):
     x = np.clip(x, 0, 1199)
     y = np.clip(y, 0, 1499)
@@ -107,8 +85,34 @@ def sample(field, x, y):
     ) * fy
 
 
-def project(quad, surface=None, dx=None, dy=None):
-    inv = inverse_perspective(quad)
+def projection_bounds(art, quad, inverse, surface):
+    if not surface:
+        return np.asarray(quad)
+    # Sampling changes source v by at most this amplitude. Any visible source
+    # pixel must therefore lie inside this expanded rectangle BEFORE the bend.
+    # Forward-project that rectangle; a fixed output-pixel margin clips broad
+    # bends even when their mapping remains monotone.
+    amplitude = abs(surface["verticalFraction"]) * art.height
+    corners = np.array(
+        [
+            [0, -amplitude, 1],
+            [art.width, -amplitude, 1],
+            [art.width, art.height + amplitude, 1],
+            [0, art.height + amplitude, 1],
+        ]
+    )
+    forward = np.linalg.inv(np.array(inverse + [1]).reshape(3, 3))
+    projected = corners @ forward.T
+    denominator = projected[:, 2]
+    if not (np.all(denominator > 1e-9) or np.all(denominator < -1e-9)):
+        # An extended perspective region crosses the horizon: conservatively
+        # cover the full frame instead of truncating to misleading finite bounds.
+        return np.array([[0, 0], OUT])
+    return projected[:, :2] / denominator[:, None]
+
+
+def project(art, quad, surface=None, dx=None, dy=None):
+    inv = inverse_perspective(quad, art)
     a, b, c, d, e, f, g, h = inv
 
     def uv(x, y):
@@ -125,13 +129,13 @@ def project(quad, surface=None, dx=None, dy=None):
         if surface:
             v -= (
                 surface["verticalFraction"]
-                * ART.height
-                * np.sin(np.pi * np.clip(u / ART.width, 0, 1))
-                * np.exp(-(((v / ART.height - surface["centerV"]) / surface["spreadV"]) ** 2))
+                * art.height
+                * np.sin(np.pi * np.clip(u / art.width, 0, 1))
+                * np.exp(-(((v / art.height - surface["centerV"]) / surface["spreadV"]) ** 2))
             )
         return u, v
 
-    q = np.array(quad)
+    q = projection_bounds(art, quad, inv, surface)
     lo = np.floor((q.min(axis=0) - 40) * 2 / 12).astype(int) * 12
     hi = np.ceil((q.max(axis=0) + 40) * 2 / 12).astype(int) * 12
     lo = np.maximum(lo, [0, 0])
@@ -147,13 +151,13 @@ def project(quad, surface=None, dx=None, dy=None):
                     sum((uv(px, py) for px, py in ((x, y), (x, y1), (x1, y1), (x1, y))), ()),
                 )
             )
-    return ART.transform((2400, 3000), Image.Transform.MESH, mesh, Image.Resampling.BICUBIC).resize(
+    return art.transform((2400, 3000), Image.Transform.MESH, mesh, Image.Resampling.BICUBIC).resize(
         OUT, Image.Resampling.LANCZOS
     )
 
 
-def sampled_texture(filename, u, v, slow_noise):
-    patch = np.asarray(Image.open(STUDY / "real-samples" / filename).convert("RGB"), dtype=np.float32).mean(2)
+def sampled_texture(path, u, v, slow_noise):
+    patch = np.asarray(load_image(path), dtype=np.float32).mean(2)
     residual = patch - blur(patch, 5)
     residual = np.clip(residual / max(float(residual.std()), 1), -3, 3)
     small = Image.fromarray(np.uint8(np.clip(128 + residual * 35, 0, 255)))
@@ -168,37 +172,31 @@ def sampled_texture(filename, u, v, slow_noise):
     return (tile[yi, xi] - 128) / 35
 
 
-def render(record):
-    global ART
-    ART = Image.open(ROOT / "sources" / ("approved-" + record["design"] + ".png")).convert("RGBA")
+def render(record, root):
+    art = load_image(root / "sources" / ("approved-" + record["design"] + ".png"), "RGBA")
     name = record["id"]
-    GUIDES[name] = record.get("foldGuides", [])
-    base = (
-        Image.open(PARENT / record["source"])
-        .convert("RGB")
-        .crop(record["sourceCropBox"])
-        .resize(OUT, Image.Resampling.LANCZOS)
-    )
+    guides = record.get("foldGuides", [])
+    base = load_image(root / record["source"]).crop(record["sourceCropBox"]).resize(OUT, Image.Resampling.LANCZOS)
     base_array = np.asarray(base)
     cloth = base_array.astype(np.float32)
     lum = cloth.mean(2)
     quad = record["outputQuadTL_TR_BR_BL"]
     surface = record.get("surfaceBend")
-    path = ROOT / "full" / f"{name}.png"
-    initial = project(quad, surface)
+    path = root / "full" / f"{name}.png"
+    initial = project(art, quad, surface)
     visibility = np.ones((OUT[1], OUT[0]), dtype=np.float32)
     if record.get("visibilityMask"):
-        visibility = np.asarray(Image.open(ROOT / record["visibilityMask"]).convert("L"), dtype=np.float32) / 255
+        visibility = np.asarray(Image.open(root / record["visibilityMask"]).convert("L"), dtype=np.float32) / 255
     mask = (np.asarray(initial)[:, :, 3] > 0.8 * 255) & (visibility > 0.99)
     if not np.any(mask):
         raise ValueError("No opaque artwork is visible on the garment after masking.")
     yy, xx = np.indices(lum.shape, dtype=np.float32)
-    a, b, c, d, e, f, g, h = inverse_perspective(quad)
+    a, b, c, d, e, f, g, h = inverse_perspective(quad, art)
     den = g * xx + h * yy + 1
-    un = (a * xx + b * yy + c) / den / ART.width
-    vn = (d * xx + e * yy + f) / den / ART.height
+    un = (a * xx + b * yy + c) / den / art.width
+    vn = (d * xx + e * yy + f) / den / art.height
     # Match texture density in estimated garment inches across differently framed
-    # photos. This inherits #20's visual estimate, not a measured textile gauge.
+    # photos. Texture density is a visual calibration, not a measured textile gauge.
     inches = record["targetArtworkInches"]
     units = (311 * inches[0] / 8.92, 323 * inches[1] / 9.29)
     u = un * units[0]
@@ -226,14 +224,14 @@ def render(record):
         vv = v + dv
         phase = (uu / 2.1 + 0.11 * np.sin(vv / 6.3)) % 1
         channels += np.exp(-(((phase - 0.5) / 0.095) ** 2)) / 4
-    cream = sampled_texture("cream-ink-b-patch.png", u, v, slow_noise)
-    red = sampled_texture("red-ink-patch.png", u, v, slow_noise)
+    cream = sampled_texture(root / "sources/real-samples/cream-ink-b-patch.png", u, v, slow_noise)
+    red = sampled_texture(root / "sources/real-samples/red-ink-patch.png", u, v, slow_noise)
     gap = np.clip(-cream / 1.4, 0, 1)
     fiber = np.clip(red / 1.6, 0, 1)
     coverage = np.clip(0.975 - 0.20 * dark - 0.33 * gap - 0.16 * fiber - 0.07 * tension * channels, 0.20, 1)
     if clean_view:
         # Flat color exposes the short mirrored sample tile as repeated loops.
-        # Use nonperiodic fine coverage variation here; keep model #20 unchanged.
+        # Use nonperiodic fine coverage variation only for flat provider views.
         clean_rng = np.random.default_rng(720261017)
         grain = smooth(clean_rng.random(lum.shape, dtype=np.float32), max(0.30, 0.40 * tex_scale))
         grain = (grain - float(grain.mean())) / max(float(grain.std()), 1e-6)
@@ -253,7 +251,7 @@ def render(record):
     gy, gx = np.gradient(smooth(lum, 5 * tex_scale))
     dx = 0.25 * np.clip(gx * 3.4, -4, 4) * envelope
     dy = 0.25 * np.clip(gy * 3.4, -4, 4) * envelope
-    for item in GUIDES[name]:
+    for item in guides:
         cx, cy = curve_field(item["points"], item["width"], item["amplitude"], item["kind"], xx, yy, envelope)
         dx += item["weight"] * cx
         dy += item["weight"] * cy
@@ -269,10 +267,8 @@ def render(record):
     minimum_jacobian = float(jacobian.min())
     if not (max_displacement < 12 and minimum_jacobian > 0.20):
         raise ValueError("Fold deformation exceeds the displacement or Jacobian safety bounds")
-    if not (np.all(dx[envelope == 0] == 0) and np.all(dy[envelope == 0] == 0)):
-        raise ValueError("Fold displacement changed the pinned perimeter")
 
-    projected = project(quad, surface, dx, dy)
+    projected = project(art, quad, surface, dx, dy)
     ink = np.asarray(projected, dtype=np.float32)
     valley = np.clip(-fold_signal / 12, 0, 1)
     alpha = ink[:, :, 3] / 255 * np.clip(coverage - 0.012 * valley, 0.20, 1) * visibility
@@ -286,24 +282,26 @@ def render(record):
     colors = grey[:, :, None] + (colors - grey[:, :, None]) * 0.98
     colors *= np.clip(shade * relief * factor, 0.36, 1.10)[:, :, None]
     out = np.uint8(np.clip(cloth * (1 - alpha[:, :, None]) + colors * alpha[:, :, None], 0, 255))
-    out[alpha == 0] = base_array[alpha == 0]
-    if not np.array_equal(out[alpha == 0], base_array[alpha == 0]):
+    outside_ink_changes = int(np.count_nonzero(np.any(out[alpha == 0] != base_array[alpha == 0], axis=1)))
+    if outside_ink_changes:
         raise ValueError("Pixels outside the ink were changed")
     result = Image.fromarray(out)
-    result.save(path)
-    projected.save(ROOT / "sources" / f"{name}-projected-art.png")
-    Image.fromarray(np.uint8(np.clip(alpha * 255, 0, 255))).save(ROOT / "sources" / f"{name}-effective-alpha.png")
-    if record.get("retainSurfaceMap", False):
-        np.savez_compressed(ROOT / "sources" / f"{name}-surface-map.npz", dx=dx, dy=dy)
+    result.save(path, icc_profile=srgb_profile_bytes())
+    projected.save(root / "sources" / f"{name}-projected-art.png", icc_profile=srgb_profile_bytes())
+    Image.fromarray(np.uint8(np.clip(alpha * 255, 0, 255))).save(root / "sources" / f"{name}-effective-alpha.png")
     return result, dict(
-        selected20ByteIdentical=False,
-        clothTreatment=("flat-provider-nonperiodic-v3" if clean_view else "selected-20"),
+        clothTreatment=("flat-provider-nonperiodic-v3" if clean_view else "sample-calibrated-dtg-v1"),
+        algorithmSettings={
+            "artworkSmoothingFilter": "none",
+            "projectionResampling": "bicubic mesh then Lanczos downsample",
+            "workingColorSpace": "sRGB",
+            "orientation": "EXIF transposed before crop",
+        },
         maxLocalDisplacementPx=round(max_displacement, 3),
         minimumMappingJacobian=round(minimum_jacobian, 3),
-        addedArtworkBlurPixels=0,
-        outsideInkPixelsIdentical=True,
-        perimeterDisplacementPixels=0,
-        foldGuides=GUIDES[name],
+        outsideInkChangedPixelCount=outside_ink_changes,
+        projectedInkBoundsXYXY=projected.getchannel("A").getbbox(),
+        foldGuides=guides,
         estimatedTextureCoordinateSpan=list(units),
         texturePixelScale=round(tex_scale, 4),
         meanInkCoverage=round(float(np.clip(coverage - 0.012 * valley, 0.20, 1)[mask].mean()), 4),

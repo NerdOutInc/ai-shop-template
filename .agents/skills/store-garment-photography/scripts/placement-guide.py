@@ -6,17 +6,18 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-from composite import finite_numbers, resolve_file
+from imaging import load_image, srgb_profile_bytes
+from jobdata import finite_numbers, list_value, read_object, resolve_file
 
 
 def create(job_path, landmarks_path, output):
     if output.exists():
         raise ValueError("Choose a new output file")
-    job = json.loads(job_path.read_text())
-    landmarks = json.loads(landmarks_path.read_text())
+    job = read_object(job_path)
+    landmarks = read_object(landmarks_path)
     source = resolve_file(job.get("blank"), job_path, "blank")
     crop = finite_numbers(job.get("sourceCropBox"), 4, "sourceCropBox")
-    with Image.open(source) as blank:
+    with load_image(source) as blank:
         if not (0 <= crop[0] < crop[2] <= blank.width and 0 <= crop[1] < crop[3] <= blank.height):
             raise ValueError("Crop must stay inside the blank")
         if abs(((crop[2] - crop[0]) / (crop[3] - crop[1])) / 0.8 - 1) > 0.005:
@@ -27,7 +28,7 @@ def create(job_path, landmarks_path, output):
         raise ValueError("quad requires TL/TR/BR/BL corners in final output coordinates")
     for point in quad:
         finite_numbers(point, 2, "quad corner")
-    axis = landmarks.get("frontCenterline", [])
+    axis = list_value(landmarks.get("frontCenterline", []), "frontCenterline")
     if len(axis) < 2:
         raise ValueError("Trace at least two frontCenterline points on the blank")
     for point in axis:
@@ -47,7 +48,9 @@ def create(job_path, landmarks_path, output):
         x, y = point
         draw.ellipse((x - 6, y - 6, x + 6, y + 6), fill="#ffc247")
         draw.text((x + 9, y + 9), label, fill="#ffc247", font_size=22)
-    draw.rectangle((0, 0, 1200, 120), fill="#202b30")
+    annotated = Image.new("RGB", (1200, 1620), "#202b30")
+    annotated.paste(canvas, (0, 120))
+    draw = ImageDraw.Draw(annotated)
     draw.text((20, 14), "DIAGNOSTIC ONLY | output coordinates 1200 x 1500", fill="white", font_size=25)
     draw.text(
         (20, 53),
@@ -59,8 +62,8 @@ def create(job_path, landmarks_path, output):
         (20, 85), "White: image center (not garment center) | Grid: 100 px (not inches)", fill="white", font_size=22
     )
     output.parent.mkdir(parents=True, exist_ok=True)
-    canvas.save(output)
-    return {"output": str(output), "status": "diagnostic-only", "originalUnchanged": True}
+    annotated.save(output, icc_profile=srgb_profile_bytes())
+    return {"output": str(output), "status": "diagnostic-only", "photoOriginXY": [0, 120]}
 
 
 if __name__ == "__main__":
