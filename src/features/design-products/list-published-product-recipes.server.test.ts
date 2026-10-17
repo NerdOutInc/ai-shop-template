@@ -264,41 +264,44 @@ describe("listPublishedProductRecipes", () => {
     })
   })
 
-  it("recovers raster placement alongside Printify's required care-label font defaults", async () => {
-    listPublishedProducts.mockResolvedValue([
-      product({
-        print_details: [],
-        print_areas: [
-          {
-            variant_ids: [1001],
-            background: "transparent",
-            font_color: "auto",
-            font_family: "Roboto",
-            placeholders: [
-              {
-                position: "front",
-                decoration_method: "dtg",
-                images: [{ id: "art", x: 0.5, y: 0.1, scale: 0.63, angle: 0 }],
-              },
-              { position: "back", decoration_method: "dtg", images: [] },
-              {
-                position: "neck",
-                decoration_method: "dtf",
-                images: [
-                  { id: "care", name: "text_layer.svg", type: "text/plain", x: 0.5, y: 0.5, scale: 1, angle: 0 },
-                ],
-              },
-            ],
-          },
-        ],
-      }),
-    ])
-    expect((await listPublishedProductRecipes()).models[0]).toMatchObject({
-      placement: { position: "front", x: 0.5, y: 0.1, scale: 0.63, angle: 0 },
-      placementDonorProductId: "tee-a",
-      blocked: [],
-    })
-  })
+  it.each(["auto", "#000", "#000000", "#000000FF"])(
+    "recovers raster placement alongside care-label %s defaults",
+    async (color) => {
+      listPublishedProducts.mockResolvedValue([
+        product({
+          print_details: [],
+          print_areas: [
+            {
+              variant_ids: [1001],
+              background: "transparent",
+              font_color: color,
+              font_family: "Roboto",
+              placeholders: [
+                {
+                  position: "front",
+                  decoration_method: "dtg",
+                  images: [{ id: "art", x: 0.5, y: 0.1, scale: 0.63, angle: 0 }],
+                },
+                { position: "back", decoration_method: "dtg", images: [] },
+                {
+                  position: "neck",
+                  decoration_method: "dtf",
+                  images: [
+                    { id: "care", name: "text_layer.svg", type: "text/plain", x: 0.5, y: 0.5, scale: 1, angle: 0 },
+                  ],
+                },
+              ],
+            },
+          ],
+        }),
+      ])
+      expect((await listPublishedProductRecipes()).models[0]).toMatchObject({
+        placement: { position: "front", x: 0.5, y: 0.1, scale: 0.63, angle: 0 },
+        placementDonorProductId: "tee-a",
+        blocked: [],
+      })
+    }
+  )
 
   it("skips a donor whose variants disagree about placement and selects the next usable product", async () => {
     const conflicting = product({

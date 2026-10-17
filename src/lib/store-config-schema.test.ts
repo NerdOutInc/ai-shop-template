@@ -17,6 +17,20 @@ describe("storeConfigSchema", () => {
     })
   })
 
+  it("defaults omitted returns summaries to hidden and rejects overlong purchase copy", () => {
+    const legacyPolicies = { ...storeConfig.policies }
+    Reflect.deleteProperty(legacyPolicies, "returnsSummary")
+    expect(storeConfigSchema.parse({ ...storeConfig, policies: legacyPolicies }).policies.returnsSummary).toBe("")
+    for (const length of [240, 241]) {
+      expect(
+        storeConfigSchema.safeParse({
+          ...storeConfig,
+          policies: { ...storeConfig.policies, returnsSummary: "x".repeat(length) },
+        }).success
+      ).toBe(length === 240)
+    }
+  })
+
   it.each([
     {
       field: "retained subscriber disclosure",

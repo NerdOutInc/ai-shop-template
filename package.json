@@ -22,7 +22,7 @@
     "test:stories": "vitest run --project storybook",
     "test:architecture": "node --test scripts/architecture/*.test.mjs",
     "test:monitor": "node --test scripts/printify/*.test.mjs",
-    "test:skills": "python3 .agents/skills/store-design-concepts/scripts/inspect-print-assets.test.py",
+    "test:skills": "node scripts/skills/run-tests.mjs",
     "test:artwork": "node --conditions=react-server --import tsx --test scripts/artwork/*.test.mjs",
     "test:e2e": "playwright test",
     "test:e2e:publishing": "PUBLISHING_E2E=true playwright test",

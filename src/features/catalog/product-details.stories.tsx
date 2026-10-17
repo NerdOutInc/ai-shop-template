@@ -181,8 +181,24 @@ export const SelectAndAdd: Story = {
     await expect(canvas.getByRole("button", { name: "Choose a size" })).toBeDisabled()
     await expect(canvas.getByRole("button", { name: "M" })).toBeDisabled()
     await userEvent.click(canvas.getByRole("button", { name: "S" }))
-    await userEvent.click(canvas.getByRole("button", { name: "Heather Grey" }))
+    const grey = canvas.getByRole("button", { name: "Heather Grey" })
+    grey.focus()
+    await userEvent.keyboard("{Enter}")
+    await expect(grey).toHaveFocus()
     await expect(canvas.getByRole("button", { name: "Choose a size" })).toBeDisabled()
+    const notice = canvas.getByRole("group", { name: "Size" }).querySelector('[role="status"]')!
+    await expect(notice).toHaveTextContent("S isn’t available in Heather Grey. Choose another size or color.")
+    await expect(notice).toHaveAttribute("aria-live", "polite")
+    await expect(notice).toHaveAttribute("aria-atomic", "true")
+    await expect(canvas.getByRole("button", { name: "Choose a size" })).toHaveAccessibleDescription(notice.textContent!)
+    await userEvent.keyboard("{Enter}")
+    await expect(notice).not.toBeEmptyDOMElement()
+    await userEvent.click(canvas.getByRole("button", { name: "M" }))
+    await expect(notice).toBeEmptyDOMElement()
+    await userEvent.click(canvas.getByRole("button", { name: "Black" }))
+    await expect(notice).toHaveTextContent("M isn’t available in Black. Choose another size or color.")
+    await userEvent.click(grey)
+    await expect(notice).toBeEmptyDOMElement()
     await userEvent.click(canvas.getByRole("button", { name: "M" }))
     await expect(canvas.getByText("$27.00")).toBeVisible()
     const addButton = canvas.getByRole("button", { name: "Add to cart" })
@@ -204,6 +220,43 @@ export const SelectAndAdd: Story = {
     await expect(selection.get("color")).toBe("Heather Grey")
     await expect(selection.get("size")).toBe("M")
     await expect(window.location.href).toBe(iframeUrl)
+  },
+}
+
+export const ColorChangeAvailability: Story = {
+  args: {
+    product: {
+      ...product,
+      colors: [
+        { name: "CVC Midnight Navy", hex: "#252e3d" },
+        { name: "Heather Forest Green", hex: "#3c5244" },
+      ],
+      variants: product.variants.map((variant) => ({
+        ...variant,
+        color: variant.color === "Black" ? "CVC Midnight Navy" : "Heather Forest Green",
+        size: variant.size === "2XL" ? "5XL" : variant.size,
+        title: `${variant.color === "Black" ? "CVC Midnight Navy" : "Heather Forest Green"} / ${variant.size === "2XL" ? "5XL" : variant.size}`,
+        available: true,
+      })),
+    },
+  },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: /^M$/ }))
+    const green = canvas.getByRole("button", { name: "Heather Forest Green" })
+    green.focus()
+    await userEvent.keyboard("{Enter}")
+    await expect(green).toHaveFocus()
+    await expect(canvas.getByRole("button", { name: /^M$/ })).toHaveAttribute("aria-pressed", "true")
+    await expect(canvas.getByRole("button", { name: "Add to cart" })).toBeEnabled()
+    await userEvent.click(canvas.getByRole("button", { name: "CVC Midnight Navy" }))
+    await userEvent.click(canvas.getByRole("button", { name: "5XL" }))
+    green.focus()
+    await userEvent.keyboard("{Enter}")
+    await expect(green).toHaveFocus()
+    await expect(canvas.getByRole("button", { name: "Choose a size" })).toBeDisabled()
+    await expect(
+      canvas.getByText("5XL isn’t available in Heather Forest Green. Choose another size or color.")
+    ).toBeVisible()
   },
 }
 
@@ -255,6 +308,35 @@ export const SharedColorAndSize: Story = {
     await expect(selection.get("color")).toBe("Black")
     await expect(selection.get("size")).toBe("S")
     await expect(window.location.href).toBe(iframeUrl)
+  },
+}
+
+export const LinkedSoldOutSize: Story = {
+  parameters: { productSelection: { color: "Black", size: "M" } },
+  play: async ({ canvas }) => {
+    const notice = canvas.getByRole("group", { name: "Size: M" }).querySelector('[role="status"]')!
+    const black = canvas.getByRole("button", { name: "Black" })
+    await expect(canvas.getByRole("button", { name: "M" })).toHaveAttribute("aria-pressed", "true")
+    await expect(canvas.getByRole("button", { name: "This option is unavailable" })).toBeDisabled()
+    await expect(notice).toBeEmptyDOMElement()
+    black.focus()
+    await userEvent.keyboard("{Enter}")
+    await expect(black).toHaveFocus()
+    await expect(getComputedStyle(black).outlineStyle).not.toBe("none")
+    await expect(notice).toHaveTextContent("M isn’t available in Black. Choose another size or color.")
+    await expect(notice).toHaveAttribute("aria-live", "polite")
+    await expect(notice).toHaveAttribute("aria-atomic", "true")
+    await expect(canvas.getByRole("button", { name: "Choose a size" })).toHaveAccessibleDescription(notice.textContent!)
+    await userEvent.keyboard("{Enter}{Enter}")
+    await expect(notice).toHaveTextContent("M isn’t available in Black. Choose another size or color.")
+    const selection = new URLSearchParams(canvas.getByTestId("product-selection-url").dataset.search)
+    await expect(selection.get("color")).toBe("Black")
+    await expect(selection.has("size")).toBe(false)
+    await userEvent.click(canvas.getByRole("button", { name: "S" }))
+    await userEvent.click(black)
+    await expect(canvas.getByRole("button", { name: "S" })).toHaveAttribute("aria-pressed", "true")
+    await expect(canvas.getByRole("button", { name: "Add to cart" })).toBeEnabled()
+    await expect(notice).toBeEmptyDOMElement()
   },
 }
 
@@ -570,7 +652,7 @@ export const Unavailable: Story = {
   },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole("button", { name: "Currently unavailable" })).toBeDisabled()
-    await expect(canvas.queryByText(/^\$\d/)).not.toBeInTheDocument()
+    await expect(canvas.queryByText(/^\$\d+\.\d{2}$/)).not.toBeInTheDocument()
   },
 }
 
@@ -580,6 +662,7 @@ export const ShippingConfirmed: Story = {
     storeConfig.configured = true
     storeConfig.policies.published = true
     storeConfig.commerce.shippingConfirmed = true
+    storeConfig.policies.returnsSummary = "Unworn items can be returned within 14 days. Contact support for details."
     storeConfig.commerce.firstItemShippingCents = 435
     storeConfig.commerce.additionalItemShippingCents = 200
     return () => {
@@ -590,7 +673,21 @@ export const ShippingConfirmed: Story = {
     const disclosure = canvas.getByText("Shipping & care", { exact: true })
     await userEvent.click(disclosure)
     await expect(disclosure).toHaveFocus()
-    await expect(canvas.getByText(/\$4\.35 for the first shirt, plus \$2\.00 for each additional shirt/)).toBeVisible()
+    const summary = canvas.getByRole("group", { name: "Shipping summary" })
+    await expect(summary).toHaveTextContent("$4.35 for the first shirt, plus $2.00 for each additional shirt")
+    const returns = canvas.getByRole("group", { name: "Returns summary" })
+    await expect(returns).toHaveTextContent(storeConfig.policies.returnsSummary)
+    const returnsLink = within(returns).getByRole("link", { name: "Returns & order help" })
+    await expect(returnsLink).toHaveAttribute("href", "/returns")
+    const fit = canvas.getByRole("button", { name: "Find your fit" })
+    fit.focus()
+    await userEvent.tab()
+    await expect(returnsLink).toHaveFocus()
+    await expect(getComputedStyle(returnsLink).outlineStyle).not.toBe("none")
+    const policyLink = within(summary).getByRole("link", { name: "Full shipping details" })
+    policyLink.focus()
+    await expect(policyLink).toHaveFocus()
+    await expect(getComputedStyle(policyLink).outlineStyle).not.toBe("none")
     await expect(canvas.getByText(/Arrival dates are estimates/)).toBeVisible()
   },
 }

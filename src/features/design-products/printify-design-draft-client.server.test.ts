@@ -199,41 +199,45 @@ describe("documented Printify product client boundaries", () => {
     await expect(readPrintifyArtworkSource(src, request)).rejects.toThrow("verification")
     expect(request).not.toHaveBeenCalled()
   })
-  it("accepts required care-label metadata but rejects unrequested production controls", () => {
-    const raw = structuredClone(payload) as unknown as Record<string, unknown>
-    const areas = raw.print_areas as {
-      background?: string
-      font_color?: string
-      font_family?: string
-      placeholders: Record<string, unknown>[]
-    }[]
-    areas[0]!.background = "transparent"
-    areas[0]!.font_color = "auto"
-    areas[0]!.font_family = "Roboto"
-    areas[0]!.placeholders.push({
-      position: "neck",
-      decoration_method: "dtf",
-      images: [structuredClone(providerCareImage)],
-    })
-    expect(matchDesignProduct(raw, payload)).toBe(true)
-    for (const fields of [{ font_color: "red" }, { font_family: "custom-font" }]) {
-      const custom = structuredClone(raw)
-      Object.assign((custom.print_areas as Record<string, unknown>[])[0]!, fields)
-      expect(matchDesignProduct(custom, payload)).toBe(false)
+  it.each([undefined, "auto", "#000", "#000000", "#000000FF", "#000000ff"])(
+    "accepts unused %s defaults with or without care metadata, but rejects custom controls",
+    (color) => {
+      const raw = structuredClone(payload) as unknown as Record<string, unknown>
+      const areas = raw.print_areas as {
+        background?: string
+        font_color?: string
+        font_family?: string
+        placeholders: Record<string, unknown>[]
+      }[]
+      areas[0]!.background = "transparent"
+      areas[0]!.font_color = color
+      areas[0]!.font_family = "Roboto"
+      areas[0]!.placeholders.push({
+        position: "neck",
+        decoration_method: "dtf",
+        images: [structuredClone(providerCareImage)],
+      })
+      expect(matchDesignProduct(raw, payload)).toBe(true)
+      for (const fields of [{ font_color: "red" }, { font_color: "#00000000" }, { font_family: "custom-font" }]) {
+        const custom = structuredClone(raw)
+        Object.assign((custom.print_areas as Record<string, unknown>[])[0]!, fields)
+        expect(matchDesignProduct(custom, payload)).toBe(false)
+      }
+      const noCareLabel = structuredClone(raw)
+      ;(noCareLabel.print_areas as { placeholders: { position: string }[] }[])[0]!.placeholders =
+        areas[0]!.placeholders.filter((placeholder) => placeholder.position !== "neck") as { position: string }[]
+      expect(matchDesignProduct(noCareLabel, payload)).toBe(true)
+      expect(matchDesignProduct({ ...raw, print_details: { print_on_side: "mirror" } }, payload)).toBe(false)
+      const embroidery = structuredClone(raw)
+      ;(
+        embroidery.print_areas as { placeholders: Record<string, unknown>[] }[]
+      )[0]!.placeholders[0]!.decoration_method = "embroidery"
+      expect(matchDesignProduct(embroidery, payload)).toBe(false)
+      const filled = structuredClone(raw)
+      ;(filled.print_areas as { background: string }[])[0]!.background = "#ffffff"
+      expect(matchDesignProduct(filled, payload)).toBe(false)
     }
-    const noCareLabel = structuredClone(raw)
-    ;(noCareLabel.print_areas as { placeholders: { position: string }[] }[])[0]!.placeholders =
-      areas[0]!.placeholders.filter((placeholder) => placeholder.position !== "neck") as { position: string }[]
-    expect(matchDesignProduct(noCareLabel, payload)).toBe(false)
-    expect(matchDesignProduct({ ...raw, print_details: { print_on_side: "mirror" } }, payload)).toBe(false)
-    const embroidery = structuredClone(raw)
-    ;(embroidery.print_areas as { placeholders: Record<string, unknown>[] }[])[0]!.placeholders[0]!.decoration_method =
-      "embroidery"
-    expect(matchDesignProduct(embroidery, payload)).toBe(false)
-    const filled = structuredClone(raw)
-    ;(filled.print_areas as { background: string }[])[0]!.background = "#ffffff"
-    expect(matchDesignProduct(filled, payload)).toBe(false)
-  })
+  )
   it.each([
     ["font_family", "custom-font"],
     ["font_color", "red"],

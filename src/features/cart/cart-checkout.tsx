@@ -173,7 +173,7 @@ export function CartCheckout() {
             </div>
             <div className="flex justify-between gap-4">
               <dt>US shipping</dt>
-              <dd>{usd.format(shipping / 100)}</dd>
+              <dd>{shipping === 0 ? "Free" : usd.format(shipping / 100)}</dd>
             </div>
             <div className="flex justify-between gap-4 border-t border-foreground/15 pt-4 text-lg font-bold">
               <dt>Total before tax</dt>

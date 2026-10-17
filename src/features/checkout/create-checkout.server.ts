@@ -91,9 +91,9 @@ export async function createCheckout(services: Services, request: Request) {
     }
     if (order) {
       const savedOrder = order
+      // Shipping is part of the saved Stripe payload; a policy change must not rewrite an idempotent retry.
       const refreshed = await quoteRequest(services, request)
       if (
-        refreshed.shipping !== order.shippingAmount ||
         refreshed.items.length !== savedOrder.items.length ||
         refreshed.items.some((item, index) => {
           const saved = savedOrder.items[index]

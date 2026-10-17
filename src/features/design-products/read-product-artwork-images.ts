@@ -52,17 +52,33 @@ export function readProductArtworkImages(raw: unknown) {
   const nondefaultDetails =
     details !== undefined && details !== null && JSON.stringify(details) !== "{}" && JSON.stringify(details) !== "[]"
   const areaControls = areas.some((area) => {
-    // Printify adds these area-level font defaults for its required neck care label, even when
-    // the merchant's only artwork is a PNG. Custom fonts and colors still need explicit support.
-    const providerCareFonts =
-      area.font_color === "auto" &&
+    // Unused editor defaults also appear alongside the provider's required care label.
+    // Actual text layers and their controls remain unsupported below.
+    const unusedRasterFonts =
       area.font_family === "Roboto" &&
-      area.placeholders.some((placeholder) =>
-        placeholder.images.some((entry) => isProviderCareLabel(placeholder, entry))
+      (area.font_color === undefined ||
+        area.font_color === null ||
+        area.font_color === "" ||
+        area.font_color === "auto" ||
+        (typeof area.font_color === "string" && /^#(?:000|000000|000000ff)$/i.test(area.font_color))) &&
+      area.placeholders.every((placeholder) =>
+        placeholder.images.every(
+          (entry) =>
+            isProviderCareLabel(placeholder, entry) ||
+            ((!entry.type || entry.type === "image/png") &&
+              (!entry.layerType || entry.layerType === "image") &&
+              !entry.input_text &&
+              !entry.font_family &&
+              !entry.font_size &&
+              !entry.font_weight &&
+              !entry.font_color &&
+              !entry.font_style &&
+              !entry.text_align)
+        )
       )
     return (
       !empty.safeParse(area.background).success ||
-      (!providerCareFonts && ![area.font_color, area.font_family].every((value) => empty.safeParse(value).success))
+      (!unusedRasterFonts && ![area.font_color, area.font_family].every((value) => empty.safeParse(value).success))
     )
   })
   return {
