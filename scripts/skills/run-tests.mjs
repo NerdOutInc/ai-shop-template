@@ -21,3 +21,4 @@ run("python3", [".agents/skills/store-design-concepts/scripts/inspect-print-asse
 run("python3", [".agents/skills/store-model-casting/scripts/validate-cast.test.py"])
 run("python3", [".agents/skills/store-garment-photography/scripts/verify-review.test.py"])
 run(photoPython, [".agents/skills/store-garment-photography/scripts/composite.test.py"])
+run("python3", [".agents/skills/store-weekly-hero/scripts/measure-click-areas.test.py"])
