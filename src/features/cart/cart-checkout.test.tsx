@@ -55,6 +55,18 @@ const context: CartContextValue = {
 }
 
 describe("cart shipping and checkout", () => {
+  it("presents confirmed zero-rate shipping as free without adding a charge to the total", () => {
+    storeConfig.commerce.firstItemShippingCents = 0
+    storeConfig.commerce.additionalItemShippingCents = 0
+    render(
+      <CartContext value={context}>
+        <CartCheckout />
+      </CartContext>
+    )
+    expect(screen.getByText("Free", { selector: "dd" })).toBeVisible()
+    expect(screen.getAllByText("$28.00", { selector: "dd" })).toHaveLength(2)
+  })
+
   beforeEach(() => {
     trackStoreEvent.mockReset().mockReturnValue(true)
     getOrderAttribution.mockReset()

@@ -62,11 +62,11 @@ function previewArtwork(source: Record<string, unknown>) {
             })
         )
     )
-    // Some garment responses carry unused font defaults even without Printify's care-label layer.
+    // Raster-only responses can retain Roboto/black defaults from the editor without a text layer.
     if (
       onlyRaster &&
       area.font_family === "Roboto" &&
-      [undefined, null, "", "auto"].some((value) => value === area.font_color)
+      [undefined, null, "", "auto", "#000"].some((value) => value === area.font_color)
     ) {
       delete area.font_family
       delete area.font_color

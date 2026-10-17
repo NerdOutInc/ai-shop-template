@@ -20,6 +20,26 @@ beforeEach(() => {
 })
 
 describe("createCheckout", () => {
+  it.each([
+    [495, 0],
+    [0, 795],
+  ])("retains saved shipping %s after a lost Stripe response and a new %s policy", async (originalRate, nextRate) => {
+    const fixture = hostedFixture()
+    storeConfig.commerce.firstItemShippingCents = originalRate
+    fixture.request.expectedShippingAmount = originalRate
+    vi.mocked(fixture.stripe.checkout.sessions.create).mockRejectedValueOnce(new Error("response lost"))
+    await expect(createCheckout(fixture.services, fixture.request)).rejects.toThrow("response lost")
+    const savedOrder = structuredClone(fixture.getStored()?.order)
+    storeConfig.commerce.firstItemShippingCents = nextRate
+    await createCheckout(fixture.services, fixture.request)
+    const calls = vi.mocked(fixture.stripe.checkout.sessions.create).mock.calls
+    expect(calls).toHaveLength(2)
+    expect(calls[1]).toEqual(calls[0])
+    expect(calls[1]![0]?.shipping_options?.[0]?.shipping_rate_data?.fixed_amount?.amount).toBe(originalRate)
+    expect(fixture.getStored()?.order).toEqual(savedOrder)
+    expect(readCheckoutItems).toHaveBeenCalledTimes(2)
+  })
+
   it.each(["configured", "policies", "shipping"])("blocks the %s gate before checkout side effects", async (gate) => {
     const fixture = hostedFixture()
     if (gate === "configured") storeConfig.configured = false

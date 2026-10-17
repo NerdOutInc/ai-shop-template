@@ -48,6 +48,14 @@ beforeEach(() => {
 })
 
 describe("Meta cart review", () => {
+  it("shows free shipping for a confirmed zero-rate multi-item selection", () => {
+    storeConfig.commerce.firstItemShippingCents = 0
+    storeConfig.commerce.additionalItemShippingCents = 0
+    review()
+    expect(screen.getByText("Free", { selector: "dd" })).toBeVisible()
+    expect(screen.getAllByText("$56.00", { selector: "dd" })).toHaveLength(2)
+  })
+
   it("requires an explicit action, preserves existing items and shows the current combined checkout total", async () => {
     window.localStorage.setItem(
       storageKey,

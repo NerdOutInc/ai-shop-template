@@ -50,12 +50,16 @@ export function getShippingPolicySummary() {
   return {
     available,
     firstShirtAmount,
+    free: firstShirtAmount === 0 && additionalShirtAmount === 0,
     destination,
     productionTime,
     deliveryRegions,
     delivery: deliveryRegions.length
       ? `Estimated delivery, including printing: ${deliveryRegions.map(({ deliveryTime, destination }) => `${deliveryTime} ${destination}`).join("; ")}.`
       : "Shipping is currently unavailable.",
-    rate: `${usd.format(firstShirtAmount / 100)} for the first shirt, plus ${usd.format(additionalShirtAmount / 100)} for each additional shirt`,
+    rate:
+      firstShirtAmount === 0 && additionalShirtAmount === 0
+        ? "free"
+        : `${usd.format(firstShirtAmount / 100)} for the first shirt, plus ${usd.format(additionalShirtAmount / 100)} for each additional shirt`,
   }
 }

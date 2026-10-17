@@ -9,6 +9,17 @@ import { getShippingPolicySummary } from "./get-shipping-policy-summary"
 const originalRegions = [...usShippingRegions]
 
 describe("getShippingPolicySummary", () => {
+  it.each([
+    [0, 0, "free"],
+    [0, 200, "$0.00 for the first shirt, plus $2.00 for each additional shirt"],
+  ])("describes zero rates without claiming paid additional items are free", (first, additional, rate) => {
+    vi.spyOn(shipping, "calculateCartShipping").mockImplementation(
+      ([item]) => first + ((item?.quantity ?? 1) - 1) * additional
+    )
+    expect(getShippingPolicySummary().rate).toBe(rate)
+    expect(getShippingPolicySummary().free).toBe(first === 0 && additional === 0)
+  })
+
   afterEach(() => {
     usShippingRegions.splice(0, usShippingRegions.length, ...originalRegions)
   })

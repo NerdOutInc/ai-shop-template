@@ -202,6 +202,56 @@ beforeEach(() => {
 })
 
 describe("ProductDetails", () => {
+  it("carries an available size through repeated color changes without an unavailable-size message", async () => {
+    const user = userEvent.setup()
+    render(
+      <ProductDetails
+        product={{
+          ...product,
+          variants: [...product.variants, { ...product.variants[2]!, id: 5, available: true }],
+        }}
+      />
+    )
+    await user.click(screen.getByRole("button", { name: "M" }))
+    for (const color of ["Heather Grey", "Black", "Heather Grey"]) {
+      await user.click(screen.getByRole("button", { name: color }))
+      expect(screen.getByRole("button", { name: "M" })).toHaveAttribute("aria-pressed", "true")
+      expect(screen.getByRole("button", { name: "Add to cart" })).toBeEnabled()
+      expect(screen.getByRole("group", { name: "Size: M" }).querySelector('[role="status"]')).toBeEmptyDOMElement()
+      expect(new URLSearchParams(window.location.search).get("size")).toBe("M")
+    }
+    await user.click(screen.getByRole("button", { name: "Add to cart" }))
+    expect(addItem).toHaveBeenCalledWith(expect.objectContaining({ variantId: 3, variantTitle: "Heather Grey / M" }))
+  })
+
+  it("explains a linked sold-out size cleared by reselecting the active color and preserves feedback until recovery", async () => {
+    const user = userEvent.setup()
+    window.history.replaceState(null, "", "?color=Black&size=M")
+    render(<ProductDetails product={product} />)
+    const notice = screen.getByRole("group", { name: "Size: M" }).querySelector('[role="status"]')!
+    const black = screen.getByRole("button", { name: "Black" })
+    expect(notice).toBeEmptyDOMElement()
+    expect(screen.getByRole("button", { name: "This option is unavailable" })).toBeDisabled()
+    black.focus()
+    await user.keyboard("{Enter}")
+    expect(new URLSearchParams(window.location.search).has("size")).toBe(false)
+    expect(notice).toHaveTextContent("M isn’t available in Black. Choose another size or color.")
+    expect(notice).toHaveAttribute("aria-live", "polite")
+    expect(notice).toHaveAttribute("aria-atomic", "true")
+    expect(screen.getByRole("group", { name: "Size" })).toHaveAccessibleDescription(notice.textContent!)
+    expect(screen.getByRole("button", { name: "Choose a size" })).toHaveAccessibleDescription(notice.textContent!)
+    expect(black).toHaveFocus()
+    await user.keyboard("{Enter}{Enter}")
+    expect(notice).toHaveTextContent("M isn’t available in Black. Choose another size or color.")
+    expect(screen.getByRole("button", { name: "Choose a size" })).toBeDisabled()
+    await user.click(screen.getByRole("button", { name: "S" }))
+    expect(notice).toBeEmptyDOMElement()
+    await user.click(black)
+    expect(screen.getByRole("button", { name: "S" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "Add to cart" })).toBeEnabled()
+    expect(notice).toBeEmptyDOMElement()
+  })
+
   it.each([
     {
       manufacturer: "Next Level",
@@ -927,7 +977,9 @@ describe("ProductDetails", () => {
     render(<ProductDetails product={product} />)
     await user.click(screen.getByRole("button", { name: "S" }))
     await user.click(screen.getByRole("button", { name: "Add to cart" }))
-    expect(screen.getByRole("status")).toHaveTextContent("Your cart is full for this item.")
+    expect(screen.getByRole("link", { name: "View cart" }).closest('[role="status"]')).toHaveTextContent(
+      "Your cart is full for this item."
+    )
     expect(screen.getByRole("link", { name: "View cart" })).toHaveAttribute("href", "/cart")
     expect(screen.queryByRole("dialog", { name: "Added to cart" })).not.toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Add to cart" })).toBeEnabled()
@@ -943,7 +995,9 @@ describe("ProductDetails", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument())
     addItem.mockReturnValue(false)
     await user.click(screen.getByRole("button", { name: "Add to cart" }))
-    expect(screen.getByRole("status")).toHaveTextContent("Your cart is full for this item.")
+    expect(screen.getByRole("link", { name: "View cart" }).closest('[role="status"]')).toHaveTextContent(
+      "Your cart is full for this item."
+    )
     expect(screen.queryByRole("dialog", { name: "Added to cart" })).not.toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Add to cart" })).toBeEnabled()
     expect(trackStoreEvent.mock.calls).toEqual([
@@ -980,7 +1034,7 @@ describe("ProductDetails", () => {
   )
 
   it("does not offer purchase or a price when every variant is unavailable", () => {
-    render(
+    const { container } = render(
       <ProductDetails
         product={{
           ...product,
@@ -991,7 +1045,7 @@ describe("ProductDetails", () => {
       />
     )
     expect(screen.getByRole("button", { name: "Currently unavailable" })).toBeDisabled()
-    expect(screen.queryByText(/^\$\d/)).not.toBeInTheDocument()
+    expect(container.querySelector(".product-price")).not.toBeInTheDocument()
     expect(addItem).not.toHaveBeenCalled()
   })
 })
@@ -1006,4 +1060,26 @@ it("does not advertise placeholder shipping for a configured, published store be
   expect(screen.getByText(/Shipping rates and delivery estimates are being confirmed/)).toBeInTheDocument()
   expect(screen.queryByText(/\$0\.00 for the first shirt/)).not.toBeInTheDocument()
   expect(screen.queryByText(/Estimated delivery, including printing/)).not.toBeInTheDocument()
+})
+
+it("shows only the published owner returns policy beside the purchase controls", () => {
+  storeConfig.policies.returnsText = [
+    "Unworn items can be returned within 14 days.",
+    "Contact support for instructions.",
+  ]
+  render(<ProductDetails product={product} />)
+  const notice = screen.getByRole("complementary", { name: "Returns summary" })
+  expect(notice).toHaveTextContent(storeConfig.policies.returnsText[0]!)
+  expect(within(notice).getByRole("link", { name: "Returns & order help" })).toHaveAttribute("href", "/returns")
+  expect(notice).not.toHaveTextContent("No returns or exchanges")
+})
+
+it.each(["configured", "policies", "shipping"])("hides the shipping summary without %s approval", (gate) => {
+  if (gate === "configured") storeConfig.configured = false
+  if (gate === "policies") storeConfig.policies.published = false
+  if (gate === "shipping") storeConfig.commerce.shippingConfirmed = false
+  render(<ProductDetails product={product} />)
+  expect(screen.queryByRole("complementary", { name: "Shipping summary" })).not.toBeInTheDocument()
+  if (gate !== "shipping")
+    expect(screen.queryByRole("complementary", { name: "Returns summary" })).not.toBeInTheDocument()
 })

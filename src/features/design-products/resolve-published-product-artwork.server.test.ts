@@ -230,6 +230,13 @@ describe("published artwork exact library recovery", () => {
     expect(await resolvePublishedProductArtwork(fixture.input(), fixture.options)).not.toBeNull()
   })
 
+  it("accepts unused Roboto/black defaults on PNG artwork", async () => {
+    const fixture = await setup()
+    fixture.areas[0]!.font_family = "Roboto"
+    fixture.areas[0]!.font_color = "#000"
+    expect(await resolvePublishedProductArtwork(fixture.input(), fixture.options)).not.toBeNull()
+  })
+
   it.each(["layer", "back", "custom-font", "custom-text", "unsupported-print", "different-upload"])(
     "does not flatten or reinterpret %s artwork",
     async (shape) => {
@@ -241,6 +248,7 @@ describe("published artwork exact library recovery", () => {
       if (shape === "custom-font") area.font_family = "Custom font"
       if (shape === "custom-text") {
         area.font_family = "Roboto"
+        area.font_color = "#000"
         fixture.image.input_text = "Custom neck label"
       }
       if (shape === "unsupported-print") area.placeholders[0]!.decoration_method = "embroidery"
@@ -374,8 +382,17 @@ describe("published artwork exact library recovery", () => {
     ])
   })
 
-  it("reuses another product's verified pin for the same upload with the new garment fingerprint", async () => {
+  it.each([false, true])("reuses a verified pin across garments with black defaults: %s", async (defaults) => {
     const fixture = await savedPublication()
+    if (defaults) {
+      const areas = (fixture.snapshot as Record<string, unknown>).print_areas as typeof fixture.areas
+      areas[0]!.font_family = "Roboto"
+      areas[0]!.font_color = "#000"
+      fixture.snapshot.storefront_artwork.productionFingerprint = productArtworkFingerprint(fixture.snapshot, {
+        shopId: "123",
+        productId: "published-shirt",
+      })!
+    }
     const source = { ...structuredClone(fixture.source), id: "new-crop", blueprint_id: 1312 }
     const input = {
       ...fixture.input(),
