@@ -184,3 +184,7 @@ For the separate integration check, use a designated test product and verify all
 Printify's prose documents create, update, and delete actions, while its OpenAPI schema currently omits update from the action enum. The adapter follows the prose and accepts all three. Verify real create, selective-update, and unpublish deliveries before production registration is considered complete.
 
 References: [Printify API, webhook security, and publishing lifecycle](https://developers.printify.com/), [Printify OpenAPI specification](https://developers.printify.com/openapi.json), [Next.js after](https://nextjs.org/docs/app/api-reference/functions/after).
+
+## Reviewed Google copy maintenance
+
+For optional Google-only descriptions on saved publications, use the [guarded Google copy workflow](google-merchant-copy.md). Its script defaults to a read-only bounded audit. Apply and clear require a separately authorized product/shop, expected revision and approved input; ordinary publishing retains the optional record and drift safely restores legacy feed behavior.

@@ -68,6 +68,55 @@ function value(item: Element, name: string) {
 }
 
 describe("createMerchantFeed", () => {
+  it.each(["generated", "human"] as const)(
+    "emits only the %s Google description, exact endings and optional verified facts",
+    (origin) => {
+      const product = fixture()
+      const meta = createMerchantFeed([product], siteUrl, "meta")
+      product.googleCopy = new Map([
+        [
+          1,
+          {
+            origin,
+            content: "Circle & line. Color: Black. Size: S.",
+            pattern: "Circle <line>",
+            material: "Cotton/Polyester",
+          },
+        ],
+      ])
+      const rows = items(createMerchantFeed([product], siteUrl))
+      const row = rows[0]!
+      expect(value(row, origin === "generated" ? "content" : "description")).toBe(
+        "Circle & line. Color: Black. Size: S."
+      )
+      expect(values(row, origin === "generated" ? "description" : "structured_description")).toHaveLength(0)
+      if (origin === "generated") {
+        const structured = row.getElementsByTagNameNS(namespace, "structured_description")[0]!
+        expect(value(structured, "digital_source_type")).toBe("trained_algorithmic_media")
+        expect(value(structured, "content")).toContain("Circle & line.")
+      }
+      expect(value(row, "pattern")).toBe("Circle <line>")
+      expect(value(row, "material")).toBe("Cotton/Polyester")
+      expect(value(rows[1]!, "description")).toBe(product.product.description)
+      expect(values(rows[1]!, "pattern")).toHaveLength(0)
+      expect(values(rows[1]!, "material")).toHaveLength(0)
+      expect(createMerchantFeed([product], siteUrl, "meta")).toBe(meta)
+    }
+  )
+
+  it.each(["generated", "human"] as const)(
+    "counts Unicode points for the %s 5000-character boundary without truncation",
+    (origin) => {
+      const product = fixture()
+      product.googleCopy = new Map([[1, { origin, content: "😀".repeat(5000) }]])
+      expect(
+        value(items(createMerchantFeed([product], siteUrl))[0]!, origin === "generated" ? "content" : "description")
+      ).toBe("😀".repeat(5000))
+      product.googleCopy = new Map([[1, { origin, content: "😀".repeat(5001) }]])
+      expect(() => createMerchantFeed([product], siteUrl)).toThrow()
+    }
+  )
+
   it.each(["google", "meta"] as const)("serializes configured apparel fields in the %s feed", (destination) => {
     const product = fixture()
     product.apparel = { googleProductCategory: 1604, gender: "female", ageGroup: "kids", sizeSystem: "EU" }

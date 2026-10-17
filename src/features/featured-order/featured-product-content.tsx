@@ -47,6 +47,14 @@ export function FeaturedProductContent({
             productTitle={product.title}
           />
         )}
+        {interactive && !hidden && (
+          <Link
+            href={`/admin/products/${encodeURIComponent(product.id)}#google-copy`}
+            className="inline-flex min-h-11 w-fit items-center text-sm underline underline-offset-4"
+          >
+            Google copy<span className="sr-only">: {product.title}</span>
+          </Link>
+        )}
         {interactive && (
           <Link
             href={`${hidden ? "/admin/products" : "/shop"}/${encodeURIComponent(product.id)}`}

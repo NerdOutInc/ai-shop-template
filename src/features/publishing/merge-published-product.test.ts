@@ -10,6 +10,24 @@ import { publishingSourceFingerprint } from "./publishing-source-fingerprint"
 vi.mock("server-only", () => ({}))
 
 describe("published revisions", () => {
+  it("retains app-owned Google copy across partial publication and excludes provider-supplied overrides", () => {
+    const { event, product } = publishingFixture()
+    const copy = { version: 1, content: "Approved", origin: "generated" }
+    const previous = { ...mergePublishedProduct(event, product, null), google_merchant_copy: copy }
+    for (const publishDetails of [{ title: true }, { description: true }, { images: true }, { variants: true }]) {
+      expect(
+        mergePublishedProduct(
+          { ...event, publishDetails },
+          { ...product, google_merchant_copy: { content: "Draft override" } },
+          previous
+        ).google_merchant_copy
+      ).toEqual(copy)
+    }
+    expect(
+      mergePublishedProduct(event, { ...product, google_merchant_copy: copy }, null).google_merchant_copy
+    ).toBeUndefined()
+  })
+
   it("pins artwork through metadata publication but clears it before publishing another production design", () => {
     const { event, product } = publishingFixture()
     const artwork = {
@@ -128,7 +146,11 @@ describe("published revisions", () => {
 
   it("hides and restores only visibility, even when the saved design draft is unpublishable", () => {
     const { event, product } = publishingFixture()
-    const before = { ...mergePublishedProduct(event, product, null), storefront_artwork_enabled: true }
+    const before = {
+      ...mergePublishedProduct(event, product, null),
+      storefront_artwork_enabled: true,
+      google_merchant_copy: { origin: "generated", content: "Approved" },
+    }
     const visibilityEvent: PublishingEvent = {
       ...event,
       action: "update",

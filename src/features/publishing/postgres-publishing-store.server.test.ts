@@ -1,4 +1,14 @@
 // @vitest-environment node
+import { execFile } from "node:child_process"
+import { promisify } from "node:util"
+import { mkdtemp, writeFile, rm } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
+import { normalizeCatalogProduct } from "@/features/catalog/normalize-catalog-product"
+import { googleCopySharedFactsHash } from "@/features/merchant-feed/google-copy-shared-facts-hash"
+import { createMerchantFeed } from "@/features/merchant-feed/create-merchant-feed"
+import { prepareMerchantProduct } from "@/features/merchant-feed/prepare-merchant-product.server"
+import { parsePrintifyProduct } from "@/lib/printify/parse-printify-product"
 import { randomUUID } from "node:crypto"
 
 import type { Pool } from "pg"
@@ -386,6 +396,364 @@ describe.skipIf(!databaseUrl)("durable Printify publishing", () => {
       { revision: "1", event_id: event.id, snapshot },
       { revision: "2", event_id: null, snapshot: { ...snapshot, images } },
     ])
+  })
+
+  it("writes and clears only reviewed Google copy with revision history, retaining all unrelated state and legacy output", async () => {
+    const { event, product } = publishingFixture()
+    const snapshot = { ...product, visible: true, custom: { keep: true } }
+    await first.enqueue(event)
+    await first.withProductLock(event.productId, async (record) => {
+      await record.activate(event, snapshot, "source")
+      await record.finish(event.id, "complete")
+    })
+    const profiles = await first.garments.listFeedProfiles()
+    const baseline = createMerchantFeed(
+      [prepareMerchantProduct(snapshot, "123", new URL("https://example.com"), profiles).merchantProduct],
+      new URL("https://example.com")
+    )
+    const copy = googleCopyFor(snapshot)
+    const before = (await pool.query("select * from commerce.printify_products where product_id=$1", [event.productId]))
+      .rows[0]
+    expect(await second.updateGoogleMerchantCopy(event.productId, "1", copy)).toEqual({ newRevision: "2" })
+    expect(await second.updateGoogleMerchantCopy(event.productId, "1", null)).toBeNull()
+    const after = (await pool.query("select * from commerce.printify_products where product_id=$1", [event.productId]))
+      .rows[0]
+    expect(after).toEqual({
+      ...before,
+      revision: "2",
+      snapshot: { ...snapshot, google_merchant_copy: copy },
+      updated_at: expect.any(Date),
+    })
+    await expect(second.updateGoogleMerchantCopy(event.productId, "2", { ...copy, origin: "human" })).rejects.toThrow(
+      "GOOGLE_COPY_ORIGIN_DOWNGRADE"
+    )
+    await expect(
+      second.updateGoogleMerchantCopy(event.productId, "2", { ...copy, content: "x".repeat(5000) })
+    ).rejects.toThrow("GOOGLE_COPY_INVALID_APPROVAL")
+    expect(await second.updateGoogleMerchantCopy(event.productId, "2", null)).toEqual({ newRevision: "3" })
+    await expect(second.updateGoogleMerchantCopy(event.productId, "3", { ...copy, origin: "human" })).rejects.toThrow(
+      "GOOGLE_COPY_ORIGIN_DOWNGRADE"
+    )
+    const restored = (
+      await pool.query("select snapshot from commerce.printify_products where product_id=$1", [event.productId])
+    ).rows[0].snapshot
+    expect(restored).toEqual(snapshot)
+    expect(
+      createMerchantFeed(
+        [prepareMerchantProduct(restored!, "123", new URL("https://example.com"), profiles).merchantProduct],
+        new URL("https://example.com")
+      )
+    ).toBe(baseline)
+    expect(
+      (
+        await pool.query(
+          "select revision,event_id,snapshot from commerce.printify_product_revisions where product_id=$1 order by revision",
+          [event.productId]
+        )
+      ).rows
+    ).toEqual([
+      { revision: "1", event_id: event.id, snapshot },
+      { revision: "2", event_id: null, snapshot: { ...snapshot, google_merchant_copy: copy } },
+      { revision: "3", event_id: null, snapshot },
+    ])
+    expect(
+      (await pool.query("select state from commerce.printify_publish_jobs where event_id=$1", [event.id])).rows[0].state
+    ).toBe("complete")
+  })
+
+  it("allows the restricted template runtime to write Google copy while browser roles cannot read its tables", async () => {
+    const { event, product } = publishingFixture()
+    await first.enqueue(event)
+    await first.withProductLock(event.productId, async (record) => {
+      await record.activate(event, product, "source")
+      await record.finish(event.id, "complete")
+    })
+    const runtimeUrl = new URL(databaseUrl!)
+    runtimeUrl.searchParams.set("options", "-c role=store_app_runtime")
+    const runtimeStore = new PostgresPublishingStore(runtimeUrl.href, event.shopId)
+    try {
+      for (const role of ["anon", "authenticated"]) {
+        for (const table of [
+          "printify_products",
+          "printify_product_revisions",
+          "printify_publish_jobs",
+          "garment_models",
+        ]) {
+          expect(
+            (
+              await pool.query("select has_table_privilege($1,$2,'select,insert,update,delete') as allowed", [
+                role,
+                `commerce.${table}`,
+              ])
+            ).rows[0].allowed
+          ).toBe(false)
+        }
+      }
+      expect(await runtimeStore.updateGoogleMerchantCopy(event.productId, "1", googleCopyFor(product))).toEqual({
+        newRevision: "2",
+      })
+      expect(await runtimeStore.updateGoogleMerchantCopy(event.productId, "2", null)).toEqual({ newRevision: "3" })
+    } finally {
+      await runtimeStore.close()
+    }
+  })
+
+  it("continues an audit past invalid snapshots and clears invalid snapshots without parsing them", async () => {
+    const { event, product } = publishingFixture()
+    const snapshot = { ...product, title: null, google_merchant_copy: { origin: "generated", content: "PRIVATE COPY" } }
+    await first.enqueue(event)
+    await first.withProductLock(event.productId, async (record) => {
+      await record.activate(event, snapshot, "source")
+      await record.finish(event.id, "complete")
+    })
+    const sibling = publishingFixture()
+    await first.enqueue(sibling.event)
+    await first.withProductLock(sibling.event.productId, async (record) => {
+      await record.activate(sibling.event, sibling.product, "source")
+      await record.finish(sibling.event.id, "complete")
+    })
+    const run = (args: string[]) =>
+      promisify(execFile)(
+        process.execPath,
+        [
+          "--conditions=react-server",
+          "--import",
+          "tsx",
+          "scripts/printify/google-merchant-copy.ts",
+          "--shop-id",
+          "123",
+          ...args,
+        ],
+        { env: { ...process.env, DATABASE_URL: databaseUrl }, maxBuffer: 1024 * 1024, timeout: 8_000 }
+      )
+    const audit = parseGoogleCopyCliResult((await run(["--limit", "100"])).stdout)
+    expect(audit.results).toContainEqual(
+      expect.objectContaining({ productId: event.productId, code: "INVALID_SNAPSHOT" })
+    )
+    expect(audit.results).toContainEqual(
+      expect.objectContaining({ productId: sibling.event.productId, issues: [{ code: "MISSING" }] })
+    )
+    const proposalDirectory = await mkdtemp(join(tmpdir(), "invalid-google-copy-"))
+    const proposalPath = join(proposalDirectory, "approved.json")
+    try {
+      await writeFile(proposalPath, JSON.stringify(googleCopyFor(product)))
+      await expect(
+        run([
+          "--product-id",
+          event.productId,
+          "--expected-revision",
+          "1",
+          "--input",
+          proposalPath,
+          "--apply",
+          "--approved",
+        ])
+      ).rejects.toMatchObject({ stderr: expect.stringContaining("GOOGLE_COPY_INVALID_SNAPSHOT") })
+      expect(
+        (await pool.query("select revision from commerce.printify_products where product_id=$1", [event.productId]))
+          .rows[0].revision
+      ).toBe("1")
+    } finally {
+      await rm(proposalDirectory, { recursive: true, force: true })
+    }
+    const cleared = parseGoogleCopyCliResult(
+      (await run(["--product-id", event.productId, "--expected-revision", "1", "--clear", "--apply", "--approved"]))
+        .stdout
+    )
+    expect(cleared.newRevision).toBe("2")
+    expect(JSON.stringify(cleared)).not.toContain("PRIVATE COPY")
+    expect(
+      (await pool.query("select snapshot from commerce.printify_products where product_id=$1", [event.productId]))
+        .rows[0].snapshot
+    ).toEqual({ ...product, title: null })
+  }, 30_000)
+
+  it("prints committed revisions and applies the same provenance guard during CLI dry-run", async () => {
+    const { event, product } = publishingFixture()
+    await first.enqueue(event)
+    await first.withProductLock(event.productId, async (record) => {
+      await record.activate(event, product, "source")
+      await record.finish(event.id, "complete")
+    })
+    const directory = await mkdtemp(join(tmpdir(), "google-copy-review-"))
+    const input = join(directory, "approved.json")
+    const run = (args: string[]) =>
+      promisify(execFile)(
+        process.execPath,
+        [
+          "--conditions=react-server",
+          "--import",
+          "tsx",
+          "scripts/printify/google-merchant-copy.ts",
+          "--shop-id",
+          "123",
+          "--product-id",
+          event.productId,
+          ...args,
+        ],
+        { env: { ...process.env, DATABASE_URL: databaseUrl }, maxBuffer: 1024 * 1024, timeout: 8_000 }
+      )
+    try {
+      const copy = googleCopyFor(product)
+      await writeFile(input, JSON.stringify(copy))
+      const applied = parseGoogleCopyCliResult(
+        (await run(["--expected-revision", "1", "--input", input, "--apply", "--approved"])).stdout
+      )
+      expect(applied.newRevision).toBe("2")
+      expect(applied.results[0]?.revision).toBe("1")
+      const cleared = parseGoogleCopyCliResult(
+        (await run(["--expected-revision", applied.newRevision, "--clear", "--apply", "--approved"])).stdout
+      )
+      expect(cleared.newRevision).toBe("3")
+      await writeFile(
+        input,
+        JSON.stringify({ ...copy, origin: "human", content: copy.content + " Edited by a human." })
+      )
+      await expect(run(["--expected-revision", cleared.newRevision, "--input", input])).rejects.toMatchObject({
+        stderr: expect.stringContaining("GOOGLE_COPY_ORIGIN_DOWNGRADE"),
+      })
+      await expect(
+        second.updateGoogleMerchantCopy(event.productId, cleared.newRevision, {
+          ...copy,
+          origin: "human",
+          content: copy.content + " Edited by a human.",
+        })
+      ).rejects.toThrow("GOOGLE_COPY_ORIGIN_DOWNGRADE")
+      expect(
+        (await pool.query("select revision from commerce.printify_products where product_id=$1", [event.productId]))
+          .rows[0].revision
+      ).toBe("3")
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  }, 30_000)
+
+  it("requires fresh approval without carrying old Google origin across unpublish and republish", async () => {
+    const { event, product } = publishingFixture()
+    const generated = googleCopyFor(product)
+    await first.enqueue(event)
+    await first.withProductLock(event.productId, async (record) => {
+      await record.activate(event, { ...product, google_merchant_copy: generated }, "source")
+      await record.finish(event.id, "complete")
+    })
+    const deletion = {
+      ...event,
+      id: randomUUID(),
+      action: "delete" as const,
+      createdAt: new Date(Date.now() + 1000).toISOString(),
+    }
+    await second.enqueue(deletion)
+    await first.withProductLock(event.productId, async (record) => {
+      await record.activate(deletion, null, null)
+      await record.finish(deletion.id, "complete")
+    })
+    const publication = { ...event, id: randomUUID(), createdAt: new Date(Date.now() + 2000).toISOString() }
+    await second.enqueue(publication)
+    await first.withProductLock(event.productId, async (record) => {
+      await record.activate(publication, product, "source")
+      await record.finish(publication.id, "complete")
+    })
+    expect(
+      (await pool.query("select snapshot from commerce.printify_products where product_id=$1", [event.productId]))
+        .rows[0].snapshot.google_merchant_copy
+    ).toBeUndefined()
+    expect(
+      await second.updateGoogleMerchantCopy(event.productId, "3", {
+        ...generated,
+        origin: "human",
+        content: "New explicitly reviewed human copy.",
+      })
+    ).toEqual({ newRevision: "4" })
+  })
+
+  it("refuses a human-origin proposal when the bounded history cannot establish provenance, without guessing unknown history is generated", async () => {
+    const { event, product } = publishingFixture()
+    await first.enqueue(event)
+    await first.withProductLock(event.productId, async (record) => {
+      await record.activate(event, product, "source")
+      await record.finish(event.id, "complete")
+    })
+    await pool.query(
+      "insert into commerce.printify_product_revisions(shop_id,product_id,revision,snapshot) select $1,$2,r,$3::jsonb from generate_series(2,102) r",
+      [event.shopId, event.productId, JSON.stringify(product)]
+    )
+    await pool.query("update commerce.printify_products set revision=102 where product_id=$1", [event.productId])
+    const copy = googleCopyFor(product)
+    await expect(second.updateGoogleMerchantCopy(event.productId, "102", { ...copy, origin: "human" })).rejects.toThrow(
+      "GOOGLE_COPY_PROVENANCE_INCOMPLETE"
+    )
+    expect(await second.updateGoogleMerchantCopy(event.productId, "102", copy)).toEqual({ newRevision: "103" })
+  })
+
+  it.each(["pending", "callback", "inactive"] as const)(
+    "guards Google copy apply and clear while %s",
+    async (state) => {
+      const { event, product } = publishingFixture()
+      const snapshot = { ...product, google_merchant_copy: googleCopyFor(product) }
+      await first.enqueue(event)
+      await first.withProductLock(event.productId, async (record) => {
+        await record.activate(event, snapshot, "source")
+        await record.finish(event.id, "complete")
+      })
+      if (state === "inactive")
+        await pool.query("update commerce.printify_products set active=false where product_id=$1", [event.productId])
+      else {
+        const next = { ...event, id: randomUUID(), createdAt: new Date(Date.now() + 1000).toISOString() }
+        await second.enqueue(next)
+        await pool.query("update commerce.printify_publish_jobs set state=$2 where event_id=$1", [next.id, state])
+      }
+      expect(await second.updateGoogleMerchantCopy(event.productId, "1", googleCopyFor(product))).toBeNull()
+      expect(await second.updateGoogleMerchantCopy(event.productId, "1", null)).toBeNull()
+      expect(
+        (
+          await pool.query("select revision,snapshot from commerce.printify_products where product_id=$1", [
+            event.productId,
+          ])
+        ).rows[0]
+      ).toEqual({ revision: "1", snapshot })
+      await pool.query("update commerce.printify_publish_jobs set state='complete' where product_id=$1", [
+        event.productId,
+      ])
+    }
+  )
+
+  it.each([false, true])("rechecks queued intake under the row lock before Google copy clear=%s", async (clear) => {
+    const { event, product } = publishingFixture()
+    await first.enqueue(event)
+    await first.withProductLock(event.productId, async (record) => {
+      await record.activate(event, product, "source")
+      await record.finish(event.id, "complete")
+    })
+    const next = { ...event, id: randomUUID(), createdAt: new Date(Date.now() + 1000).toISOString() }
+    const intake = await pool.connect()
+    let write: ReturnType<PostgresPublishingStore["updateGoogleMerchantCopy"]> | undefined
+    try {
+      await intake.query("begin")
+      await intake.query(
+        "select product_id from commerce.printify_products where shop_id=$1 and product_id=$2 for update",
+        [event.shopId, event.productId]
+      )
+      await intake.query(
+        "insert into commerce.printify_publish_jobs (event_id,shop_id,product_id,event_created_at,event) values($1,$2,$3,$4,$5::jsonb)",
+        [next.id, next.shopId, next.productId, next.createdAt, JSON.stringify(next)]
+      )
+      write = second.updateGoogleMerchantCopy(event.productId, "1", clear ? null : googleCopyFor(product))
+      await vi.waitFor(async () => {
+        const waiting = await pool.query(
+          "select 1 from pg_stat_activity where datname=current_database() and wait_event_type='Lock' and query like 'select revision,snapshot,active from commerce.printify_products%for update'"
+        )
+        expect(waiting.rows).toHaveLength(1)
+      })
+      await intake.query("commit")
+      expect(await write).toBeNull()
+    } finally {
+      await intake.query("rollback")
+      intake.release()
+      await write
+      await first.withProductLock(event.productId, async (record) => {
+        await record.finish(next.id, "complete")
+      })
+    }
   })
 
   it("backfills only artwork while retaining source, images, visibility, product order and publication history", async () => {
@@ -2284,4 +2652,34 @@ function publishingFixture() {
 
 async function identityImages({ snapshot }: { snapshot: Record<string, unknown> }) {
   return { snapshot, complete: true }
+}
+
+function googleCopyFor(snapshot: ReturnType<typeof publishingFixture>["product"]) {
+  const product = normalizeCatalogProduct(snapshot)
+  const production = parsePrintifyProduct(snapshot, { productId: snapshot.id, shopId: "123" })!
+  return {
+    version: 1 as const,
+    origin: "generated" as const,
+    content: "A geometric graphic T-shirt.",
+    shared_facts_hash: googleCopySharedFactsHash(product, {
+      googleProductCategory: 212,
+      gender: "unisex",
+      ageGroup: "adult",
+      sizeSystem: "US",
+    }),
+    reviewed_variants: product.variants.map((v) => ({
+      id: v.id,
+      fingerprint: production.variants.find((p) => p.id === v.id)!.fingerprint,
+      label: production.variants.find((p) => p.id === v.id)!.label,
+      color: v.color!,
+      size: v.size!,
+    })),
+  }
+}
+
+function parseGoogleCopyCliResult(stdout: string) {
+  return JSON.parse(stdout) as {
+    newRevision: string
+    results: { productId: string; revision: string; code?: string }[]
+  }
 }

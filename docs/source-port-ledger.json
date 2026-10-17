@@ -432,6 +432,40 @@
       "evidence": "Reviewed all 39 source PR paths at final head 6c57c3f2ebc0aec5b747e2671d482352f80214b7, merged as 2926c59. Receiving PR #39 final head 2794ea3a4b65d7db7c7a2eec6cb476fbf7234766 merged as the recorded templateCommit. Forward migrations preserve recent template capacity and leave old merged SQL unchanged. Validation is recorded in validationEvidence (template-main-after-admin-fixture-fix). Receiving hardening includes separate commerce configuration, changed-test coverage, full main-push verification, keyed request identities, scheduled budget pruning, sustained saturation monitoring and advisory health reads; it is not a claim that those changes exist in the source store.",
       "templateCommit": "9422ee52b520375f5bc02a49b47139fdc361dce5",
       "followUp": "Required source production checks passed; completed evidence is recorded in docs/releases/template-v0.1.0-source-proof.md. Remaining follow-up is receiving-store-only migration, configuration, activation and deployment verification under separate owner authority."
+    },
+    {
+      "sourceCommit": "abcf7fb05c95d05c9f9c689fe086c85711c67a2d",
+      "parentCommit": "6610e3b4de89e2c98176c8bc9be1c06428c8c790",
+      "disposition": "accepted",
+      "classification": "reviewed-google-merchant-descriptions",
+      "paths": [
+        "src/features/merchant-feed",
+        "src/features/publishing/postgres-publishing-store.server.ts",
+        "src/features/publishing/postgres-garment-store.server.ts",
+        "scripts/printify/google-merchant-copy.ts",
+        "docs/google-merchant-copy.md"
+      ],
+      "reason": "Port Google-only reviewed descriptions with variant/facts binding, XML bounds, stale fallback, generated-origin history and guarded apply/clear. Preserve configured brand identity and destination gates. Omit source pilot IDs, product prose, account state and operational evidence.",
+      "evidence": "Selective forward port against template main 9a345a98549926443e6ed5a413ccb329d37525ad. No SQL migration is required: existing template snapshots, revision history and runtime grants support the metadata. Validation is recorded in the receiving PR; this is not production activation or Merchant import evidence.",
+      "templateCommit": null,
+      "followUp": "Merge the reviewed receiving PR, then verify deployment and any copy/feed activation under receiving-store authority. No gap before these source commits has been marked reviewed."
+    },
+    {
+      "sourceCommit": "a320a3f39a906ef7443e33cfade9c93c2d56453f",
+      "parentCommit": "abcf7fb05c95d05c9f9c689fe086c85711c67a2d",
+      "disposition": "accepted",
+      "classification": "private-google-merchant-copy-editor",
+      "paths": [
+        "src/app/admin/products/[id]",
+        "src/app/api/admin/products/[product]/google-copy",
+        "src/features/merchant-feed",
+        "src/features/featured-order/featured-product-content.tsx",
+        "e2e/admin/library.spec.ts"
+      ],
+      "reason": "Port private current-admin preview/apply editor with same-origin protection, bounded requests, frozen copy review, exact revision guards, draft retention and unknown-outcome readback. Use neutral fixture copy, retain template runtime permissions and keep storefront/Meta copy separate.",
+      "evidence": "Selective forward port against template main 9a345a98549926443e6ed5a413ccb329d37525ad. No SQL migration is required: existing template snapshots, revision history and runtime grants support the metadata. Validation is recorded in the receiving PR; this is not production activation or Merchant import evidence.",
+      "templateCommit": null,
+      "followUp": "Merge the reviewed receiving PR, then verify deployment and any copy/feed activation under receiving-store authority. No gap before these source commits has been marked reviewed."
     }
   ],
   "outboundPorts": [],

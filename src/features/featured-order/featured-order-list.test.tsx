@@ -99,6 +99,10 @@ describe("FeaturedOrderList", () => {
     expect(await screen.findByText("Changes saved.")).toBeInTheDocument()
     await waitFor(() => expect(screen.getByRole("button", { name: "Actions for Everyday Type" })).toHaveFocus())
     expect(screen.getByText("Everyday Type moved to position 2 of 3.")).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Google copy: Everyday Type" })).toHaveAttribute(
+      "href",
+      "/admin/products/everyday-type#google-copy"
+    )
     expect(screen.getByRole("link", { name: "View in shop: Everyday Type" })).toHaveAttribute(
       "href",
       "/shop/everyday-type"
@@ -285,7 +289,7 @@ describe("FeaturedOrderList", () => {
     render(<FeaturedOrderList products={products} now={now} designOfWeekProductIds={["send-it"]} />)
     const drop = within(screen.getByRole("list", { name: "Design of the Week products" }))
     expect(drop.getAllByRole("listitem")).toHaveLength(1)
-    expect(drop.getByRole("link", { name: /Send It/ })).toBeVisible()
+    expect(drop.getByRole("link", { name: /^View in shop: Send It/ })).toBeVisible()
     expect(order()).toEqual(["Everyday Type", "Studio Lines"])
     expect(hiddenOrder()).toEqual([])
     expect(drop.getByRole("button", { name: "Reorder Send It" })).toBeVisible()
@@ -301,7 +305,9 @@ describe("FeaturedOrderList", () => {
     expect(screen.getByText("Send It moved to position 1 of 2.")).toBeInTheDocument()
     const drop = within(screen.getByRole("list", { name: "Design of the Week products" }))
     expect(
-      drop.getAllByRole("link").map((link) => link.textContent?.replace(/^(View in shop|Preview product): /, "").trim())
+      drop
+        .getAllByRole("link", { name: /^(View in shop|Preview product)/ })
+        .map((link) => link.textContent?.replace(/^(View in shop|Preview product): /, "").trim())
     ).toEqual(["Send It", "Everyday Type"])
     // The whole lineup is still what gets saved; the reorder route checks the exact active set.
     expect(savedOrders(vi.mocked(globalThis.fetch))).toEqual([["send-it", "everyday-type", "crimp"]])

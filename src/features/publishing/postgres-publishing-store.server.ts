@@ -4,6 +4,8 @@ import { createHash } from "node:crypto"
 
 import type { PoolClient } from "pg"
 
+import { readGoogleCopyProvenance } from "@/features/merchant-feed/read-google-copy-provenance.server"
+import { validateGoogleCopyApproval } from "@/features/merchant-feed/validate-google-copy-approval"
 import { createPostgresPool } from "@/lib/create-postgres-pool.server"
 
 import { PostgresGarmentStore } from "./postgres-garment-store.server"
@@ -234,6 +236,65 @@ export class PostgresPublishingStore implements PublishingStore {
       } finally {
         this.workerBusy = false
       }
+    }
+  }
+
+  async updateGoogleMerchantCopy(
+    productId: string,
+    expectedRevision: string,
+    approvedCopy: unknown | null
+  ): Promise<{ newRevision: string } | null> {
+    if (!/^[a-zA-Z0-9_-]{1,128}$/.test(productId) || !/^[1-9]\d*$/.test(expectedRevision))
+      throw new Error("GOOGLE_COPY_INVALID_TARGET")
+    const client = await this.pool.connect()
+    const scope = [this.shopId, productId]
+    try {
+      await client.query("begin")
+      const target = (
+        await client.query<{ revision: string; snapshot: Record<string, unknown>; active: boolean }>(
+          "select revision,snapshot,active from commerce.printify_products where shop_id=$1 and product_id=$2 for update",
+          scope
+        )
+      ).rows[0]
+      const pending =
+        (
+          await client.query(
+            "select 1 from commerce.printify_publish_jobs where shop_id=$1 and product_id=$2 and state in ('pending','callback') limit 1",
+            scope
+          )
+        ).rows.length > 0
+      if (!target?.active || !target.snapshot || target.revision !== expectedRevision || pending) {
+        await client.query("rollback")
+        return null
+      }
+      let copy = null
+      if (approvedCopy !== null) {
+        const profiles = await this.garments.listFeedProfiles(client)
+        const profile =
+          typeof target.snapshot.blueprint_id === "number" ? profiles.get(target.snapshot.blueprint_id) : undefined
+        if (!profile) throw new Error("GOOGLE_COPY_UNSUPPORTED_BLUEPRINT")
+        const provenance = await readGoogleCopyProvenance(client, this.shopId, productId, target.revision)
+        copy = validateGoogleCopyApproval(approvedCopy, target.snapshot, this.shopId, profile, provenance).copy
+      }
+      const row = (
+        await client.query<{ revision: string; snapshot: Record<string, unknown> }>(
+          `update commerce.printify_products set snapshot=case when $4::jsonb is null
+          then snapshot-'google_merchant_copy' else jsonb_set(snapshot,'{google_merchant_copy}',$4::jsonb) end,
+          revision=revision+1,updated_at=now() where shop_id=$1 and product_id=$2 and revision=$3 returning revision,snapshot`,
+          [...scope, expectedRevision, copy === null ? null : JSON.stringify(copy)]
+        )
+      ).rows[0]!
+      await client.query(
+        "insert into commerce.printify_product_revisions (shop_id,product_id,revision,event_id,snapshot) values ($1,$2,$3,null,$4::jsonb)",
+        [...scope, row.revision, JSON.stringify(row.snapshot)]
+      )
+      await client.query("commit")
+      return { newRevision: row.revision }
+    } catch (error) {
+      await client.query("rollback")
+      throw error
+    } finally {
+      client.release()
     }
   }
 

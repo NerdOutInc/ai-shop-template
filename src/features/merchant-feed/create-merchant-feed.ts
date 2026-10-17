@@ -4,42 +4,10 @@ import { displayProductVariantTitle } from "@/features/catalog/display-product-v
 import { getProductVariantListings } from "@/features/catalog/get-product-variant-listings"
 import { garmentFeedProfileSchema } from "@/features/garment-catalog/garment-feed-profile-schema"
 
+import { merchantField } from "./merchant-field"
+import { escapeMerchantXml } from "./escape-merchant-xml"
 import { MerchantFeedError } from "./merchant-feed-error"
 import type { MerchantProduct } from "./merchant-product"
-
-function escapeXml(value: string) {
-  const hasInvalidCharacter = [...value].some((character) => {
-    const point = character.codePointAt(0)!
-    return !(
-      point === 9 ||
-      point === 10 ||
-      point === 13 ||
-      (point >= 32 && point <= 0xd7ff) ||
-      (point >= 0xe000 && point <= 0xfffd) ||
-      point >= 0x10000
-    )
-  })
-  if (hasInvalidCharacter) throw new MerchantFeedError("INVALID_XML_TEXT")
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;")
-}
-
-function field(name: string, value: string, limit: number) {
-  if (!value.trim() || [...value].length > limit) {
-    throw new MerchantFeedError(
-      name === "description"
-        ? "INVALID_DESCRIPTION"
-        : ["title", "item_group_title"].includes(name)
-          ? "INVALID_TITLE"
-          : "INVALID_FIELD"
-    )
-  }
-  return `<g:${name}>${escapeXml(value)}</g:${name}>`
-}
 
 function imageField(name: string, value: string) {
   const extension = new URL(value).pathname.match(/\.([^./]+)$/)?.[1]?.toLowerCase()
@@ -47,7 +15,7 @@ function imageField(name: string, value: string) {
   if (extension && !["jpg", "jpeg", "png", "webp", "gif", "bmp", "tif", "tiff"].includes(extension)) {
     throw new MerchantFeedError("INVALID_IMAGE_FORMAT")
   }
-  return field(name, value, 2000)
+  return merchantField(name, value, 2000)
 }
 
 function feedDescription(product: MerchantProduct["product"]) {
@@ -73,7 +41,7 @@ export function createMerchantFeed(
   }
   const productIds = new Set<string>()
   const itemIds = new Set<string>()
-  const items = products.flatMap(({ product, apparel }) => {
+  const items = products.flatMap(({ product, apparel, googleCopy }) => {
     try {
       if (productIds.has(product.id.toLowerCase()) || product.id !== product.id.trim()) {
         throw new MerchantFeedError("INVALID_PRODUCT_ID")
@@ -96,35 +64,46 @@ export function createMerchantFeed(
         }
         if (variant.price <= 0) throw new MerchantFeedError("INVALID_PRICE")
         itemIds.add(id.toLowerCase())
+        const copy = destination === "google" ? googleCopy?.get(variant.id) : undefined
         return [
           "<item>",
-          field("id", id, 50),
-          field("item_group_id", product.id, 50),
-          field("item_group_title", title, 150),
+          merchantField("id", id, 50),
+          merchantField("item_group_id", product.id, 50),
+          merchantField("item_group_title", title, 150),
           ...(["color", "size"] as const).map(
             (attribute) =>
-              `<g:variant_option>${field("name", attribute, 250)}${field("value", variant[attribute], 250)}</g:variant_option>`
+              `<g:variant_option>${merchantField("name", attribute, 250)}${merchantField("value", variant[attribute], 250)}</g:variant_option>`
           ),
-          field("title", displayProductVariantTitle(product.title, variant), 150),
-          field("description", description, 5000),
-          field("link", variant.url, 2000),
-          field("canonical_link", canonicalUrl.href, 2000),
+          merchantField("title", displayProductVariantTitle(product.title, variant), 150),
+          ...(copy?.origin === "generated"
+            ? [
+                `<g:structured_description>${merchantField("digital_source_type", "trained_algorithmic_media", 50)}${merchantField("content", copy.content, 5000)}</g:structured_description>`,
+              ]
+            : [merchantField("description", copy?.content ?? description, 5000)]),
+          ...(copy?.pattern ? [merchantField("pattern", copy.pattern, 100)] : []),
+          ...(copy?.material ? [merchantField("material", copy.material, 200)] : []),
+          merchantField("link", variant.url, 2000),
+          merchantField("canonical_link", canonicalUrl.href, 2000),
           imageField("image_link", variant.images[0]!),
           ...variant.images.slice(1, 11).map((image) => imageField("additional_image_link", image)),
-          field("price", `${Math.floor(variant.price / 100)}.${String(variant.price % 100).padStart(2, "0")} USD`, 50),
-          field("availability", variant.available ? "in_stock" : "out_of_stock", 20),
+          merchantField(
+            "price",
+            `${Math.floor(variant.price / 100)}.${String(variant.price % 100).padStart(2, "0")} USD`,
+            50
+          ),
+          merchantField("availability", variant.available ? "in_stock" : "out_of_stock", 20),
           // Our made-to-order quantity convention; real Meta import acceptance is a separate deployment check.
           ...(destination === "meta"
-            ? [field("quantity_to_sell_on_facebook", variant.available ? "999999" : "0", 6)]
+            ? [merchantField("quantity_to_sell_on_facebook", variant.available ? "999999" : "0", 6)]
             : []),
-          field("condition", "new", 20),
-          field("brand", storeConfig.name, 70),
-          field("google_product_category", String(apparel.googleProductCategory), 10),
-          field("age_group", apparel.ageGroup, 20),
-          field("gender", apparel.gender, 20),
-          field("size_system", apparel.sizeSystem, 20),
-          field("color", variant.color, 100),
-          field("size", variant.size, 100),
+          merchantField("condition", "new", 20),
+          merchantField("brand", storeConfig.name, 70),
+          merchantField("google_product_category", String(apparel.googleProductCategory), 10),
+          merchantField("age_group", apparel.ageGroup, 20),
+          merchantField("gender", apparel.gender, 20),
+          merchantField("size_system", apparel.sizeSystem, 20),
+          merchantField("color", variant.color, 100),
+          merchantField("size", variant.size, 100),
           "</item>",
         ].join("")
       })
@@ -136,9 +115,9 @@ export function createMerchantFeed(
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<rss xmlns:g="http://base.google.com/ns/1.0" version="2.0"><channel>',
-    `<title>${escapeXml(storeConfig.name)}</title>`,
-    `<link>${escapeXml(new URL("/", siteUrl).href)}</link>`,
-    `<description>${escapeXml(storeConfig.name)} product catalog</description>`,
+    `<title>${escapeMerchantXml(storeConfig.name)}</title>`,
+    `<link>${escapeMerchantXml(new URL("/", siteUrl).href)}</link>`,
+    `<description>${escapeMerchantXml(storeConfig.name)} product catalog</description>`,
     ...items,
     "</channel></rss>",
   ].join("\n")

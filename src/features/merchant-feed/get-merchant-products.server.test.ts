@@ -4,6 +4,11 @@ import type { GarmentFeedProfile } from "@/features/garment-catalog/garment-feed
 import { getPublishingStore } from "@/features/publishing/get-publishing-store.server"
 import { listShownProducts } from "@/features/publishing/list-shown-products.server"
 import { parsePrintifyProduct } from "@/lib/printify/parse-printify-product"
+import { normalizeCatalogProduct } from "@/features/catalog/normalize-catalog-product"
+import { googleCopySharedFactsHash } from "./google-copy-shared-facts-hash"
+import type { GoogleMerchantCopy } from "./google-merchant-copy-schema"
+import { resolveGoogleMerchantCopy } from "./resolve-google-merchant-copy"
+import { validateGoogleCopyApproval } from "./validate-google-copy-approval"
 import { getMerchantProducts } from "./get-merchant-products.server"
 import { createMerchantFeed } from "./create-merchant-feed"
 vi.mock("server-only", () => ({}))
@@ -94,6 +99,7 @@ beforeEach(() => {
   observe(liveFixture())
   vi.stubGlobal("fetch", fetchMock)
   vi.spyOn(console, "error").mockImplementation(() => undefined)
+  vi.spyOn(console, "warn").mockImplementation(() => undefined)
 })
 afterEach(() => {
   expect(fetchMock).not.toHaveBeenCalled()
@@ -310,4 +316,173 @@ it.each([
 it("omits only products absent from a fresh observation while keeping the feed available", async () => {
   vi.mocked(listShownProducts).mockResolvedValue([fixture("shirt"), fixture("new")])
   expect((await getMerchantProducts()).map((p) => p.product.id)).toEqual(["shirt"])
+})
+
+const copyProfile = { googleProductCategory: 212, ageGroup: "adult", gender: "unisex", sizeSystem: "US" } as const
+function reviewedCopy(snapshot = fixture()): GoogleMerchantCopy {
+  const product = normalizeCatalogProduct(snapshot)
+  const production = parsePrintifyProduct(snapshot, { productId: snapshot.id, shopId: "123" })!
+  return {
+    version: 1,
+    origin: "generated",
+    content: "A geometric circle illustration on a graphic T-shirt.",
+    shared_facts_hash: googleCopySharedFactsHash(product, copyProfile),
+    reviewed_variants: product.variants.map((v) => ({
+      id: v.id,
+      fingerprint: production.variants.find((p) => p.id === v.id)!.fingerprint,
+      label: production.variants.find((p) => p.id === v.id)!.label,
+      color: v.color!,
+      size: v.size!,
+    })),
+    pattern: "Geometric circle and line",
+    materials: { Black: "Cotton/Polyester" },
+  }
+}
+
+it("keeps reviewed Google copy through the stock remap and leaves Meta byte-identical", async () => {
+  const published = fixture()
+  vi.mocked(listShownProducts).mockResolvedValue([published])
+  const baseline = createMerchantFeed(await getMerchantProducts(), new URL("https://example.com"), "meta")
+  vi.mocked(listShownProducts).mockResolvedValue([{ ...published, google_merchant_copy: reviewedCopy(published) }])
+  const products = await getMerchantProducts()
+  expect(products[0]!.googleCopy?.get(1)?.content).toContain("Color: Black. Size: M.")
+  expect(products[0]!.product.variants[0]!.available).toBe(true)
+  expect(createMerchantFeed(products, new URL("https://example.com"))).toContain("<g:structured_description>")
+  expect(createMerchantFeed(products, new URL("https://example.com"), "meta")).toBe(baseline)
+})
+
+it.each([
+  null,
+  {},
+  { version: 9 },
+  { origin: "unknown" },
+  { content: "x".repeat(5001) },
+  { content: "illegal\u0000" },
+  { pattern: "x".repeat(101) },
+  { materials: { Black: "x".repeat(201) } },
+  { materials: { White: "Cotton" } },
+  { pattern: "bad\ud800" },
+])("falls back safely for invalid optional metadata %j", async (patch) => {
+  const published = fixture()
+  const baseline = createMerchantFeed(await getMerchantProducts(), new URL("https://example.com"))
+  const raw = patch === null ? null : Object.keys(patch).length === 0 ? {} : { ...reviewedCopy(), ...patch }
+  vi.mocked(listShownProducts).mockResolvedValue([{ ...published, google_merchant_copy: raw }])
+  const products = await getMerchantProducts()
+  expect(createMerchantFeed(products, new URL("https://example.com"))).toBe(baseline)
+})
+
+it.each(["title", "description", "gender", "ageGroup"])("disables all overrides on shared %s drift", (field) => {
+  const snapshot = fixture(),
+    copy = reviewedCopy(snapshot)
+  const product = normalizeCatalogProduct(snapshot)
+  const profile = { ...copyProfile }
+  if (field === "title" || field === "description") product[field] = "New fact"
+  else Object.assign(profile, { [field]: field === "gender" ? "female" : "kids" })
+  const resolved = resolveGoogleMerchantCopy(
+    copy,
+    product,
+    parsePrintifyProduct(snapshot, { productId: snapshot.id, shopId: "123" })!,
+    profile
+  )
+  expect(resolved.variants.size).toBe(0)
+  expect(resolved.issues).toEqual([{ code: "SHARED_FACTS_CHANGED" }])
+})
+
+it.each(["production", "label", "new", "fingerprint-version"])(
+  "retains unchanged reviewed variants after %s drift",
+  (change) => {
+    const snapshot = fixture(),
+      copy = reviewedCopy(snapshot)
+    if (change === "new") snapshot.variants[2]!.is_enabled = true
+    if (change === "production") {
+      snapshot.print_areas = [structuredClone(snapshot.print_areas[0]!), structuredClone(snapshot.print_areas[0]!)]
+      snapshot.print_areas[0]!.variant_ids = [1]
+      snapshot.print_areas[1]!.variant_ids = [2, 3]
+      snapshot.print_areas[0]!.placeholders[0]!.images[0]!.x = 0.6
+    }
+    if (change === "label") snapshot.options[1]!.values[0]!.title = "Medium"
+    if (change === "fingerprint-version")
+      copy.reviewed_variants[0]!.fingerprint = copy.reviewed_variants[0]!.fingerprint.replace(/^v\d+:/, "v999:")
+    const resolved = resolveGoogleMerchantCopy(
+      copy,
+      normalizeCatalogProduct(snapshot),
+      parsePrintifyProduct(snapshot, { productId: snapshot.id, shopId: "123" })!,
+      copyProfile
+    )
+    expect(resolved.variants.has(2)).toBe(true)
+    expect(resolved.variants.has(change === "new" ? 3 : 1)).toBe(false)
+  }
+)
+
+it("ignores stock, prices, mockup hosting and unused provider metadata when resolving approval", () => {
+  const snapshot = fixture(),
+    copy = reviewedCopy(snapshot)
+  snapshot.variants.forEach((v) => {
+    v.price += 100
+    v.is_available = true
+  })
+  snapshot.images[0]!.src = "https://catalog.public.blob.vercel-storage.com/new.png"
+  Object.assign(snapshot.print_areas[0]!, { provider_ignored: "new response metadata" })
+  const resolved = resolveGoogleMerchantCopy(
+    copy,
+    normalizeCatalogProduct(snapshot),
+    parsePrintifyProduct(snapshot, { productId: snapshot.id, shopId: "123" })!,
+    copyProfile
+  )
+  expect([...resolved.variants.keys()]).toEqual([1, 2])
+})
+
+it("falls back only for a variant whose final ending exceeds the Unicode limit, and rejects that proposed approval", async () => {
+  const snapshot = fixture(),
+    copy = reviewedCopy(snapshot)
+  copy.content = "😀".repeat(5000 - [..." Color: Black. Size: M."].length)
+  const resolved = resolveGoogleMerchantCopy(
+    copy,
+    normalizeCatalogProduct(snapshot),
+    parsePrintifyProduct(snapshot, { productId: snapshot.id, shopId: "123" })!,
+    copyProfile
+  )
+  expect([...resolved.variants.get(1)!.content]).toHaveLength(5000)
+  expect(resolved.variants.has(2)).toBe(false)
+  expect(() => validateGoogleCopyApproval(copy, snapshot, "123", copyProfile)).toThrow("GOOGLE_COPY_INVALID_APPROVAL")
+  vi.mocked(listShownProducts).mockResolvedValue([{ ...snapshot, google_merchant_copy: copy }])
+  expect(createMerchantFeed(await getMerchantProducts(), new URL("https://example.com"))).toContain(
+    "<g:description>Published illustration story</g:description>"
+  )
+})
+
+it("refuses to relabel known generated copy after human editing or approval", () => {
+  const snapshot = fixture(),
+    copy = reviewedCopy(snapshot)
+  expect(() =>
+    validateGoogleCopyApproval(
+      { ...copy, origin: "human" },
+      { ...snapshot, google_merchant_copy: copy },
+      "123",
+      copyProfile
+    )
+  ).toThrow("GOOGLE_COPY_ORIGIN_DOWNGRADE")
+})
+
+it("reports optional copy issues with fixed codes and IDs only", async () => {
+  vi.mocked(listShownProducts).mockResolvedValue([
+    { ...fixture(), google_merchant_copy: { content: "PRIVATE COPY TEXT" } },
+  ])
+  await getMerchantProducts()
+  expect(console.warn).toHaveBeenCalledWith("Google merchant copy inactive", {
+    code: "INVALID_RECORD",
+    productId: "shirt",
+  })
+  expect(JSON.stringify(vi.mocked(console.warn).mock.calls)).not.toContain("PRIVATE COPY TEXT")
+})
+
+it("uses only explicitly supplied material keys, even when a catalog color is an object property name", async () => {
+  const snapshot = fixture()
+  snapshot.options[0]!.values[0]!.title = "constructor"
+  const copy = reviewedCopy(snapshot)
+  copy.materials = {}
+  vi.mocked(listShownProducts).mockResolvedValue([{ ...snapshot, google_merchant_copy: copy }])
+  const products = await getMerchantProducts()
+  expect(products[0]!.googleCopy?.get(1)?.material).toBeUndefined()
+  expect(createMerchantFeed(products, new URL("https://example.com"))).toContain("Color: constructor. Size: M.")
 })
