@@ -27,12 +27,14 @@ For a flat photo cutout, keep a single authoritative source measurement:
 inkLeftOnCutout = measuredInkLeftInPhoto - cutoutLeftInPhoto
 inkTopOnCutout  = measuredInkTopInPhoto  - cutoutTopInPhoto
 sceneScale     = finalGarmentWidth / cutoutWidth
-finalInkLeft   = round(inkLeftOnCutout * sceneScale)
-finalInkTop    = round(inkTopOnCutout * sceneScale)
+scaledInkLeft  = round(inkLeftOnCutout * sceneScale)
+scaledInkTop   = round(inkTopOnCutout * sceneScale)
 finalInkWidth  = round(measuredInkWidth * sceneScale)
+heroInkLeft    = garmentLeftInHero + scaledInkLeft
+heroInkTop     = garmentTopInHero + scaledInkTop
 ```
 
-Avoid separately editable duplicate offsets. Scale the assembled garment uniformly when positioning it in the hero. Scene alignment and ink-on-shirt alignment are different operations.
+The scaled offsets are relative to the resized garment; the last two lines add the garment’s scene translation for an unrotated cutout. Rotated or warped garments need the same transform applied to cloth and ink. Avoid separately editable duplicate offsets. Scale the assembled garment uniformly when positioning it in the hero. Scene alignment and ink-on-shirt alignment are different operations.
 
 ## Keep the print photographic
 
