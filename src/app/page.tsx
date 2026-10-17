@@ -5,6 +5,11 @@ import { Suspense } from "react"
 
 import { readSignupConfirmationSetup } from "@/features/drop-signup/read-signup-confirmation-setup.server"
 import { DropSignupForm } from "@/features/drop-signup/drop-signup-form"
+import { getWeeklyHeroStore } from "@/features/weekly-heroes/get-weekly-hero-store.server"
+import { WeeklyHeroPoster } from "@/features/weekly-heroes/weekly-hero-poster"
+import { WeeklyDesignDetails } from "@/features/weekly-heroes/weekly-design-details"
+import { readWeeklyHeroProducts } from "@/features/weekly-heroes/read-weekly-hero-products.server"
+import { getSiteUrl } from "@/lib/get-site-url"
 import { storeConfig } from "@/lib/store-config"
 
 import { DesignOfTheWeek } from "./_components/design-of-the-week"
@@ -14,21 +19,39 @@ export const metadata: Metadata = { alternates: { canonical: "/" } }
 
 export default async function HomePage() {
   // Read sender readiness at request time, including when signup is independent of the weekly feature.
-  if (storeConfig.features.dropSignup) await connection()
+  if (storeConfig.features.dropSignup || storeConfig.features.designOfTheWeek) await connection()
+  const hero = storeConfig.features.designOfTheWeek
+    ? await Promise.resolve()
+        .then(() => getWeeklyHeroStore().current())
+        .catch(() => null)
+    : null
+  const heroProducts = hero ? await readWeeklyHeroProducts(hero.manifest.links) : []
   return (
     <main id="main-content" tabIndex={-1}>
       <StoreStructuredData />
-      <section className="home-intro">
-        <div className="page-width">
-          <p className="home-tagline">{storeConfig.tagline}</p>
-          <h1 className="font-display">{storeConfig.home.headline}</h1>
-          <p className="home-description">{storeConfig.home.introduction}</p>
-          <Link href="/shop" className="button mt-7">
-            {storeConfig.home.shopLabel}
-          </Link>
-        </div>
-      </section>
-      {storeConfig.features.designOfTheWeek && (
+      {hero ? (
+        <>
+          <WeeklyHeroPoster hero={hero} />
+          <WeeklyDesignDetails
+            title={hero.manifest.title}
+            liveAt={hero.liveAt}
+            products={heroProducts}
+            siteUrl={getSiteUrl()}
+          />
+        </>
+      ) : (
+        <section className="home-intro">
+          <div className="page-width">
+            <p className="home-tagline">{storeConfig.tagline}</p>
+            <h1 className="font-display">{storeConfig.home.headline}</h1>
+            <p className="home-description">{storeConfig.home.introduction}</p>
+            <Link href="/shop" className="button mt-7">
+              {storeConfig.home.shopLabel}
+            </Link>
+          </div>
+        </section>
+      )}
+      {storeConfig.features.designOfTheWeek && !hero && (
         <>
           {/* The footer link moves focus here so the next Tab starts inside. */}
           <section
@@ -52,7 +75,7 @@ export default async function HomePage() {
         </>
       )}
       {storeConfig.features.dropSignup &&
-        !storeConfig.features.designOfTheWeek &&
+        (!storeConfig.features.designOfTheWeek || hero) &&
         storeConfig.configured &&
         storeConfig.policies.published && (
           <section aria-label="New design updates" className="page-width py-10 sm:py-14">

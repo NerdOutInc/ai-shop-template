@@ -91,3 +91,5 @@ Install the [test prerequisites](docs/ci.md#local-test-prerequisites), including
 A generated repository is independent of this template; GitHub does not automatically apply future template updates. Follow the [store update contract](docs/store-update-contract.md) to record the original content baseline before customization and prepare reviewed upstream ports later. Template maintainers enable GitHub's **Template repository** setting on this repository; a downstream store usually leaves that setting off.
 
 The foundation follows the MIT-licensed [Next.js Enterprise Boilerplate](https://github.com/Blazity/next-enterprise); see [template origin](docs/template-origin.md) and [LICENSE](LICENSE).
+
+Weekly feature stores can prepare private responsive homepage artwork and approve it for the existing release schedule. See [scheduled homepage heroes](docs/weekly-hero-admin.md) for editing, visibility rules and migration rollout.

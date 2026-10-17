@@ -432,6 +432,39 @@
       "evidence": "Reviewed all 39 source PR paths at final head 6c57c3f2ebc0aec5b747e2671d482352f80214b7, merged as 2926c59. Receiving PR #39 final head 2794ea3a4b65d7db7c7a2eec6cb476fbf7234766 merged as the recorded templateCommit. Forward migrations preserve recent template capacity and leave old merged SQL unchanged. Validation is recorded in validationEvidence (template-main-after-admin-fixture-fix). Receiving hardening includes separate commerce configuration, changed-test coverage, full main-push verification, keyed request identities, scheduled budget pruning, sustained saturation monitoring and advisory health reads; it is not a claim that those changes exist in the source store.",
       "templateCommit": "9422ee52b520375f5bc02a49b47139fdc361dce5",
       "followUp": "Required source production checks passed; completed evidence is recorded in docs/releases/template-v0.1.0-source-proof.md. Remaining follow-up is receiving-store-only migration, configuration, activation and deployment verification under separate owner authority."
+    },
+    {
+      "sourceCommit": "977920bd2ffa708c4bf49f2cd2fbe61288d0bfd5",
+      "parentCommit": "9b9616010a29056d0de6cd568c269603059b61f1",
+      "disposition": "accepted",
+      "classification": "responsive-weekly-hero-runtime",
+      "paths": [
+        "src/features/weekly-heroes/",
+        "src/app/admin/products/heroes/",
+        "src/app/api/admin/weekly-heroes/",
+        "src/app/api/weekly-hero/",
+        "src/app/page.tsx",
+        "src/features/featured-order/",
+        "supabase/migrations/20261013191733_weekly_hero_schedule.sql"
+      ],
+      "reason": "Selected later port of private immutable desktop/mobile image uploads, revision-guarded editor/approval/withdrawal, eligible-current-week public reads, keyboard product destinations and additive storage. Adapt to target configured cadence/timezone, one to six product destinations, feature-disabled denial, generic home fallback and store_app_runtime. Excludes all source images, model portraits, artwork, prices, shipping promises, branding, schedules and customer/provider records. No source history imported; migration receives a new target identity.",
+      "evidence": "Reviewed source runtime against target main 9a345a98549926443e6ed5a413ccb329d37525ad. Local restricted-role PostgreSQL tests cover private draft/future/expired/hidden images, stale edits, shop isolation, safe withdrawal and additive upgrade; public gate has explicit configured Friday DST boundary proof. Synthetic browser checks cover responsive sources, link alignment/focus and the editor; live Blob/admin deployment remains unverified. This is a selected later port, not an extension of the ledger contiguous coverage interval.",
+      "templateCommit": null,
+      "followUp": "Draft receiving PR pending. Merge, migration application and live rollout are separate authorized operations."
+    },
+    {
+      "sourceCommit": "8cb3eb5aa5009b18a584c760e1d0ee512a998431",
+      "parentCommit": "977920bd2ffa708c4bf49f2cd2fbe61288d0bfd5",
+      "disposition": "accepted",
+      "classification": "weekly-hero-public-product-facts",
+      "paths": [
+        "src/features/weekly-heroes/weekly-design-details.tsx",
+        "src/features/weekly-heroes/weekly-design-details.test.tsx"
+      ],
+      "reason": "Retain text and linked product facts for assistive technology and structured data beneath an approved poster, with a centered shop action. Use neutral target theme and current published products; keep the configured introduction and weekly grid fallback. Excludes source brand hero assets and source-specific offer copy.",
+      "evidence": "Local rendering test verifies server HTML destinations and structured product list; configured release expiry is reused. Selected later source change only; no claim that intervening source commits have been ported.",
+      "templateCommit": null,
+      "followUp": "Included in the responsive weekly hero runtime draft port."
     }
   ],
   "outboundPorts": [],

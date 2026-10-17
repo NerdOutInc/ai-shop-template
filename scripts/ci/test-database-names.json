@@ -8,6 +8,7 @@
   "LIBRARY_TEST_DATABASE_URL": "store_library_test",
   "CATALOG_TEST_DATABASE_URL": "store_catalog_test",
   "PUBLISHING_TEST_DATABASE_URL": "store_publishing_test",
+  "WEEKLY_HERO_TEST_DATABASE_URL": "store_hero_test",
   "SUBSCRIBER_TEST_DATABASE_URL": "store_subscriber_test",
   "SIGNUP_TEST_DATABASE_URL": "store_signup_test",
   "SHIPPING_TEST_DATABASE_URL": "store_shipping_test",
