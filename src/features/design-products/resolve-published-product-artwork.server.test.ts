@@ -230,10 +230,21 @@ describe("published artwork exact library recovery", () => {
     expect(await resolvePublishedProductArtwork(fixture.input(), fixture.options)).not.toBeNull()
   })
 
-  it("accepts unused Roboto/black defaults on PNG artwork", async () => {
+  it.each(
+    ["#000", "#000000", "#000000FF", "#000000ff"].flatMap((color) =>
+      [false, true].map((careLabel) => ({ color, careLabel }))
+    )
+  )("accepts unused $color defaults with care label $careLabel", async ({ color, careLabel }) => {
     const fixture = await setup()
-    fixture.areas[0]!.font_family = "Roboto"
-    fixture.areas[0]!.font_color = "#000"
+    const area = fixture.areas[0]!
+    area.font_family = "Roboto"
+    area.font_color = color
+    if (careLabel)
+      area.placeholders.push({
+        position: "neck",
+        decoration_method: "dtf",
+        images: [{ id: "care", name: "text_layer.svg", type: "text/plain", x: 0.5, y: 0.5, scale: 1, angle: 0 }],
+      })
     expect(await resolvePublishedProductArtwork(fixture.input(), fixture.options)).not.toBeNull()
   })
 

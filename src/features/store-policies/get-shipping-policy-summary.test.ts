@@ -11,7 +11,7 @@ const originalRegions = [...usShippingRegions]
 describe("getShippingPolicySummary", () => {
   it.each([
     [0, 0, "free"],
-    [0, 200, "$0.00 for the first shirt, plus $2.00 for each additional shirt"],
+    [0, 200, "free for the first shirt, plus $2.00 for each additional shirt"],
   ])("describes zero rates without claiming paid additional items are free", (first, additional, rate) => {
     vi.spyOn(shipping, "calculateCartShipping").mockImplementation(
       ([item]) => first + ((item?.quantity ?? 1) - 1) * additional
@@ -37,7 +37,7 @@ describe("getShippingPolicySummary", () => {
   it("names only the enabled destinations when checkout coverage narrows", () => {
     usShippingRegions.splice(0, usShippingRegions.length, "CA", "MN")
 
-    expect(getShippingPolicySummary().destination).toBe("these US destinations: CA, MN")
+    expect(getShippingPolicySummary().destination).toBe("CA and MN")
   })
 
   it("does not mistake 51 different destinations for all 50 states and DC", () => {

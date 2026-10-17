@@ -9,7 +9,6 @@ import { useMetaPixel } from "@/features/analytics/use-meta-pixel"
 import type { CartItem } from "@/features/cart/cart-item"
 import { useCart } from "@/features/cart/use-cart"
 import { getShippingPolicySummary } from "@/features/store-policies/get-shipping-policy-summary"
-import { ShippingEstimateText } from "@/features/store-policies/shipping-estimate-text"
 
 import { AddToCartConfirmation } from "./add-to-cart-confirmation"
 import type { CatalogProduct } from "./catalog-product"
@@ -19,7 +18,7 @@ import { getProductIntroduction } from "./get-product-introduction"
 import { getProductGarmentLabels } from "./get-product-garment-labels"
 import { orderProductColors } from "./order-product-colors"
 import { ProductDescription } from "./product-description"
-import { ProductExchangeNotice } from "./product-exchange-notice"
+import { ProductReturnsSummary } from "./product-returns-summary"
 import { ProductShippingSummary } from "./product-shipping-summary"
 import { ProductImageGallery } from "./product-image-gallery"
 import { useProductSelection } from "./use-product-selection"
@@ -249,7 +248,7 @@ export function ProductDetails({
             </button>
           </fieldset>
         )}
-        <ProductExchangeNotice />
+        <ProductReturnsSummary />
         <button
           ref={addButton}
           type="button"
@@ -298,7 +297,7 @@ export function ProductDetails({
           />
         )}
         <p className="pt-3 text-center text-sm text-muted-foreground">Made for you.</p>
-        <ProductShippingSummary />
+        <ProductShippingSummary shippingPolicy={shippingPolicy} />
         {garmentDescription.length > 0 && (
           <details className="product-detail-disclosure">
             <summary>The garment</summary>
@@ -351,17 +350,8 @@ export function ProductDetails({
         </details>
         <details className="product-detail-disclosure">
           <summary>Shipping & care</summary>
-          {shippingPolicy.available ? (
-            <>
-              <p>
-                Each item is printed to order. Shipping to {shippingPolicy.destination} is {shippingPolicy.rate}, shown
-                in your cart. Enter your delivery details at secure checkout.
-              </p>
-              <p>
-                <ShippingEstimateText>{shippingPolicy.delivery}</ShippingEstimateText> Arrival dates are estimates.
-              </p>
-            </>
-          ) : (
+          <p>Each item is printed to order.</p>
+          {!shippingPolicy.available && (
             <p>Shipping rates and delivery estimates are being confirmed. Checkout is not open yet.</p>
           )}
           <p>

@@ -26,6 +26,7 @@ export function getShippingPolicySummary() {
   const available = storeConfig.configured && storeConfig.policies.published && storeConfig.commerce.shippingConfirmed
   const firstShirtAmount = calculateCartShipping([{ quantity: 1 }])
   const additionalShirtAmount = calculateCartShipping([{ quantity: 2 }]) - firstShirtAmount
+  const free = firstShirtAmount === 0 && additionalShirtAmount === 0
   const destinations = new Set(usShippingRegions)
   const { handling, transit, extendedTransit, extendedRegions } = deliveryEstimates
   const productionTime = `${handling.min}–${handling.max} business days`
@@ -45,21 +46,20 @@ export function getShippingPolicySummary() {
   const destination =
     destinations.size === allStatesAndDc.size && [...destinations].every((region) => allStatesAndDc.has(region))
       ? "all 50 US states and Washington, DC"
-      : `these US destinations: ${[...destinations].join(", ")}`
+      : list.format([...destinations])
 
   return {
     available,
     firstShirtAmount,
-    free: firstShirtAmount === 0 && additionalShirtAmount === 0,
+    free,
     destination,
     productionTime,
     deliveryRegions,
     delivery: deliveryRegions.length
       ? `Estimated delivery, including printing: ${deliveryRegions.map(({ deliveryTime, destination }) => `${deliveryTime} ${destination}`).join("; ")}.`
       : "Shipping is currently unavailable.",
-    rate:
-      firstShirtAmount === 0 && additionalShirtAmount === 0
-        ? "free"
-        : `${usd.format(firstShirtAmount / 100)} for the first shirt, plus ${usd.format(additionalShirtAmount / 100)} for each additional shirt`,
+    rate: free
+      ? "free"
+      : `${firstShirtAmount === 0 ? "free" : usd.format(firstShirtAmount / 100)} for the first shirt, plus ${usd.format(additionalShirtAmount / 100)} for each additional shirt`,
   }
 }

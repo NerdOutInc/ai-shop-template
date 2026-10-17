@@ -445,7 +445,7 @@
         "src/features/catalog/product-shipping-summary.tsx"
       ],
       "reason": "Display the confirmed checkout rates, enabled destinations and delivery estimates beside Add to cart. Adapted to preserve all template setup and policy gates; no source rates were copied.",
-      "evidence": "Scoped forward port against template main 9a345a98549926443e6ed5a413ccb329d37525ad. Receiving PR #53: 195 targeted unit tests and 19 ProductDetails browser stories passed, plus structure, template hygiene, lint, types, formatting and manual Chromium checks at 390px/1280px. No live provider or database integration claim. No merchant assets, settings or source history imported. This isolated receipt does not extend the contiguous review boundary.",
+      "evidence": "Scoped forward port against template main 9a345a98549926443e6ed5a413ccb329d37525ad. Receiving PR #53 review corrections: 471 targeted unit tests and 19 ProductDetails browser stories passed, plus structure, template hygiene, lint, types, formatting and manual Chromium checks at 390px/1280px. Shipping retry tests use the real item reader and reproduce the previous SHIPPING_CHANGED failure. No live provider or database integration claim. No merchant assets, settings or source history imported. This isolated receipt does not extend the contiguous review boundary.",
       "templateCommit": null,
       "followUp": "Draft receiving PR #53; record the eventual merge receipt. Not merged or deployed.",
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/53"
@@ -456,8 +456,8 @@
       "disposition": "accepted",
       "classification": "product-return-policy-summary",
       "paths": ["src/features/catalog/product-details.tsx", "src/features/catalog/product-exchange-notice.tsx"],
-      "reason": "Display the first existing owner-approved returnsText paragraph and full-policy link near purchase controls. Omit the source no-size-or-color-exchanges rule; no new required configuration or policy assumption.",
-      "evidence": "Scoped forward port against template main 9a345a98549926443e6ed5a413ccb329d37525ad. Receiving PR #53: 195 targeted unit tests and 19 ProductDetails browser stories passed, plus structure, template hygiene, lint, types, formatting and manual Chromium checks at 390px/1280px. No live provider or database integration claim. No merchant assets, settings or source history imported. This isolated receipt does not extend the contiguous review boundary.",
+      "reason": "Display only an explicitly configured, owner-reviewed returnsSummary (maximum 240 characters) and full-policy link near purchase controls. The optional field defaults to hidden for existing stores; omit the source no-size-or-color-exchanges rule.",
+      "evidence": "Scoped forward port against template main 9a345a98549926443e6ed5a413ccb329d37525ad. Receiving PR #53 review corrections: 471 targeted unit tests and 19 ProductDetails browser stories passed, plus structure, template hygiene, lint, types, formatting and manual Chromium checks at 390px/1280px. Shipping retry tests use the real item reader and reproduce the previous SHIPPING_CHANGED failure. No live provider or database integration claim. No merchant assets, settings or source history imported. This isolated receipt does not extend the contiguous review boundary.",
       "templateCommit": null,
       "followUp": "Draft receiving PR #53; record the eventual merge receipt. Not merged or deployed.",
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/53"
@@ -474,7 +474,7 @@
         "src/features/catalog/use-product-selection.ts"
       ],
       "reason": "Explain when a color choice clears an unavailable selected size with polite status feedback, preserved keyboard focus and purchase-control description. Keep available size selections and URL state.",
-      "evidence": "Scoped forward port against template main 9a345a98549926443e6ed5a413ccb329d37525ad. Receiving PR #53: 195 targeted unit tests and 19 ProductDetails browser stories passed, plus structure, template hygiene, lint, types, formatting and manual Chromium checks at 390px/1280px. No live provider or database integration claim. No merchant assets, settings or source history imported. This isolated receipt does not extend the contiguous review boundary.",
+      "evidence": "Scoped forward port against template main 9a345a98549926443e6ed5a413ccb329d37525ad. Receiving PR #53 review corrections: 471 targeted unit tests and 19 ProductDetails browser stories passed, plus structure, template hygiene, lint, types, formatting and manual Chromium checks at 390px/1280px. Shipping retry tests use the real item reader and reproduce the previous SHIPPING_CHANGED failure. No live provider or database integration claim. No merchant assets, settings or source history imported. This isolated receipt does not extend the contiguous review boundary.",
       "templateCommit": null,
       "followUp": "Draft receiving PR #53; record the eventual merge receipt. Not merged or deployed.",
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/53"
@@ -488,8 +488,8 @@
         "src/features/design-products/resolve-published-product-artwork.server.test.ts",
         "src/features/design-products/resolve-published-product-artwork.server.ts"
       ],
-      "reason": "Accept unused Roboto/#000 editor metadata only on raster-only print areas. Keep custom text, unsupported print and artwork revision rejection.",
-      "evidence": "Scoped forward port against template main 9a345a98549926443e6ed5a413ccb329d37525ad. Receiving PR #53: 195 targeted unit tests and 19 ProductDetails browser stories passed, plus structure, template hygiene, lint, types, formatting and manual Chromium checks at 390px/1280px. No live provider or database integration claim. No merchant assets, settings or source history imported. This isolated receipt does not extend the contiguous review boundary.",
+      "reason": "Accept unused Roboto editor defaults with auto or opaque black hex colors in the shared artwork reader, including the provider care label. Preview, draft matching and recipe reuse agree; custom text, unsupported print and artwork revision rejection remain.",
+      "evidence": "Scoped forward port against template main 9a345a98549926443e6ed5a413ccb329d37525ad. Receiving PR #53 review corrections: 471 targeted unit tests and 19 ProductDetails browser stories passed, plus structure, template hygiene, lint, types, formatting and manual Chromium checks at 390px/1280px. Shipping retry tests use the real item reader and reproduce the previous SHIPPING_CHANGED failure. No live provider or database integration claim. No merchant assets, settings or source history imported. This isolated receipt does not extend the contiguous review boundary.",
       "templateCommit": null,
       "followUp": "Draft receiving PR #53; record the eventual merge receipt. Not merged or deployed.",
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/53"
@@ -527,7 +527,7 @@
         "src/features/store-policies/get-shipping-policy-summary.ts"
       ],
       "reason": "Partially port: show Free for confirmed zero cart shipping, describe fully zero rates as free, widen zero-rate structured-data quantity only if all supported cart quantities are free, and retain saved shipping after a lost Stripe response. Omit source shipping defaults, price changes, navigation ribbon and provider-quote architecture. Keep the existing Stripe shipping display_name to preserve older idempotent payloads.",
-      "evidence": "Scoped forward port against template main 9a345a98549926443e6ed5a413ccb329d37525ad. Receiving PR #53: 195 targeted unit tests and 19 ProductDetails browser stories passed, plus structure, template hygiene, lint, types, formatting and manual Chromium checks at 390px/1280px. No live provider or database integration claim. No merchant assets, settings or source history imported. This isolated receipt does not extend the contiguous review boundary.",
+      "evidence": "Scoped forward port against template main 9a345a98549926443e6ed5a413ccb329d37525ad. Receiving PR #53 review corrections: 471 targeted unit tests and 19 ProductDetails browser stories passed, plus structure, template hygiene, lint, types, formatting and manual Chromium checks at 390px/1280px. Shipping retry tests use the real item reader and reproduce the previous SHIPPING_CHANGED failure. No live provider or database integration claim. No merchant assets, settings or source history imported. This isolated receipt does not extend the contiguous review boundary.",
       "templateCommit": null,
       "followUp": "Draft receiving PR #53; record the eventual merge receipt. Not merged or deployed.",
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/53"

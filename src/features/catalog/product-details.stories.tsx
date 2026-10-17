@@ -240,6 +240,24 @@ export const ColorChangeAvailability: Story = {
       })),
     },
   },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: /^M$/ }))
+    const green = canvas.getByRole("button", { name: "Heather Forest Green" })
+    green.focus()
+    await userEvent.keyboard("{Enter}")
+    await expect(green).toHaveFocus()
+    await expect(canvas.getByRole("button", { name: /^M$/ })).toHaveAttribute("aria-pressed", "true")
+    await expect(canvas.getByRole("button", { name: "Add to cart" })).toBeEnabled()
+    await userEvent.click(canvas.getByRole("button", { name: "CVC Midnight Navy" }))
+    await userEvent.click(canvas.getByRole("button", { name: "5XL" }))
+    green.focus()
+    await userEvent.keyboard("{Enter}")
+    await expect(green).toHaveFocus()
+    await expect(canvas.getByRole("button", { name: "Choose a size" })).toBeDisabled()
+    await expect(
+      canvas.getByText("5XL isn’t available in Heather Forest Green. Choose another size or color.")
+    ).toBeVisible()
+  },
 }
 
 export const FestivalCropTop: Story = {
@@ -632,9 +650,9 @@ export const Unavailable: Story = {
       variants: product.variants.map((variant) => ({ ...variant, available: false })),
     },
   },
-  play: async ({ canvas, canvasElement }) => {
+  play: async ({ canvas }) => {
     await expect(canvas.getByRole("button", { name: "Currently unavailable" })).toBeDisabled()
-    await expect(canvasElement.querySelector(".product-price")).not.toBeInTheDocument()
+    await expect(canvas.queryByText(/^\$\d+\.\d{2}$/)).not.toBeInTheDocument()
   },
 }
 
@@ -644,7 +662,7 @@ export const ShippingConfirmed: Story = {
     storeConfig.configured = true
     storeConfig.policies.published = true
     storeConfig.commerce.shippingConfirmed = true
-    storeConfig.policies.returnsText = ["Unworn items can be returned within 14 days. Contact support for details."]
+    storeConfig.policies.returnsSummary = "Unworn items can be returned within 14 days. Contact support for details."
     storeConfig.commerce.firstItemShippingCents = 435
     storeConfig.commerce.additionalItemShippingCents = 200
     return () => {
@@ -655,8 +673,17 @@ export const ShippingConfirmed: Story = {
     const disclosure = canvas.getByText("Shipping & care", { exact: true })
     await userEvent.click(disclosure)
     await expect(disclosure).toHaveFocus()
-    const summary = canvas.getByRole("complementary", { name: "Shipping summary" })
+    const summary = canvas.getByRole("group", { name: "Shipping summary" })
     await expect(summary).toHaveTextContent("$4.35 for the first shirt, plus $2.00 for each additional shirt")
+    const returns = canvas.getByRole("group", { name: "Returns summary" })
+    await expect(returns).toHaveTextContent(storeConfig.policies.returnsSummary)
+    const returnsLink = within(returns).getByRole("link", { name: "Returns & order help" })
+    await expect(returnsLink).toHaveAttribute("href", "/returns")
+    const fit = canvas.getByRole("button", { name: "Find your fit" })
+    fit.focus()
+    await userEvent.tab()
+    await expect(returnsLink).toHaveFocus()
+    await expect(getComputedStyle(returnsLink).outlineStyle).not.toBe("none")
     const policyLink = within(summary).getByRole("link", { name: "Full shipping details" })
     policyLink.focus()
     await expect(policyLink).toHaveFocus()

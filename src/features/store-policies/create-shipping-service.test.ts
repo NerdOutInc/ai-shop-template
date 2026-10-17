@@ -21,6 +21,7 @@ describe("createShippingService", () => {
   ])("limits free-shipping structured data when additional items cost %s", (additional, maxValue) => {
     vi.spyOn(shipping, "calculateCartShipping").mockImplementation(([item]) => ((item?.quantity ?? 1) - 1) * additional)
     const conditions = createShippingService(new URL("https://example.com"))!.shippingConditions
+    expect(conditions.length).toBeGreaterThan(0)
     expect(
       conditions.every((condition) => condition.shippingRate.value === 0 && condition.numItems.maxValue === maxValue)
     ).toBe(true)

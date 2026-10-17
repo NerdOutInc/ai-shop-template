@@ -57,6 +57,7 @@ export const storeConfig = storeConfigSchema.parse({
     published: false,
     shippingText: [],
     returnsText: [],
+    returnsSummary: "",
     privacyText: [],
   },
 })

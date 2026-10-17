@@ -1034,7 +1034,7 @@ describe("ProductDetails", () => {
   )
 
   it("does not offer purchase or a price when every variant is unavailable", () => {
-    const { container } = render(
+    render(
       <ProductDetails
         product={{
           ...product,
@@ -1045,7 +1045,7 @@ describe("ProductDetails", () => {
       />
     )
     expect(screen.getByRole("button", { name: "Currently unavailable" })).toBeDisabled()
-    expect(container.querySelector(".product-price")).not.toBeInTheDocument()
+    expect(screen.queryByText(/^\$\d+\.\d{2}$/)).not.toBeInTheDocument()
     expect(addItem).not.toHaveBeenCalled()
   })
 })
@@ -1062,24 +1062,33 @@ it("does not advertise placeholder shipping for a configured, published store be
   expect(screen.queryByText(/Estimated delivery, including printing/)).not.toBeInTheDocument()
 })
 
-it("shows only the published owner returns policy beside the purchase controls", () => {
-  storeConfig.policies.returnsText = [
-    "Unworn items can be returned within 14 days.",
-    "Contact support for instructions.",
-  ]
+it("shows only the separately approved returns summary beside the purchase controls", () => {
+  storeConfig.policies.returnsSummary = "Unworn items can be returned within 14 days."
+  storeConfig.policies.returnsText = ["A full policy introduction, not the purchase summary."]
   render(<ProductDetails product={product} />)
-  const notice = screen.getByRole("complementary", { name: "Returns summary" })
-  expect(notice).toHaveTextContent(storeConfig.policies.returnsText[0]!)
+  const notice = screen.getByRole("group", { name: "Returns summary" })
+  expect(notice).toHaveTextContent(storeConfig.policies.returnsSummary)
   expect(within(notice).getByRole("link", { name: "Returns & order help" })).toHaveAttribute("href", "/returns")
-  expect(notice).not.toHaveTextContent("No returns or exchanges")
+  expect(notice).not.toHaveTextContent(storeConfig.policies.returnsText[0]!)
+})
+
+it("does not turn an existing full policy into a purchase summary on upgrade", () => {
+  storeConfig.policies.returnsText = ["An existing long policy paragraph. ".repeat(30)]
+  render(<ProductDetails product={product} />)
+  expect(screen.queryByRole("group", { name: "Returns summary" })).not.toBeInTheDocument()
+  expect(screen.queryByText(/An existing long policy/)).not.toBeInTheDocument()
 })
 
 it.each(["configured", "policies", "shipping"])("hides the shipping summary without %s approval", (gate) => {
+  storeConfig.policies.returnsSummary = "Contact support about damaged or incorrect items."
   if (gate === "configured") storeConfig.configured = false
   if (gate === "policies") storeConfig.policies.published = false
   if (gate === "shipping") storeConfig.commerce.shippingConfirmed = false
   render(<ProductDetails product={product} />)
-  expect(screen.queryByRole("complementary", { name: "Shipping summary" })).not.toBeInTheDocument()
-  if (gate !== "shipping")
-    expect(screen.queryByRole("complementary", { name: "Returns summary" })).not.toBeInTheDocument()
+  expect(screen.queryByRole("group", { name: "Shipping summary" })).not.toBeInTheDocument()
+  if (gate === "shipping")
+    expect(screen.getByRole("group", { name: "Returns summary" })).toHaveTextContent(
+      storeConfig.policies.returnsSummary
+    )
+  else expect(screen.queryByRole("group", { name: "Returns summary" })).not.toBeInTheDocument()
 })
