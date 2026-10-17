@@ -1,6 +1,7 @@
 import "../../../test/configured-store"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
+import { cartLimits } from "@/lib/cart-limits"
 import * as shipping from "@/features/checkout/calculate-cart-shipping"
 import { calculateCartShipping } from "@/features/checkout/calculate-cart-shipping"
 import { shippingAddressSchema } from "@/features/checkout/shipping-address"
@@ -14,6 +15,18 @@ const originalRegions = [...usShippingRegions]
 const originalExtendedRegions = [...deliveryEstimates.extendedRegions]
 
 describe("createShippingService", () => {
+  it.each([
+    [0, cartLimits.maxTotalQuantity],
+    [200, 1],
+  ])("limits free-shipping structured data when additional items cost %s", (additional, maxValue) => {
+    vi.spyOn(shipping, "calculateCartShipping").mockImplementation(([item]) => ((item?.quantity ?? 1) - 1) * additional)
+    const conditions = createShippingService(new URL("https://example.com"))!.shippingConditions
+    expect(conditions.length).toBeGreaterThan(0)
+    expect(
+      conditions.every((condition) => condition.shippingRate.value === 0 && condition.numItems.maxValue === maxValue)
+    ).toBe(true)
+  })
+
   afterEach(() => {
     usShippingRegions.splice(0, usShippingRegions.length, ...originalRegions)
     deliveryEstimates.extendedRegions = [...originalExtendedRegions]

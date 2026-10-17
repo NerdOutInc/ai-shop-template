@@ -31,13 +31,15 @@ test("the fixed test configuration cannot bypass production validation", () => {
   assert.throws(() => storeConfigSchema.parse({ ...configuredStoreConfig, supportEmail: "support@example.com" }))
 })
 
-test("the frozen pre-update snapshot loads and omitted new flags stay disabled", async () => {
+test("the frozen pre-update snapshot loads with optional additions disabled", async () => {
   const { readFileSync } = await import("node:fs")
   const prior = JSON.parse(readFileSync(new URL("./fixtures/store-config@09b9fc8.json", import.meta.url), "utf8"))
-  assert.deepEqual(storeConfigSchema.parse(prior), prior)
+  assert.equal(Object.hasOwn(prior.policies, "returnsSummary"), false)
+  const expected = { ...prior, policies: { ...prior.policies, returnsSummary: "" } }
+  assert.deepEqual(storeConfigSchema.parse(prior), expected)
   const { features, ...withoutFeatures } = prior
   assert.deepEqual(storeConfigSchema.parse(withoutFeatures), {
-    ...withoutFeatures,
+    ...expected,
     features: { designOfTheWeek: false, dropSignup: false, about: false },
   })
   assert.deepEqual(storeConfigSchema.parse({ ...prior, features: { about: features.about } }).features, {

@@ -43,34 +43,6 @@ function previewArtwork(source: Record<string, unknown>) {
         ? { ...placeholder, position: "front" }
         : placeholder
     })
-    const onlyRaster = placeholders.every(
-      (placeholder) =>
-        placeholder &&
-        typeof placeholder === "object" &&
-        "images" in placeholder &&
-        Array.isArray(placeholder.images) &&
-        placeholder.images.every(
-          (entry: unknown) =>
-            entry &&
-            typeof entry === "object" &&
-            Object.entries(entry).every(([key, value]) => {
-              if (key === "type") return value === undefined || value === "image/png"
-              if (key === "layerType") return value === undefined || value === "image"
-              return (
-                !/^(?:input_text|font_|text_align)/.test(key) || value === undefined || value === null || value === ""
-              )
-            })
-        )
-    )
-    // Some garment responses carry unused font defaults even without Printify's care-label layer.
-    if (
-      onlyRaster &&
-      area.font_family === "Roboto" &&
-      [undefined, null, "", "auto"].some((value) => value === area.font_color)
-    ) {
-      delete area.font_family
-      delete area.font_color
-    }
     return { ...area, placeholders }
   })
   const artwork = readProductArtworkImages({ ...source, print_areas: printAreas })

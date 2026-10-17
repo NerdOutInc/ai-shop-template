@@ -4,6 +4,8 @@ import { randomUUID } from "node:crypto"
 import type Stripe from "stripe"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
+import { readPublishedProduct } from "@/features/publishing/read-published-product.server"
+
 import type { OrderAttribution } from "@/features/attribution/order-attribution-schema"
 
 import type { CheckoutOrder, OrderStore, StoredOrder } from "./checkout-order"
@@ -13,13 +15,61 @@ import { createCheckout } from "./create-checkout.server"
 import { readCheckoutItems } from "./read-checkout-items.server"
 
 vi.mock("server-only", () => ({}))
+vi.mock("@/lib/env", () => ({ env: { PRINTIFY_PUBLISHING_ENABLED: true } }))
+vi.mock("@/features/publishing/read-published-product.server", () => ({ readPublishedProduct: vi.fn() }))
 vi.mock("./read-checkout-items.server", () => ({ readCheckoutItems: vi.fn() }))
 
 beforeEach(() => {
   vi.mocked(readCheckoutItems).mockReset()
+  vi.mocked(readPublishedProduct).mockReset()
 })
 
 describe("createCheckout", () => {
+  it.each([
+    [495, 0],
+    [0, 795],
+  ])("retains saved shipping %s after a lost Stripe response and a new %s policy", async (originalRate, nextRate) => {
+    const fixture = await realReaderFixture()
+    storeConfig.commerce.firstItemShippingCents = originalRate
+    fixture.request.expectedShippingAmount = originalRate
+    vi.mocked(fixture.stripe.checkout.sessions.create).mockRejectedValueOnce(new Error("response lost"))
+    await expect(createCheckout(fixture.services, fixture.request)).rejects.toThrow("response lost")
+    const savedOrder = structuredClone(fixture.getStored()?.order)
+    storeConfig.commerce.firstItemShippingCents = nextRate
+    await createCheckout(fixture.services, fixture.request)
+    const calls = vi.mocked(fixture.stripe.checkout.sessions.create).mock.calls
+    expect(calls).toHaveLength(2)
+    expect(calls[1]).toEqual(calls[0])
+    expect(calls[1]![0]?.shipping_options?.[0]?.shipping_rate_data?.fixed_amount?.amount).toBe(originalRate)
+    expect(fixture.getStored()?.order).toEqual(savedOrder)
+    expect(fixture.providerRead).toHaveBeenCalledTimes(2)
+    expect(readPublishedProduct).toHaveBeenCalledTimes(2)
+  })
+
+  it("rejects a stale shipping quote for a new order through the real reader", async () => {
+    const fixture = await realReaderFixture()
+    storeConfig.commerce.firstItemShippingCents = 795
+    await expect(createCheckout(fixture.services, fixture.request)).rejects.toMatchObject({ code: "SHIPPING_CHANGED" })
+    expect(fixture.getStored()).toBeNull()
+    expect(fixture.stripe.checkout.sessions.create).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ["price", "PRICE_CHANGED"],
+    ["availability", "PRODUCT_UNAVAILABLE"],
+    ["artwork", "PRODUCT_CHANGED"],
+  ])("rechecks %s on a saved retry through the real reader", async (change, code) => {
+    const fixture = await realReaderFixture()
+    vi.mocked(fixture.stripe.checkout.sessions.create).mockRejectedValueOnce(new Error("response lost"))
+    await expect(createCheckout(fixture.services, fixture.request)).rejects.toThrow("response lost")
+    storeConfig.commerce.firstItemShippingCents = 0
+    if (change === "price") fixture.published.variants[0]!.price += 100
+    if (change === "availability") fixture.live.variants[0]!.is_available = false
+    if (change === "artwork") fixture.live.print_areas[0]!.placeholders[0]!.images[0]!.id = "different-artwork"
+    await expect(createCheckout(fixture.services, fixture.request)).rejects.toMatchObject({ code })
+    expect(fixture.stripe.checkout.sessions.create).toHaveBeenCalledTimes(1)
+  })
+
   it.each(["configured", "policies", "shipping"])("blocks the %s gate before checkout side effects", async (gate) => {
     const fixture = hostedFixture()
     if (gate === "configured") storeConfig.configured = false
@@ -405,6 +455,32 @@ describe("createCheckout", () => {
     expect(f.getStored()!.sessionId).toBeNull()
   })
 })
+
+async function realReaderFixture() {
+  const fixture = hostedFixture()
+  const published = {
+    id: fixture.productId,
+    shop_id: 1234,
+    title: "Sample Morning Scene",
+    blueprint_id: 1317,
+    print_provider_id: 99,
+    images: [],
+    print_areas: [
+      {
+        variant_ids: [101],
+        placeholders: [{ position: "front", images: [{ id: "approved-artwork", x: 0.5, y: 0.4, scale: 1, angle: 0 }] }],
+      },
+    ],
+    variants: [{ id: 101, price: 3000, is_enabled: true, is_available: true, options: [1] }],
+    options: [{ name: "Size", values: [{ id: 1, title: "M" }] }],
+  }
+  const live = structuredClone(published)
+  vi.mocked(readPublishedProduct).mockResolvedValue(published)
+  const providerRead = vi.spyOn(fixture.printify, "request").mockResolvedValue(live)
+  const actual = await vi.importActual<typeof import("./read-checkout-items.server")>("./read-checkout-items.server")
+  vi.mocked(readCheckoutItems).mockImplementation(actual.readCheckoutItems)
+  return { ...fixture, published, live, providerRead }
+}
 
 function hostedFixture(quantity = 1) {
   const fixture = checkoutFixture()

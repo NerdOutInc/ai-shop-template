@@ -4,7 +4,6 @@ import { readPublishedProduct } from "@/features/publishing/read-published-produ
 import { env } from "@/lib/env"
 import { parsePrintifyProduct } from "@/lib/printify/parse-printify-product"
 
-import { calculateCartShipping } from "./calculate-cart-shipping"
 import { CheckoutError } from "./checkout-error"
 import type { OrderItem } from "./checkout-order"
 import type { HostedCheckoutRequest } from "./hosted-checkout-request"
@@ -13,7 +12,7 @@ import { readCheckoutProduct } from "./read-checkout-product.server"
 
 export async function readCheckoutItems(
   client: PrintifyClient,
-  request: Pick<HostedCheckoutRequest, "items" | "expectedShippingAmount">,
+  request: Pick<HostedCheckoutRequest, "items">,
   reserveProviderReads: (count: number) => Promise<void>
 ) {
   const ids = [...new Set(request.items.map((item) => item.productId))]
@@ -63,13 +62,7 @@ export async function readCheckoutItems(
       productFingerprint: variant.fingerprint,
     }
   })
-  if (calculateCartShipping(items) !== request.expectedShippingAmount)
-    throw new CheckoutError(
-      "SHIPPING_CHANGED",
-      "The shipping price changed. Please review a fresh quote before paying.",
-      409
-    )
-  // Reject the entire invalid cart locally before making provider calls.
+  // Reject invalid published cart lines before making provider calls.
   // Published stock can be stale; only the live read decides current availability.
   await reserveProviderReads(ids.length)
   const products = await Promise.all(ids.map((id) => readCheckoutProduct(client, id)))

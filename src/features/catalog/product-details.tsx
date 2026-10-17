@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useId, useRef, useState } from "react"
 
 import { trackStoreEvent } from "@/features/analytics/track-store-event"
 import { metaPixel } from "@/features/analytics/meta-pixel"
@@ -9,7 +9,6 @@ import { useMetaPixel } from "@/features/analytics/use-meta-pixel"
 import type { CartItem } from "@/features/cart/cart-item"
 import { useCart } from "@/features/cart/use-cart"
 import { getShippingPolicySummary } from "@/features/store-policies/get-shipping-policy-summary"
-import { ShippingEstimateText } from "@/features/store-policies/shipping-estimate-text"
 
 import { AddToCartConfirmation } from "./add-to-cart-confirmation"
 import type { CatalogProduct } from "./catalog-product"
@@ -19,6 +18,8 @@ import { getProductIntroduction } from "./get-product-introduction"
 import { getProductGarmentLabels } from "./get-product-garment-labels"
 import { orderProductColors } from "./order-product-colors"
 import { ProductDescription } from "./product-description"
+import { ProductReturnsSummary } from "./product-returns-summary"
+import { ProductShippingSummary } from "./product-shipping-summary"
 import { ProductImageGallery } from "./product-image-gallery"
 import { useProductSelection } from "./use-product-selection"
 
@@ -52,7 +53,8 @@ export function ProductDetails({
 }) {
   const { addItem } = useCart()
   const shippingPolicy = getShippingPolicySummary()
-  const { color, size, selectColor, selectSize } = useProductSelection(product)
+  const { color, size, unavailableSize, selectColor, selectSize } = useProductSelection(product)
+  const availabilityNoteId = useId()
   const colorVariantIds = new Set(product.variants.filter((item) => item.color === color).map((item) => item.id))
   const gallery = product.images.filter((item) => item.variantIds.some((id) => colorVariantIds.has(id)))
   const images = gallery.length ? gallery : color === null && product.image ? [product.image] : []
@@ -205,7 +207,7 @@ export function ProductDetails({
           </fieldset>
         )}
         {sizes.length > 0 && (
-          <fieldset className="product-option">
+          <fieldset className="product-option" aria-describedby={unavailableSize ? availabilityNoteId : undefined}>
             <legend>Size{size ? `: ${size}` : ""}</legend>
             <div className="size-options">
               {sizes.map((value) => (
@@ -226,6 +228,13 @@ export function ProductDetails({
                 </button>
               ))}
             </div>
+            <div id={availabilityNoteId} role="status" aria-live="polite" aria-atomic="true">
+              {unavailableSize && (
+                <p className="mt-3 text-sm">
+                  {unavailableSize} isn’t available in {color}. Choose another size or color.
+                </p>
+              )}
+            </div>
             <button
               type="button"
               className="mt-3 inline-flex min-h-11 items-center text-sm underline underline-offset-4"
@@ -239,12 +248,17 @@ export function ProductDetails({
             </button>
           </fieldset>
         )}
+        <ProductReturnsSummary />
         <button
           ref={addButton}
           type="button"
           className="button button-accent w-full"
           disabled={preview || !variant}
-          aria-describedby={preview ? "preview-purchase-note" : undefined}
+          aria-describedby={
+            [preview ? "preview-purchase-note" : null, unavailableSize ? availabilityNoteId : null]
+              .filter(Boolean)
+              .join(" ") || undefined
+          }
           onClick={addToCart}
         >
           {confirmationOpen
@@ -283,6 +297,7 @@ export function ProductDetails({
           />
         )}
         <p className="pt-3 text-center text-sm text-muted-foreground">Made for you.</p>
+        <ProductShippingSummary shippingPolicy={shippingPolicy} />
         {garmentDescription.length > 0 && (
           <details className="product-detail-disclosure">
             <summary>The garment</summary>
@@ -335,17 +350,8 @@ export function ProductDetails({
         </details>
         <details className="product-detail-disclosure">
           <summary>Shipping & care</summary>
-          {shippingPolicy.available ? (
-            <>
-              <p>
-                Each item is printed to order. Shipping to {shippingPolicy.destination} is {shippingPolicy.rate}, shown
-                in your cart. Enter your delivery details at secure checkout.
-              </p>
-              <p>
-                <ShippingEstimateText>{shippingPolicy.delivery}</ShippingEstimateText> Arrival dates are estimates.
-              </p>
-            </>
-          ) : (
+          <p>Each item is printed to order.</p>
+          {!shippingPolicy.available && (
             <p>Shipping rates and delivery estimates are being confirmed. Checkout is not open yet.</p>
           )}
           <p>

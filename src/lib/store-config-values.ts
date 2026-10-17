@@ -61,6 +61,7 @@ export const storeConfigValues = {
     published: false,
     shippingText: [],
     returnsText: [],
+    returnsSummary: "",
     privacyText: [],
   },
 } satisfies StoreConfigInput
