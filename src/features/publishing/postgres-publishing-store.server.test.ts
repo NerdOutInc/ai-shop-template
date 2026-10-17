@@ -2185,6 +2185,8 @@ describe.skipIf(!databaseUrl)("durable Printify publishing", () => {
       "published_image_uploads",
       "shop_categories",
       "store_identity",
+      "weekly_hero_assets",
+      "weekly_heroes",
     ])
     expect(rows.every((row) => row.relrowsecurity && !row.public_usage)).toBe(true)
   })
