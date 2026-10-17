@@ -1,6 +1,7 @@
 import "server-only"
 
 import { createHash } from "node:crypto"
+import { isDeepStrictEqual } from "node:util"
 
 import type { PoolClient } from "pg"
 
@@ -275,6 +276,15 @@ export class PostgresPublishingStore implements PublishingStore {
         if (!profile) throw new Error("GOOGLE_COPY_UNSUPPORTED_BLUEPRINT")
         const provenance = await readGoogleCopyProvenance(client, this.shopId, productId, target.revision)
         copy = validateGoogleCopyApproval(approvedCopy, target.snapshot, this.shopId, profile, provenance).copy
+      }
+      // Idempotent requests still pass the revision, job and approval guards above.
+      if (
+        copy === null
+          ? !Object.hasOwn(target.snapshot, "google_merchant_copy")
+          : isDeepStrictEqual(copy, target.snapshot.google_merchant_copy)
+      ) {
+        await client.query("commit")
+        return { newRevision: target.revision }
       }
       const row = (
         await client.query<{ revision: string; snapshot: Record<string, unknown> }>(

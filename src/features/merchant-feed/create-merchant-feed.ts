@@ -4,6 +4,7 @@ import { displayProductVariantTitle } from "@/features/catalog/display-product-v
 import { getProductVariantListings } from "@/features/catalog/get-product-variant-listings"
 import { garmentFeedProfileSchema } from "@/features/garment-catalog/garment-feed-profile-schema"
 
+import { feedDescription } from "./feed-description"
 import { merchantField } from "./merchant-field"
 import { escapeMerchantXml } from "./escape-merchant-xml"
 import { MerchantFeedError } from "./merchant-feed-error"
@@ -16,19 +17,6 @@ function imageField(name: string, value: string) {
     throw new MerchantFeedError("INVALID_IMAGE_FORMAT")
   }
   return merchantField(name, value, 2000)
-}
-
-function feedDescription(product: MerchantProduct["product"]) {
-  const guide = product.sizeGuide
-  if (product.description !== "" || !guide?.sizes.length || !guide.measurements.length) return product.description
-  // Table-only provider copy has no storefront prose. Keep its facts in the feed without changing the page's intro.
-  return [
-    product.title,
-    "Size guide",
-    ...guide.measurements.map(
-      (row) => `${row.label}: ${row.values.map((value, index) => `${guide.sizes[index]}: ${value}`).join("; ")}`
-    ),
-  ].join("\n")
 }
 
 export function createMerchantFeed(

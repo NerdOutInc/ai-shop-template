@@ -1,6 +1,7 @@
 import type { DesignCatalogVariant, DesignDraftRecipe } from "./design-draft-types"
 import type { PublishedProductRecipe } from "./list-published-product-recipes.server"
 
+import { buildDesignParagraph } from "./build-design-paragraph"
 import { readGarmentDescription } from "./read-garment-description"
 
 export type DesignRecipeProposal = {
@@ -17,10 +18,6 @@ export type DesignRecipeProposal = {
     placement: DesignDraftRecipe["placement"]
   } | null
   unverified: string[]
-}
-
-function escapeHtml(text: string) {
-  return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
 }
 
 /**
@@ -84,7 +81,7 @@ export function buildDesignRecipe(input: {
     : null
   if (model.sizeGuideDonor && !garment)
     blockers.push("The published description has no garment section with a size guide to copy")
-  const description = `<p><strong>The design</strong></p><p>${escapeHtml(summary)}</p>${garment?.description ?? ""}`
+  const description = `${buildDesignParagraph(summary)}${garment?.description ?? ""}`
   if (description.length > 10000) blockers.push("The copied description is too long for a draft")
 
   if (blockers.length || !model.placement) return blocked()

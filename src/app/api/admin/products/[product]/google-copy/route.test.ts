@@ -41,7 +41,7 @@ vi.mock("@/features/publishing/get-publishing-store.server", () => ({
 }))
 let snapshot: Record<string, unknown>
 let row: { revision: string; snapshot: Record<string, unknown> | null; active: boolean; blocked: boolean } | undefined
-let history: { origin: string | null; boundary: boolean }[]
+let history: { generated: boolean }[]
 function request(
   method: string,
   body?: unknown,
@@ -117,7 +117,7 @@ beforeEach(() => {
     ],
   }
   row = { revision: "7", snapshot, active: true, blocked: false }
-  history = []
+  history = [{ generated: false }]
   connect.mockResolvedValue({ query, release })
   query.mockImplementation(async (sql: string) => ({
     rows: sql.includes("from commerce.printify_products")

@@ -110,8 +110,9 @@ type Story = StoryObj<typeof meta>
 async function fillAndPreview(canvasElement: HTMLElement) {
   const canvas = within(canvasElement)
   const textbox = await canvas.findByRole("textbox", { name: "Shared base wording" })
-  await userEvent.type(textbox, "A geometric graphic on a crewneck tee.")
   await userEvent.click(canvas.getByRole("radio", { name: /Generated/ }))
+  await userEvent.type(textbox, "A geometric graphic on a crewneck tee.")
+  await expect(canvas.getByRole("radio", { name: /Generated/ })).toBeChecked()
   await userEvent.click(canvas.getByRole("checkbox", { name: /Navy/ }))
   await userEvent.click(canvas.getByRole("button", { name: "Preview Google copy" }))
   return canvas

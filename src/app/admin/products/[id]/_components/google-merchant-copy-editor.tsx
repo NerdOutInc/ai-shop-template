@@ -234,7 +234,7 @@ export function GoogleMerchantCopyEditor({ productId }: { productId: string }) {
             onChange={(event) => {
               invalidate()
               setContent(event.target.value)
-              if (!saved?.originLocked) setOrigin(null)
+              if (!saved?.originLocked) setOrigin((current) => (current === "human" ? null : current))
             }}
           />
         </div>

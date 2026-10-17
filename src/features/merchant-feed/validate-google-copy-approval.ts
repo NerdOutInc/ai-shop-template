@@ -11,7 +11,7 @@ export function validateGoogleCopyApproval(
   snapshot: Record<string, unknown>,
   shopId: string,
   apparel: GarmentFeedProfile,
-  provenance: GoogleCopyProvenance = "unknown"
+  provenance: GoogleCopyProvenance
 ) {
   const parsed = googleMerchantCopySchema.safeParse(raw)
   const display = catalogProductSchema.safeParse(snapshot)
@@ -27,8 +27,7 @@ export function validateGoogleCopyApproval(
       (previous !== null && typeof previous === "object" && "origin" in previous && previous.origin === "generated"))
   )
     throw new Error("GOOGLE_COPY_ORIGIN_DOWNGRADE")
-  if (parsed.data.origin === "human" && provenance === "incomplete")
-    throw new Error("GOOGLE_COPY_PROVENANCE_INCOMPLETE")
+  if (parsed.data.origin === "human" && provenance !== "unknown") throw new Error("GOOGLE_COPY_PROVENANCE_INCOMPLETE")
   const resolved = resolveGoogleMerchantCopy(parsed.data, product, production, apparel)
   if (!parsed.data.reviewed_variants.every((v) => resolved.variants.has(v.id)))
     throw new Error("GOOGLE_COPY_INVALID_APPROVAL")

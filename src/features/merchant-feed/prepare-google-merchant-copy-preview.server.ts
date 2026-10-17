@@ -1,5 +1,8 @@
 import "server-only"
 
+import { isDeepStrictEqual } from "node:util"
+import { feedDescription } from "./feed-description"
+
 import { catalogProductSchema } from "@/features/catalog/catalog-product-schema"
 import { normalizeCatalogProduct } from "@/features/catalog/normalize-catalog-product"
 import { garmentFeedProfileSchema } from "@/features/garment-catalog/garment-feed-profile-schema"
@@ -95,18 +98,12 @@ export function prepareGoogleMerchantCopyPreview(
   if ("copy" in input) {
     // An unkeyed digest cannot authorize replacement of saved, noneditable metadata.
     for (const key of ["pattern", "materials"] as const) {
-      if (Object.hasOwn(metadata, key) !== Object.hasOwn(input.copy, key))
+      if (
+        Object.hasOwn(metadata, key) !== Object.hasOwn(input.copy, key) ||
+        !isDeepStrictEqual(metadata[key], input.copy[key])
+      )
         throw new Error("GOOGLE_COPY_METADATA_CONFLICT")
     }
-    const expected = { ...input.copy }
-    delete expected.pattern
-    delete expected.materials
-    Object.assign(expected, metadata)
-    if (
-      googleMerchantCopyReviewDigest(shopId, productId, revision, expected) !==
-      googleMerchantCopyReviewDigest(shopId, productId, revision, input.copy)
-    )
-      throw new Error("GOOGLE_COPY_METADATA_CONFLICT")
     validateGoogleCopyApproval(input.copy, snapshot, shopId, profile, provenance)
     return { state, preview: null }
   }
@@ -116,6 +113,7 @@ export function prepareGoogleMerchantCopyPreview(
     if (!variant?.color || !variant.size || !identity) throw new Error("GOOGLE_COPY_INVALID_SELECTION")
     return { id, fingerprint: identity.fingerprint, label: identity.label, color: variant.color, size: variant.size }
   })
+  // Direct non-HTTP callers also need the coverage guard; TypeScript cannot express it.
   if (!reviewed.length || new Set(input.variantIds).size !== reviewed.length)
     throw new Error("GOOGLE_COPY_INVALID_SELECTION")
   if (Object.keys(metadata.materials ?? {}).some((color) => !reviewed.some((v) => v.color === color)))
@@ -145,17 +143,7 @@ export function prepareGoogleMerchantCopyPreview(
   } catch {
     throw new Error("GOOGLE_COPY_INVALID_SNAPSHOT")
   }
-  const guide = product.sizeGuide
-  const fallback =
-    product.description !== "" || !guide?.sizes.length || !guide.measurements.length
-      ? product.description
-      : [
-          product.title,
-          "Size guide",
-          ...guide.measurements.map(
-            (row) => `${row.label}: ${row.values.map((value, index) => `${guide.sizes[index]}: ${value}`).join("; ")}`
-          ),
-        ].join("\n")
+  const fallback = feedDescription(product)
   const preview: GoogleCopyPreview = {
     expectedRevision: revision,
     copy,

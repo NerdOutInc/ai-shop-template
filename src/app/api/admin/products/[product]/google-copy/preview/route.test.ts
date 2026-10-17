@@ -38,7 +38,7 @@ vi.mock("@/features/publishing/get-publishing-store.server", () => ({
 }))
 let snapshot: Record<string, unknown>
 let row: { revision: string; snapshot: Record<string, unknown> | null; active: boolean; blocked: boolean } | undefined
-let history: { origin: string | null; boundary: boolean }[]
+let history: { generated: boolean }[]
 function request(
   method: string,
   body?: unknown,
@@ -103,7 +103,7 @@ beforeEach(() => {
     ],
   }
   row = { revision: "7", snapshot, active: true, blocked: false }
-  history = []
+  history = [{ generated: false }]
   connect.mockResolvedValue({ query, release })
   query.mockImplementation(async (sql: string) => ({
     rows: sql.includes("from commerce.printify_products")
@@ -134,7 +134,7 @@ describe("Google copy preview route and coherent reader", () => {
     expect(query).toHaveBeenCalledWith("set local statement_timeout='5s'")
     expect(query).toHaveBeenCalledWith("set local idle_in_transaction_session_timeout='5s'")
     expect(listFeedProfiles).toHaveBeenCalledWith(await connect.mock.results[0]!.value)
-    expect(query).toHaveBeenCalledWith(expect.stringContaining("order by revision desc limit 101"), ["123", "tee", "7"])
+    expect(query).toHaveBeenCalledWith(expect.stringContaining("select exists"), ["123", "tee", "7"])
     expect(query).toHaveBeenCalledWith("commit")
     expect(release).toHaveBeenCalledOnce()
     expect(query.mock.calls.some(([sql]) => /\b(update|insert|delete|for update)\b/i.test(String(sql)))).toBe(false)
@@ -233,20 +233,16 @@ describe("Google copy preview route and coherent reader", () => {
       expect(await response.text()).not.toContain("PRIVATE")
     }
   })
-  it("enforces bounded historical generated/incomplete provenance and lifecycle boundaries", async () => {
+  it("refuses human origin for generated or unavailable provenance and accepts a complete clear history", async () => {
     for (const [rows, status] of [
-      [[{ origin: "generated", boundary: false }], 409],
-      [Array.from({ length: 101 }, () => ({ origin: null, boundary: false })), 409],
-      [
-        [
-          { origin: null, boundary: true },
-          { origin: "generated", boundary: false },
-        ],
-        200,
-      ],
+      [[{ generated: true }], 409],
+      [[], 409],
+      [[{ generated: false }], 200],
     ] as const) {
       history = [...rows]
-      expect((await POST(...request("POST", { ...previewInput, origin: "human" }))).status).toBe(status)
+      const response = await POST(...request("POST", { ...previewInput, origin: "human" }))
+      expect(response.status).toBe(status)
+      privateHeaders(response)
     }
   })
   it.each([

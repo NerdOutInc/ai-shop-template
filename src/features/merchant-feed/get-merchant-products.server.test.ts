@@ -444,7 +444,9 @@ it("falls back only for a variant whose final ending exceeds the Unicode limit, 
   )
   expect([...resolved.variants.get(1)!.content]).toHaveLength(5000)
   expect(resolved.variants.has(2)).toBe(false)
-  expect(() => validateGoogleCopyApproval(copy, snapshot, "123", copyProfile)).toThrow("GOOGLE_COPY_INVALID_APPROVAL")
+  expect(() => validateGoogleCopyApproval(copy, snapshot, "123", copyProfile, "unknown")).toThrow(
+    "GOOGLE_COPY_INVALID_APPROVAL"
+  )
   vi.mocked(listShownProducts).mockResolvedValue([{ ...snapshot, google_merchant_copy: copy }])
   expect(createMerchantFeed(await getMerchantProducts(), new URL("https://example.com"))).toContain(
     "<g:description>Published illustration story</g:description>"
@@ -459,21 +461,30 @@ it("refuses to relabel known generated copy after human editing or approval", ()
       { ...copy, origin: "human" },
       { ...snapshot, google_merchant_copy: copy },
       "123",
-      copyProfile
+      copyProfile,
+      "unknown"
     )
   ).toThrow("GOOGLE_COPY_ORIGIN_DOWNGRADE")
 })
 
-it("reports optional copy issues with fixed codes and IDs only", async () => {
+it("requires explicit provenance for human-origin approval, including untyped callers", () => {
+  const snapshot = fixture()
+  const copy = { ...reviewedCopy(snapshot), origin: "human" }
+  expect(() =>
+    // @ts-expect-error JavaScript callers must not bypass the required provenance argument either.
+    validateGoogleCopyApproval(copy, snapshot, "123", copyProfile)
+  ).toThrow("GOOGLE_COPY_PROVENANCE_INCOMPLETE")
+})
+
+it("falls back for inactive optional copy without logging on feed reads", async () => {
   vi.mocked(listShownProducts).mockResolvedValue([
     { ...fixture(), google_merchant_copy: { content: "PRIVATE COPY TEXT" } },
   ])
-  await getMerchantProducts()
-  expect(console.warn).toHaveBeenCalledWith("Google merchant copy inactive", {
-    code: "INVALID_RECORD",
-    productId: "shirt",
-  })
-  expect(JSON.stringify(vi.mocked(console.warn).mock.calls)).not.toContain("PRIVATE COPY TEXT")
+  const products = await getMerchantProducts()
+  const xml = createMerchantFeed(products, new URL("https://example.com"))
+  expect(xml).toContain("<g:description>Published illustration story</g:description>")
+  expect(xml).not.toContain("PRIVATE COPY TEXT")
+  expect(console.warn).not.toHaveBeenCalled()
 })
 
 it("uses only explicitly supplied material keys, even when a catalog color is an object property name", async () => {

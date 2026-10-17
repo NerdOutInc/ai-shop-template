@@ -1,3 +1,4 @@
+import { buildDesignParagraph } from "../../src/features/design-products/build-design-paragraph"
 import { readFile } from "node:fs/promises"
 
 import { catalogProductSchema } from "../../src/features/catalog/catalog-product-schema"
@@ -141,10 +142,9 @@ async function main() {
             ...new Set(
               evidence.rows.flatMap((r) => {
                 const summary = r.summary?.trim()
-                const escaped = summary?.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
                 return [
                   ...(r.agent_draft ? ["AGENT_DRAFT_RECIPE_MATCH_ORIGIN_UNCONFIRMED"] : []),
-                  ...(escaped && r.description.startsWith(`<p><strong>The design</strong></p><p>${escaped}</p>`)
+                  ...(summary && r.description.startsWith(buildDesignParagraph(summary))
                     ? ["AGENT_GENERATED_SUMMARY_PUBLISHED"]
                     : []),
                 ]

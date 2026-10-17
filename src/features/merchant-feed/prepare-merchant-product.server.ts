@@ -30,14 +30,6 @@ export function prepareMerchantProduct(
   }
   const copy = resolveGoogleMerchantCopy(snapshot.google_merchant_copy, merchantProduct.product, production, apparel)
   merchantProduct.googleCopy = copy.variants
-  for (const issue of copy.issues) {
-    if (issue.code === "MISSING" || issue.code === "UNCOVERED_VARIANT") continue
-    console.warn("Google merchant copy inactive", {
-      code: issue.code,
-      productId: new MerchantFeedError("UNKNOWN_ERROR", display.id).productId,
-      ...(issue.variantId !== undefined ? { variantId: issue.variantId } : {}),
-    })
-  }
   // Run the actual output constraints before stock reads, including every color's mockup.
   createMerchantFeed([merchantProduct], siteUrl)
   return { display, production, merchantProduct }
