@@ -41,7 +41,7 @@ Use separate preview/local data and credentials. The implementation does not run
 
 Uploads accept one JPEG/PNG/WebP, up to 3 MB, at least 800 pixels on both sides and at most 40 million decoded pixels. Animated images and SVGs are refused. The server applies phone orientation, converts to sRGB, flattens transparency onto the store's theme background, strips metadata, preserves composition and produces a JPEG at most 2000 pixels on the long edge. This derivative is stored privately. Activation promotes exact verified bytes to an immutable content-addressed public path. Removing a gallery reference does **not** erase an already-public CDN URL.
 
-A color can have 1–12 distinct photos, a product at most 80 curated colors/120 selections, and the private upload library at most 500 assets. Activation copies at most two photos concurrently within a bounded request. Draft saves/uploads do not invalidate public caches; successful activation refreshes them. A separately reported cache-refresh failure does not roll back a committed activation.
+A color can have 1–12 distinct photos, a product at most 80 curated colors/120 selections, and each product's private upload library at most 500 assets. Activation copies at most two photos concurrently within a bounded request. Draft saves/uploads do not invalidate public caches; successful activation refreshes them. A separately reported cache-refresh failure does not roll back a committed activation.
 
 ## Authenticated API for agents
 
