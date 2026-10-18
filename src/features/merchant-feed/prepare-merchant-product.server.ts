@@ -14,11 +14,13 @@ export function prepareMerchantProduct(
   snapshot: Record<string, unknown>,
   shopId: string,
   siteUrl: URL,
-  profiles: ReadonlyMap<number, GarmentFeedProfile>
+  profiles: ReadonlyMap<number, GarmentFeedProfile>,
+  withheldVariantIds: readonly number[] = []
 ) {
   const parsed = catalogProductSchema.safeParse(snapshot)
   if (!parsed.success) throw new MerchantFeedError("SNAPSHOT_DISPLAY_INVALID", snapshot.id)
-  const display = parsed.data
+  const withheld = new Set(withheldVariantIds)
+  const display = { ...parsed.data, variants: parsed.data.variants.filter((v) => !withheld.has(v.id)) }
   if (snapshot.visible === false) throw new MerchantFeedError("SNAPSHOT_HIDDEN", display.id)
   const apparel = typeof snapshot.blueprint_id === "number" ? profiles.get(snapshot.blueprint_id) : undefined
   if (!apparel) throw new MerchantFeedError("UNSUPPORTED_BLUEPRINT", display.id)
@@ -31,6 +33,6 @@ export function prepareMerchantProduct(
   const copy = resolveGoogleMerchantCopy(snapshot.google_merchant_copy, merchantProduct.product, production, apparel)
   merchantProduct.googleCopy = copy.variants
   // Run the actual output constraints before stock reads, including every color's mockup.
-  createMerchantFeed([merchantProduct], siteUrl)
+  if (merchantProduct.product.variants.length) createMerchantFeed([merchantProduct], siteUrl)
   return { display, production, merchantProduct }
 }

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import type { CatalogProduct } from "@/features/catalog/catalog-product"
 import { readPublishedCatalog } from "@/features/catalog/read-published-catalog.server"
-import { listPublishedProducts } from "@/features/publishing/list-published-products-for-admin.server"
+import { listAdminDisplayProducts } from "@/features/publishing/list-admin-display-products.server"
 
 import { dropEmailSubscriberPlaceholder } from "./drop-email-subscriber-placeholder"
 import { readDropEmailSetup } from "./read-drop-email-setup.server"
@@ -15,7 +15,7 @@ vi.mock("@/features/publishing/get-publishing-store.server", () => ({
   getPublishingStore: () => ({ productSchedule: { list: schedule } }),
 }))
 vi.mock("./get-drop-email-pool.server", () => ({ getDropEmailPool: () => ({ query: emailed }) }))
-vi.mock("@/features/publishing/list-published-products-for-admin.server", () => ({ listPublishedProducts: vi.fn() }))
+vi.mock("@/features/publishing/list-admin-display-products.server", () => ({ listAdminDisplayProducts: vi.fn() }))
 vi.mock("@/features/catalog/read-published-catalog.server", () => ({ readPublishedCatalog: vi.fn() }))
 vi.mock("@/lib/get-site-url", () => ({ getSiteUrl: () => new URL("https://store.example") }))
 vi.mock("./read-drop-email-setup.server", () => ({ readDropEmailSetup: vi.fn() }))
@@ -52,7 +52,7 @@ beforeEach(() => {
     entry("fern", "2026-10-12T09:00:00.000Z"),
   ])
   emailed.mockResolvedValue({ rows: [] })
-  vi.mocked(listPublishedProducts).mockResolvedValue([{ id: "lines-tee" }, { id: "lines-crop" }, { id: "fern" }])
+  vi.mocked(listAdminDisplayProducts).mockResolvedValue([{ id: "lines-tee" }, { id: "lines-crop" }, { id: "fern" }])
   vi.mocked(readPublishedCatalog).mockImplementation(async (snapshots) => ({
     status: "ready",
     products: snapshots.map((snapshot) =>

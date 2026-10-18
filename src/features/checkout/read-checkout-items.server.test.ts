@@ -2,7 +2,11 @@ import "../../../test/configured-store"
 import { randomUUID } from "node:crypto"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
+import { readGallerySource } from "@/features/product-gallery/read-gallery-source.server"
+import { resolveProductGallery } from "@/features/product-gallery/resolve-product-gallery.server"
 import { readPublishedProduct } from "@/features/publishing/read-published-product.server"
+
+import { galleryProductFixture } from "../../../test/gallery-product-fixture"
 
 import { PrintifyClient } from "./printify-client.server"
 
@@ -198,6 +202,52 @@ describe("readCheckoutItems", () => {
     const quote = await readCheckoutItems(data.printify, data.request, data.reserve)
 
     expect(quote[0]).not.toHaveProperty("imageUrl")
+  })
+
+  it("uses the store photo in a new Stripe order and omits stale curated images without changing production eligibility", async () => {
+    const snapshot = galleryProductFixture()
+    const host = "galleryfixtures.public.blob.vercel-storage.com"
+    const src = `https://${host}/published-product-photos/v1/${"b".repeat(64)}.jpg`
+    const active = {
+      version: 1,
+      coverColor: "10",
+      colors: [
+        {
+          colorKey: "10",
+          reviewedBinding: readGallerySource(snapshot, "1").colors[0]!.binding,
+          entries: [
+            {
+              source: "store",
+              assetId: "e3a4e34c-cb28-442e-8741-bef56b70b97d",
+              publicUrl: src,
+              alt: "Black tee",
+              role: "other",
+            },
+          ],
+        },
+      ],
+    }
+    const client = new PrintifyClient({ apiToken: "test-secret-not-real", shopId: "123" })
+    vi.spyOn(client, "request").mockImplementation(async () => structuredClone(snapshot))
+    const reserve = vi.fn<(count: number) => Promise<void>>().mockResolvedValue(undefined)
+    const request = { items: [{ productId: "shirt", variantId: 101, expectedUnitAmount: 3300, quantity: 1 }] }
+    vi.mocked(readPublishedProduct).mockResolvedValue(
+      resolveProductGallery({ snapshot, active, revision: "1", blobHost: host }).snapshot
+    )
+    expect((await readCheckoutItems(client, request, reserve))[0]).toMatchObject({
+      imageUrl: src,
+      unitAmount: 3300,
+      variantId: 101,
+    })
+
+    snapshot.print_areas[0]!.placeholders[0]!.images[0]!.y = 0.9
+    vi.mocked(readPublishedProduct).mockResolvedValue(
+      resolveProductGallery({ snapshot, active, revision: "2", blobHost: host }).snapshot
+    )
+    const [item] = await readCheckoutItems(client, request, reserve)
+    expect(item).not.toHaveProperty("imageUrl")
+    expect(item).toMatchObject({ unitAmount: 3300, variantId: 101 })
+    expect(reserve.mock.calls).toEqual([[1], [1]])
   })
 
   it.each([

@@ -10,6 +10,7 @@ import type { GoogleMerchantCopy } from "./google-merchant-copy-schema"
 import { resolveGoogleMerchantCopy } from "./resolve-google-merchant-copy"
 import { validateGoogleCopyApproval } from "./validate-google-copy-approval"
 import { resolveProductGallery } from "@/features/product-gallery/resolve-product-gallery.server"
+import { readGallerySource } from "@/features/product-gallery/read-gallery-source.server"
 import { getMerchantProducts } from "./get-merchant-products.server"
 import { createMerchantFeed } from "./create-merchant-feed"
 vi.mock("server-only", () => ({}))
@@ -503,4 +504,87 @@ it("uses only explicitly supplied material keys, even when a catalog color is an
   const products = await getMerchantProducts()
   expect(products[0]!.googleCopy?.get(1)?.material).toBeUndefined()
   expect(createMerchantFeed(products, new URL("https://example.com"))).toContain("Color: constructor. Size: M.")
+})
+
+const galleryHost = "galleryfixtures.public.blob.vercel-storage.com"
+function curatedBlack(source: ReturnType<typeof liveFixture>) {
+  return {
+    version: 1,
+    coverColor: null,
+    colors: [
+      {
+        colorKey: "10",
+        reviewedBinding: readGallerySource(source, "1").colors[0]!.binding,
+        entries: [
+          {
+            source: "store",
+            assetId: "e3a4e34c-cb28-442e-8741-bef56b70b97d",
+            publicUrl: `https://${galleryHost}/published-product-photos/v1/${"b".repeat(64)}.jpg`,
+            alt: "Black tee",
+            role: "other",
+          },
+        ],
+      },
+    ],
+  }
+}
+function threeColorSource() {
+  const source = liveFixture()
+  source.variants[2]!.is_enabled = true
+  return source
+}
+
+it("withholds only stale curated colors while retaining other colors and products in both feeds", async () => {
+  const source = threeColorSource()
+  const manifest = curatedBlack(source)
+  source.print_areas[0]!.placeholders[0]!.images[0]!.y = 0.8
+  const resolved = resolveProductGallery({ snapshot: source, active: manifest, revision: "2", blobHost: galleryHost })
+  vi.mocked(listShownProducts).mockResolvedValue([resolved, ...feed([liveFixture("another")])])
+  observe(source, liveFixture("another"))
+  const products = await getMerchantProducts()
+  expect(products.map((p) => [p.product.id, p.product.variants.map((v) => v.id)])).toEqual([
+    ["shirt", [3]],
+    ["another", [1, 2]],
+  ])
+  expect(console.warn).toHaveBeenCalledWith("Product gallery variants withheld from merchant feeds", {
+    productId: "shirt",
+    codes: ["GALLERY_STALE"],
+    withheldVariantCount: 2,
+  })
+  expect(readCatalogStock).toHaveBeenCalledWith([resolved.snapshot, expect.objectContaining({ id: "another" })])
+  for (const destination of ["google", "meta"] as const) {
+    const xml = createMerchantFeed(products, new URL("https://example.com"), destination)
+    expect(xml).toContain("<g:id>shirt-3</g:id>")
+    expect(xml).not.toMatch(/<g:id>shirt-[12]<\/g:id>|published-product-photos/)
+  }
+})
+
+it("drops a product whose invalid gallery withholds every variant without failing the feed", async () => {
+  const source = threeColorSource()
+  vi.mocked(listShownProducts).mockResolvedValue([
+    resolveProductGallery({ snapshot: source, active: { broken: true }, revision: "2" }),
+    ...feed([liveFixture("another")]),
+  ])
+  observe(source, liveFixture("another"))
+  expect((await getMerchantProducts()).map((p) => p.product.id)).toEqual(["another"])
+  expect(console.warn).toHaveBeenCalledWith("Product gallery variants withheld from merchant feeds", {
+    productId: "shirt",
+    codes: ["GALLERY_INVALID"],
+    withheldVariantCount: 3,
+  })
+  expect(JSON.stringify(vi.mocked(console.warn).mock.calls)).not.toMatch(/broken|https:/)
+})
+
+it("keeps general INCOMPLETE_VARIANTS strictness for products without a gallery", async () => {
+  vi.mocked(listShownProducts).mockResolvedValue(feed([{ ...liveFixture(), images: [] }]))
+  await expect(getMerchantProducts()).rejects.toMatchObject({ code: "INCOMPLETE_VARIANTS", productId: "shirt" })
+  expect(console.warn).not.toHaveBeenCalled()
+})
+
+it("strips an untrusted withheld-variant key from the published snapshot", async () => {
+  vi.mocked(listShownProducts).mockResolvedValue(
+    feed([{ ...liveFixture(), images: [], storefront_gallery_withheld_variants: [1, 2] }])
+  )
+  await expect(getMerchantProducts()).rejects.toMatchObject({ code: "INCOMPLETE_VARIANTS" })
+  expect(readCatalogStock).not.toHaveBeenCalled()
 })
