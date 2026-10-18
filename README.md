@@ -1,6 +1,6 @@
 # T-shirt Shop Template
 
-An AI-first clothing store you own. Create a repository, clone it, and ask your agent to turn it into your brand. You choose the direction and products; the agent handles setup, implementation, and routine admin work. Account sign-ins and the occasional **Yes, that really is me** are still your department.
+An AI-first clothing store you own. Give your agent [setup.md](setup.md) and ask it to help start your shop. You choose the direction and products; the agent handles setup, implementation, and routine admin work. Account sign-ins and the occasional **Yes, that really is me** are still your department.
 
 [**Start your shop**](https://nerdoutinc.github.io/ai-shop-template/) · [Use this template](https://github.com/new?template_name=ai-shop-template&template_owner=NerdOutInc) · [Agent setup guide](docs/store-setup.md) · [Architecture](docs/architecture.md)
 
@@ -15,21 +15,7 @@ The upstream template repository currently has **internal** visibility: enterpri
 3. Paste this prompt:
 
 ```text
-Help me set up this clothing store. Read AGENTS.md and use the store-setup
-skill in .agents/skills/store-setup/SKILL.md.
-
-Ask concise questions about my brand, audience, design preferences, budget,
-products, pricing and shipping. Offer to generate visual concepts for the
-store, logo, favicon and color palettes before implementing my choice.
-Discover your available browser, computer, connector and image tools, and do
-as much authorized setup and admin work as possible. Ask me to take over
-for username/password entry, 2FA, CAPTCHA, and computer Yes/OK prompts.
-Never ask me to paste secrets into chat.
-
-Save non-secret progress locally so we can resume. Reuse my answers and
-permissions; ask only for missing decisions. Prepare draft products for my
-review. Keep payments, production fulfillment, product publication and
-marketing activation off until I authorize the relevant live step.
+Read setup.md and help me set up my own clothing shop.
 ```
 
 During setup, the agent also renames the package, personalizes this README and checks the generated repository’s CI/monitor settings while preserving template attribution. See [repository personalization](docs/store-setup.md#personalize-the-generated-repository).

@@ -1,6 +1,6 @@
 # Set up your store with an agent
 
-The shortest workflow is **paste the landing-page prompt → answer the agent's questions → review your shop**. The agent reads [the setup skill](../.agents/skills/store-setup/SKILL.md), asks for missing choices, prepares accounts and configuration, and verifies each result. The owner signs in, supplies business facts and chooses designs. Nobody needs to become a part-time webhook archaeologist. Owners who prefer creating the repository themselves can still use **Use this template → clone → ask an agent** from the README.
+The shortest workflow is **paste the landing-page prompt → answer the agent's questions → review your shop**. The prompt points to [setup.md](../setup.md), the agent's entry point into [the setup skill](../.agents/skills/store-setup/SKILL.md) and this runbook. The agent asks for missing choices, prepares accounts and configuration, and verifies each result. The owner signs in, supplies business facts and chooses designs. Nobody needs to become a part-time webhook archaeologist. Owners who prefer creating the repository themselves can still use **Use this template → clone → ask an agent** from the README.
 
 ## Starting from the landing-page prompt
 

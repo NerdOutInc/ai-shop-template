@@ -8,7 +8,7 @@ The intended URL is <https://nerdoutinc.github.io/ai-shop-template/>. Until Page
 
 Run `python3 -m http.server 4173 --bind 127.0.0.1 --directory website`, then open <http://127.0.0.1:4173>. There is no build step or provider configuration. Relative assets also work under GitHub Pages' repository subpath. Only `website/` is uploaded; repository docs, environment files and the application are excluded.
 
-Keep the visible instructions short. Put agent implementation detail in [store setup](store-setup.md), and keep requirements consistent with [operations and costs](store-operations-costs.md). If template access or supported hosting changes, update the landing page and README together. The internal-repository note is intentional: a public landing page does not give visitors access to the template.
+Keep the visible instructions short. The one-sentence prompt links to the root [setup.md](../setup.md), which directs the agent through the detailed [store setup](store-setup.md) runbook. Keep requirements consistent with [operations and costs](store-operations-costs.md). If template access or supported hosting changes, update the landing page and README together. The internal-repository note is intentional: a public landing page does not give visitors access to the template. `setup.md` stays in the repository; the Pages artifact contains only the public introduction.
 
 Check the page at desktop and narrow mobile widths, keyboard focus, both disclosures, successful copy, blocked clipboard access and JavaScript disabled. The prompt must remain selectable without scripting. There are no analytics, cookies, external scripts or remote font requests.
 
