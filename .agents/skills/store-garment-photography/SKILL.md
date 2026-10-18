@@ -1,11 +1,13 @@
 ---
 name: store-garment-photography
-description: Create natural studio and lifestyle garment photographs using exact approved artwork, provider-specific placement and fabric-aware compositing. Use for apparel mockups and recurring model product photos; not for inventing print artwork or publishing a storefront.
+description: Create garment-only, studio and lifestyle product photographs using exact approved artwork, provider-specific placement and fabric-aware compositing. Use for apparel mockups, garment backgrounds and recurring model photos; not for inventing print artwork or publishing a storefront.
 ---
 
 # Natural photographs, faithful garments
 
 Work from the caller's brand direction, selected identity, actual garment and approved artwork. This skill includes a calibrated compositor, not an image generator, product catalog or ready-made cast. Read the host's image-generation/editing instructions and use its supported tool. If code-based image editing requires explicit opt-in, check authorization in the active conversation before compositing; the presence of this script is not permission.
+
+For garment-only catalog photos or background replacements, follow [garment backgrounds](references/garment-backgrounds.md). Preserve an already-approved garment/ink composite for a background-only edit; the blank-first model workflow below applies when creating a new exposure or rebuilding the print.
 
 ## Resolve the photograph's inputs
 
