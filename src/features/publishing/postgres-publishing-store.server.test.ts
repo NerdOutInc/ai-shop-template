@@ -2128,10 +2128,12 @@ describe.skipIf(!databaseUrl)("durable Printify publishing", () => {
         staleColors: [],
         invalidColors: [],
       })
-      const [admin] = await display.listAdminProducts()
+      const admin = (await display.listAdminProducts()).find(({ snapshot }) => snapshot.id === "shirt")
       expect(admin).toMatchObject({ hiddenAt: null, revealAt: null, revealedAt: null, addedToShopAt: null })
       expect(admin!.snapshot.images).toContainEqual(curated)
-      expect((await display.listAdminDisplayProducts())[0]!.images).toContainEqual(curated)
+      expect((await display.listAdminDisplayProducts()).find(({ id }) => id === "shirt")?.images).toContainEqual(
+        curated
+      )
       expect(await display.readAdminDisplayProduct("shirt")).toMatchObject({
         snapshot: { images: expect.arrayContaining([curated]) },
         withheldVariantIds: [],

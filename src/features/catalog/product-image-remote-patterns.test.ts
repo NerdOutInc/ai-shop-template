@@ -1,3 +1,4 @@
+// The matcher next/image uses; on a Next upgrade, follow its new path rather than drop the assertion.
 import { hasRemoteMatch } from "next/dist/shared/lib/match-remote-pattern"
 import { describe, expect, it } from "vitest"
 
