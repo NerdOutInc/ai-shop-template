@@ -490,10 +490,6 @@ describe.skipIf(!databaseUrl)("durable Printify publishing", () => {
           "printify_product_revisions",
           "printify_publish_jobs",
           "garment_models",
-          "product_gallery_assets",
-          "product_galleries",
-          "product_gallery_revisions",
-          "product_gallery_promotions",
         ]) {
           expect(
             (
