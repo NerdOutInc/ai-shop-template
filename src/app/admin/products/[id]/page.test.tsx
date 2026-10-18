@@ -53,6 +53,30 @@ describe("admin product preview page", () => {
     expect(screen.getByRole("region", { name: "Google Merchant copy editor" })).toBeVisible()
     expect(container.querySelector('script[type="application/ld+json"]')).not.toBeInTheDocument()
     expect(metadata).toMatchObject({ title: "Product preview", robots: { index: false, follow: false } })
+    expect(screen.getByRole("link", { name: "Manage product photos" })).toHaveAttribute(
+      "href",
+      "/admin/products/hidden-published-product/photos"
+    )
+    expect(screen.queryByRole("status")).not.toBeInTheDocument()
+  })
+
+  it("links to the photo editor and surfaces photos that need review", async () => {
+    const product = normalizeCatalogProduct({
+      id: "sample_tee-2",
+      shop_id: 1234,
+      title: "Sample tee",
+      variants: [],
+      options: [],
+      images: [],
+    })
+    const photoWarning = "Some product photos need review because their production settings changed."
+    vi.mocked(getAdminCatalogProduct).mockResolvedValue({ status: "ready", product, isNew: false, photoWarning })
+    render(await AdminProductPreviewPage(props))
+    expect(screen.getByRole("status")).toHaveTextContent(photoWarning)
+    expect(screen.getByRole("link", { name: "Manage product photos" })).toHaveAttribute(
+      "href",
+      "/admin/products/sample_tee-2/photos"
+    )
   })
 
   it("keeps a retry state when private storage is temporarily unavailable", async () => {
