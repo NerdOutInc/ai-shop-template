@@ -3,11 +3,13 @@
 Two self-contained packages preserve the photographic workflow without bringing another shop's models, artwork, product settings or private sample photographs into your project:
 
 - [`store-model-casting`](../.agents/skills/store-model-casting/SKILL.md): create fictional adult casting candidates, preserve selected identity anchors and continue those people in new photographs.
-- [`store-garment-photography`](../.agents/skills/store-garment-photography/SKILL.md): direct natural studio/lifestyle exposures, inspect garment construction and provider placement, composite the original artwork into cloth, and review the final geometry.
+- [`store-garment-photography`](../.agents/skills/store-garment-photography/SKILL.md): create garment-only backgrounds and natural studio/lifestyle exposures, inspect garment construction and provider placement, preserve or composite the original artwork into cloth, and review the final geometry.
 
 The garment package includes a small schematic placement example, guide-overlay tool, empirical compositor and review-record checks. It has no generated people, brand artwork, retailer photographs or fabric samples. Supply your own authorized inputs and photographic brief. Skills guide an agent; they do not include an image-generation service or promise exact identity/physical print reproduction.
 
 Its [Taylor Stitch inspiration notes](../.agents/skills/store-garment-photography/references/taylor-stitch-inspiration.md) describe optional close garment framing, including partial-head crops, alongside wider lifestyle views. The source links, observations and adaptable brief travel with standalone skill installations; each store keeps its own cast, garment construction and activity preferences.
+
+Its [garment background workflow](../.agents/skills/store-garment-photography/references/garment-backgrounds.md) covers warm neutral catalog surfaces, preservation of approved garment/ink composites, edge and shadow review, and replacement of existing gallery selections. Each store's brand brief can override the default surface treatment.
 
 ## Use in this repository
 
