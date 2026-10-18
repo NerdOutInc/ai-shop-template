@@ -15,7 +15,7 @@ Inspect current provider and manufacturer evidence for fabric weight, fit, colla
 
 ## Direct and approve the blank first
 
-Read [photographic direction](references/photographic-direction.md). Choose a specific moment, camera position and coherent light before deciding how to display the print. A useful question is whether the photograph would work with a blank shirt.
+Read [photographic direction](references/photographic-direction.md). Choose a specific moment, camera position and coherent light before deciding how to display the print. A useful question is whether the photograph would work with a blank shirt. For a mix that includes closer garment views, consult the [Taylor Stitch framing examples](references/taylor-stitch-inspiration.md); head crops are optional, not a set-wide default.
 
 Keep the selected person recognizable while making each requested exposure distinct. Change pose, gesture, expression, camera or scene rather than recoloring the same photograph. Review anatomy, identity marks, body support/contact, shared lighting/focus and actual garment construction before adding ink. A successful generation call does not approve the photograph.
 

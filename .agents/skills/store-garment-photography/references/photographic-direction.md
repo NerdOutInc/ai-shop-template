@@ -20,6 +20,8 @@ Shade and window light need coherent shadows too. Do not force hard sunlight ont
 
 Give the camera a plausible nearby position and ordinary focal perspective. Slightly uneven framing, a partial crop and an off-camera response can be natural when the activity explains them. Avoid turning those into compulsory quirks.
 
+For occasional closer views of the clothing, read the [Taylor Stitch examples and framing guidance](taylor-stitch-inspiration.md). A deliberate upper-face/head crop can bring fabric, fit and drape closer while retaining a believable moment. Mix these with face-visible and wider exposures; preserve the measured print instead of resizing it to suit the crop.
+
 The face, shirt and nearby environment should have compatible focus. A razor-sharp model against uniformly smeared scenery often feels detached; readable nearby objects help connect them. Depth of field can still be shallow when distance and lens behavior explain it. Do not make grain, blur, an orange grade or exaggerated pores do the work of believable photography.
 
 Complicated equipment and fabricated rock surfaces are frequent failure points. Use inspected location references when a specific setting matters. A close, simple background can be more convincing than a broad invented environment. Inspect geometry and contact rather than accepting a scene because the prompt named the right place.

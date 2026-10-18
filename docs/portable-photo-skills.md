@@ -7,6 +7,8 @@ Two self-contained packages preserve the photographic workflow without bringing 
 
 The garment package includes a small schematic placement example, guide-overlay tool, empirical compositor and review-record checks. It has no generated people, brand artwork, retailer photographs or fabric samples. Supply your own authorized inputs and photographic brief. Skills guide an agent; they do not include an image-generation service or promise exact identity/physical print reproduction.
 
+Its [Taylor Stitch inspiration notes](../.agents/skills/store-garment-photography/references/taylor-stitch-inspiration.md) describe optional close garment framing, including partial-head crops, alongside wider lifestyle views. The source links, observations and adaptable brief travel with standalone skill installations; each store keeps its own cast, garment construction and activity preferences.
+
 ## Use in this repository
 
 Compatible agents discover the folders under `.agents/skills/`. Invoke `$store-model-casting` or `$store-garment-photography`, and provide the brief and input assets. Each entrypoint explains the required references. A missing size/provider placement or sample is not permission to invent those facts.
