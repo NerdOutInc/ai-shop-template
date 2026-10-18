@@ -5,10 +5,10 @@
   "templateAssessmentCommit": "6a62d46e4bdb5aba5cd69d9bd062d102f6eb1ac5",
   "coverage": {
     "afterSourceCommit": "b32ab30dd7c74f3d17cb88b9dbf4111224cafe54",
-    "reviewedThroughSourceCommit": "2926c59ca5823b3894b3404c05a5cadbd2d60b70",
-    "firstParentCommitCount": 19,
-    "reviewedAt": "2026-10-02",
-    "boundary": "The provenance record covers extraction through afterSourceCommit. This ledger accounts for the subsequent nineteen first-parent commits through merged source PR #161. Reviewed does not mean merged into the template, released or deployed; receiving merge receipts and unresolved production proof remain separate."
+    "reviewedThroughSourceCommit": "141f678144779577567982f1a50a890ed7b74f0e",
+    "firstParentCommitCount": 34,
+    "reviewedAt": "2026-10-18",
+    "boundary": "The provenance record covers extraction through afterSourceCommit. This ledger accounts for the subsequent thirty-four first-parent commits through merged source PR #197. Reviewed does not mean merged into the template, released or deployed; receiving merge receipts and unresolved production proof remain separate."
   },
   "dispositions": [
     {
@@ -446,8 +446,8 @@
       ],
       "reason": "Display the confirmed checkout rates, enabled destinations and delivery estimates beside Add to cart. Adapted to preserve all template setup and policy gates; no source rates were copied.",
       "evidence": "Scoped forward port against template main 9a345a98549926443e6ed5a413ccb329d37525ad. Receiving PR #53 review corrections: 471 targeted unit tests and 19 ProductDetails browser stories passed, plus structure, template hygiene, lint, types, formatting and manual Chromium checks at 390px/1280px. Shipping retry tests use the real item reader and reproduce the previous SHIPPING_CHANGED failure. No live provider or database integration claim. No merchant assets, settings or source history imported. This isolated receipt does not extend the contiguous review boundary.",
-      "templateCommit": null,
-      "followUp": "Draft receiving PR #53; record the eventual merge receipt. Not merged or deployed.",
+      "templateCommit": "885306a19fd736affc51d656de13f9c9437af0a0",
+      "followUp": "Merged in template #53. Deployment and live verification remain receiving-store operations.",
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/53"
     },
     {
@@ -458,8 +458,8 @@
       "paths": ["src/features/catalog/product-details.tsx", "src/features/catalog/product-exchange-notice.tsx"],
       "reason": "Display only an explicitly configured, owner-reviewed returnsSummary (maximum 240 characters) and full-policy link near purchase controls. The optional field defaults to hidden for existing stores; omit the source no-size-or-color-exchanges rule.",
       "evidence": "Scoped forward port against template main 9a345a98549926443e6ed5a413ccb329d37525ad. Receiving PR #53 review corrections: 471 targeted unit tests and 19 ProductDetails browser stories passed, plus structure, template hygiene, lint, types, formatting and manual Chromium checks at 390px/1280px. Shipping retry tests use the real item reader and reproduce the previous SHIPPING_CHANGED failure. No live provider or database integration claim. No merchant assets, settings or source history imported. This isolated receipt does not extend the contiguous review boundary.",
-      "templateCommit": null,
-      "followUp": "Draft receiving PR #53; record the eventual merge receipt. Not merged or deployed.",
+      "templateCommit": "885306a19fd736affc51d656de13f9c9437af0a0",
+      "followUp": "Merged in template #53. Deployment and live verification remain receiving-store operations.",
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/53"
     },
     {
@@ -475,8 +475,8 @@
       ],
       "reason": "Explain when a color choice clears an unavailable selected size with polite status feedback, preserved keyboard focus and purchase-control description. Keep available size selections and URL state.",
       "evidence": "Scoped forward port against template main 9a345a98549926443e6ed5a413ccb329d37525ad. Receiving PR #53 review corrections: 471 targeted unit tests and 19 ProductDetails browser stories passed, plus structure, template hygiene, lint, types, formatting and manual Chromium checks at 390px/1280px. Shipping retry tests use the real item reader and reproduce the previous SHIPPING_CHANGED failure. No live provider or database integration claim. No merchant assets, settings or source history imported. This isolated receipt does not extend the contiguous review boundary.",
-      "templateCommit": null,
-      "followUp": "Draft receiving PR #53; record the eventual merge receipt. Not merged or deployed.",
+      "templateCommit": "885306a19fd736affc51d656de13f9c9437af0a0",
+      "followUp": "Merged in template #53. Deployment and live verification remain receiving-store operations.",
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/53"
     },
     {
@@ -490,8 +490,8 @@
       ],
       "reason": "Accept unused Roboto editor defaults with auto or opaque black hex colors in the shared artwork reader, including the provider care label. Preview, draft matching and recipe reuse agree; custom text, unsupported print and artwork revision rejection remain.",
       "evidence": "Scoped forward port against template main 9a345a98549926443e6ed5a413ccb329d37525ad. Receiving PR #53 review corrections: 471 targeted unit tests and 19 ProductDetails browser stories passed, plus structure, template hygiene, lint, types, formatting and manual Chromium checks at 390px/1280px. Shipping retry tests use the real item reader and reproduce the previous SHIPPING_CHANGED failure. No live provider or database integration claim. No merchant assets, settings or source history imported. This isolated receipt does not extend the contiguous review boundary.",
-      "templateCommit": null,
-      "followUp": "Draft receiving PR #53; record the eventual merge receipt. Not merged or deployed.",
+      "templateCommit": "885306a19fd736affc51d656de13f9c9437af0a0",
+      "followUp": "Merged in template #53. Deployment and live verification remain receiving-store operations.",
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/53"
     },
     {
@@ -528,8 +528,8 @@
       ],
       "reason": "Partially port: show Free for confirmed zero cart shipping, describe fully zero rates as free, widen zero-rate structured-data quantity only if all supported cart quantities are free, and retain saved shipping after a lost Stripe response. Omit source shipping defaults, price changes, navigation ribbon and provider-quote architecture. Keep the existing Stripe shipping display_name to preserve older idempotent payloads.",
       "evidence": "Scoped forward port against template main 9a345a98549926443e6ed5a413ccb329d37525ad. Receiving PR #53 review corrections: 471 targeted unit tests and 19 ProductDetails browser stories passed, plus structure, template hygiene, lint, types, formatting and manual Chromium checks at 390px/1280px. Shipping retry tests use the real item reader and reproduce the previous SHIPPING_CHANGED failure. No live provider or database integration claim. No merchant assets, settings or source history imported. This isolated receipt does not extend the contiguous review boundary.",
-      "templateCommit": null,
-      "followUp": "Draft receiving PR #53; record the eventual merge receipt. Not merged or deployed.",
+      "templateCommit": "885306a19fd736affc51d656de13f9c9437af0a0",
+      "followUp": "Merged in template #53. Deployment and live verification remain receiving-store operations.",
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/53"
     },
     {
@@ -546,8 +546,9 @@
       ],
       "reason": "Port Google-only reviewed descriptions with variant/facts binding, XML bounds, stale fallback, generated-origin history and guarded apply/clear. Preserve configured brand identity and destination gates. Omit source pilot IDs, product prose, account state and operational evidence.",
       "evidence": "Selective forward port against template main 9a345a98549926443e6ed5a413ccb329d37525ad. No SQL migration is required: existing template snapshots, revision history and runtime grants support the metadata. Receiving draft PR https://github.com/NerdOutInc/ai-shop-template/pull/54 records validation; this is not production activation or Merchant import evidence.",
-      "templateCommit": null,
-      "followUp": "Merge the reviewed receiving PR, then verify deployment and any copy/feed activation under receiving-store authority. No gap before these source commits has been marked reviewed."
+      "templateCommit": "87a908bf631a355b8e5cd0b8ff38c65d9a56c546",
+      "followUp": "Merged in template #54. Deployment and any copy/feed activation remain receiving-store operations under their own authority.",
+      "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/54"
     },
     {
       "sourceCommit": "a320a3f39a906ef7443e33cfade9c93c2d56453f",
@@ -563,8 +564,9 @@
       ],
       "reason": "Port private current-admin preview/apply editor with same-origin protection, bounded requests, frozen copy review, exact revision guards, draft retention and unknown-outcome readback. Use neutral fixture copy, retain template runtime permissions and keep storefront/Meta copy separate.",
       "evidence": "Selective forward port against template main 9a345a98549926443e6ed5a413ccb329d37525ad. No SQL migration is required: existing template snapshots, revision history and runtime grants support the metadata. Receiving draft PR https://github.com/NerdOutInc/ai-shop-template/pull/54 records validation; this is not production activation or Merchant import evidence.",
-      "templateCommit": null,
-      "followUp": "Merge the reviewed receiving PR, then verify deployment and any copy/feed activation under receiving-store authority. No gap before these source commits has been marked reviewed."
+      "templateCommit": "87a908bf631a355b8e5cd0b8ff38c65d9a56c546",
+      "followUp": "Merged in template #54. Deployment and any copy/feed activation remain receiving-store operations under their own authority.",
+      "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/54"
     },
     {
       "sourceCommit": "977920bd2ffa708c4bf49f2cd2fbe61288d0bfd5",
@@ -581,8 +583,8 @@
       ],
       "reason": "Selected later port of private immutable desktop/mobile image uploads, revision-guarded editor/approval/withdrawal, eligible-current-week public reads, keyboard product destinations and additive storage. Adapt to target configured cadence/timezone, one to six product destinations, feature-disabled denial, generic home fallback and store_app_runtime. Excludes all source images, model portraits, artwork, prices, shipping promises, branding, schedules and customer/provider records. No source history imported; migration receives a new target identity.",
       "evidence": "Reviewed source runtime against target main 9a345a98549926443e6ed5a413ccb329d37525ad. Local restricted-role PostgreSQL tests cover private draft/future/expired/hidden images, stale edits, shop isolation, safe withdrawal and additive upgrade; public gate has explicit configured Friday DST boundary proof. Synthetic browser checks cover responsive sources, link alignment/focus and the editor; live Blob/admin deployment remains unverified. This is a selected later port, not an extension of the ledger contiguous coverage interval.",
-      "templateCommit": null,
-      "followUp": "Draft receiving PR #55 is open. Merge, migration application and live rollout are separate authorized operations; no production resources were changed.",
+      "templateCommit": "8e25c7c38c810e387fc3bc1d3734ce334da79b4f",
+      "followUp": "Merged in template #55. Migration application and live rollout remain separate authorized receiving-store operations.",
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/55",
       "sourceMigrationIdentity": {
         "version": "20261013191733",
@@ -602,13 +604,120 @@
       ],
       "reason": "Retain text and linked product facts for assistive technology and structured data beneath an approved poster, with a centered shop action. Use neutral target theme and current published products; keep the configured introduction and weekly grid fallback. Excludes source brand hero assets and source-specific offer copy.",
       "evidence": "Local rendering test verifies server HTML destinations and structured product list; configured release expiry is reused. Selected later source change only; no claim that intervening source commits have been ported.",
-      "templateCommit": null,
-      "followUp": "Draft receiving PR #55 is open. Merge, migration application and live rollout are separate authorized operations; no production resources were changed.",
+      "templateCommit": "8e25c7c38c810e387fc3bc1d3734ce334da79b4f",
+      "followUp": "Merged in template #55. Migration application and live rollout remain separate authorized receiving-store operations.",
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/55"
+    },
+    {
+      "sourceCommit": "f8fa3c4780d43d12059e18e1ff79c3ed342dbcf2",
+      "parentCommit": "2926c59ca5823b3894b3404c05a5cadbd2d60b70",
+      "disposition": "already-equivalent",
+      "classification": "dependency-maintenance",
+      "paths": ["package.json", "pnpm-lock.yaml"],
+      "reason": "Bumps five Storybook packages to 10.6.1. Template #59 already pins all five at 10.6.2 with its compatible @storybook/nextjs-vite patch.",
+      "evidence": "Reviewed the complete parent-to-commit diff: package manifest and lockfile only. Compared against template 9d94d9528634c532be9c89dc0069125111bfe429.",
+      "templateCommit": "9d94d9528634c532be9c89dc0069125111bfe429",
+      "followUp": null
+    },
+    {
+      "sourceCommit": "9b9616010a29056d0de6cd568c269603059b61f1",
+      "parentCommit": "e4ad1ad50c62ad26f34d2ecd4c8317741dc4b650",
+      "disposition": "accepted",
+      "classification": "marketing-creative-guidance",
+      "paths": [
+        "docs/marketing-creative.md",
+        ".agents/skills/store-weekly-hero/references/garment-fidelity.md",
+        ".agents/skills/store-weekly-hero/references/composition-and-review.md",
+        "docs/printify-workflow.md",
+        "assets/print/README.md",
+        "docs/portable-photo-skills.md"
+      ],
+      "reason": "Port the reusable guidance under one store's ad campaign as neutral documentation: garment fidelity for ads, social and concept images, dimensional folded garments, generated blank-garment layers with explicit reference roles, a campaign approval workflow and a record field list. Excludes every ad image and source layer, fonts, mark, layout and print calibration values, prompts as written, prices, budgets, audiences, campaign/ad account IDs and owner names.",
+      "evidence": "Selective forward port against template main 9d94d9528634c532be9c89dc0069125111bfe429. Documentation only; template hygiene, formatting, skills lint and link checks passed. No campaign was created or published.",
+      "templateCommit": null,
+      "followUp": "Merge receiving PR #60.",
+      "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/60"
+    },
+    {
+      "sourceCommit": "181c38789209d0330e7686b5cb32adb0c2c0879f",
+      "parentCommit": "8cb3eb5aa5009b18a584c760e1d0ee512a998431",
+      "disposition": "accepted",
+      "classification": "weekly-hero-skill-crosslinks",
+      "paths": ["docs/weekly-hero-admin.md", "docs/admin-design-library.md", "README.md"],
+      "reason": "Most of the commit archives one store's selected heroes and brand history in Git. Port only the reusable discoverability fix: admin runbooks now point to the store-weekly-hero creation skill and workflow. The replay verifier is not ported: it reads Git-tracked assets, which the template keeps in private storage, and it rounds width and offset separately, contradicting the template's documented edge quantization. Archive retention is already covered by the hero skill's retention reference.",
+      "evidence": "Reviewed the complete parent-to-commit diff against template main 9d94d9528634c532be9c89dc0069125111bfe429. Documentation only; hygiene and link checks passed.",
+      "templateCommit": null,
+      "followUp": "Merge receiving PR #60.",
+      "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/60"
+    },
+    {
+      "sourceCommit": "54e8372e9bc46c78438a585a5f68bd8357cbcf9a",
+      "parentCommit": "181c38789209d0330e7686b5cb32adb0c2c0879f",
+      "disposition": "skipped",
+      "classification": "store-cast-and-photo-archive",
+      "paths": [
+        "assets/mockups/",
+        "docs/",
+        "scripts/artwork/",
+        ".agents/skills/store-garment-photography/",
+        ".agents/skills/store-model-casting/"
+      ],
+      "reason": "Nearly all content is one store's selected model cast, casting records, collection and review photographs, location research, private archive receipts, dated replay/render scripts and creative-direction docs. The portable photo skill packages originate in template a0ea626 (#51) and the template copies are newer (#59). The Git-blob archive tool assumes media committed to Git, which the template's private-storage policy rejects; the collection review builder hard-codes that store's designs and cast. Generic lessons are already in the template skills.",
+      "evidence": "Reviewed the commit's file inventory and every non-binary file against template main 9d94d9528634c532be9c89dc0069125111bfe429.",
+      "templateCommit": null,
+      "followUp": null
+    },
+    {
+      "sourceCommit": "fc8a04c11a2fb45bd50b32dc38b5a3c79ca29812",
+      "parentCommit": "54e8372e9bc46c78438a585a5f68bd8357cbcf9a",
+      "disposition": "accepted",
+      "classification": "stripe-endive-test-hardening",
+      "paths": [
+        "src/app/api/webhooks/stripe/route.test.ts",
+        "e2e/commerce/provider-server.ts",
+        "docs/dependency-maintenance.md"
+      ],
+      "reason": "Dependency, Stripe 23 / 2026-09-30.endive and action bumps are already equivalent through template #59. Port the two missing test hardenings: webhook fulfillment against both Dahlia and Endive event snapshots, and offline Stripe stub guards for Stripe-Version and the removed payment_method_types. Excludes the source setup doc's hard-coded webhook version and its shop identifier.",
+      "evidence": "Selective forward port against template main 9d94d9528634c532be9c89dc0069125111bfe429. Webhook unit tests passed; desktop commerce browser journeys passed (39) on a local Chromium shim; phone WebKit coverage was unavailable locally.",
+      "templateCommit": null,
+      "followUp": "Merge receiving PR #60; confirm the phone commerce project in CI.",
+      "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/60"
+    },
+    {
+      "sourceCommit": "141f678144779577567982f1a50a890ed7b74f0e",
+      "parentCommit": "fc8a04c11a2fb45bd50b32dc38b5a3c79ca29812",
+      "disposition": "accepted",
+      "classification": "store-managed-product-galleries",
+      "paths": [
+        "src/features/product-gallery/",
+        "src/features/publishing/",
+        "src/features/catalog/",
+        "src/features/merchant-feed/",
+        "src/features/featured-order/",
+        "src/features/drop-emails/",
+        "src/app/admin/products/[id]/",
+        "src/app/api/admin/products/[product]/gallery/",
+        "src/proxy.ts",
+        "next.config.ts",
+        "src/app/globals.css",
+        "docs/product-gallery-workflow.md",
+        "supabase/migrations/20261018060023_product_galleries.sql"
+      ],
+      "reason": "Port curated per-color store photographs that survive provider republishes: schema, revision-guarded store, private upload and preview, resumable content-addressed activation, a fail-closed display overlay at every customer and admin display boundary, withheld feed variants, the admin Photos editor and its API, and the operator workflow with maintainer contracts. Adapted to store_app_runtime grants, neutral fixtures, the template theme background, strict published-snapshot checks and the template proxy. Excludes source role, policy and test-database names, its shop identifier and fixture copy, the separate planning document, lenient snapshot handling and any store photos, cast or manifests.",
+      "evidence": "Selective forward port against template main 9d94d9528634c532be9c89dc0069125111bfe429 in receiving PR #60. Restricted-role PostgreSQL suites cover grants, revision guards, activation receipts, the 42P01-only deployment fallback across all display reads and stale/invalid withholding; full local unit suite (4,409 tests) passed. Admin browser journeys require Docker and were not run locally. No provider, Blob or production resources were changed.",
+      "templateCommit": null,
+      "followUp": "Merge receiving PR #60. Receiving stores apply the migration before deploying the code, then verify grants with the documented SQL.",
+      "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/60",
+      "sourceMigrationIdentity": {
+        "version": "20261017220727",
+        "name": "product_galleries",
+        "scope": "Source repository only; this migration identity is not part of the target migration history."
+      },
+      "templateMigration": "supabase/migrations/20261018060023_product_galleries.sql"
     }
   ],
   "outboundPorts": [],
-  "outboundStatus": "No template-to-operating-store port was authorized or performed by this change. Create a private receiving-store port receipt for each proposed fix under the update contract.",
+  "outboundStatus": "No template-to-operating-store port was authorized or performed by this change. Create a private receiving-store port receipt for each proposed fix under the update contract. Candidate: the template's #59 garment-photography compositor and Pillow compatibility repair is newer than the source's copy of the portable photo skills.",
   "validationEvidence": [
     {
       "id": "template-main-after-admin-fixture-fix",
