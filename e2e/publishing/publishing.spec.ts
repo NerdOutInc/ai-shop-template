@@ -179,7 +179,7 @@ test.beforeAll(async () => {
         z.object({ path: z.literal("/api/internal/order-alerts"), schedule: z.literal("0 * * * *") }).strict(),
         z.object({ path: z.literal("/api/internal/drop-emails"), schedule: z.literal("5,20,35,50 * * * *") }).strict(),
         z
-          .object({ path: z.literal("/api/internal/signup-confirmations"), schedule: z.literal("*/15 * * * *") })
+          .object({ path: z.literal("/api/internal/signup-confirmations"), schedule: z.literal("10,25,40,55 * * * *") })
           .strict(),
       ]),
     })

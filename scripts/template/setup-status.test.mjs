@@ -667,3 +667,34 @@ test("pending expiry requires its authenticated worker for retained lists even w
   assert.equal(expiry(disabled, config).active, false)
   assert.equal(expiry(disabled, retained, { mode: "sandbox" }).active, false)
 })
+
+test("signup worker checks accept the staggered and legacy 15-minute schedules only", () => {
+  const list = {
+    ...config,
+    features: { ...config.features, dropSignup: true },
+    privacy: { ...config.privacy, retainedDropSubscribers: true },
+  }
+  const enabled = {
+    ...environment,
+    SIGNUP_CONFIRMATIONS_ENABLED: "true",
+    RESEND_API_KEY: "i".repeat(32),
+    DROP_EMAIL_FROM_EMAIL: "drops@newbrand.com",
+  }
+  const withSignupSchedule = (schedule) =>
+    schedules.map((entry) => (entry.path === "/api/internal/signup-confirmations" ? { ...entry, schedule } : entry))
+  assert.equal(
+    schedules.find((entry) => entry.path === "/api/internal/signup-confirmations").schedule,
+    "10,25,40,55 * * * *"
+  )
+  for (const [schedule, expected] of [
+    ["10,25,40,55 * * * *", true],
+    ["*/15 * * * *", true],
+    ["0 * * * *", false],
+  ])
+    for (const name of ["Signup inbox confirmation", "Pending signup expiry"])
+      assert.equal(
+        ready(name, status(enabled, list, { schedules: withSignupSchedule(schedule) })),
+        expected,
+        `${name} with ${schedule}`
+      )
+})

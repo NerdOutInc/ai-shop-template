@@ -16,6 +16,8 @@ const templateCopy = Object.freeze({
   "about.paragraphs":
     "We’re getting ready to share our first collection. Come back soon to discover our story and designs.",
 })
+// Stores that merged the earlier example keep "*/15"; new examples stagger clear of the :00/:30 workers.
+const signupConfirmationSchedules = new Set(["10,25,40,55 * * * *", "*/15 * * * *"])
 const reservedHost = /(^|\.)(?:example\.(?:com|net|org)|example|test|invalid|localhost)$/i
 const loopback = (host) => ["localhost", "127.0.0.1", "[::1]"].includes(host)
 const supplied = (value) => typeof value === "string" && value.trim().length > 0
@@ -299,6 +301,9 @@ export function setupStatus(
     "Configure owner access, live Stripe reads, the verified Resend sender, sending key and hourly /api/internal/order-alerts schedule; verify receipt separately.",
     mode !== "sandbox" && enabled("ORDER_ALERTS_ENABLED")
   )
+  const signupWorkerScheduled = schedules.some(
+    (entry) => entry?.path === "/api/internal/signup-confirmations" && signupConfirmationSchedules.has(entry.schedule)
+  )
   add(
     "Signup inbox confirmation",
     enabled("SIGNUP_CONFIRMATIONS_ENABLED") &&
@@ -308,10 +313,8 @@ export function setupStatus(
       config.policies?.published === true &&
       (config.features?.dropSignup === true || config.privacy?.retainedDropSubscribers === true) &&
       matches("NEXT_PUBLIC_SITE_URL", (value) => typeof value === "string" && value.startsWith("https://")) &&
-      schedules.some(
-        (entry) => entry?.path === "/api/internal/signup-confirmations" && entry.schedule === "*/15 * * * *"
-      ),
-    "Configure the verified confirmation sender and 15-minute /api/internal/signup-confirmations worker, then verify an owner-controlled inbox and explicit confirmation before activation.",
+      signupWorkerScheduled,
+    "Configure the verified confirmation sender and 15-minute /api/internal/signup-confirmations worker (10,25,40,55 * * * *), then verify an owner-controlled inbox and explicit confirmation before activation.",
     mode !== "sandbox" && (config.features?.dropSignup === true || enabled("SIGNUP_CONFIRMATIONS_ENABLED"))
   )
   add(
@@ -319,10 +322,8 @@ export function setupStatus(
     config.configured === true &&
       config.policies?.published === true &&
       matches("CRON_SECRET", (value) => typeof value === "string" && value.length >= 32) &&
-      schedules.some(
-        (entry) => entry?.path === "/api/internal/signup-confirmations" && entry.schedule === "*/15 * * * *"
-      ),
-    "Keep the authenticated 15-minute signup-confirmations worker and subscriber disclosure active for automatic expiry, including when email sending is off.",
+      signupWorkerScheduled,
+    "Keep the authenticated 15-minute signup-confirmations worker (10,25,40,55 * * * *) and subscriber disclosure active for automatic expiry, including when email sending is off.",
     mode !== "sandbox" && (config.features?.dropSignup === true || config.privacy?.retainedDropSubscribers === true)
   )
   add(

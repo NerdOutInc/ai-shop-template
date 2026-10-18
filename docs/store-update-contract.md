@@ -126,6 +126,8 @@ Omitted feature activation flags resolve to false; explicit true/false owner cho
 
 Setup, hygiene and browser fixture generation use the owner-data file. Hygiene still scans working and staged content independently and never executes owner code; older single-file stores retain the static inspection path. Run `pnpm setup:check` and the full suite after moving owner values. The config split must merge before generating a new store so that every future update preserves this boundary.
 
+The example signup-confirmations worker schedule moved from `*/15 * * * *` to `10,25,40,55 * * * *`, keeping it clear of the hourly and half-hourly workers and drop emails. Adopting it is an optional receiving-store schedule change: `pnpm setup:check` accepts both values, so a store that already merged `*/15` stays valid. Changing an active `vercel.json` schedule still requires separate deployment authority.
+
 Static hygiene now recognizes both historical `storeSchema.parse({...})` and the actual `storeConfigSchema.parse({...})` spelling. The earlier detector missed the latter, so configured single-file stores now receive the configured-store hygiene scope rather than neutral-template fingerprints. Configuration parsing and brand-isolation checks still apply.
 
 ## Migration identity and forward-port receipts
