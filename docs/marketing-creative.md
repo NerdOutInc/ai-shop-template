@@ -27,7 +27,7 @@ Verify construction for the exact style: collar, sleeve ends, hems and any raw-c
 2. The owner reviews new or materially changed images and the exact copy before public use. The owner approves any new budget, budget increase or spend-cap change; routine targeting and scheduling are delegated only when the owner says so.
 3. Track each creative through separate states: **draft → owner-approved → uploaded → active (or scheduled) → delivery verified**. Creating files does not upload an ad, uploading does not activate it, and an active ad has not necessarily delivered. Record platform IDs and readback evidence only after the real action happened.
 4. Make one separately reviewed export per placement or aspect ratio, for example a 4:5 feed image and a 9:16 Stories/Reels image. Never automatically crop one into another.
-5. Inspect every final file at native size and at phone width: print lettering, garment edges, neckline, copy readability and all four canvas edges. File dimensions alone do not prove readability.
+5. Inspect every final file at native size and at phone width: print lettering, garment edges, neckline, copy readability and all four canvas edges. Keep the whole print on fabric and clear of headline, offer or badge overlays. File dimensions alone do not prove readability.
 
 ## Record each creative
 
@@ -49,6 +49,6 @@ Finals, generated layers, cutouts and review evidence follow the [artwork storag
 
 ## Attribution and measurement
 
-The store records only `utm_source`, `utm_medium` and `utm_campaign`, each limited to 80 characters; see [purchase sources and orders](order-attribution.md). Put any per-ad distinction you need in `utm_campaign`, such as `autumn_drop_feed_a`. `utm_content` and other parameters are not captured.
+The store records only `utm_source`, `utm_medium` and `utm_campaign`; see [purchase sources and orders](order-attribution.md). Use only letters, numbers, hyphens and underscores, starting with a letter or number, up to 80 characters. A label that breaks this rule or runs longer is dropped, not truncated, so avoid ad-name macros that can expand to spaces or punctuation. Put any per-ad distinction you need in `utm_campaign`, such as `autumn_drop_feed_a`. `utm_content` and other parameters are not captured. Links that hand off through Meta Shops keep only the recognized source; campaign labels after that handoff stay unknown.
 
 Ads do not need [Meta Pixel](meta-pixel.md) or [Google purchase tracking](google-conversions.md). Those integrations remain opt-in, and optional marketing stays disabled during store preparation. Running an ad never enables them.
