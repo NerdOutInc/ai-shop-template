@@ -6,7 +6,7 @@ An AI-first clothing store you own. Give your agent [setup.md](setup.md) and ask
 
 The [landing page](website/index.html) is the short version: copy one prompt into your agent and let it guide setup. Its GitHub Pages URL becomes available after the [Pages workflow is enabled and deployed](docs/landing-page.md). You need your own accounts, but you do **not** need to create Vercel or Supabase projects first. Your agent can create them after connecting and confirming names, account/team, region and any costs. Prefer the manual repository route? Follow the steps below.
 
-The upstream template repository currently has **internal** visibility: enterprise members with read access can use the template, subject to permission to create a repository in their chosen destination. It is not publicly accessible. A generated store has its own repository visibility. See GitHub's [template access requirements](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template) and [internal repository visibility](https://docs.github.com/en/enterprise-cloud@latest/repositories/creating-and-managing-repositories/about-repositories#about-internal-repositories).
+The template is public. You only need a GitHub account with permission to create your own repository; choose its visibility independently. See GitHub's [template guide](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template).
 
 ## Start your store
 

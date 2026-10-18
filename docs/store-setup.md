@@ -4,7 +4,7 @@ The shortest workflow is **paste the landing-page prompt → answer the agent's 
 
 ## Starting from the landing-page prompt
 
-The owner does not need a repository checkout or pre-created provider projects to start. Inspect what is already available, then ask only for missing choices: store/repository name, GitHub owner and visibility, provider account/team or organization, region and budget. The canonical template is `NerdOutInc/ai-shop-template`; it currently has internal visibility, so verify the owner's GitHub access before promising a generated store. Do not change template visibility to solve an access failure.
+The owner does not need a repository checkout or pre-created provider projects to start. Inspect what is already available, then ask only for missing choices: store/repository name, GitHub owner and visibility, provider account/team or organization, region and budget. The canonical template, `NerdOutInc/ai-shop-template`, is public. Creating a generated store still requires the owner's authenticated GitHub account and permission in the chosen destination; confirm the new repository's visibility independently.
 
 With authorized GitHub access, create the owner's repository from the template and clone/open it using the available connector or GitHub CLI. If those tools cannot generate a repository, prepare the [Use this template form](https://github.com/new?template_name=ai-shop-template&template_owner=NerdOutInc) for the owner, then resume after verifying the new remote. Do not personalize the upstream template or merely clone it and push changes back to it. Capture the clean template baseline before customization as described under [repository personalization](#personalize-the-generated-repository).
 

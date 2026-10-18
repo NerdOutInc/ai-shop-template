@@ -19,7 +19,7 @@ In this repository, garments in ads, social posts and concepts also follow [mark
 
 ## Install outside the repository
 
-The canonical source is `NerdOutInc/ai-shop-template`. Pin the reviewed commit or a release when installing; record that revision so later updates are deliberate. This repository is currently internal: installation requires repository access. These instructions do not change access or resolve the additions' licensing described in [template origin](template-origin.md).
+The canonical source is the public `NerdOutInc/ai-shop-template` repository. Pin the reviewed commit or a release when installing; record that revision so later updates are deliberate. Public access does not change the additions' licensing described in [template origin](template-origin.md).
 
 With a host's GitHub skill installer, request these two paths at the chosen ref:
 

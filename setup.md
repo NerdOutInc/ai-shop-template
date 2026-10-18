@@ -18,7 +18,7 @@ Explain what you will do next in plain language. Keep the owner involved in crea
 
 - If you are already in the owner's generated repository, continue there after verifying its identity. Do not overwrite unrelated changes.
 - If you are starting from this document alone, use the canonical template at <https://github.com/NerdOutInc/ai-shop-template>. Confirm the new repository name, destination owner/organization and visibility, then generate and clone the owner's repository with authorized GitHub tools. Do not customize the upstream template. Follow the runbook's [repository creation](docs/store-setup.md#starting-from-the-landing-page-prompt) and [clean baseline capture](docs/store-setup.md#personalize-the-generated-repository).
-- The template is currently internal. Verify GitHub access; if it is missing, explain that specific requirement and help the owner obtain access. Do not change visibility or claim a public landing page grants template access.
+- The template is public and can be read without signing in. Creating the owner's repository still needs their GitHub account and permission in the chosen destination. Confirm its visibility independently; a public template does not require a public store repository.
 
 Discover the actual tools in this session: files, terminal, GitHub, provider connectors/CLIs, browser/computer and image generation. Install the repository's pinned local dependencies when needed. Repository skills do not install provider plugins or grant account access. A missing capability calls for the smallest precise handoff, then continued independent work.
 
