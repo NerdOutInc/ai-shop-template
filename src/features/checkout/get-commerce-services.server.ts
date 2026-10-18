@@ -31,7 +31,7 @@ function createServices() {
   }
   return {
     stripe: new Stripe(env.STRIPE_SECRET_KEY, {
-      apiVersion: "2026-08-26.dahlia",
+      apiVersion: "2026-09-30.endive",
       maxNetworkRetries: 2,
       timeout: 15_000,
     }),

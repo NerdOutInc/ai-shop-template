@@ -11,11 +11,11 @@ import ShippingPage from "./page"
 vi.mock("@/lib/get-site-url", () => ({ getSiteUrl: () => new URL("https://store.example") }))
 
 it.each([
-  { first: 435, additional: 200, firstText: "$4.35", additionalText: "$2.00" },
-  { first: 0, additional: 0, firstText: "$0.00", additionalText: "$0.00" },
+  { first: 435, additional: 200, rate: "$4.35 for the first shirt, plus $2.00 for each additional shirt" },
+  { first: 0, additional: 0, rate: "free" },
 ])(
   "uses checkout amounts in visible copy and structured data, including confirmed free shipping: $first",
-  ({ first, additional, firstText, additionalText }) => {
+  ({ first, additional, rate }) => {
     storeConfig.commerce.firstItemShippingCents = first
     storeConfig.commerce.additionalItemShippingCents = additional
     storeConfig.policies.shippingText = ["Wash with similar colors."]
@@ -24,7 +24,7 @@ it.each([
     document.querySelectorAll("script").forEach((script) => script.remove())
     const text = document.querySelector("main")!.textContent!
 
-    expect(text).toContain(`${firstText} for the first shirt, plus ${additionalText} for each additional shirt`)
+    expect(text).toContain(`Shipping is ${rate}.`)
     expect(text).toContain("all 50 US states and Washington, DC")
     expect(text).toContain("4–15 business days")
     expect(text).toContain("11–27 business days")

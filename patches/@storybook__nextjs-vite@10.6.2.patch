@@ -1,0 +1,13 @@
+diff --git a/dist/_browser-chunks/chunk-342N7CWU.js b/dist/_browser-chunks/chunk-342N7CWU.js
+index 342f9b9b78c04e71bef8f43a5b6d1a00d14a45c1..97d157541836ee30c718ed26390ca60a75782494 100644
+--- a/dist/_browser-chunks/chunk-342N7CWU.js
++++ b/dist/_browser-chunks/chunk-342N7CWU.js
+@@ -117,6 +117,8 @@ var getParallelRoutes = (segmentsList) => {
+           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+           // @ts-ignore Only available in Next.js >= v15.1.1
+           parentCacheNode: newLazyCacheNode,
++          // Next 16.4 useRouter reads the segment identity from its render tree.
++          parentRenderTree: { data: { ...newLazyCacheNode, bfcacheId: 0 } },
+           // END
+           url: pathname,
+           loading: null

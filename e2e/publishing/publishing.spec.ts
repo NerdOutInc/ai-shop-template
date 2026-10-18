@@ -386,12 +386,20 @@ test("publishes signed events, isolates drafts, preserves hidden shirts, and rem
   // hosted-checkout validation, without creating a Stripe session.
   expect(quote.status()).toBe(409)
   expect(await quote.json()).toMatchObject({ code: "SHIPPING_CHANGED" })
-  expect((await providerState(request)).apiReads).toEqual(checkoutReadsBefore)
+  // Shipping validation follows the live stock read so saved retries can retain their original rate.
+  expect((await providerState(request)).apiReads).toEqual([
+    ...checkoutReadsBefore,
+    `/v1/shops/${config.shopId}/products/${product.id}.json`,
+  ])
+  expect(
+    (await pool.query("select request_id from commerce.checkout_orders where request_id=$1", [quoteBody.requestId]))
+      .rows
+  ).toHaveLength(0)
   const capacityBuckets = (
     await pool.query<{ bucket: string }>("select bucket from commerce.checkout_capacity")
   ).rows.map(({ bucket }) => bucket)
-  expect(capacityBuckets).toHaveLength(2)
-  expect(capacityBuckets).toEqual(expect.arrayContaining(["ingress", expect.stringMatching(/^client:/)]))
+  expect(capacityBuckets).toHaveLength(3)
+  expect(capacityBuckets).toEqual(expect.arrayContaining(["ingress", "provider", expect.stringMatching(/^client:/)]))
 
   // Printify's Hide/Show actions publish visibility with every content selection disabled.
   const visibilitySelection = { title: false, description: false, variants: false, images: false }

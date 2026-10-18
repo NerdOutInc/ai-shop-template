@@ -17,7 +17,7 @@ const stripe = new Stripe("sk_test_not_a_real_key")
 const secret = "whsec_fixture_signature_test"
 const sessionId = "cs_test_fixture12345678901234567890"
 
-function request(eventType: string, validSignature = true) {
+function request(eventType: string, validSignature = true, timestamp?: number) {
   const body = JSON.stringify({
     id: "evt_fixture",
     object: "event",
@@ -32,6 +32,7 @@ function request(eventType: string, validSignature = true) {
       "stripe-signature": stripe.webhooks.generateTestHeaderString({
         payload: validSignature ? body : "tampered",
         secret,
+        timestamp,
       }),
     },
   })
@@ -45,6 +46,12 @@ beforeEach(() => {
 describe("Stripe webhook", () => {
   it("rejects a modified payload before fulfillment", async () => {
     expect((await POST(request("checkout.session.completed", false))).status).toBe(400)
+    expect(fulfillCheckout).not.toHaveBeenCalled()
+  })
+
+  it("rejects an expired authentic signature before fulfillment", async () => {
+    const timestamp = Math.floor(Date.now() / 1000) - 600
+    expect((await POST(request("checkout.session.completed", true, timestamp))).status).toBe(400)
     expect(fulfillCheckout).not.toHaveBeenCalled()
   })
 

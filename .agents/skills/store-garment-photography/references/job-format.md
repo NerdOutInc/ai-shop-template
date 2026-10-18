@@ -2,7 +2,7 @@
 
 Use [scripts/composite.py](../scripts/composite.py) after inspecting the blank, original artwork and placement. It renders a new 1200×1500 composite with the sample-calibrated-dtg-v1 treatment. It does not generate a person, infer correct placement, create an occlusion mask, or approve the result.
 
-Use Python 3.9–3.12 for the retained Pillow/NumPy preset environment. Install the pinned dependencies from [scripts/requirements.txt](../scripts/requirements.txt) into an isolated Python environment. Keep this environment separate from the project's application or lint dependencies. Run the script from its installed skill folder with explicit job and output paths; no store repository is required.
+Use Python 3.10–3.12 for the retained Pillow/NumPy preset environment. Install the pinned dependencies from [scripts/requirements.txt](../scripts/requirements.txt) into an isolated Python environment. Keep this environment separate from the project's application or lint dependencies. Run the script from its installed skill folder with explicit job and output paths; no store repository is required.
 
 ```sh
 python3 -m venv /tmp/garment-photo-env

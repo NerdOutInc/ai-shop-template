@@ -60,7 +60,7 @@ test("Next patch upgrades retain the patch and fail closed on unsupported or cha
       writeFileSync(join(source, target), bytes)
     }
     copyFileSync(join(root, patchPath), join(project, "next.patch"))
-    // Use the real six Next patch targets, with their patch reversed. Only the
+    // Use the real Next patch targets, with their patch reversed. Only the
     // fixture's package version changes; this cannot certify an upstream release.
     execFileSync("git", ["apply", "--reverse", join(project, "next.patch")], { cwd: source })
     pack(current)
