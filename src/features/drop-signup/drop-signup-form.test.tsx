@@ -46,7 +46,7 @@ describe("DropSignupForm", () => {
     })
     expect(
       await screen.findByText(
-        "Check your inbox for a confirmation link, then choose Confirm signup. Already confirmed? You're all set. To resend, submit your email again after 15 minutes."
+        "Check your inbox for a confirmation link, then choose Confirm signup. Already confirmed? You're all set. Need another link? Submit your email again after 15 minutes (up to three links a day)."
       )
     ).toBeInTheDocument()
     // The field clears so a second person on a shared screen does not resend the first one's address.
@@ -63,7 +63,7 @@ describe("DropSignupForm", () => {
     expect(JSON.parse(String(request.mock.calls[0]?.[1]?.body))).toMatchObject({ email: "early@example.com" })
     expect(
       await screen.findByText(
-        "Check your inbox for a confirmation link, then choose Confirm signup. Already confirmed? You're all set. To resend, submit your email again after 15 minutes."
+        "Check your inbox for a confirmation link, then choose Confirm signup. Already confirmed? You're all set. Need another link? Submit your email again after 15 minutes (up to three links a day)."
       )
     ).toBeInTheDocument()
   })
