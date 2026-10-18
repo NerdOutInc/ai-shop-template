@@ -140,7 +140,7 @@
         button.disabled = true
         status.textContent = ""
         try {
-          await navigator.clipboard.writeText(prompt.textContent.trim())
+          await navigator.clipboard.writeText(prompt.textContent.trim().replace(/\s+/g, " "))
           status.textContent = "Copied. Paste into your agent."
         } catch {
           // Keep the prompt usable when clipboard access is blocked or unavailable.
