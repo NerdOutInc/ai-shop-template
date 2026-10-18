@@ -22,6 +22,8 @@ When an upgrade needs a new patch, work in an isolated checkout and use the exac
 4. Run `pnpm install --lockfile-only`, then `pnpm install --frozen-lockfile` and `pnpm test:dependencies`. Review the lockfile for patch hashes and unintended package changes.
 5. Run the baseline checks and the fresh production metadata journeys described in [metadata verification](metadata.md#verification-and-upkeep). Require full CI before merge. Record the tested version and patch evidence for every generated store that receives the update; changing this template does not update existing stores.
 
+The publishing browser fixture intercepts both `fetch` and Node HTTPS: Next 16.4's image security fixes moved optimized-image downloads to the latter. Its HTTPS mock accepts only the synthetic Blob host, immutable image paths, and GET requests, forwarding them to the loopback provider after Next's DNS/SSRF checks. Keep image optimization and those production checks enabled; a fetch-only mock no longer exercises a working published image.
+
 ## Storybook with Next 16.4
 
 Storybook's Next adapter 10.6.2 still supplies the older `parentCacheNode` router context, while Next 16.4's `useRouter` reads `parentRenderTree.data.bfcacheId`. This crashes the framework redirect boundary before any story renders. `patches/@storybook__nextjs-vite@10.6.2.patch` adds the missing render-tree data to the adapter's existing mock context and preserves its older fields. The exact version selector deliberately requires review when upgrading the adapter.
