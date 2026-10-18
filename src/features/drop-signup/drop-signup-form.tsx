@@ -45,7 +45,8 @@ export function DropSignupForm({ source, ready = false }: DropSignupFormProps) {
       setEmail("")
       setState({
         status: "done",
-        message: "Check your inbox for a confirmation link. Opening it won't sign you up; choose Confirm signup.",
+        message:
+          "Check your inbox for a confirmation link, then choose Confirm signup. Already confirmed? You're all set. To resend, submit your email again after 15 minutes.",
       })
     } catch {
       setState({ status: "failed", message: "That didn't send. Check your connection and try again." })

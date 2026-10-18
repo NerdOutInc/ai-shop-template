@@ -10,7 +10,10 @@ export async function HomeHero() {
   await connection()
   const hero = await Promise.resolve()
     .then(() => getWeeklyHeroStore().current())
-    .catch(() => null)
+    .catch(() => {
+      console.warn("Weekly hero unavailable", { reason: "storage" })
+      return null
+    })
   if (!hero) return <HomeIntro />
   const products = await readWeeklyHeroProducts(hero.manifest.links)
   return (

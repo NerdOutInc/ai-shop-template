@@ -403,7 +403,9 @@ export const ScheduleTogether: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     const page = within(canvasElement.ownerDocument.body)
     await expect(
-      canvas.getByText(`Every ${formatWeeklyCadence()}. Hidden products appear when their week begins.`)
+      canvas.getByText(
+        `Every ${formatWeeklyCadence()}. Hidden products and their approved homepage hero appear when their week begins.`
+      )
     ).toBeVisible()
     const week = within(canvas.getByRole("region", { name: `Week of ${slots[0]!.label}` }))
     const add = week.getByRole("button", { name: "Add the first product" })
