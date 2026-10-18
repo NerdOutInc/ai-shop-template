@@ -35,8 +35,10 @@ def smooth(field, radius):
 def blur(field, radius):
     # Quantize cloth-analysis fields to uint8 before smoothing to preserve the
     # sample-calibrated response. This filter never receives artwork pixels.
+    # Pillow expects a Python scalar when checking for a two-axis radius.
     return np.asarray(
-        Image.fromarray(np.uint8(np.clip(field, 0, 255))).filter(ImageFilter.GaussianBlur(radius)), dtype=np.float32
+        Image.fromarray(np.uint8(np.clip(field, 0, 255))).filter(ImageFilter.GaussianBlur(float(radius))),
+        dtype=np.float32,
     )
 
 

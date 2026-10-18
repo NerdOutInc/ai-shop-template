@@ -36,7 +36,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: pnpm/action-setup@v6.1.0
-      - uses: actions/setup-node@v7.0.0
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version-file: .node-version
           cache: pnpm
@@ -56,7 +56,7 @@ jobs:
         run: pnpm build-storybook
       - name: Upload Storybook failure diagnostics
         if: failure()
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: storybook-diagnostics
           path: |
@@ -93,7 +93,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: pnpm/action-setup@v6.1.0
-      - uses: actions/setup-node@v7.0.0
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version-file: .node-version
           cache: pnpm
@@ -115,7 +115,7 @@ jobs:
         run: node scripts/ci/run-selected-tests.mjs public
       - name: Upload storefront browser failure diagnostics
         if: failure()
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: storefront-browser-diagnostics
           path: |
@@ -134,7 +134,7 @@ jobs:
         run: pnpm test:e2e:commerce
       - name: Upload commerce browser failure diagnostics
         if: failure()
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: commerce-browser-diagnostics
           path: |
@@ -144,7 +144,7 @@ jobs:
           retention-days: 7
       - name: Upload publishing browser failure diagnostics
         if: failure()
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: publishing-browser-diagnostics
           path: |
@@ -169,7 +169,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: pnpm/action-setup@v6.1.0
-      - uses: actions/setup-node@v7.0.0
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version-file: .node-version
           cache: pnpm
@@ -200,7 +200,7 @@ jobs:
         run: supabase stop --workdir .tmp/admin-e2e --no-backup
       - name: Upload admin browser failure diagnostics
         if: failure()
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: admin-browser-diagnostics-signup-${{ matrix.public-signup }}
           path: |

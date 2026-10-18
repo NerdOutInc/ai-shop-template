@@ -32,7 +32,7 @@ jobs:
           ref: ${{ inputs.commit }}
           persist-credentials: false
           fetch-depth: 0
-      - uses: actions/setup-node@v7.0.0
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version-file: .node-version
       - name: Prepare pinned candidate metadata
@@ -45,7 +45,7 @@ jobs:
           args=()
           if [ "$RELEASE_CANDIDATE" = "true" ]; then args+=(--candidate); fi
           node scripts/template/prepare-template-release.mjs --ref "$RELEASE_COMMIT" --tag "$RELEASE_TAG" "${args[@]}" > .tmp/template-release.json
-      - uses: actions/upload-artifact@v7.0.1
+      - uses: actions/upload-artifact@v7.0.2
         with:
           name: template-release-candidate
           path: .tmp/template-release.json

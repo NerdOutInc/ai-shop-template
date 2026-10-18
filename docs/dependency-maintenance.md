@@ -4,9 +4,9 @@ Use the Node and pnpm versions pinned by `.node-version` and `package.json`. Kee
 
 ## The Next metadata patch
 
-`package.json` uses `next@~16.3.6` to apply `patches/next@16.3.6.patch` to compatible patch releases in the 16.3 line. The patch filename records its original base; it is not the version selector. Runtime Next remains pinned to an exact version.
+`package.json` uses `next@~16.4.2` to apply `patches/next@16.4.2.patch` to compatible patch releases in the 16.4 line. The patch filename records its original base; it is not the version selector. Runtime Next remains pinned to an exact version.
 
-[pnpm 10 supports version-range patch selectors](https://pnpm.io/10.x/cli/patch#patcheddependencies). An exact `next@16.3.6` selector makes the patch unused when Next moves to a later patch version; pnpm rejects the lockfile update. The range lets a patch update proceed while retaining normal errors for unused patches and patches that no longer apply. Do not enable `allowUnusedPatches` or `ignorePatchFailures` to bypass these checks.
+[pnpm 10 supports version-range patch selectors](https://pnpm.io/10.x/cli/patch#patcheddependencies). An exact `next@16.4.2` selector makes the patch unused when Next moves to a later patch version; pnpm rejects the lockfile update. The range lets a patch update proceed while retaining normal errors for unused patches and patches that no longer apply. Do not enable `allowUnusedPatches` or `ignorePatchFailures` to bypass these checks.
 
 Run `pnpm test:dependencies` after installing dependencies. The offline regression uses the six actual installed patch targets, reverses the patch in a disposable directory, and packages them as local Next fixtures. It proves the exact selector rejects a simulated patch upgrade, the configured range preserves all six patched files, the next minor is rejected, and changed upstream content fails installation. It uses a private temporary pnpm store and removes its fixtures afterward. This proves pnpm behavior, not compatibility with an unreleased Next version.
 
@@ -21,6 +21,12 @@ When an upgrade needs a new patch, work in an isolated checkout and use the exac
 3. Still in the disposable package, run `pnpm patch-commit <returned-directory>`; this generates the patch and runs an installation. Review the result, then copy only the generated patch into the isolated store checkout. Update its runtime pin and patch selector/path together, removing the old selector and choosing the deliberately supported patch range. Name a newly rebased patch for its new base; retain the original filename when its contents did not change. The store keeps its existing patch until the replacement is ready.
 4. Run `pnpm install --lockfile-only`, then `pnpm install --frozen-lockfile` and `pnpm test:dependencies`. Review the lockfile for patch hashes and unintended package changes.
 5. Run the baseline checks and the fresh production metadata journeys described in [metadata verification](metadata.md#verification-and-upkeep). Require full CI before merge. Record the tested version and patch evidence for every generated store that receives the update; changing this template does not update existing stores.
+
+## Stripe SDK 23
+
+Stripe 23 uses API version `2026-09-30.endive`; the checkout client explicitly pins that version. The [Endive migration](https://docs.stripe.com/changelog/endive/2026-09-30/remove-payment-method-types-checkout-sessions) removes the `payment_method_types` request parameter. This store already uses dynamic payment methods and does not send that parameter. Keep that behavior when editing Checkout Session creation.
+
+The webhook handler verifies signatures with the SDK's default timestamp tolerance and retrieves the session before fulfillment; it does not depend on the webhook's embedded session fields beyond its ID. The checkout and signed-webhook regressions cover these contracts, including expired signatures. Repository tests use offline providers and do not establish live Stripe acceptance or change an account's default API or webhook endpoint version.
 
 ## Repository security settings
 

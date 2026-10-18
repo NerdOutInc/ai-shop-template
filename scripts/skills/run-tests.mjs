@@ -8,7 +8,7 @@ const photoPython =
 
 if (!existsSync(photoPython)) {
   throw new Error(
-    "Create .tmp/photo-skills-venv with Python 3.9–3.12 and install store-garment-photography/scripts/requirements.txt, or set PHOTO_SKILLS_PYTHON to that environment's interpreter."
+    "Create .tmp/photo-skills-venv with Python 3.10–3.12 and install store-garment-photography/scripts/requirements.txt, or set PHOTO_SKILLS_PYTHON to that environment's interpreter."
   )
 }
 
