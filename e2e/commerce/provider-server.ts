@@ -88,8 +88,14 @@ async function handle(request: IncomingMessage, response: ServerResponse) {
   if (path.startsWith("/v1/checkout/") || path.startsWith("/v1/payment_intents/")) {
     if (request.headers.authorization !== `Bearer ${config.stripeKey}`)
       return json(response, { error: { message: "Unexpected Stripe credentials" } }, 401)
+    // Mirrors the pinned client version in src/features/checkout/get-commerce-services.server.ts; update both
+    // during Stripe upgrades (docs/dependency-maintenance.md).
+    if (request.headers["stripe-version"] !== "2026-09-30.endive")
+      return json(response, { error: { message: "Unexpected Stripe API version" } }, 400)
     if (path === "/v1/checkout/sessions" && request.method === "POST") {
       const params = new URLSearchParams(await body(request))
+      if ([...params.keys()].some((key) => key === "payment_method_types" || key.startsWith("payment_method_types[")))
+        return json(response, { error: { message: "payment_method_types was removed in Endive" } }, 400)
       const requestId = params.get("client_reference_id")!
       const existing = [...sessions.values()].find((value) => value.session.client_reference_id === requestId)
       if (existing) {
