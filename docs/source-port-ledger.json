@@ -634,8 +634,8 @@
       ],
       "reason": "Port the reusable guidance under one store's ad campaign as neutral documentation: garment fidelity for ads, social and concept images, dimensional folded garments, generated blank-garment layers with explicit reference roles, a campaign approval workflow and a record field list. Excludes every ad image and source layer, fonts, mark, layout and print calibration values, prompts as written, prices, budgets, audiences, campaign/ad account IDs and owner names.",
       "evidence": "Selective forward port against template main 9d94d9528634c532be9c89dc0069125111bfe429. Documentation only; template hygiene, formatting, skills lint and link checks passed. No campaign was created or published.",
-      "templateCommit": null,
-      "followUp": "Merge receiving PR #60.",
+      "templateCommit": "75c37bf03f50f36feaf3b5ce2a6d302b18a90c28",
+      "followUp": null,
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/60"
     },
     {
@@ -646,8 +646,8 @@
       "paths": ["docs/weekly-hero-admin.md", "docs/admin-design-library.md", "README.md"],
       "reason": "Most of the commit archives one store's selected heroes and brand history in Git. Port only the reusable discoverability fix: admin runbooks now point to the store-weekly-hero creation skill and workflow. The replay verifier is not ported: it reads Git-tracked assets, which the template keeps in private storage, and it rounds width and offset separately, contradicting the template's documented edge quantization. Archive retention is already covered by the hero skill's retention reference.",
       "evidence": "Reviewed the complete parent-to-commit diff against template main 9d94d9528634c532be9c89dc0069125111bfe429. Documentation only; hygiene and link checks passed.",
-      "templateCommit": null,
-      "followUp": "Merge receiving PR #60.",
+      "templateCommit": "75c37bf03f50f36feaf3b5ce2a6d302b18a90c28",
+      "followUp": null,
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/60"
     },
     {
@@ -678,9 +678,9 @@
         "docs/dependency-maintenance.md"
       ],
       "reason": "Dependency, Stripe 23 / 2026-09-30.endive and action bumps are already equivalent through template #59. Port the two missing test hardenings: webhook fulfillment against both Dahlia and Endive event snapshots, and offline Stripe stub guards for Stripe-Version and the removed payment_method_types. Excludes the source setup doc's hard-coded webhook version and its shop identifier.",
-      "evidence": "Selective forward port against template main 9d94d9528634c532be9c89dc0069125111bfe429. Webhook unit tests passed; desktop commerce browser journeys passed (39) on a local Chromium shim; phone WebKit coverage was unavailable locally.",
-      "templateCommit": null,
-      "followUp": "Merge receiving PR #60; confirm the phone commerce project in CI.",
+      "evidence": "Selective forward port against template main 9d94d9528634c532be9c89dc0069125111bfe429. Webhook unit tests passed; desktop commerce browser journeys passed (39) on a local Chromium shim; phone WebKit coverage was unavailable locally. Hosted PR CI on head b526834500165d92571624780e8c41203621c949 passed the desktop and phone commerce journeys before the squash merge.",
+      "templateCommit": "75c37bf03f50f36feaf3b5ce2a6d302b18a90c28",
+      "followUp": null,
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/60"
     },
     {
@@ -704,9 +704,9 @@
         "supabase/migrations/20261018060023_product_galleries.sql"
       ],
       "reason": "Port curated per-color store photographs that survive provider republishes: schema, revision-guarded store, private upload and preview, resumable content-addressed activation, a fail-closed display overlay at every customer and admin display boundary, withheld feed variants, the admin Photos editor and its API, and the operator workflow with maintainer contracts. Adapted to store_app_runtime grants, neutral fixtures, the template theme background, strict published-snapshot checks and the template proxy. Excludes source role, policy and test-database names, its shop identifier and fixture copy, the separate planning document, lenient snapshot handling and any store photos, cast or manifests.",
-      "evidence": "Selective forward port against template main 9d94d9528634c532be9c89dc0069125111bfe429 in receiving PR #60. Restricted-role PostgreSQL suites cover grants, revision guards, activation receipts, the 42P01-only deployment fallback across all display reads and stale/invalid withholding; full local unit suite (4,409 tests) passed. Admin browser journeys require Docker and were not run locally. No provider, Blob or production resources were changed.",
-      "templateCommit": null,
-      "followUp": "Merge receiving PR #60. Receiving stores apply the migration before deploying the code, then verify grants with the documented SQL.",
+      "evidence": "Selective forward port against template main 9d94d9528634c532be9c89dc0069125111bfe429 in receiving PR #60. Restricted-role PostgreSQL suites cover grants, revision guards, activation receipts, the 42P01-only deployment fallback across all display reads and stale/invalid withholding; full local unit suite (4,409 tests) passed. Admin browser journeys require Docker and were not run locally. No provider, Blob or production resources were changed. Hosted PR CI on head b526834500165d92571624780e8c41203621c949 passed foundation, admin browser (both signup modes), storefront and publishing browser, commerce browser and Storybook checks before the squash merge.",
+      "templateCommit": "75c37bf03f50f36feaf3b5ce2a6d302b18a90c28",
+      "followUp": "Merged in template #60. Receiving stores apply supabase/migrations/20261018060023_product_galleries.sql before deploying the code, then verify grants with the documented SQL; Blob configuration, deployment and live verification remain receiving-store operations.",
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/60",
       "sourceMigrationIdentity": {
         "version": "20261017220727",
