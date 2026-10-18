@@ -6,7 +6,7 @@ settings:
 
 patchedDependencies:
   next@~16.4.2:
-    hash: 0354646ac30b4417baeee531a4f1163426dd318127954d03e1d81dbd4cc58546
+    hash: 46a2eaf9361b67a1411c268d9e66e55aaef5dfe7e3889d2bc899c628a138f9dd
     path: patches/next@16.4.2.patch
 
 importers:
@@ -36,7 +36,7 @@ importers:
         version: 0.13.11(@typescript/typescript6@6.0.2)(zod@4.6.7)
       '@vercel/analytics':
         specifier: 2.0.1
-        version: 2.0.1(next@16.4.2(patch_hash=0354646ac30b4417baeee531a4f1163426dd318127954d03e1d81dbd4cc58546)(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@26.6.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react@19.3.1)
+        version: 2.0.1(next@16.4.2(patch_hash=46a2eaf9361b67a1411c268d9e66e55aaef5dfe7e3889d2bc899c628a138f9dd)(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@26.6.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react@19.3.1)
       '@vercel/blob':
         specifier: 2.8.2
         version: 2.8.2
@@ -57,7 +57,7 @@ importers:
         version: 1.57.0(@types/react@19.3.0)(react@19.3.1)
       next:
         specifier: 16.4.2
-        version: 16.4.2(patch_hash=0354646ac30b4417baeee531a4f1163426dd318127954d03e1d81dbd4cc58546)(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@26.6.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 16.4.2(patch_hash=46a2eaf9361b67a1411c268d9e66e55aaef5dfe7e3889d2bc899c628a138f9dd)(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@26.6.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       pg:
         specifier: 8.23.1
         version: 8.23.1
@@ -106,7 +106,7 @@ importers:
         version: 10.6.2(@vitest/browser-playwright@4.1.11)(@vitest/browser@4.1.11(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))(vitest@4.1.11))(@vitest/runner@4.1.11)(react@19.3.1)(storybook@10.6.2(@types/react@19.3.0)(prettier@3.9.10)(react@19.3.1))(vitest@4.1.11)
       '@storybook/nextjs-vite':
         specifier: 10.6.2
-        version: 10.6.2(@babel/core@7.29.7)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(next@16.4.2(patch_hash=0354646ac30b4417baeee531a4f1163426dd318127954d03e1d81dbd4cc58546)(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@26.6.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(rollup@4.63.1)(storybook@10.6.2(@types/react@19.3.0)(prettier@3.9.10)(react@19.3.1))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
+        version: 10.6.2(@babel/core@7.29.7)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(next@16.4.2(patch_hash=46a2eaf9361b67a1411c268d9e66e55aaef5dfe7e3889d2bc899c628a138f9dd)(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@26.6.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(rollup@4.63.1)(storybook@10.6.2(@types/react@19.3.0)(prettier@3.9.10)(react@19.3.1))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
       '@tailwindcss/postcss':
         specifier: 4.3.3
         version: 4.3.3
@@ -5687,18 +5687,18 @@ snapshots:
     dependencies:
       react: 19.3.1
 
-  '@storybook/nextjs-vite@10.6.2(@babel/core@7.29.7)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(next@16.4.2(patch_hash=0354646ac30b4417baeee531a4f1163426dd318127954d03e1d81dbd4cc58546)(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@26.6.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(rollup@4.63.1)(storybook@10.6.2(@types/react@19.3.0)(prettier@3.9.10)(react@19.3.1))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))':
+  '@storybook/nextjs-vite@10.6.2(@babel/core@7.29.7)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(next@16.4.2(patch_hash=46a2eaf9361b67a1411c268d9e66e55aaef5dfe7e3889d2bc899c628a138f9dd)(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@26.6.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(rollup@4.63.1)(storybook@10.6.2(@types/react@19.3.0)(prettier@3.9.10)(react@19.3.1))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))':
     dependencies:
       '@storybook/builder-vite': 10.6.2(storybook@10.6.2(@types/react@19.3.0)(prettier@3.9.10)(react@19.3.1))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
       '@storybook/react': 10.6.2(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(storybook@10.6.2(@types/react@19.3.0)(prettier@3.9.10)(react@19.3.1))
       '@storybook/react-vite': 10.6.2(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript/typescript6@6.0.2)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(rollup@4.63.1)(storybook@10.6.2(@types/react@19.3.0)(prettier@3.9.10)(react@19.3.1))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
-      next: 16.4.2(patch_hash=0354646ac30b4417baeee531a4f1163426dd318127954d03e1d81dbd4cc58546)(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@26.6.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      next: 16.4.2(patch_hash=46a2eaf9361b67a1411c268d9e66e55aaef5dfe7e3889d2bc899c628a138f9dd)(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@26.6.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
       storybook: 10.6.2(@types/react@19.3.0)(prettier@3.9.10)(react@19.3.1)
       styled-jsx: 5.1.6(@babel/core@7.29.7)(react@19.3.1)
       vite: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)
-      vite-plugin-storybook-nextjs: 10.6.2(@typescript/typescript6@6.0.2)(next@16.4.2(patch_hash=0354646ac30b4417baeee531a4f1163426dd318127954d03e1d81dbd4cc58546)(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@26.6.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(rollup@4.63.1)(storybook@10.6.2(@types/react@19.3.0)(prettier@3.9.10)(react@19.3.1))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
+      vite-plugin-storybook-nextjs: 10.6.2(@typescript/typescript6@6.0.2)(next@16.4.2(patch_hash=46a2eaf9361b67a1411c268d9e66e55aaef5dfe7e3889d2bc899c628a138f9dd)(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@26.6.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(rollup@4.63.1)(storybook@10.6.2(@types/react@19.3.0)(prettier@3.9.10)(react@19.3.1))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
     optionalDependencies:
       '@types/react': 19.3.0
       '@types/react-dom': 19.3.0(@types/react@19.3.0)
@@ -6229,9 +6229,9 @@ snapshots:
   '@unrs/resolver-binding-win32-x64-msvc@1.12.2':
     optional: true
 
-  '@vercel/analytics@2.0.1(next@16.4.2(patch_hash=0354646ac30b4417baeee531a4f1163426dd318127954d03e1d81dbd4cc58546)(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@26.6.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react@19.3.1)':
+  '@vercel/analytics@2.0.1(next@16.4.2(patch_hash=46a2eaf9361b67a1411c268d9e66e55aaef5dfe7e3889d2bc899c628a138f9dd)(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@26.6.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react@19.3.1)':
     optionalDependencies:
-      next: 16.4.2(patch_hash=0354646ac30b4417baeee531a4f1163426dd318127954d03e1d81dbd4cc58546)(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@26.6.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      next: 16.4.2(patch_hash=46a2eaf9361b67a1411c268d9e66e55aaef5dfe7e3889d2bc899c628a138f9dd)(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@26.6.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       react: 19.3.1
 
   '@vercel/blob@2.8.2':
@@ -7860,7 +7860,7 @@ snapshots:
 
   negotiator@0.6.3: {}
 
-  next@16.4.2(patch_hash=0354646ac30b4417baeee531a4f1163426dd318127954d03e1d81dbd4cc58546)(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@26.6.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1):
+  next@16.4.2(patch_hash=46a2eaf9361b67a1411c268d9e66e55aaef5dfe7e3889d2bc899c628a138f9dd)(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@26.6.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1):
     dependencies:
       '@next/env': 16.4.2
       '@swc/helpers': 0.5.23
@@ -8885,13 +8885,13 @@ snapshots:
 
   vary@1.1.2: {}
 
-  vite-plugin-storybook-nextjs@10.6.2(@typescript/typescript6@6.0.2)(next@16.4.2(patch_hash=0354646ac30b4417baeee531a4f1163426dd318127954d03e1d81dbd4cc58546)(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@26.6.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(rollup@4.63.1)(storybook@10.6.2(@types/react@19.3.0)(prettier@3.9.10)(react@19.3.1))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)):
+  vite-plugin-storybook-nextjs@10.6.2(@typescript/typescript6@6.0.2)(next@16.4.2(patch_hash=46a2eaf9361b67a1411c268d9e66e55aaef5dfe7e3889d2bc899c628a138f9dd)(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@26.6.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(rollup@4.63.1)(storybook@10.6.2(@types/react@19.3.0)(prettier@3.9.10)(react@19.3.1))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)):
     dependencies:
       '@next/env': 16.3.6
       '@rollup/pluginutils': 5.4.0(rollup@4.63.1)
       magic-string: 0.30.21
       module-alias: 2.3.4
-      next: 16.4.2(patch_hash=0354646ac30b4417baeee531a4f1163426dd318127954d03e1d81dbd4cc58546)(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@26.6.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      next: 16.4.2(patch_hash=46a2eaf9361b67a1411c268d9e66e55aaef5dfe7e3889d2bc899c628a138f9dd)(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@26.6.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       pathe: 2.0.3
       probe-image-size: 7.4.0
       semver: 7.8.5
