@@ -1,5 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect, userEvent, within } from "storybook/test"
+import {
+  type GalleryActivation,
+  type GalleryMutation,
+  galleryMutationSchema,
+} from "@/features/product-gallery/gallery-mutation-schema"
 import type { GalleryEditorData } from "@/features/product-gallery/read-gallery-editor.server"
 import { ProductPhotoEditor } from "./product-photo-editor"
 
@@ -72,34 +77,64 @@ const savedDraft: GalleryEditorData = {
   history: [{ revision: savedRevision, action: "save", createdAt: "2026-10-17T15:00:00.000Z" }],
 }
 
-/** Replays the gallery API in memory: activation prepares once, then completes. */
+type SentRequest = { url: string; headers: Headers; body: unknown }
+/** Requests the in-memory API accepted during the current story, newest last. */
+const sent: SentRequest[] = []
+const rejected = (error: string) => Response.json({ error }, { status: 400 })
+
+/**
+ * Replays the gallery API in memory and enforces the same client contracts as the server: the upload byte
+ * header, current revisions, the mutation schema and per-color binding digests. Activation prepares once,
+ * then completes.
+ */
 function galleryApi(initial: GalleryEditorData, options: { changedElsewhere?: boolean } = {}) {
-  return () => {
-    let state = initial,
-      activations = 0
-    const original = globalThis.fetch
-    globalThis.fetch = async (input, init) => {
-      const url = String(input)
-      if (url.endsWith("/assets") && init?.method === "POST")
-        return Response.json({ id: uploadedAsset, width: 1200, height: 1500 })
-      if (init?.method === "POST") {
-        const body = JSON.parse(String(init.body)) as { action: string }
-        if (body.action === "activate" && activations++ === 0)
-          return Response.json({ status: "preparing", completed: 1, total: 2 })
-        state = {
-          ...savedDraft,
-          revision: "00000000-0000-4000-8000-000000000011",
-          colors: savedDraft.colors.map((c) => ({ ...c, draftCurrent: body.action === "activate" })),
-        }
-        return Response.json(body.action === "activate" ? { status: "active", cacheRefreshed: true } : {})
-      }
-      return Response.json(
-        options.changedElsewhere ? { ...state, revision: "00000000-0000-4000-8000-000000000012" } : state
+  let state = options.changedElsewhere ? { ...initial, revision: "00000000-0000-4000-8000-000000000012" } : initial,
+    activations = 0
+  sent.length = 0
+  const original = globalThis.fetch
+  globalThis.fetch = async (input, init) => {
+    const url = String(input)
+    if (init?.method !== "POST") return Response.json(state)
+    const headers = new Headers(init.headers)
+    if (url.endsWith("/assets")) {
+      const file = init.body
+      if (!(file instanceof Blob)) return rejected("Upload the photo file itself.")
+      if (headers.get("x-photo-bytes") !== String(file.size)) return rejected("Photo size header does not match.")
+      if (headers.get("content-type") !== file.type) return rejected("Photo type header does not match.")
+      sent.push({ url, headers, body: file })
+      return Response.json({ id: uploadedAsset, width: 1200, height: 1500 })
+    }
+    const parsed = galleryMutationSchema.safeParse(JSON.parse(String(init.body)))
+    if (!parsed.success) return rejected("The gallery request is malformed.")
+    const body = parsed.data
+    if (body.revision !== state.revision || body.productRevision !== state.productRevision)
+      return rejected("The gallery changed. Reload before retrying.")
+    if (body.action === "activate") {
+      const expected = Object.fromEntries(
+        state.draft.colors.flatMap((c) => {
+          const current = state.colors.find((v) => v.key === c.colorKey)
+          return current?.available && !current.draftCurrent && current.binding
+            ? [[c.colorKey, current.binding.digest]]
+            : []
+        })
       )
+      if (JSON.stringify(body.confirmations) !== JSON.stringify(expected))
+        return rejected("Review every changed color against its current production details.")
     }
-    return () => {
-      globalThis.fetch = original
+    if (body.action === "restore" && !state.history.some((h) => h.revision === body.fromRevision))
+      return rejected("That saved revision is unavailable.")
+    sent.push({ url, headers, body })
+    if (body.action === "activate" && activations++ === 0)
+      return Response.json({ status: "preparing", completed: 1, total: 2 })
+    state = {
+      ...savedDraft,
+      revision: "00000000-0000-4000-8000-000000000011",
+      colors: savedDraft.colors.map((c) => ({ ...c, draftCurrent: body.action === "activate" })),
     }
+    return Response.json(body.action === "activate" ? { status: "active", cacheRefreshed: true } : {})
+  }
+  return () => {
+    globalThis.fetch = original
   }
 }
 
@@ -108,14 +143,15 @@ const meta = {
   component: ProductPhotoEditor,
   parameters: { layout: "padded" },
   args: { initial: base },
-  beforeEach: galleryApi(base),
+  // One mock per story, seeded from the story's own initial data.
+  beforeEach: ({ args, parameters }) => galleryApi(args.initial, parameters.galleryApi),
 } satisfies Meta<typeof ProductPhotoEditor>
 export default meta
 type Story = StoryObj<typeof meta>
 
 export const ProviderOnly: Story = {}
 
-export const SavedDraft: Story = { args: { initial: savedDraft }, beforeEach: galleryApi(savedDraft) }
+export const SavedDraft: Story = { args: { initial: savedDraft } }
 
 export const ChooseAndReorder: Story = {
   play: async ({ canvasElement }) => {
@@ -132,12 +168,16 @@ export const ChooseAndReorder: Story = {
     await expect(canvas.getByRole("textbox", { name: "Photo 1 description" })).toHaveValue("Synthetic back placeholder")
     await userEvent.click(canvas.getByRole("button", { name: "Save draft" }))
     await canvas.findByText("Draft saved. The shop is unchanged.")
+    const saved = sent.at(-1)?.body as Extract<GalleryMutation, { action: "save" }>
+    await expect(saved.manifest.colors[0]?.entries.map((e) => (e.source === "provider" ? e.src : e.assetId))).toEqual([
+      "/images/store-mark.svg",
+      "/images/cart-hanger.svg",
+    ])
   },
 }
 
 export const FieldValidation: Story = {
   args: { initial: savedDraft },
-  beforeEach: galleryApi(savedDraft),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await userEvent.clear(canvas.getByRole("textbox", { name: "Photo 1 description" }))
@@ -150,8 +190,10 @@ export const UploadPhoto: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const input = canvasElement.querySelector<HTMLInputElement>('input[type="file"]')!
-    await userEvent.upload(input, new File(["synthetic"], "sample.png", { type: "image/png" }))
+    const file = new File(["synthetic"], "sample.png", { type: "image/png" })
+    await userEvent.upload(input, file)
     await canvas.findByText("Photo uploaded privately. Add it to the correct color below.")
+    await expect(sent[0]?.headers.get("x-photo-bytes")).toBe(String(file.size))
     await userEvent.click(canvas.getByRole("button", { name: "Choose photos for this color" }))
     await expect(canvas.getByRole("button", { name: /Add uploaded photo 1/ })).toBeEnabled()
   },
@@ -159,7 +201,6 @@ export const UploadPhoto: Story = {
 
 export const ReviewAndActivate: Story = {
   args: { initial: savedDraft },
-  beforeEach: galleryApi(savedDraft),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await userEvent.click(canvas.getByRole("button", { name: "Preview draft" }))
@@ -169,12 +210,17 @@ export const ReviewAndActivate: Story = {
     await canvas.findByText(/Prepared 1 of 2 photos\. Nothing activated yet/)
     await userEvent.click(canvas.getByRole("button", { name: "Activate gallery" }))
     await canvas.findByText("Gallery activated. Your selections now belong to the store.")
+    // Both the preparing call and the resumed call confirm the reviewed color's current binding digest.
+    await expect(sent.map((r) => (r.body as GalleryActivation).confirmations)).toEqual([
+      { "10": "a".repeat(64) },
+      { "10": "a".repeat(64) },
+    ])
   },
 }
 
 export const RefreshConflict: Story = {
   args: { initial: savedDraft },
-  beforeEach: galleryApi(savedDraft, { changedElsewhere: true }),
+  parameters: { galleryApi: { changedElsewhere: true } },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await userEvent.click(canvas.getByRole("button", { name: "Move photo 2 up" }))
@@ -186,9 +232,22 @@ export const RefreshConflict: Story = {
   },
 }
 
+export const RefreshDiscard: Story = {
+  args: { initial: savedDraft },
+  parameters: { galleryApi: { changedElsewhere: true } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(canvas.getByRole("button", { name: "Move photo 2 up" }))
+    await userEvent.click(canvas.getByRole("button", { name: "Refresh product" }))
+    await userEvent.click(await canvas.findByRole("button", { name: "Discard my edits and load saved draft" }))
+    await canvas.findByText("Discarded local edits and loaded the saved draft.")
+    await expect(canvas.getByRole("textbox", { name: "Photo 1 description" })).toHaveValue("Sample tee front")
+    await expect(canvas.getByRole("button", { name: "Save draft" })).toBeDisabled()
+  },
+}
+
 export const RestoreHistory: Story = {
   args: { initial: savedDraft },
-  beforeEach: galleryApi(savedDraft),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await userEvent.click(canvas.getByText("Saved history"))
