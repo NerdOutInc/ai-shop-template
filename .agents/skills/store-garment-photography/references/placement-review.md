@@ -16,6 +16,12 @@ Before inspecting the composite, mark the bottom of the front collar, several fr
 
 On a turned torso, a simple midpoint between silhouette edges can be wrong. An arm, sleeve, fold, hair edge or unobstructed patch of cloth is not the body-panel boundary. Use collar, seams, fabric direction and torso rotation together. The annotation should reveal disagreement, not justify the existing ink.
 
+### Reclining poses: rotation does not establish lateral pull
+
+A raised arm, diagonal torso or reclining pose can coexist with a centered shirt front. If the print crowds one arm, identify visible seam displacement, collar distortion or a tension fold that actually supports that offset. The pose alone is not evidence that the shirt has been pulled sideways. Separate the sleeve from the front body panel and trace the panel axis through the print's upper and lower regions; the image's vertical axis is irrelevant.
+
+Inspect the entire artwork, including small top symbols and lower lettering. Compare its projected center path with the independently traced panel axis at more than one height. Judge the margins in the garment's perspective, not as equal horizontal pixel gaps to the arms. Hidden cloth behind a forearm still belongs to the shirt; preserve its implied center and let a foreground mask hide ink where necessary.
+
 ## Four distinct decisions
 
 | Check            | Evidence required                                                                                                                                                      |
@@ -34,6 +40,14 @@ Keep an annotated blank, final composite and provider reference side by side. Fo
 Review all four checks after every edit. Bind the decision to both final PNG and JPEG hashes, plus the blank, artwork and placement record used. A review of a proposed quad or previous version is not approval of unseen pixels. Do not fall back to an older pass when a new audit is uncertain.
 
 A reusable review record should contain: stable shot ID; selected exposure ID; reviewer; final hashes; identity/garment/provider reference paths or asset IDs; independently marked landmarks with coordinate space; four decisions/reasons; annotated evidence paths/hashes; and unresolved physical limits. The caller's gallery selector should reject missing, stale, failed or uncertain decisions. The compositor itself cannot provide visual approval.
+
+## Revisit a disputed center without anchoring on the old print
+
+When an owner flags centering after a previous pass, reopen the geometry. Give a reviewer the blank and matching provider reference first, and save their inferred landmarks and uncertainty before showing the existing composite or suggested correction. A second reviewer tracing the old print's axis would repeat the same assumption. Then compare those landmarks with the actual rendered ink; retain any disagreement with the earlier review.
+
+If the evidence supports a position-only correction, translate all four projection corners by the same vector. Keep the original blank, artwork, crop, print size, rotation and fabric treatment. Re-render from those sources instead of moving pixels from the flattened composite. Fold guides and foreground masks expressed in photograph coordinates stay attached to the photograph, not to the moving print; inspect their overlap again after rendering. If the axis angle or perspective is also wrong, a translation alone is insufficient.
+
+Record the correction in an explicit coordinate space: output dimensions, positive x/y directions, and image-relative versus model-relative left/right. Keep the old and new images at identical framing and scale. Review both unmarked at full resolution and phone size, then repeat all four checks, especially collar clearance after an upward component. Store the owner's subsequent decision with the exact candidate hashes. An accepted correction is useful visual evidence, not a physically measured center or a reusable pixel offset for other poses. The shirt has no obligation to follow yesterday's spreadsheet.
 
 ## Resolve uncertainty without false precision
 
