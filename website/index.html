@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Start your own clothing shop with an AI agent. Bring the ideas, connect your accounts, and let your agent handle the setup."
+    />
+    <meta name="theme-color" content="#f4f3ee" />
+    <meta name="referrer" content="no-referrer" />
+    <title>AI Shop Template — Start your shop</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="page">
+      <header>
+        <a class="wordmark" href="./">AI Shop Template<span aria-hidden="true">.</span></a>
+        <a class="repo-link" href="https://github.com/NerdOutInc/ai-shop-template"
+          >View on GitHub <span aria-hidden="true">↗</span></a
+        >
+      </header>
+      <main id="main">
+        <div class="intro">
+          <p class="eyebrow">A LITTLE IDEA. YOUR OWN CLOTHING BRAND.</p>
+          <h1>Your ideas.<br /><span>Your own shop.</span></h1>
+          <p class="lede">
+            You bring the taste. Your AI agent handles the setup.<br class="desktop-break" />
+            Start with one prompt. Make something worth wearing.
+          </p>
+        </div>
+        <div class="setup">
+          <section aria-labelledby="prompt-heading">
+            <h2 id="prompt-heading"><span class="step" aria-hidden="true">01</span> Copy this into your agent</h2>
+            <div class="prompt-card">
+              <p id="setup-prompt" tabindex="0">
+                Use https://github.com/NerdOutInc/ai-shop-template to help me start my own clothing shop. Read AGENTS.md
+                and follow .agents/skills/store-setup/SKILL.md. Help connect my accounts and create my repository and
+                provider projects. Keep products in draft until I approve launch.
+              </p>
+              <div class="copy-row">
+                <button id="copy-prompt" type="button" hidden>Copy instructions</button>
+                <span id="copy-status" role="status" aria-live="polite"></span>
+                <noscript>Select the prompt above and copy it into your agent.</noscript>
+              </div>
+            </div>
+            <p class="next-step">
+              Paste into <strong>Codex desktop</strong> or another coding agent with access to your files and terminal.
+              It will guide you through your brand, designs, accounts, and first products.
+            </p>
+            <p class="aside">You’re starting a shop. The setup manual is your agent’s homework.</p>
+            <details class="connections">
+              <summary>How do I connect my accounts?</summary>
+              <div class="detail-content">
+                <p>
+                  Ask Codex to help connect <strong>GitHub, Supabase, and Vercel</strong>. It can find the available
+                  plugins and guide you through sign-in.
+                </p>
+                <p>
+                  To do it yourself, open the <a href="https://chatgpt.com/plugins">plugin directory</a>, find the
+                  provider, install its plugin, and complete its connection prompts. Start a new chat if the tools don’t
+                  appear.
+                </p>
+                <p>
+                  A plugin isn’t required for every service. Your agent can also use the provider’s command-line tools
+                  or an authenticated browser. It checks what’s available and gives you only the steps it needs you to
+                  do.
+                </p>
+                <p>
+                  You handle sign-ins, verification, and billing approval. Enter passwords and keys only in the secure
+                  location your agent prepares, never in chat.
+                </p>
+              </div>
+            </details>
+          </section>
+          <section class="requirements" aria-labelledby="requirements-heading">
+            <h2 id="requirements-heading"><span class="step" aria-hidden="true">02</span> What you’ll need</h2>
+            <ul>
+              <li>
+                <h3>An AI coding agent + GitHub</h3>
+                <p>
+                  Your agent needs repository access and local tools. This template is currently
+                  <strong>internal</strong>: your GitHub account must have access to use it.
+                </p>
+              </li>
+              <li>
+                <h3>Vercel + Supabase accounts</h3>
+                <p>
+                  <a href="https://vercel.com/signup">Vercel</a> hosts your shop;
+                  <a href="https://supabase.com/dashboard">Supabase</a> handles its database and admin sign-in.
+                  <strong>No projects to create in advance.</strong> Your agent can create them once connected, with
+                  your choices and cost approval.
+                </p>
+              </li>
+              <li>
+                <h3>Printify + Stripe, before selling</h3>
+                <p>
+                  <a href="https://printify.com/">Printify</a> prints and ships.
+                  <a href="https://dashboard.stripe.com/register">Stripe</a> takes payments. Your agent helps with
+                  setup; you complete business verification and billing.
+                </p>
+              </li>
+            </ul>
+            <p class="small">
+              Plan for hosting and service costs. A selling store needs <strong>Vercel Pro or Enterprise</strong> for
+              scheduled jobs. Your agent reviews costs before activation.
+            </p>
+            <details>
+              <summary>What’s supported to start?</summary>
+              <div class="detail-content">
+                <p>
+                  The built-in workflow starts with Next Level 6210 tees, Printify provider 99, USD, and standard
+                  shipping to the 50 US states plus DC. Other products or markets may need additional work.
+                </p>
+                <p>
+                  Your agent also helps configure artwork storage, admin email, and local setup tools. Image generation
+                  needs an available image tool. A custom domain and marketing tools can come later.
+                </p>
+              </div>
+            </details>
+          </section>
+        </div>
+      </main>
+      <footer>
+        <span>AI Shop Template <span aria-hidden="true">/</span> Nerd Out Inc.</span>
+        <a href="https://github.com/NerdOutInc/ai-shop-template#readme"
+          >The detailed guide <span aria-hidden="true">↗</span></a
+        >
+      </footer>
+    </div>
+    <script>
+      const button = document.getElementById("copy-prompt")
+      const prompt = document.getElementById("setup-prompt")
+      const status = document.getElementById("copy-status")
+
+      button.hidden = false
+      button.addEventListener("click", async () => {
+        button.disabled = true
+        status.textContent = ""
+        try {
+          await navigator.clipboard.writeText(prompt.textContent.trim())
+          status.textContent = "Copied. Paste into your agent."
+        } catch {
+          // Keep the prompt usable when clipboard access is blocked or unavailable.
+          prompt.focus()
+          const range = document.createRange()
+          range.selectNodeContents(prompt)
+          const selection = window.getSelection()
+          selection?.removeAllRanges()
+          selection?.addRange(range)
+          status.textContent = "Select and copy the prompt above."
+        } finally {
+          button.disabled = false
+        }
+      })
+    </script>
+  </body>
+</html>
