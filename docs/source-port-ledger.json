@@ -778,9 +778,9 @@
         "src/features/catalog/product-details.tsx"
       ],
       "reason": "Port the always-visible admin preview, shared storefront color swatches and available-only picker, retaining dormant photo choices and targeted recovery. Preserve template keyboard focus after reordering, touch targets, neutral fixtures, existing API stories and store-specific policy components.",
-      "evidence": "Reviewed the source parent-to-commit diff against template main cb8bc0e2e7338a5d10c3b8919aef3b23d1171032. Local port validation is pending.",
+      "evidence": "Selective forward port against template main cb8bc0e2e7338a5d10c3b8919aef3b23d1171032. Clean frozen-lockfile checkout passed structure, template hygiene, migration history, lint, types, formatting and all 63 ProductDetails tests. Interactive Storybook checks passed at desktop and 390px: matching views including duplicate views, unequal photo counts, cover fallback, return to a prior view, persistent artwork with color-specific background, keyboard focus, reorder/save, resumable activation and unavailable-color recovery presentation. Existing storefront matching-view story passed. Database and complete commerce browser coverage await hosted Required checks; no provider or production resources changed.",
       "templateCommit": null,
-      "followUp": "Prepared on codex/product-photo-gallery-port; record the receiving PR and validation before handoff. Merge and deployment remain separate."
+      "followUp": "Prepared on codex/product-photo-gallery-port. Record the receiving PR before handoff and its merge commit after an authorized merge. Hosted checks, merge and deployment remain separate."
     },
     {
       "sourceCommit": "3c7b7b1b88116bec2867bf6a4f3c8acdb775ccb2",
@@ -796,9 +796,9 @@
         "src/features/catalog/use-product-gallery-selection.ts"
       ],
       "reason": "Share the gallery selection hook between the storefront and admin preview. Preserve exact-photo and first matching-view selection, cover and legacy-position fallbacks, artwork selection, current edited metadata and garment cart images. Port the catalog regression with neutral fixture copy. No schema, dependency, provider or private-asset changes are needed.",
-      "evidence": "Reviewed the source parent-to-commit diff against template main cb8bc0e2e7338a5d10c3b8919aef3b23d1171032. Local port validation is pending.",
+      "evidence": "Selective forward port against template main cb8bc0e2e7338a5d10c3b8919aef3b23d1171032. Clean frozen-lockfile checkout passed structure, template hygiene, migration history, lint, types, formatting and all 63 ProductDetails tests. Interactive Storybook checks passed at desktop and 390px: matching views including duplicate views, unequal photo counts, cover fallback, return to a prior view, persistent artwork with color-specific background, keyboard focus, reorder/save, resumable activation and unavailable-color recovery presentation. Existing storefront matching-view story passed. Database and complete commerce browser coverage await hosted Required checks; no provider or production resources changed.",
       "templateCommit": null,
-      "followUp": "Prepared on codex/product-photo-gallery-port; record the receiving PR and validation before handoff. Merge and deployment remain separate."
+      "followUp": "Prepared on codex/product-photo-gallery-port. Record the receiving PR before handoff and its merge commit after an authorized merge. Hosted checks, merge and deployment remain separate."
     }
   ],
   "outboundPorts": [],
