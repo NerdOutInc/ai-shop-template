@@ -73,14 +73,20 @@ export function normalizeCatalogProduct(raw: unknown): CatalogProduct {
       null,
     images: orderedImages.map((image) => ({
       src: image.src,
-      alt: product.title,
+      alt: image.alt || product.title.slice(0, 300),
+      ...(image.origin ? { origin: image.origin } : {}),
       variantIds: image.variant_ids.filter((id) => enabledIds.has(id)),
       ...(image.view_key ? { viewKey: image.view_key } : {}),
     })),
     id: product.id,
     title: product.title,
     image: image
-      ? { src: image.src, alt: product.title, ...(image.view_key ? { viewKey: image.view_key } : {}) }
+      ? {
+          src: image.src,
+          alt: image.alt || product.title.slice(0, 300),
+          ...(image.origin ? { origin: image.origin } : {}),
+          ...(image.view_key ? { viewKey: image.view_key } : {}),
+        }
       : null,
     price: prices.length ? { currency: "USD", min: Math.min(...prices), max: Math.max(...prices) } : null,
     options: product.options

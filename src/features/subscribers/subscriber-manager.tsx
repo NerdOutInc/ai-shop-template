@@ -57,6 +57,10 @@ export function SubscriberManager() {
         return
       }
       setSubscriber(data.subscriber)
+      if (input.action === "unsubscribe" && !data.subscriber)
+        setMessage(
+          "The original subscriber record is no longer present. Look up the address again to check for a later signup."
+        )
       setSearched(true)
       if (input.action !== "lookup") router.refresh()
       requestAnimationFrame(() => resultRef.current?.focus())
@@ -180,7 +184,7 @@ export function SubscriberManager() {
               </p>
               <Button
                 variant="outline"
-                disabled={busy}
+                disabled={busy || confirmUnsubscribe}
                 ref={unsubscribeButton}
                 onClick={() => {
                   setConfirmUnsubscribe(true)
@@ -234,17 +238,20 @@ export function SubscriberManager() {
                   </div>
                 </div>
               )}
-              <SubscriberErasure
-                key={subscriber.id}
-                subscriber={subscriber}
-                onBusyChange={setBusy}
-                onChange={(record, notice) => {
-                  setSubscriber(record)
-                  setMessage(notice ?? "")
-                  router.refresh()
-                  if (!record) requestAnimationFrame(() => resultRef.current?.focus())
-                }}
-              />
+              {/* Keep one destructive confirmation on screen at a time. */}
+              {!confirmUnsubscribe && (
+                <SubscriberErasure
+                  key={subscriber.id}
+                  subscriber={subscriber}
+                  onBusyChange={setBusy}
+                  onChange={(record, notice) => {
+                    setSubscriber(record)
+                    setMessage(notice ?? "")
+                    router.refresh()
+                    if (!record) requestAnimationFrame(() => resultRef.current?.focus())
+                  }}
+                />
+              )}
             </>
           ) : (
             <p>{message || "No subscriber matches that address."}</p>

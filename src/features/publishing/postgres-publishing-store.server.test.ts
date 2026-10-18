@@ -17,8 +17,11 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest
 
 import * as postgresPool from "@/lib/create-postgres-pool.server"
 
+import { readGallerySource } from "@/features/product-gallery/read-gallery-source.server"
+
 import { applyAllMigrations } from "../../../test/apply-all-migrations"
 import { createAdminDatabaseFixture } from "../../../test/create-admin-database-fixture"
+import { galleryProductFixture } from "../../../test/gallery-product-fixture"
 import { seedCompleteGarment } from "../../../test/seed-complete-garment"
 
 import type { PublishingEvent } from "./publishing-event"
@@ -30,6 +33,11 @@ import { processPublishingJobs } from "./process-publishing-jobs.server"
 import { PublishedImageError } from "./published-image-error"
 
 vi.mock("server-only", () => ({}))
+const galleryHost = vi.hoisted(() => "galleryfixtures.public.blob.vercel-storage.com")
+vi.mock("@/lib/env", async (importOriginal) => {
+  const { env } = await importOriginal<typeof import("@/lib/env")>()
+  return { env: { ...env, NEXT_PUBLIC_PRODUCT_IMAGE_BLOB_HOST: galleryHost } }
+})
 const databaseUrl = process.env.PUBLISHING_TEST_DATABASE_URL
 const backfillArtwork = {
   src: `https://catalog.public.blob.vercel-storage.com/published-artwork/v1/${"a".repeat(64)}.webp`,
@@ -1794,7 +1802,7 @@ describe.skipIf(!databaseUrl)("durable Printify publishing", () => {
       ["unpublished", false],
     ] as const)("offers %s to shoppers and checkout: %s", async (productId, offered) => {
       expect((await gated.readProduct(productId)) !== null).toBe(offered)
-      expect((await gated.listShownProducts()).some((snapshot) => snapshot.id === productId)).toBe(offered)
+      expect((await gated.listShownProducts()).some(({ snapshot }) => snapshot.id === productId)).toBe(offered)
     })
 
     // A product waiting for its moment must survive the cache, so the clock can judge it outside.
@@ -2036,6 +2044,194 @@ describe.skipIf(!databaseUrl)("durable Printify publishing", () => {
       await expect(
         pool.query("update commerce.printify_products set reveal_at=now() where product_id='shown'")
       ).rejects.toThrow("printify_products_reveal_while_hidden")
+    })
+  })
+
+  // Curated photos reach every customer and admin display read; maintenance reads stay on provider data.
+  describe("product gallery display overlay", () => {
+    const shop = "9400"
+    const actor = randomUUID()
+    const sha256 = "d".repeat(64)
+    const photo = `https://${galleryHost}/published-product-photos/v1/${sha256}.jpg`
+    let display: PostgresPublishingStore
+    const source = async (snapshot: ReturnType<typeof galleryProductFixture>, revision: string) => {
+      const row = JSON.stringify({ ...snapshot, shop_id: Number(shop) })
+      await pool.query(
+        `insert into commerce.printify_products(shop_id,product_id,snapshot,revision,active,hidden_at,reveal_at)
+           values($1,$2,$3,$4,true,null,null)
+         on conflict(shop_id,product_id) do update set snapshot=excluded.snapshot,revision=excluded.revision`,
+        [shop, snapshot.id, row, revision]
+      )
+      await pool.query(
+        "insert into commerce.printify_product_revisions(shop_id,product_id,revision,snapshot) values($1,$2,$3,$4) on conflict do nothing",
+        [shop, snapshot.id, revision, row]
+      )
+    }
+    beforeAll(async () => {
+      display = new PostgresPublishingStore(databaseUrl!, shop)
+      await source(galleryProductFixture(), "1")
+      await source({ ...galleryProductFixture(), id: "plain" }, "1")
+      const asset = {
+        id: randomUUID(),
+        pathname: `product-gallery/v1/${randomUUID()}.jpg`,
+        sha256,
+        bytes: 100,
+        width: 1000,
+        height: 1200,
+        contentType: "image/jpeg" as const,
+      }
+      await display.galleries.addAsset("shirt", asset, actor)
+      const saved = await display.galleries.save(
+        "shirt",
+        {
+          action: "save",
+          revision: null,
+          productRevision: "1",
+          manifest: {
+            coverColor: "10",
+            colors: [
+              {
+                colorKey: "10",
+                entries: [{ source: "store", assetId: asset.id, alt: "Sample tee on a model", role: "other" }],
+              },
+            ],
+          },
+        },
+        actor,
+        galleryHost
+      )
+      await display.galleries.recordPromotion("shirt", asset, galleryHost, photo)
+      await display.galleries.activate(
+        "shirt",
+        {
+          action: "activate",
+          ...saved,
+          productRevision: "1",
+          confirmations: { "10": readGallerySource(galleryProductFixture(), "1").colors[0]!.binding!.digest },
+        },
+        actor,
+        galleryHost
+      )
+    })
+    afterAll(async () => {
+      await display?.close()
+    })
+    const curated = expect.objectContaining({ src: photo, variant_ids: [101], origin: "store" })
+
+    it("applies the active gallery to checkout, storefront, feed and admin reads", async () => {
+      expect((await display.readProduct("shirt"))?.images).toContainEqual(curated)
+      expect((await display.readRevealableProduct("shirt"))?.snapshot.images).toContainEqual(curated)
+      expect((await display.listShownProducts()).find(({ snapshot }) => snapshot.id === "shirt")).toMatchObject({
+        snapshot: { images: expect.arrayContaining([curated]) },
+        withheldVariantIds: [],
+        diagnostic: null,
+        staleColors: [],
+        invalidColors: [],
+      })
+      const admin = (await display.listAdminProducts()).find(({ snapshot }) => snapshot.id === "shirt")
+      expect(admin).toMatchObject({ hiddenAt: null, revealAt: null, revealedAt: null, addedToShopAt: null })
+      expect(admin!.snapshot.images).toContainEqual(curated)
+      expect((await display.listAdminDisplayProducts()).find(({ id }) => id === "shirt")?.images).toContainEqual(
+        curated
+      )
+      expect(await display.readAdminDisplayProduct("shirt")).toMatchObject({
+        snapshot: { images: expect.arrayContaining([curated]) },
+        withheldVariantIds: [],
+      })
+    })
+
+    it("keeps maintenance reads raw and products without a gallery unchanged", async () => {
+      const raw = (await display.listProducts()).find((snapshot) => snapshot.id === "shirt")
+      expect(raw?.images).toEqual(galleryProductFixture().images)
+      expect(await display.readProduct("plain")).toEqual({
+        ...galleryProductFixture(),
+        id: "plain",
+        shop_id: Number(shop),
+      })
+    })
+
+    it("previews hidden products only through the admin display reads", async () => {
+      await pool.query(
+        "update commerce.printify_products set hidden_at=now() where shop_id=$1 and product_id='shirt'",
+        [shop]
+      )
+      try {
+        expect(await display.readProduct("shirt")).toBeNull()
+        expect((await display.readAdminDisplayProduct("shirt"))?.snapshot.images).toContainEqual(curated)
+        expect(await display.readAdminDisplayProduct("missing")).toBeNull()
+      } finally {
+        await pool.query(
+          "update commerce.printify_products set hidden_at=null where shop_id=$1 and product_id='shirt'",
+          [shop]
+        )
+      }
+    })
+
+    it("withholds a color whose production changed and fails closed on an unreadable gallery", async () => {
+      const changed = galleryProductFixture()
+      changed.print_areas[0]!.placeholders[0]!.images[0]!.y = 0.9
+      await source(changed, "2")
+      try {
+        expect((await display.listShownProducts()).find(({ snapshot }) => snapshot.id === "shirt")).toMatchObject({
+          withheldVariantIds: [101],
+          staleColors: ["10"],
+        })
+        expect((await display.readProduct("shirt"))?.images).not.toContainEqual(curated)
+        const active = (
+          await pool.query("select active_manifest from commerce.product_galleries where shop_id=$1", [shop])
+        ).rows[0].active_manifest
+        await pool.query(
+          'update commerce.product_galleries set active_manifest=\'{"colors":"bad"}\' where shop_id=$1',
+          [shop]
+        )
+        try {
+          expect(await display.readAdminDisplayProduct("shirt")).toMatchObject({
+            snapshot: { images: [] },
+            withheldVariantIds: [101, 201],
+            diagnostic: expect.any(String),
+          })
+          expect((await display.readRevealableProduct("shirt"))?.snapshot.images).toEqual([])
+        } finally {
+          await pool.query("update commerce.product_galleries set active_manifest=$2 where shop_id=$1", [shop, active])
+        }
+      } finally {
+        await source(galleryProductFixture(), "1")
+      }
+    })
+
+    // The documented deploy window runs this code before the gallery migration. Every display
+    // reader must reach the provider images then, while any other missing relation still fails.
+    it("keeps checkout, storefront, feed and admin reads on provider images before the gallery migration", async () => {
+      const provider = galleryProductFixture().images
+      await pool.query("alter table commerce.product_galleries rename to product_galleries_migration_test")
+      try {
+        expect((await display.readProduct("shirt"))?.images).toEqual(provider)
+        expect((await display.readRevealableProduct("shirt"))?.snapshot.images).toEqual(provider)
+        expect((await display.listShownProducts()).find(({ snapshot }) => snapshot.id === "shirt")).toMatchObject({
+          snapshot: { images: provider },
+          withheldVariantIds: [],
+        })
+        expect(
+          (await display.listAdminProducts()).find(({ snapshot }) => snapshot.id === "shirt")?.snapshot.images
+        ).toEqual(provider)
+        expect((await display.listAdminDisplayProducts()).find(({ id }) => id === "shirt")?.images).toEqual(provider)
+        expect(await display.readAdminDisplayProduct("shirt")).toMatchObject({
+          snapshot: { images: provider },
+          withheldVariantIds: [],
+        })
+      } finally {
+        await pool.query("alter table commerce.product_galleries_migration_test rename to product_galleries")
+      }
+      await pool.query(
+        "alter table commerce.printify_product_revisions rename to printify_product_revisions_migration_test"
+      )
+      try {
+        await expect(display.readProduct("shirt")).rejects.toMatchObject({ code: "42P01" })
+      } finally {
+        await pool.query(
+          "alter table commerce.printify_product_revisions_migration_test rename to printify_product_revisions"
+        )
+      }
     })
   })
 
@@ -2594,6 +2790,10 @@ describe.skipIf(!databaseUrl)("durable Printify publishing", () => {
       "printify_product_revisions",
       "printify_products",
       "printify_publish_jobs",
+      "product_galleries",
+      "product_gallery_assets",
+      "product_gallery_promotions",
+      "product_gallery_revisions",
       "product_week_schedule",
       "public_request_attempts",
       "published_image_uploads",
@@ -2603,6 +2803,100 @@ describe.skipIf(!databaseUrl)("durable Printify publishing", () => {
       "weekly_heroes",
     ])
     expect(rows.every((row) => row.relrowsecurity && !row.public_usage)).toBe(true)
+  })
+
+  it("grants product galleries append-only runtime access scoped to known products", async () => {
+    const tables = [
+      "product_gallery_assets",
+      "product_galleries",
+      "product_gallery_revisions",
+      "product_gallery_promotions",
+    ]
+    const allowed = async (role: string, table: string, privilege: string) =>
+      (await pool.query("select has_table_privilege($1,$2,$3) as allowed", [role, `commerce.${table}`, privilege]))
+        .rows[0].allowed
+    for (const table of tables) {
+      for (const role of ["anon", "authenticated"])
+        expect(await allowed(role, table, "select,insert,update,delete")).toBe(false)
+      expect(await allowed("store_app_runtime", table, "select")).toBe(true)
+      expect(await allowed("store_app_runtime", table, "insert")).toBe(true)
+      expect(await allowed("store_app_runtime", table, "update")).toBe(table === "product_galleries")
+      expect(await allowed("store_app_runtime", table, "delete")).toBe(false)
+    }
+
+    const productId = randomUUID()
+    const assetId = randomUUID()
+    const actor = randomUUID()
+    const sha256 = "c".repeat(64)
+    const manifest = JSON.stringify({ version: 1 })
+    const client = await pool.connect()
+    const asset = (product: string, id: string) =>
+      client.query(
+        `insert into commerce.product_gallery_assets(id,shop_id,product_id,pathname,sha256,content_type,bytes,width,height,created_by)
+         values ($1,'123',$2,$3,$4,'image/jpeg',100,1200,1500,$5)`,
+        [id, product, `product-galleries/v1/${id}.jpg`, sha256, actor]
+      )
+    const rejected = async (statement: () => Promise<unknown>, message: string) => {
+      await client.query("savepoint attempt")
+      await expect(statement()).rejects.toThrow(message)
+      await client.query("rollback to savepoint attempt")
+    }
+    try {
+      await client.query("begin")
+      await client.query("insert into commerce.printify_products(shop_id,product_id) values ('123',$1)", [productId])
+      // The owner role still meets the foreign key, so an unknown product is refused below the policies too.
+      await rejected(() => asset(randomUUID(), randomUUID()), "foreign key")
+      await client.query("set local role store_app_runtime")
+      await rejected(() => asset(randomUUID(), randomUUID()), "row-level security")
+      await asset(productId, assetId)
+      await client.query(
+        "insert into commerce.product_galleries(shop_id,product_id,revision,draft_manifest,updated_by) values ('123',$1,$2,$3,$4)",
+        [productId, randomUUID(), manifest, actor]
+      )
+      await client.query(
+        "insert into commerce.product_gallery_revisions(shop_id,product_id,revision,action,manifest,created_by) values ('123',$1,$2,'save',$3,$4)",
+        [productId, randomUUID(), manifest, actor]
+      )
+      await client.query(
+        "insert into commerce.product_gallery_promotions(shop_id,product_id,asset_id,host,url,sha256) values ('123',$1,$2,'store.example',$3,$4)",
+        [productId, assetId, `https://store.example/published-product-photos/v1/${sha256}.jpg`, sha256]
+      )
+      await rejected(
+        () =>
+          client.query(
+            "insert into commerce.product_gallery_promotions(shop_id,product_id,asset_id,host,url,sha256) values ('123',$1,$2,'store.example',$3,$4)",
+            [productId, randomUUID(), `https://store.example/published-product-photos/v1/${sha256}.jpg`, sha256]
+          ),
+        "foreign key"
+      )
+      expect(
+        (
+          await client.query(
+            "update commerce.product_galleries set active_manifest=draft_manifest where product_id=$1 returning product_id",
+            [productId]
+          )
+        ).rowCount
+      ).toBe(1)
+      await rejected(
+        () =>
+          client.query("update commerce.product_gallery_revisions set action='restore' where product_id=$1", [
+            productId,
+          ]),
+        "permission denied"
+      )
+      await rejected(
+        () => client.query("delete from commerce.product_galleries where product_id=$1", [productId]),
+        "permission denied"
+      )
+      for (const table of tables)
+        expect(
+          (await client.query(`select count(*)::int as count from commerce.${table} where product_id=$1`, [productId]))
+            .rows[0].count
+        ).toBe(1)
+    } finally {
+      await client.query("rollback").catch(() => undefined)
+      client.release()
+    }
   })
 
   it("removes an unpublished product even when Printify is unavailable", async () => {

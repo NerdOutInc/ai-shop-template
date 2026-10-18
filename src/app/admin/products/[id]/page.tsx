@@ -35,6 +35,17 @@ export default async function AdminProductPreviewPage({ params }: { params: Prom
       </aside>
       {result.status === "ready" ? (
         <>
+          <Link
+            href={`/admin/products/${encodeURIComponent(result.product.id)}/photos`}
+            className="mb-6 inline-flex min-h-11 items-center underline underline-offset-4"
+          >
+            Manage product photos
+          </Link>
+          {result.photoWarning && (
+            <p role="status" className="mb-6 rounded-lg border border-border p-4">
+              {result.photoWarning}
+            </p>
+          )}
           <ProductDetails key={result.product.id} product={result.product} preview />
           <GoogleMerchantCopyEditor key={`google-copy-${result.product.id}`} productId={result.product.id} />
         </>

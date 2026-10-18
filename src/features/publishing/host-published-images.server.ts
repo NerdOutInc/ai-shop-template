@@ -1,17 +1,12 @@
 import "server-only"
 
 import { createHash } from "node:crypto"
-import {
-  BlobAccessError,
-  BlobNotFoundError,
-  BlobStoreNotFoundError,
-  BlobStoreSuspendedError,
-  head,
-  put,
-} from "@vercel/blob"
+import { BlobNotFoundError, head, put } from "@vercel/blob"
 
 import { isPublicBlobHost } from "@/lib/is-public-blob-host"
 
+import { putPublishedImage } from "./put-published-image.server"
+import { classifyImageStorageError } from "./classify-image-storage-error"
 import { PublishedImageError } from "./published-image-error"
 import { readPublishedImage } from "./read-published-image.server"
 
@@ -106,14 +101,7 @@ function signal(context: Context, timeout: number) {
 
 function storageError(error: unknown) {
   if (error instanceof PublishedImageError || error instanceof ImageDeadlineReached) return error
-  const configuration =
-    error instanceof BlobAccessError ||
-    error instanceof BlobStoreNotFoundError ||
-    error instanceof BlobStoreSuspendedError
-  return new PublishedImageError(
-    configuration ? "IMAGE_STORAGE_CONFIGURATION" : "IMAGE_STORAGE_UNAVAILABLE",
-    !configuration
-  )
+  return classifyImageStorageError(error)
 }
 
 async function existingImage(context: Context, pathname: string, size?: number) {
@@ -154,44 +142,17 @@ async function uploadImage(context: Context, source: string, expectedHash: strin
   const existing = await existingImage(context, pathname, image.bytes.byteLength)
   if (existing) return { url: existing, uploaded: false }
   if (!canUpload) return null
-  try {
-    const result = await context.storage.put(pathname, image.bytes, {
-      access: "public",
-      addRandomSuffix: false,
-      allowOverwrite: false,
-      cacheControlMaxAge: 31_536_000,
-      contentType: image.contentType,
-      abortSignal: signal(context, 15_000),
-    })
-    const location = hostedLocation(result.url)
-    if (
-      !location ||
-      location.url.hostname !== context.options.blobHost ||
-      location.pathname !== pathname ||
-      result.pathname !== pathname ||
-      result.contentType !== image.contentType
-    ) {
-      throw new PublishedImageError("IMAGE_STORAGE_CONFIGURATION", false)
-    }
-    context.existing.set(pathname, { url: result.url, size: image.bytes.byteLength })
-    return { url: result.url, uploaded: true }
-  } catch (error) {
-    const classified = storageError(error)
-    if (!(classified instanceof PublishedImageError) || !classified.retryable) throw classified
-  }
-  // An upload response can be lost after storage commits. Verify bytes only in this uncertain case.
-  const uploaded = await existingImage(context, pathname, image.bytes.byteLength)
-  if (!uploaded) throw new PublishedImageError("IMAGE_STORAGE_UNAVAILABLE", true)
-  let previous: Awaited<ReturnType<typeof readPublishedImage>>
-  try {
-    previous = await readPublishedImage(uploaded, { fetch: context.request, signal: signal(context, 10_000) })
-  } catch (error) {
-    if (error instanceof ImageDeadlineReached) throw error
-    const invalid = error instanceof PublishedImageError && error.code === "IMAGE_CONTENT_INVALID"
-    throw new PublishedImageError(invalid ? "IMAGE_STORAGE_CONFLICT" : "IMAGE_STORAGE_UNAVAILABLE", !invalid)
-  }
-  if (digest(previous.bytes) !== checksum) throw new PublishedImageError("IMAGE_STORAGE_CONFLICT", false)
-  return { url: uploaded, uploaded: true }
+  const url = await putPublishedImage({
+    pathname,
+    bytes: image.bytes,
+    contentType: image.contentType,
+    blobHost: context.options.blobHost,
+    signal: (timeout) => signal(context, timeout),
+    blob: context.storage,
+    fetch: context.request,
+  })
+  context.existing.set(pathname, { url, size: image.bytes.byteLength })
+  return { url, uploaded: true }
 }
 
 export async function hostPublishedImages(

@@ -47,7 +47,7 @@ The database records collections, designs, immutable artwork revisions, asset id
 
 New originals, print masters and concept previews live in a **private Vercel Blob store** dedicated to this store. Browser requests use `/api/admin/assets/<asset-id>`; `?download=1` returns the same protected bytes as an attachment.
 
-`?size=small|medium|large` returns a browsing copy instead of the master, fitted inside 480, 800 or 1440 pixels on its longest edge as lossless WebP. The gallery always asks for a size, because a print master is around 4200 × 4800 pixels and a page holds up to 48 cards. The app derives each size once with sharp and keeps it in the same private store at `concepts/<asset-id>/<source-sha256>-<size>.webp`; addressing it by the master's hash means replaced artwork can never serve a stale size, and two requests racing on a cold path produce identical bytes. Derivatives get no browser cache: `src/proxy.ts` puts `private, no-store` on every `/api/admin` response, and a derived size is still private artwork. The saving is the resize, not the transfer — a repeat visit reads the stored derivative instead of decoding a print master again.
+`?size=small|medium|large` returns a browsing copy instead of the master, fitted inside 480, 800 or 1440 pixels on its longest edge as lossless WebP. The gallery always asks for a size, because a print master is around 4200 × 4800 pixels and a page holds up to 48 cards. The app derives each size once with sharp and keeps it in the same private store at `concepts/<asset-id>/<source-sha256>-<size>.webp`; addressing it by the master's hash means replaced artwork can never serve a stale size, and two requests racing on a cold path produce identical bytes. Derivatives get no browser cache: the admin proxy (`src/features/admin/refresh-admin-response.server.ts`) puts `private, no-store` on every `/api/admin` response except the revalidated product-gallery photo GET, and a derived size is still private artwork. The saving is the resize, not the transfer — a repeat visit reads the stored derivative instead of decoding a print master again.
 
 **The app never removes a background.** A size is derived only from an asset with validated alpha, and a request for one on opaque artwork returns 404 rather than falling back to the master. Transparency is decided during preparation and uploaded, so an opaque master means the design gets no browsing sizes and no garment-color preview until it is prepared again.
 
@@ -256,6 +256,8 @@ A real API product-create/readback and Printify's fetch of the capability URL re
 Before rollout, verify narrow layout, keyboard/focus, cross-session personal favorites, separate-admin isolation, revoked membership/grant denial and private asset cache behavior. Generation, import, publication and manufacturing retain their own completion checks. A new brand gets a fresh database/storage/auth setup and empty operational library; it never inherits this store's users, artwork, numbering history, favorites, grants or provider bindings.
 
 ## Design of the Week
+
+To pair a release with private desktop/mobile homepage artwork, see [scheduled homepage heroes](weekly-hero-admin.md); to create the concepts, follow the [store-weekly-hero skill](../.agents/skills/store-weekly-hero/SKILL.md) and the [portable weekly hero workflow](weekly-hero-workflow.md).
 
 Weekly features now select **individual published products** in `/admin/products`. Browsing a design
 can create a Printify draft; publish that draft in Printify, then use its product row's **Add to Design

@@ -22,6 +22,20 @@ describe("canOptimizeProductImage", () => {
     expect(canOptimizeProductImage(`https://${blobHost}/unrelated.jpg`, blobHost)).toBe(false)
   })
 
+  it("optimizes content-addressed store photos only as exact JPEG paths on the configured store", () => {
+    const photo = `/published-product-photos/v1/${"b".repeat(64)}.jpg`
+    expect(canOptimizeProductImage(`https://${blobHost}${photo}`, blobHost)).toBe(true)
+    for (const src of [
+      `https://${blobHost}${photo.replace(".jpg", ".png")}`,
+      `https://${blobHost}${photo}?width=900`,
+      `https://other.public.blob.vercel-storage.com${photo}`,
+      `https://${blobHost}/published-product-photos/v1/${"b".repeat(63)}.jpg`,
+      `https://${blobHost}/published-product-photos/v1/${"B".repeat(64)}.jpg`,
+      `https://${blobHost}/product-gallery/v1/${"b".repeat(64)}.jpg`,
+    ])
+      expect(canOptimizeProductImage(src, blobHost)).toBe(false)
+  })
+
   it("accepts provider mockups without changing garment camera parameters", () => {
     expect(
       canOptimizeProductImage(

@@ -120,6 +120,12 @@ test("shows the configured shipping copy at a narrow viewport", async ({ page })
   )
   await expect(page.getByRole("main")).toContainText("4–15 business days")
   await expect(page.getByRole("main")).toContainText("They do not change checkout charges")
+  // Delivery, handling and each region's transit range must not break after the en dash.
+  for (const range of ["4–15", "11–27", "2–10", "2–5", "9–17"]) {
+    const text = page.getByRole("main").getByText(range, { exact: true })
+    await expect(text).toBeVisible()
+    expect(await text.evaluate((element) => element.getClientRects().length)).toBe(1)
+  }
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
 })
 

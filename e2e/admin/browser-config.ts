@@ -19,7 +19,7 @@ export function adminBrowserConfig(): PlaywrightTestConfig {
     use: { baseURL: config.baseURL, trace: "retain-on-failure", screenshot: "only-on-failure" },
     projects: [{ name: "admin-chromium", use: { ...devices["Desktop Chrome"] } }],
     webServer: {
-      command: "pnpm exec next start .tmp/admin-storefront-e2e --hostname localhost --port 3300",
+      command: `pnpm exec next start .tmp/admin-storefront-e2e --hostname localhost --port ${config.serverPort}`,
       env: {
         ...offlineStoreEnvironment,
         ADMIN_E2E: "true",

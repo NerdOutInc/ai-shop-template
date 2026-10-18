@@ -50,6 +50,8 @@ export const catalogProductSchema = z.object({
     z
       .object({
         src: z.string(),
+        alt: z.string().trim().min(1).max(300).optional().catch(undefined),
+        origin: z.literal("store").optional().catch(undefined),
         variant_ids: z.array(z.number().int()),
         is_default: z.boolean().optional().default(false),
         source_src: z.unknown().optional(),

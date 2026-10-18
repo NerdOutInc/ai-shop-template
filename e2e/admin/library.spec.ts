@@ -283,7 +283,7 @@ test("owner setup, passkeys, exact private downloads, personal favorites and rev
   const smallBytes = await small.body()
   expect(smallBytes.byteLength).toBeLessThan(bytes.byteLength / 2)
   expect(Number(small.headers()["content-length"])).toBe(smallBytes.byteLength)
-  // src/proxy.ts puts private, no-store on every /api/admin response; a derived size is
+  // The admin proxy puts private, no-store on /api/admin responses; a derived size is
   // still private artwork and gets the same treatment.
   expect(small.headers()["cache-control"]).toContain("no-store")
   // Derived once: the second request is served from the private store, byte for byte.

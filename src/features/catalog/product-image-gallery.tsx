@@ -90,6 +90,7 @@ export function ProductImageGallery({
                 <Image
                   className="product-main-image"
                   src={item.src}
+                  data-photo-origin={item.origin}
                   alt={item.alt}
                   width={1000}
                   height={1000}
@@ -142,6 +143,7 @@ export function ProductImageGallery({
             >
               <Image
                 src={item.src}
+                data-photo-origin={item.origin}
                 alt=""
                 width={100}
                 height={100}

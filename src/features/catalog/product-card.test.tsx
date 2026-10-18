@@ -95,6 +95,18 @@ describe("ProductCard", () => {
     expect(mockup).not.toHaveAttribute("fetchpriority")
   })
 
+  it("multiplies provider mockups into the card but leaves store photographs unblended", () => {
+    const { rerender } = render(
+      <ProductCard product={{ ...product, image: { src: "/mockup.png", alt: "Provider mockup" } }} />
+    )
+    expect(screen.getByRole("img", { name: "Provider mockup" })).toHaveClass("mix-blend-multiply")
+    rerender(
+      <ProductCard product={{ ...product, image: { src: "/photo.jpg", alt: "Store photo", origin: "store" } }} />
+    )
+    expect(screen.getByRole("img", { name: "Store photo" })).not.toHaveClass("mix-blend-multiply")
+    expect(screen.getByRole("img", { name: "Store photo" })).toHaveClass("product-card-mockup", "object-contain")
+  })
+
   it("optimizes the approved artwork on its matched background alongside the original mockup", () => {
     render(
       <ProductCard

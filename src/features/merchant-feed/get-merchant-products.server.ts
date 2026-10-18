@@ -22,43 +22,56 @@ export async function getMerchantProducts(): Promise<MerchantProduct[]> {
   )
     throw new MerchantFeedError("CONFIGURATION_INVALID")
   try {
-    let snapshots: Record<string, unknown>[]
+    let galleries: Awaited<ReturnType<typeof listShownProducts>>
     let profiles: ReadonlyMap<number, GarmentFeedProfile>
     try {
-      snapshots = await listShownProducts()
-      if (!snapshots.length) return []
+      galleries = await listShownProducts()
+      if (!galleries.length) return []
       profiles = await getPublishingStore().garments.listFeedProfiles()
     } catch {
       throw new MerchantFeedError("DATABASE_UNAVAILABLE")
     }
-    const published = snapshots.map((snapshot) =>
-      prepareMerchantProduct(snapshot, env.PRINTIFY_SHOP_ID!, getSiteUrl(), profiles)
-    )
+    const published = galleries.map(({ snapshot, withheldVariantIds, diagnostic, staleColors }) => {
+      if (withheldVariantIds.length) {
+        console.warn("Product gallery variants withheld from merchant feeds", {
+          productId: new MerchantFeedError("UNKNOWN_ERROR", snapshot.id).productId,
+          codes: [...(diagnostic ? ["GALLERY_INVALID"] : []), ...(staleColors.length ? ["GALLERY_STALE"] : [])],
+          withheldVariantCount: withheldVariantIds.length,
+        })
+      }
+      return prepareMerchantProduct(snapshot, env.PRINTIFY_SHOP_ID!, getSiteUrl(), profiles, withheldVariantIds)
+    })
     const seen = new Set<string>()
     for (const { display } of published) {
       if (seen.has(display.id.toLowerCase())) throw new MerchantFeedError("INVALID_PRODUCT_ID", display.id)
       seen.add(display.id.toLowerCase())
     }
-    const observations = await readCatalogStock(snapshots)
+    const observations = await readCatalogStock(galleries.map((gallery) => gallery.snapshot))
     // Preserve the destination's previous feed during an outage instead of claiming every item sold out.
     if (!observations) throw new MerchantFeedError("STOCK_UNAVAILABLE")
-    return published
-      .filter(({ display }) => Object.hasOwn(observations, display.id))
-      .map(({ display, production, merchantProduct }) => {
-        const current = new Map(observations[display.id]!.map((variant) => [variant.id, variant]))
-        const saved = new Map(production.variants.map((variant) => [variant.id, variant]))
-        return {
-          ...merchantProduct,
-          product: normalizeCatalogProduct({
-            ...display,
-            variants: display.variants.map((variant) => ({
-              ...variant,
-              is_available:
-                saved.has(variant.id) && isPublishedVariantAvailable(saved.get(variant.id)!, current.get(variant.id)),
-            })),
-          }),
-        }
-      })
+    return (
+      published
+        // A product whose every variant has a withheld curated color leaves the feed instead of failing it.
+        .filter(
+          ({ display, merchantProduct }) =>
+            Object.hasOwn(observations, display.id) && merchantProduct.product.variants.length > 0
+        )
+        .map(({ display, production, merchantProduct }) => {
+          const current = new Map(observations[display.id]!.map((variant) => [variant.id, variant]))
+          const saved = new Map(production.variants.map((variant) => [variant.id, variant]))
+          return {
+            ...merchantProduct,
+            product: normalizeCatalogProduct({
+              ...display,
+              variants: display.variants.map((variant) => ({
+                ...variant,
+                is_available:
+                  saved.has(variant.id) && isPublishedVariantAvailable(saved.get(variant.id)!, current.get(variant.id)),
+              })),
+            }),
+          }
+        })
+    )
   } catch (error) {
     throw error instanceof MerchantFeedError ? error : new MerchantFeedError("UNKNOWN_ERROR")
   }

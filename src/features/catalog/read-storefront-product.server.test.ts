@@ -132,7 +132,7 @@ describe("storefront publication cache", () => {
     await readStorefrontProduct("shirt")
     expect(readRevealableProduct).toHaveBeenCalledExactlyOnceWith("shirt")
     expect(vi.mocked(unstable_cache).mock.calls[0]?.[1]).toEqual([
-      "published-catalog-product-v1",
+      "published-catalog-product-v2",
       "v2",
       "123",
       expect.stringMatching(/^[a-f0-9]{64}$/),
@@ -146,6 +146,49 @@ describe("storefront publication cache", () => {
     )
   })
 
+  it("keeps long-titled provider products available through the cached projection and catalog reparse", async () => {
+    const raw = fixture()
+    raw.title = "A long product title ".repeat(30).trim()
+    const snapshot = {
+      ...raw,
+      images: raw.images.map((image) => ({ ...image, alt: null, origin: "unexpected-provider-field" })),
+    }
+    vi.mocked(readRevealableProduct).mockResolvedValue(revealable(snapshot))
+    vi.mocked(readCatalogStock).mockResolvedValue({
+      shirt: parsePrintifyProduct(raw, { productId: "shirt", shopId: "123" })!.variants,
+    })
+    const projected = await readStorefrontProduct("shirt")
+    expect(projected?.images).toEqual([expect.not.objectContaining({ origin: expect.anything() }), expect.anything()])
+    expect(normalizeCatalogProduct(projected).images[0]?.alt).toHaveLength(300)
+    const result = await readPublishedCatalog([projected!])
+    expect(result.status).toBe("ready")
+    expect(result.products[0]?.title).toBe(raw.title)
+    expect(result.products[0]?.variants.some((variant) => variant.available)).toBe(true)
+  })
+
+  it("caches approved photo alt text and store origin for the storefront to render", async () => {
+    const raw = fixture()
+    const photo = `https://catalog.public.blob.vercel-storage.com/published-product-photos/v1/${"c".repeat(64)}.jpg`
+    raw.images[1] = { src: photo, variant_ids: [2], is_default: true }
+    vi.mocked(readRevealableProduct).mockResolvedValue(
+      revealable({
+        ...raw,
+        images: raw.images.map((image) =>
+          image.src === photo ? { ...image, alt: "  Sample tee folded on a table  ", origin: "store" } : image
+        ),
+      })
+    )
+    const projected = await readStorefrontProduct("shirt")
+    expect(projected?.images).toEqual([
+      { src: photo, alt: "Sample tee folded on a table", origin: "store", variant_ids: [2], is_default: true },
+      { src: raw.images[0]!.src, alt: "Published tee", variant_ids: [1], is_default: false },
+    ])
+    expect(normalizeCatalogProduct(projected)).toMatchObject({
+      image: { src: photo, alt: "Sample tee folded on a table", origin: "store" },
+      images: [{ origin: "store" }, expect.not.objectContaining({ origin: expect.anything() })],
+    })
+  })
+
   it("caches camera identities from hosted mockups while keeping recovery URLs private", async () => {
     const raw = fixture()
     const images = raw.images.map((image, index) => ({
@@ -156,8 +199,8 @@ describe("storefront publication cache", () => {
     vi.mocked(readRevealableProduct).mockResolvedValue(revealable({ ...raw, images }))
     const snapshot = await readStorefrontProduct("shirt")
     expect(snapshot?.images).toEqual([
-      { src: images[1]!.src, variant_ids: [2], is_default: true, view_key: "person-1-front" },
-      { src: images[0]!.src, variant_ids: [1], is_default: false, view_key: "front" },
+      { src: images[1]!.src, alt: "Published tee", variant_ids: [2], is_default: true, view_key: "person-1-front" },
+      { src: images[0]!.src, alt: "Published tee", variant_ids: [1], is_default: false, view_key: "front" },
     ])
     expect(JSON.stringify(snapshot)).not.toMatch(/source_src|images-api\.printify\.com|private-recovery/)
     expect(normalizeCatalogProduct(snapshot).images.map((image) => image.viewKey)).toEqual(["person-1-front", "front"])

@@ -2,7 +2,7 @@ import "server-only"
 
 import { readPublishedCatalog } from "@/features/catalog/read-published-catalog.server"
 import { getPublishingStore } from "@/features/publishing/get-publishing-store.server"
-import { listPublishedProducts } from "@/features/publishing/list-published-products-for-admin.server"
+import { listAdminDisplayProducts } from "@/features/publishing/list-admin-display-products.server"
 import { getSiteUrl } from "@/lib/get-site-url"
 
 import { dropEmailSubscriberPlaceholder } from "./drop-email-subscriber-placeholder"
@@ -54,7 +54,7 @@ export async function renderNextDropEmail(): Promise<NextDropEmail> {
   const liveAt = new Date(next).toISOString()
   const sendAt = readDropEmailWindow(liveAt, now).sendAt.toISOString()
   const productIds = weeks.get(next)!
-  const snapshots = (await listPublishedProducts()).filter((snapshot) => productIds.has(String(snapshot.id)))
+  const snapshots = (await listAdminDisplayProducts()).filter((snapshot) => productIds.has(String(snapshot.id)))
   const products = (await readPublishedCatalog(snapshots)).products
     .filter((product) => product.availability === "available")
     .map(toDropEmailProduct)

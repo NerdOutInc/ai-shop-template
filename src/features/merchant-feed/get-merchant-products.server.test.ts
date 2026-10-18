@@ -9,6 +9,8 @@ import { googleCopySharedFactsHash } from "./google-copy-shared-facts-hash"
 import type { GoogleMerchantCopy } from "./google-merchant-copy-schema"
 import { resolveGoogleMerchantCopy } from "./resolve-google-merchant-copy"
 import { validateGoogleCopyApproval } from "./validate-google-copy-approval"
+import { resolveProductGallery } from "@/features/product-gallery/resolve-product-gallery.server"
+import { readGallerySource } from "@/features/product-gallery/read-gallery-source.server"
 import { getMerchantProducts } from "./get-merchant-products.server"
 import { createMerchantFeed } from "./create-merchant-feed"
 vi.mock("server-only", () => ({}))
@@ -84,6 +86,10 @@ function observe(...products: ReturnType<typeof fixture>[]) {
     )
   )
 }
+function feed(snapshots: Record<string, unknown>[]) {
+  return snapshots.map((snapshot) => resolveProductGallery({ snapshot, active: null, revision: "1" }))
+}
+
 beforeEach(() => {
   vi.resetAllMocks()
   Object.assign(testEnv, {
@@ -91,7 +97,7 @@ beforeEach(() => {
     DATABASE_URL: "postgresql://local/store",
     PRINTIFY_SHOP_ID: "123",
   })
-  vi.mocked(listShownProducts).mockResolvedValue([fixture()])
+  vi.mocked(listShownProducts).mockResolvedValue(feed([fixture()]))
   listFeedProfiles.mockResolvedValue(
     new Map([[1317, { googleProductCategory: 212, ageGroup: "adult", gender: "unisex", sizeSystem: "US" }]])
   )
@@ -128,7 +134,7 @@ it.each(["", ' id="size-guide"'])(
     const published = fixture()
     published.title = 'Published tee & "friends"'
     published.description = `<table${marker}><tr><th></th><th>M</th><th>XL</th></tr><tr><td>Width, in</td><td>20.50</td><td>24.00</td></tr><tr><td>Length, in</td><td>29.00</td><td>31.00</td></tr></table>`
-    vi.mocked(listShownProducts).mockResolvedValue([published, fixture("prose")])
+    vi.mocked(listShownProducts).mockResolvedValue(feed([published, fixture("prose")]))
     observe(liveFixture(), liveFixture("prose"))
 
     const products = await getMerchantProducts()
@@ -167,7 +173,7 @@ it.each(["", " \t\n", "<p><br></p>"])(
   async (description) => {
     const published = fixture()
     published.description = description
-    vi.mocked(listShownProducts).mockResolvedValue([published])
+    vi.mocked(listShownProducts).mockResolvedValue(feed([published]))
     await expect(getMerchantProducts()).rejects.toHaveProperty("code", "INVALID_DESCRIPTION")
     expect(readCatalogStock).not.toHaveBeenCalled()
   }
@@ -193,13 +199,13 @@ it("rejects unavailable observations to preserve the previous feed", async () =>
 it("reflects current publication membership without discovering provider drafts", async () => {
   observe(liveFixture("first"), liveFixture("second"))
   vi.mocked(listShownProducts)
-    .mockResolvedValueOnce([fixture("first"), fixture("second")])
-    .mockResolvedValueOnce([fixture("second")])
+    .mockResolvedValueOnce(feed([fixture("first"), fixture("second")]))
+    .mockResolvedValueOnce(feed([fixture("second")]))
   expect((await getMerchantProducts()).map((p) => p.product.id)).toEqual(["first", "second"])
   expect((await getMerchantProducts()).map((p) => p.product.id)).toEqual(["second"])
 })
 it("returns an empty feed for an empty publication without needing stock", async () => {
-  vi.mocked(listShownProducts).mockResolvedValue([])
+  vi.mocked(listShownProducts).mockResolvedValue(feed([]))
   expect(await getMerchantProducts()).toEqual([])
   expect(readCatalogStock).not.toHaveBeenCalled()
   expect(listFeedProfiles).not.toHaveBeenCalled()
@@ -223,7 +229,7 @@ it("exports mixed garments using their saved profiles and reads edits on the nex
     ...liveFixture(`garment-${blueprint}`),
     blueprint_id: blueprint,
   }))
-  vi.mocked(listShownProducts).mockResolvedValue(products)
+  vi.mocked(listShownProducts).mockResolvedValue(feed(products))
   listFeedProfiles.mockResolvedValue(profiles)
   observe(...products)
   for (const destination of ["google", "meta"] as const) {
@@ -249,7 +255,7 @@ it("exports mixed garments using their saved profiles and reads edits on the nex
 })
 
 it("fails the whole feed when one garment has no complete profile", async () => {
-  vi.mocked(listShownProducts).mockResolvedValue([fixture(), { ...fixture("unconfigured"), blueprint_id: 2679 }])
+  vi.mocked(listShownProducts).mockResolvedValue(feed([fixture(), { ...fixture("unconfigured"), blueprint_id: 2679 }]))
   await expect(getMerchantProducts()).rejects.toMatchObject({
     code: "UNSUPPORTED_BLUEPRINT",
     productId: "unconfigured",
@@ -292,7 +298,7 @@ it.each([
     if (change === "empty-description") published.description = ""
     if (change === "zero-published-price") published.variants[0]!.price = 0
     if (change === "missing-color-photo") published.images = [published.images[1]!]
-    vi.mocked(listShownProducts).mockResolvedValue(change === "duplicate" ? [published, published] : [published])
+    vi.mocked(listShownProducts).mockResolvedValue(feed(change === "duplicate" ? [published, published] : [published]))
   }
   await expect(getMerchantProducts()).rejects.toHaveProperty(
     "code",
@@ -314,7 +320,7 @@ it.each([
 })
 
 it("omits only products absent from a fresh observation while keeping the feed available", async () => {
-  vi.mocked(listShownProducts).mockResolvedValue([fixture("shirt"), fixture("new")])
+  vi.mocked(listShownProducts).mockResolvedValue(feed([fixture("shirt"), fixture("new")]))
   expect((await getMerchantProducts()).map((p) => p.product.id)).toEqual(["shirt"])
 })
 
@@ -341,9 +347,11 @@ function reviewedCopy(snapshot = fixture()): GoogleMerchantCopy {
 
 it("keeps reviewed Google copy through the stock remap and leaves Meta byte-identical", async () => {
   const published = fixture()
-  vi.mocked(listShownProducts).mockResolvedValue([published])
+  vi.mocked(listShownProducts).mockResolvedValue(feed([published]))
   const baseline = createMerchantFeed(await getMerchantProducts(), new URL("https://example.com"), "meta")
-  vi.mocked(listShownProducts).mockResolvedValue([{ ...published, google_merchant_copy: reviewedCopy(published) }])
+  vi.mocked(listShownProducts).mockResolvedValue(
+    feed([{ ...published, google_merchant_copy: reviewedCopy(published) }])
+  )
   const products = await getMerchantProducts()
   expect(products[0]!.googleCopy?.get(1)?.content).toContain("Color: Black. Size: M.")
   expect(products[0]!.product.variants[0]!.available).toBe(true)
@@ -366,7 +374,7 @@ it.each([
   const published = fixture()
   const baseline = createMerchantFeed(await getMerchantProducts(), new URL("https://example.com"))
   const raw = patch === null ? null : Object.keys(patch).length === 0 ? {} : { ...reviewedCopy(), ...patch }
-  vi.mocked(listShownProducts).mockResolvedValue([{ ...published, google_merchant_copy: raw }])
+  vi.mocked(listShownProducts).mockResolvedValue(feed([{ ...published, google_merchant_copy: raw }]))
   const products = await getMerchantProducts()
   expect(createMerchantFeed(products, new URL("https://example.com"))).toBe(baseline)
 })
@@ -447,7 +455,7 @@ it("falls back only for a variant whose final ending exceeds the Unicode limit, 
   expect(() => validateGoogleCopyApproval(copy, snapshot, "123", copyProfile, "unknown")).toThrow(
     "GOOGLE_COPY_INVALID_APPROVAL"
   )
-  vi.mocked(listShownProducts).mockResolvedValue([{ ...snapshot, google_merchant_copy: copy }])
+  vi.mocked(listShownProducts).mockResolvedValue(feed([{ ...snapshot, google_merchant_copy: copy }]))
   expect(createMerchantFeed(await getMerchantProducts(), new URL("https://example.com"))).toContain(
     "<g:description>Published illustration story</g:description>"
   )
@@ -477,9 +485,9 @@ it("requires explicit provenance for human-origin approval, including untyped ca
 })
 
 it("falls back for inactive optional copy without logging on feed reads", async () => {
-  vi.mocked(listShownProducts).mockResolvedValue([
-    { ...fixture(), google_merchant_copy: { content: "PRIVATE COPY TEXT" } },
-  ])
+  vi.mocked(listShownProducts).mockResolvedValue(
+    feed([{ ...fixture(), google_merchant_copy: { content: "PRIVATE COPY TEXT" } }])
+  )
   const products = await getMerchantProducts()
   const xml = createMerchantFeed(products, new URL("https://example.com"))
   expect(xml).toContain("<g:description>Published illustration story</g:description>")
@@ -492,8 +500,91 @@ it("uses only explicitly supplied material keys, even when a catalog color is an
   snapshot.options[0]!.values[0]!.title = "constructor"
   const copy = reviewedCopy(snapshot)
   copy.materials = {}
-  vi.mocked(listShownProducts).mockResolvedValue([{ ...snapshot, google_merchant_copy: copy }])
+  vi.mocked(listShownProducts).mockResolvedValue(feed([{ ...snapshot, google_merchant_copy: copy }]))
   const products = await getMerchantProducts()
   expect(products[0]!.googleCopy?.get(1)?.material).toBeUndefined()
   expect(createMerchantFeed(products, new URL("https://example.com"))).toContain("Color: constructor. Size: M.")
+})
+
+const galleryHost = "galleryfixtures.public.blob.vercel-storage.com"
+function curatedBlack(source: ReturnType<typeof liveFixture>) {
+  return {
+    version: 1,
+    coverColor: null,
+    colors: [
+      {
+        colorKey: "10",
+        reviewedBinding: readGallerySource(source, "1").colors[0]!.binding,
+        entries: [
+          {
+            source: "store",
+            assetId: "e3a4e34c-cb28-442e-8741-bef56b70b97d",
+            publicUrl: `https://${galleryHost}/published-product-photos/v1/${"b".repeat(64)}.jpg`,
+            alt: "Black tee",
+            role: "other",
+          },
+        ],
+      },
+    ],
+  }
+}
+function threeColorSource() {
+  const source = liveFixture()
+  source.variants[2]!.is_enabled = true
+  return source
+}
+
+it("withholds only stale curated colors while retaining other colors and products in both feeds", async () => {
+  const source = threeColorSource()
+  const manifest = curatedBlack(source)
+  source.print_areas[0]!.placeholders[0]!.images[0]!.y = 0.8
+  const resolved = resolveProductGallery({ snapshot: source, active: manifest, revision: "2", blobHost: galleryHost })
+  vi.mocked(listShownProducts).mockResolvedValue([resolved, ...feed([liveFixture("another")])])
+  observe(source, liveFixture("another"))
+  const products = await getMerchantProducts()
+  expect(products.map((p) => [p.product.id, p.product.variants.map((v) => v.id)])).toEqual([
+    ["shirt", [3]],
+    ["another", [1, 2]],
+  ])
+  expect(console.warn).toHaveBeenCalledWith("Product gallery variants withheld from merchant feeds", {
+    productId: "shirt",
+    codes: ["GALLERY_STALE"],
+    withheldVariantCount: 2,
+  })
+  expect(readCatalogStock).toHaveBeenCalledWith([resolved.snapshot, expect.objectContaining({ id: "another" })])
+  for (const destination of ["google", "meta"] as const) {
+    const xml = createMerchantFeed(products, new URL("https://example.com"), destination)
+    expect(xml).toContain("<g:id>shirt-3</g:id>")
+    expect(xml).not.toMatch(/<g:id>shirt-[12]<\/g:id>|published-product-photos/)
+  }
+})
+
+it("drops a product whose invalid gallery withholds every variant without failing the feed", async () => {
+  const source = threeColorSource()
+  vi.mocked(listShownProducts).mockResolvedValue([
+    resolveProductGallery({ snapshot: source, active: { broken: true }, revision: "2" }),
+    ...feed([liveFixture("another")]),
+  ])
+  observe(source, liveFixture("another"))
+  expect((await getMerchantProducts()).map((p) => p.product.id)).toEqual(["another"])
+  expect(console.warn).toHaveBeenCalledWith("Product gallery variants withheld from merchant feeds", {
+    productId: "shirt",
+    codes: ["GALLERY_INVALID"],
+    withheldVariantCount: 3,
+  })
+  expect(JSON.stringify(vi.mocked(console.warn).mock.calls)).not.toMatch(/broken|https:/)
+})
+
+it("keeps general INCOMPLETE_VARIANTS strictness for products without a gallery", async () => {
+  vi.mocked(listShownProducts).mockResolvedValue(feed([{ ...liveFixture(), images: [] }]))
+  await expect(getMerchantProducts()).rejects.toMatchObject({ code: "INCOMPLETE_VARIANTS", productId: "shirt" })
+  expect(console.warn).not.toHaveBeenCalled()
+})
+
+it("strips an untrusted withheld-variant key from the published snapshot", async () => {
+  vi.mocked(listShownProducts).mockResolvedValue(
+    feed([{ ...liveFixture(), images: [], storefront_gallery_withheld_variants: [1, 2] }])
+  )
+  await expect(getMerchantProducts()).rejects.toMatchObject({ code: "INCOMPLETE_VARIANTS" })
+  expect(readCatalogStock).not.toHaveBeenCalled()
 })

@@ -92,4 +92,4 @@ A generated repository is independent of this template; GitHub does not automati
 
 The foundation follows the MIT-licensed [Next.js Enterprise Boilerplate](https://github.com/Blazity/next-enterprise); see [template origin](docs/template-origin.md) and [LICENSE](LICENSE).
 
-Weekly feature stores can prepare private responsive homepage artwork and approve it for the existing release schedule. See [scheduled homepage heroes](docs/weekly-hero-admin.md) for editing, visibility rules and migration rollout.
+Weekly feature stores can prepare private responsive homepage artwork and approve it for the existing release schedule. See [scheduled homepage heroes](docs/weekly-hero-admin.md) for editing, visibility rules and migration rollout, and the [store-weekly-hero skill](.agents/skills/store-weekly-hero/SKILL.md) for creating the concepts. Garments in ads, social posts and other marketing images follow [marketing creative](docs/marketing-creative.md).

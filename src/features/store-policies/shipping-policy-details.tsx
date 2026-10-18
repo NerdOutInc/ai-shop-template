@@ -15,10 +15,13 @@ export function ShippingPolicyDetails() {
       </p>
       <p>These rates are used in your cart and checkout. Other destinations are not currently supported.</p>
       <h2>Printing & delivery</h2>
-      <p>Printing and handling take {policy.productionTime}.</p>
+      <p>
+        Printing and handling take <ShippingEstimateText>{policy.productionTime}</ShippingEstimateText>.
+      </p>
       {policy.deliveryRegions.map(({ destination, transitTime, regions }) => (
         <p key={regions.join(",")}>
-          After printing, estimated transit is {transitTime} {destination}.
+          After printing, estimated transit is{" "}
+          <ShippingEstimateText>{`${transitTime} ${destination}.`}</ShippingEstimateText>
         </p>
       ))}
       <p>

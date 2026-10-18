@@ -151,8 +151,13 @@ test("keeps private evidence out of URLs and safely erases only the reviewed ide
         .unsubscribed_at
     ).toBeNull()
     await expect(page.getByText("Legacy consent", { exact: true })).toBeVisible()
+    // Only one destructive confirmation may be open at a time.
+    await expect(page.getByRole("button", { name: "Unsubscribe", exact: true })).toBeDisabled()
+    await expect(page.getByRole("button", { name: "Preview erasure", exact: true })).toHaveCount(0)
     await page.getByRole("button", { name: "Cancel unsubscribe", exact: true }).click()
     await expect(page.getByRole("button", { name: "Unsubscribe", exact: true })).toBeFocused()
+    await expect(page.getByRole("button", { name: "Unsubscribe", exact: true })).toBeEnabled()
+    await expect(page.getByRole("button", { name: "Preview erasure", exact: true })).toBeEnabled()
     await page.getByRole("button", { name: "Unsubscribe", exact: true }).click()
     await expect(stopHeading).toBeFocused()
     await page.keyboard.press("Tab")

@@ -17,11 +17,12 @@ const stripe = new Stripe("sk_test_not_a_real_key")
 const secret = "whsec_fixture_signature_test"
 const sessionId = "cs_test_fixture12345678901234567890"
 
-function request(eventType: string, validSignature = true, timestamp?: number) {
+function request(eventType: string, validSignature = true, apiVersion = "2026-09-30.endive", timestamp?: number) {
   const body = JSON.stringify({
     id: "evt_fixture",
     object: "event",
     type: eventType,
+    api_version: apiVersion,
     data: { object: { id: sessionId } },
   })
   return new Request("https://shop.example.com/api/webhooks/stripe", {
@@ -51,17 +52,19 @@ describe("Stripe webhook", () => {
 
   it("rejects an expired authentic signature before fulfillment", async () => {
     const timestamp = Math.floor(Date.now() / 1000) - 600
-    expect((await POST(request("checkout.session.completed", true, timestamp))).status).toBe(400)
+    expect((await POST(request("checkout.session.completed", true, "2026-09-30.endive", timestamp))).status).toBe(400)
     expect(fulfillCheckout).not.toHaveBeenCalled()
   })
 
-  it.each(["checkout.session.completed", "checkout.session.async_payment_succeeded"])(
-    "fulfills authenticated %s events",
-    async (eventType) => {
-      expect((await POST(request(eventType))).status).toBe(200)
-      expect(fulfillCheckout).toHaveBeenCalledWith(expect.anything(), sessionId)
-    }
-  )
+  describe.each(["2026-08-26.dahlia", "2026-09-30.endive"])("%s webhook snapshots", (apiVersion) => {
+    it.each(["checkout.session.completed", "checkout.session.async_payment_succeeded"])(
+      "fulfills authenticated %s events by retrieving the session",
+      async (eventType) => {
+        expect((await POST(request(eventType, true, apiVersion))).status).toBe(200)
+        expect(fulfillCheckout).toHaveBeenCalledWith(expect.anything(), sessionId)
+      }
+    )
+  })
 
   it.each(["matches", "missing", "foreign"] as const)(
     "checks delayed-payment failure against the saved commerce identity: %s",

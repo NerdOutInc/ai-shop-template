@@ -58,7 +58,7 @@ export function WeeklyProductSchedule({
           The next six weeks. Add products together, or drag a product into its week.
         </p>
         <p className="text-xs text-muted-foreground">
-          Every {formatWeeklyCadence()}. Hidden products appear when their week begins.
+          Every {formatWeeklyCadence()}. Hidden products and their approved homepage hero appear when their week begins.
         </p>
       </header>
       <div className="flex flex-col">

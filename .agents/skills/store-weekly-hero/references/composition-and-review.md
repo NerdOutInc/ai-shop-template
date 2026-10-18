@@ -6,6 +6,10 @@ Generate scenery separately from merchandise where possible. A useful prompt ske
 
 > Create a [target canvas/aspect] background for [approved visual direction]. Leave [measured regions] clear for actual product photographs to be composited later. Use [brand palette, lighting/material language]. Include only [approved lettering if needed]. Preserve [specific accepted composition elements]. Do not invent extra products, logos, offers or slogans. Return the best native resolution supported by the tool.
 
+When a presentation needs a generated blank garment, follow [generated blank garment layers](garment-fidelity.md#generated-blank-garment-layers-folded-or-flat-lay). A starting skeleton:
+
+> Create only a transparent cutout of a blank [garment style] in [selected color], [folded or flat-lay]. Reference 1 is the actual product photo: match its construction, color, fabric and collar geometry. Reference 2 shows only the approved [fold or arrangement style]. Remove all print, text, graphics and logos. Keep the front panel close to [measured aspect] and the collar about [measured width and depth] as fractions of panel width, with a fairly flat chest for artwork added later. Keep the whole garment in frame with a small margin and a true transparent background. Return the best native resolution supported by the tool.
+
 Only add a ban on people, hands or props if the project's brief calls for one. If people are included, use approved model references and the target's naturalness requirements; this skill provides no model identity. Match subject lighting, cast shadows and camera perspective to the scene instead of giving the model independent studio lighting.
 
 ## A responsive example, not a universal setting

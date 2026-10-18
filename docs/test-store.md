@@ -10,6 +10,6 @@ The fixture deliberately differs from merchant defaults: it has its own copy, br
 
 After adding a required configuration field, update both merchant defaults and the complete test fixture. Preserve schema validation and explicit configured/unconfigured coverage. A test fixture should fit the schema like a well-sized shirt, without stretching the safety seams.
 
-For parallel local work, set `PLAYWRIGHT_PORT` and `PLAYWRIGHT_FIXTURE_PORT` for the public suites and `PUBLISHING_E2E_PORT` / `PUBLISHING_E2E_PROVIDER_PORT` for publishing. Keep each run on its own disposable Postgres container or server; the database-name guards remain in force.
+For parallel local work, set `PLAYWRIGHT_PORT` and `PLAYWRIGHT_FIXTURE_PORT` for the public suites and `PUBLISHING_E2E_PORT` / `PUBLISHING_E2E_PROVIDER_PORT` for publishing. Set `ADMIN_E2E_ISOLATED=true` on every admin command when another checkout already runs the default admin fixture; see [local browser prerequisites](ci.md#local-test-prerequisites). Keep each run on its own disposable Postgres container or server; the database-name guards remain in force.
 
 CI fails before running unit or baseline database tests if a required test database URL is missing. Local runs print the names of unavailable database suites; those skips are not database verification. The environment list is checked against the actual suites so a newly added database test cannot silently miss the prerequisite check.

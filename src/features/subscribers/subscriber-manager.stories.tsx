@@ -20,11 +20,10 @@ const record: SubscriberRecord = {
   deliveries: 1,
   confirmations: 0,
 }
-const meta = {
-  title: "Admin/Subscribers",
-  component: SubscriberManager,
-  parameters: { layout: "padded" },
-  beforeEach: () => {
+// `erasedElsewhere` simulates another admin tab erasing the record between lookup and stop.
+const answering =
+  ({ erasedElsewhere = false } = {}) =>
+  () => {
     const original = globalThis.fetch
     let current: SubscriberRecord | null = record
     globalThis.fetch = async (_url, init) => {
@@ -34,17 +33,22 @@ const meta = {
         return Response.json({ status: "erased" })
       }
       if (input.action === "unsubscribe")
-        current = { ...record, unsubscribedAt: new Date().toISOString(), eligible: false }
+        current = erasedElsewhere ? null : { ...record, unsubscribedAt: new Date().toISOString(), eligible: false }
       return Response.json({ subscriber: current })
     }
     return () => {
       globalThis.fetch = original
     }
-  },
+  }
+const meta = {
+  title: "Admin/Subscribers",
+  component: SubscriberManager,
+  parameters: { layout: "padded" },
 } satisfies Meta<typeof SubscriberManager>
 export default meta
 type Story = StoryObj<typeof meta>
 export const LookupAndUnsubscribe: Story = {
+  beforeEach: answering(),
   play: async ({ canvas }) => {
     await userEvent.type(canvas.getByLabelText("Subscriber email"), record.email)
     await userEvent.click(canvas.getByRole("button", { name: "Look up subscriber" }))
@@ -61,18 +65,35 @@ export const LookupAndUnsubscribe: Story = {
     await expect(confirmation).toHaveAccessibleDescription(/already on its way cannot be recalled/)
     await userEvent.keyboard("{Enter}")
     await expect(canvas.getByText("Legacy consent")).toBeVisible()
-    await expect(canvas.getByText("Legacy consent")).toBeVisible()
+    // Only one destructive confirmation may be open at a time.
+    await expect(canvas.getByRole("button", { name: /^Unsubscribe$/ })).toBeDisabled()
+    await expect(canvas.queryByRole("button", { name: "Preview erasure" })).toBeNull()
     await userEvent.click(canvas.getByRole("button", { name: "Cancel unsubscribe" }))
     await expect(canvas.getByRole("button", { name: /^Unsubscribe$/ })).toHaveFocus()
+    await expect(canvas.getByRole("button", { name: /^Unsubscribe$/ })).toBeEnabled()
+    await expect(canvas.getByRole("button", { name: "Preview erasure" })).toBeEnabled()
     await userEvent.click(canvas.getByRole("button", { name: /^Unsubscribe$/ }))
     await expect(canvas.getByRole("heading", { name: "Unsubscribe this subscriber?" })).toHaveFocus()
     await userEvent.tab()
     await expect(canvas.getByRole("button", { name: "Confirm unsubscribe" })).toHaveFocus()
     await userEvent.keyboard("{Enter}")
     await expect(await canvas.findByRole("button", { name: "Keep unsubscribed / revoke new links" })).toBeEnabled()
+    await expect(canvas.getByRole("button", { name: "Preview erasure" })).toBeEnabled()
+  },
+}
+export const UnsubscribeAfterErasureElsewhere: Story = {
+  beforeEach: answering({ erasedElsewhere: true }),
+  play: async ({ canvas }) => {
+    await userEvent.type(canvas.getByLabelText("Subscriber email"), record.email)
+    await userEvent.click(canvas.getByRole("button", { name: "Look up subscriber" }))
+    await userEvent.click(await canvas.findByRole("button", { name: /^Unsubscribe$/ }))
+    await userEvent.click(await canvas.findByRole("button", { name: "Confirm unsubscribe" }))
+    await expect(await canvas.findByText(/original subscriber record is no longer present/)).toBeVisible()
+    await expect(canvas.queryByText("No subscriber matches that address.")).toBeNull()
   },
 }
 export const ReviewedErasure: Story = {
+  beforeEach: answering(),
   play: async ({ canvas }) => {
     await userEvent.type(canvas.getByLabelText("Subscriber email"), record.email)
     await userEvent.click(canvas.getByRole("button", { name: "Look up subscriber" }))

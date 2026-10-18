@@ -248,6 +248,22 @@ describe("paid checkout fulfillment", () => {
     expect(request.mock.calls[0]?.[1]).toMatchObject({ address_to: fixture.providerOrder.address_to })
   })
 
+  it.each([true, false])("fulfills a free-shipping payment exactly once (live=%s)", async (live) => {
+    const fixture = checkoutFixture(0)
+    fixture.session.livemode = live
+    const request = vi
+      .spyOn(fixture.printify, "request")
+      .mockResolvedValueOnce({ id: "printify-order" })
+      .mockResolvedValueOnce(fixture.providerOrder)
+      .mockResolvedValueOnce(null)
+    const state = live ? "submitted" : "simulated"
+    expect(await fulfillCheckout(fixture.services, fixture.sessionId)).toBe(state)
+    expect(await fulfillCheckout(fixture.services, fixture.sessionId)).toBe(state)
+    expect(fixture.getStored()?.payment).toMatchObject({ shippingAmount: 0, totalAmount: 3000, livemode: live })
+    expect(fixture.getStored()?.order.shippingAddress).toMatchObject({ firstName: "Robin", zip: "55401" })
+    expect(request).toHaveBeenCalledTimes(live ? 3 : 0)
+  })
+
   it("captures valid delivery details for a simulated flat-rate order without Printify calls", async () => {
     const fixture = checkoutFixture()
     fixture.session.livemode = false
@@ -615,7 +631,7 @@ describe("paid checkout fulfillment", () => {
   })
 })
 
-function checkoutFixture() {
+function checkoutFixture(shippingAmount = 495) {
   const requestId = randomUUID()
   const sessionId = "cs_test_fixture12345678901234567890"
   const productId = "111111000000000000000002"
@@ -627,7 +643,7 @@ function checkoutFixture() {
     shopId: "1234",
     currency: "usd",
     subtotal: 3000,
-    shippingAmount: 495,
+    shippingAmount,
     shippingMode: "flat_rate",
     shippingEstimate: { handlingBusinessDays: 10, calendar: "us-federal-v1", timeZone: "UTC" },
     shippingAddress: {

@@ -20,4 +20,16 @@ describe("resolveProductWeek", () => {
     expect(resolveProductWeek(currentOnly, Date.parse("2026-11-06T23:29:59Z"))?.productIds).toEqual(["tee-a", "tee-b"])
     expect(resolveProductWeek(currentOnly, Date.parse("2026-11-06T23:30:00Z"))).toBeNull()
   })
+
+  it("returns only the latest assignment that started within the current week (e.g. after the weekly cadence changes)", () => {
+    const later = { id: "later", productId: "tee-d", liveAt: "2026-10-31T22:30:00.000Z" }
+    expect(resolveProductWeek([...entries, later], Date.parse("2026-10-31T22:29:59Z"))?.productIds).toEqual([
+      "tee-a",
+      "tee-b",
+    ])
+    expect(resolveProductWeek([...entries, later], Date.parse("2026-10-31T22:30:00Z"))).toEqual({
+      liveAt: later.liveAt,
+      productIds: ["tee-d"],
+    })
+  })
 })

@@ -759,7 +759,9 @@ describe("product scheduling from the shop lineup", () => {
     Object.assign(cadence, { weekday: 4, hour: 18, minute: 15, timeZone: "Asia/Kathmandu" })
     render(<FeaturedOrderList products={scheduleProducts} now={now} schedule={{ entries: [], slots }} />)
     expect(
-      screen.getByText("Every Thursday at 6:15 PM (Asia/Kathmandu). Hidden products appear when their week begins.")
+      screen.getByText(
+        "Every Thursday at 6:15 PM (Asia/Kathmandu). Hidden products and their approved homepage hero appear when their week begins."
+      )
     ).toBeVisible()
     const dialog = await openWeek(0)
     expect(
