@@ -22,6 +22,12 @@ When an upgrade needs a new patch, work in an isolated checkout and use the exac
 4. Run `pnpm install --lockfile-only`, then `pnpm install --frozen-lockfile` and `pnpm test:dependencies`. Review the lockfile for patch hashes and unintended package changes.
 5. Run the baseline checks and the fresh production metadata journeys described in [metadata verification](metadata.md#verification-and-upkeep). Require full CI before merge. Record the tested version and patch evidence for every generated store that receives the update; changing this template does not update existing stores.
 
+## Storybook with Next 16.4
+
+Storybook's Next adapter 10.6.2 still supplies the older `parentCacheNode` router context, while Next 16.4's `useRouter` reads `parentRenderTree.data.bfcacheId`. This crashes the framework redirect boundary before any story renders. `patches/@storybook__nextjs-vite@10.6.2.patch` adds the missing render-tree data to the adapter's existing mock context and preserves its older fields. The exact version selector deliberately requires review when upgrading the adapter.
+
+Run the complete `pnpm test:stories` interaction and accessibility suite after a change to either package. Remove this patch when an upstream adapter provides the new context and the same stories pass without it; do not skip failing stories or patch the production router to accommodate a test adapter.
+
 ## Stripe SDK 23
 
 Stripe 23 uses API version `2026-09-30.endive`; the checkout client explicitly pins that version. The [Endive migration](https://docs.stripe.com/changelog/endive/2026-09-30/remove-payment-method-types-checkout-sessions) removes the `payment_method_types` request parameter. This store already uses dynamic payment methods and does not send that parameter. Keep that behavior when editing Checkout Session creation.
