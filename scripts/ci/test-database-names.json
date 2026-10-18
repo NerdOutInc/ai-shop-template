@@ -14,5 +14,6 @@
   "SHIPPING_TEST_DATABASE_URL": "store_shipping_test",
   "ORDERS_TEST_DATABASE_URL": "store_orders_test",
   "DROP_EMAIL_TEST_DATABASE_URL": "store_drop_email_test",
-  "DROP_EMAIL_OVERVIEW_TEST_DATABASE_URL": "store_drop_email_overview_test"
+  "DROP_EMAIL_OVERVIEW_TEST_DATABASE_URL": "store_drop_email_overview_test",
+  "PRODUCT_GALLERY_TEST_DATABASE_URL": "store_gallery_test"
 }

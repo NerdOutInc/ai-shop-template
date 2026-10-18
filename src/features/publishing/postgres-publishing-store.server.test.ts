@@ -490,6 +490,10 @@ describe.skipIf(!databaseUrl)("durable Printify publishing", () => {
           "printify_product_revisions",
           "printify_publish_jobs",
           "garment_models",
+          "product_gallery_assets",
+          "product_galleries",
+          "product_gallery_revisions",
+          "product_gallery_promotions",
         ]) {
           expect(
             (
@@ -2594,6 +2598,10 @@ describe.skipIf(!databaseUrl)("durable Printify publishing", () => {
       "printify_product_revisions",
       "printify_products",
       "printify_publish_jobs",
+      "product_galleries",
+      "product_gallery_assets",
+      "product_gallery_promotions",
+      "product_gallery_revisions",
       "product_week_schedule",
       "public_request_attempts",
       "published_image_uploads",
@@ -2603,6 +2611,100 @@ describe.skipIf(!databaseUrl)("durable Printify publishing", () => {
       "weekly_heroes",
     ])
     expect(rows.every((row) => row.relrowsecurity && !row.public_usage)).toBe(true)
+  })
+
+  it("grants product galleries append-only runtime access scoped to known products", async () => {
+    const tables = [
+      "product_gallery_assets",
+      "product_galleries",
+      "product_gallery_revisions",
+      "product_gallery_promotions",
+    ]
+    const allowed = async (role: string, table: string, privilege: string) =>
+      (await pool.query("select has_table_privilege($1,$2,$3) as allowed", [role, `commerce.${table}`, privilege]))
+        .rows[0].allowed
+    for (const table of tables) {
+      for (const role of ["anon", "authenticated"])
+        expect(await allowed(role, table, "select,insert,update,delete")).toBe(false)
+      expect(await allowed("store_app_runtime", table, "select")).toBe(true)
+      expect(await allowed("store_app_runtime", table, "insert")).toBe(true)
+      expect(await allowed("store_app_runtime", table, "update")).toBe(table === "product_galleries")
+      expect(await allowed("store_app_runtime", table, "delete")).toBe(false)
+    }
+
+    const productId = randomUUID()
+    const assetId = randomUUID()
+    const actor = randomUUID()
+    const sha256 = "c".repeat(64)
+    const manifest = JSON.stringify({ version: 1 })
+    const client = await pool.connect()
+    const asset = (product: string, id: string) =>
+      client.query(
+        `insert into commerce.product_gallery_assets(id,shop_id,product_id,pathname,sha256,content_type,bytes,width,height,created_by)
+         values ($1,'123',$2,$3,$4,'image/jpeg',100,1200,1500,$5)`,
+        [id, product, `product-galleries/v1/${id}.jpg`, sha256, actor]
+      )
+    const rejected = async (statement: () => Promise<unknown>, message: string) => {
+      await client.query("savepoint attempt")
+      await expect(statement()).rejects.toThrow(message)
+      await client.query("rollback to savepoint attempt")
+    }
+    try {
+      await client.query("begin")
+      await client.query("insert into commerce.printify_products(shop_id,product_id) values ('123',$1)", [productId])
+      // The owner role still meets the foreign key, so an unknown product is refused below the policies too.
+      await rejected(() => asset(randomUUID(), randomUUID()), "foreign key")
+      await client.query("set local role store_app_runtime")
+      await rejected(() => asset(randomUUID(), randomUUID()), "row-level security")
+      await asset(productId, assetId)
+      await client.query(
+        "insert into commerce.product_galleries(shop_id,product_id,revision,draft_manifest,updated_by) values ('123',$1,$2,$3,$4)",
+        [productId, randomUUID(), manifest, actor]
+      )
+      await client.query(
+        "insert into commerce.product_gallery_revisions(shop_id,product_id,revision,action,manifest,created_by) values ('123',$1,$2,'save',$3,$4)",
+        [productId, randomUUID(), manifest, actor]
+      )
+      await client.query(
+        "insert into commerce.product_gallery_promotions(shop_id,product_id,asset_id,host,url,sha256) values ('123',$1,$2,'store.example',$3,$4)",
+        [productId, assetId, `https://store.example/published-product-photos/v1/${sha256}.jpg`, sha256]
+      )
+      await rejected(
+        () =>
+          client.query(
+            "insert into commerce.product_gallery_promotions(shop_id,product_id,asset_id,host,url,sha256) values ('123',$1,$2,'store.example',$3,$4)",
+            [productId, randomUUID(), `https://store.example/published-product-photos/v1/${sha256}.jpg`, sha256]
+          ),
+        "foreign key"
+      )
+      expect(
+        (
+          await client.query(
+            "update commerce.product_galleries set active_manifest=draft_manifest where product_id=$1 returning product_id",
+            [productId]
+          )
+        ).rowCount
+      ).toBe(1)
+      await rejected(
+        () =>
+          client.query("update commerce.product_gallery_revisions set action='restore' where product_id=$1", [
+            productId,
+          ]),
+        "permission denied"
+      )
+      await rejected(
+        () => client.query("delete from commerce.product_galleries where product_id=$1", [productId]),
+        "permission denied"
+      )
+      for (const table of tables)
+        expect(
+          (await client.query(`select count(*)::int as count from commerce.${table} where product_id=$1`, [productId]))
+            .rows[0].count
+        ).toBe(1)
+    } finally {
+      await client.query("rollback").catch(() => undefined)
+      client.release()
+    }
   })
 
   it("removes an unpublished product even when Printify is unavailable", async () => {
