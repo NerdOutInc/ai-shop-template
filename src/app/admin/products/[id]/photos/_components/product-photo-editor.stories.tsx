@@ -203,7 +203,6 @@ export const ReviewAndActivate: Story = {
   args: { initial: savedDraft },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await userEvent.click(canvas.getByRole("button", { name: "Preview draft" }))
     await expect(canvas.getByText(/Private draft preview/)).toBeVisible()
     await userEvent.click(canvas.getByRole("checkbox", { name: /I reviewed Black/ }))
     await userEvent.click(canvas.getByRole("button", { name: "Activate gallery" }))
@@ -276,8 +275,9 @@ export const ColorUnavailable: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByText(/This color is currently unavailable/)).toBeVisible()
-    await expect(canvas.getByRole("textbox", { name: "Photo 1 description" })).toBeDisabled()
+    await expect(canvas.getByText("No colors are currently available")).toBeVisible()
+    await expect(canvas.queryByRole("textbox", { name: "Photo 1 description" })).not.toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: "Restore last active selection for Black" })).toBeVisible()
   },
 }
 
@@ -286,6 +286,60 @@ export const UnavailablePhotos: Story = {
     initial: {
       ...base,
       colors: base.colors.map((c) => ({ ...c, activeMode: "Store photos only", activeInvalid: true })),
+    },
+  },
+}
+
+const matchingColors = [
+  { key: "10", title: "Black", hex: "#222222", views: ["front", "back"] },
+  { key: "20", title: "Green", hex: "#285645", views: ["back", "front", "back"] },
+  { key: "30", title: "Blue", hex: "#315789", views: ["front"] },
+].map(({ views, ...color }, index) => ({
+  ...base.colors[0]!,
+  ...color,
+  variantIds: [101 + index],
+  providerImages: views.map((viewKey, photoIndex) => ({
+    src: `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800"><rect width="800" height="800" fill="#f5f5f5"/><path d="M270 180 160 260 230 370 280 340V620H520V340L570 370 640 260 530 180 460 210H340Z" fill="${color.hex}"/><text x="400" y="710" text-anchor="middle" font-family="sans-serif" font-size="24" fill="#333">Illustrative image: ${color.title} ${viewKey} ${photoIndex + 1}</text></svg>`)}`,
+    alt: `${color.title} ${viewKey} ${photoIndex + 1}`,
+    viewKey,
+    selectable: true,
+  })),
+}))
+
+export const MatchingViews: Story = {
+  args: {
+    initial: {
+      ...base,
+      colors: [
+        {
+          ...base.colors[0]!,
+          key: "40",
+          title: "Cream",
+          available: false,
+          binding: null,
+          variantIds: [],
+          providerImages: [],
+        },
+        ...matchingColors,
+      ],
+      artwork: { src: "/images/cart-hanger.svg", alt: "Illustrative artwork placeholder", backgroundColor: "#222222" },
+      draft: {
+        version: 1,
+        coverColor: "10",
+        colors: matchingColors.map((color) => ({
+          colorKey: color.key,
+          reviewedBinding: null,
+          entries: color.providerImages.map((image) => ({
+            source: "provider" as const,
+            src: image.src,
+            alt: image.alt,
+            role: "garment" as const,
+            viewKey: image.viewKey,
+            sha256: "a".repeat(64),
+            sourceRevision: "1",
+          })),
+        })),
+      },
     },
   },
 }

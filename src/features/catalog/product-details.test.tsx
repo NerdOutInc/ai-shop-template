@@ -678,6 +678,41 @@ describe("ProductDetails", () => {
     }
   )
 
+  it("uses updated matching views for the selected photo and its cart image", async () => {
+    const user = userEvent.setup()
+    const greyBack = {
+      src: "https://images.printify.com/grey-back.jpg",
+      alt: "Heather Grey shirt back",
+      variantIds: [3],
+      viewKey: "updated-back",
+    }
+    const images = [
+      { ...product.images[0]!, viewKey: "front" },
+      { ...product.images[1]!, viewKey: "back" },
+      { ...product.images[2]!, viewKey: "front" },
+      greyBack,
+    ]
+    const { rerender } = render(<ProductDetails product={{ ...product, images }} />)
+    await user.click(screen.getByRole("button", { name: "View photo 2 of Sample Morning Scene" }))
+    rerender(
+      <ProductDetails
+        product={{
+          ...product,
+          images: images.map((image, index) => (index === 1 ? { ...image, viewKey: "updated-back" } : image)),
+        }}
+      />
+    )
+    await user.click(screen.getByRole("button", { name: "Heather Grey" }))
+    expect(screen.getByRole("button", { name: "View photo 2 of Sample Morning Scene" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    )
+    expect(screen.getByRole("img", { name: greyBack.alt })).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "M" }))
+    await user.click(screen.getByRole("button", { name: "Add to cart" }))
+    expect(addItem).toHaveBeenCalledWith(expect.objectContaining({ image: greyBack.src }))
+  })
+
   it("preserves the photo position when provider images lack camera metadata, including URL color changes", async () => {
     const user = userEvent.setup()
     const greyBack = {
