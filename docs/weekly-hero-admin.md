@@ -1,5 +1,7 @@
 # Scheduled homepage heroes
 
+To create new desktop/mobile concepts for a release, follow the [store-weekly-hero skill](../.agents/skills/store-weekly-hero/SKILL.md); [portable weekly hero workflow](weekly-hero-workflow.md) covers installation and this runtime's limits. This page covers the editor, upload requirements, approval and scheduling.
+
 The weekly feature can show a separately approved desktop and mobile composition in place of the store's introductory section. It uses the existing product release schedule and `storeConfig.weeklyFeature` / `timeZone`; no extra publishing job or service is required. This feature remains off when `features.designOfTheWeek` is false. Enabling it does not enable signup, marketing or payments.
 
 ## Prepare and review

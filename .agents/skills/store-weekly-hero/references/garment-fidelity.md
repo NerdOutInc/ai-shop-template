@@ -8,6 +8,14 @@ Preserve the real garment's collar, sleeves, side seams, silhouette, fabric and 
 
 For photographic garment cutouts, keep the garment pixels and restore blank fabric only inside the old printed region. Inspect repaired cloth for copied seams or smooth patches. Do not repeatedly regenerate the whole shirt to repair one incorrect hem. If using a model photograph, use garment-specific cloth coordinates, fold displacement and genuine foreground occlusion; a flat rectangle pasted onto a body is not a calibrated garment.
 
+### Generated blank garment layers (folded or flat-lay)
+
+Prefer the actual photographed garment as a layer. Generate a blank only when the presentation needs a construction the photo lacks, such as a folded tee. Give each reference an explicit role: the product photo of the selected color governs construction, color, fabric and collar geometry; an owner-approved presentation reference governs only the fold or arrangement style.
+
+Ask for the blank garment alone as a true transparent cutout. Remove all existing print, text, graphics and logos, and reproduce nothing from the scene, offer or reference poster. Keep the whole garment in frame with a small margin, a fairly flat print zone and natural fabric. A folded tee tucks its sleeves and sides under the front panel and the unprinted lower portion behind, with stacked side folds, a rolled lower edge and soft edge shadows. A rectangular crop of a flat shirt is not a folded shirt. Cropped and raw-edged styles keep their real silhouette and stay unfolded.
+
+State the visible front-panel aspect and the collar width and depth as fractions of panel width, measured from the actual product photo and the visible print length the layout needs. Verify the output against those measurements; do not reuse ratios between garments or prints. The blank is only a layer: composite the original approved artwork at measured placement using the constraints below, and retain the complete prompt, references, output hash and transform. Image generation and code-based compositing follow the active tool's opt-in rules.
+
 ## Measure independent constraints
 
 Measure the visible ink's top, bottom, left and right relative to garment landmarks. Retain:

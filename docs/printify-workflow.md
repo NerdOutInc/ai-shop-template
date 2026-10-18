@@ -2,6 +2,8 @@
 
 Prepare, place and inspect the design yourself within the owner's instructions. Preserve approved artwork and make the result reviewable; the owner should choose a shirt, not debug a coordinate system.
 
+For images that market an existing product rather than create or change a provider product, such as ads, social posts and concepts, follow [marketing creative](marketing-creative.md).
+
 ## Choose the correct creation path
 
 For an established model, use the [app draft/reconciliation workflow](admin-design-library.md#create-or-reconcile-drafts) with the exact immutable private revision and upload evidence. Reuse a verified existing model binding. A timeout or ambiguous create is a reconciliation task, not permission to create another product.

@@ -257,6 +257,8 @@ Before rollout, verify narrow layout, keyboard/focus, cross-session personal fav
 
 ## Design of the Week
 
+To pair a release with private desktop/mobile homepage artwork, see [scheduled homepage heroes](weekly-hero-admin.md); to create the concepts, follow the [store-weekly-hero skill](../.agents/skills/store-weekly-hero/SKILL.md) and the [portable weekly hero workflow](weekly-hero-workflow.md).
+
 Weekly features now select **individual published products** in `/admin/products`. Browsing a design
 can create a Printify draft; publish that draft in Printify, then use its product row's **Add to Design
 of the Week** action. A design itself cannot be queued, and matching artwork never adds another product

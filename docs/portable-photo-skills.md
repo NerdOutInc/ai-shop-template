@@ -13,6 +13,8 @@ Compatible agents discover the folders under `.agents/skills/`. Invoke `$store-m
 
 Install approved photos on a published product with the admin Photos editor; the [product gallery workflow](product-gallery-workflow.md) is the supported path from reviewed photo to storefront.
 
+In this repository, garments in ads, social posts and concepts also follow [marketing creative](marketing-creative.md) for campaign review and storage.
+
 ## Install outside the repository
 
 The canonical source is `NerdOutInc/ai-shop-template`. Pin the reviewed commit or a release when installing; record that revision so later updates are deliberate. This repository is currently internal: installation requires repository access. These instructions do not change access or resolve the additions' licensing described in [template origin](template-origin.md).
