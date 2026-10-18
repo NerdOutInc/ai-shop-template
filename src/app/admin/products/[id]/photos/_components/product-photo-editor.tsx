@@ -3,10 +3,12 @@
 import Image from "next/image"
 import { useRef, useState } from "react"
 
+import { ColorPicker } from "@/components/color-picker"
 import { Button } from "@/components/ui/button"
 import { canOptimizeProductImage } from "@/features/catalog/can-optimize-product-image"
 import { displayProductTitle } from "@/features/catalog/display-product-title"
 import { ProductImageGallery } from "@/features/catalog/product-image-gallery"
+import { useProductGallerySelection } from "@/features/catalog/use-product-gallery-selection"
 import { galleryColorSelection } from "@/features/product-gallery/gallery-color-selection"
 import type { GalleryEntry, GalleryManifest } from "@/features/product-gallery/gallery-manifest-schema"
 import { galleryMutationSchema } from "@/features/product-gallery/gallery-mutation-schema"
@@ -21,26 +23,23 @@ const entryKey = (entry: GalleryEntry) => (entry.source === "store" ? entry.asse
 export function ProductPhotoEditor({ initial }: { initial: GalleryEditorData }) {
   const [data, setData] = useState(initial),
     [draft, setDraft] = useState(initial.draft),
-    [selected, setSelected] = useState(initial.colors[0]?.key ?? "none")
+    [selected, setSelected] = useState(initial.colors.find((c) => c.available)?.key ?? null)
   const [dirty, setDirty] = useState(false),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState(""),
     [failed, setFailed] = useState(false)
   const [confirmations, setConfirmations] = useState<Record<string, string>>({}),
-    [preview, setPreview] = useState(false),
     [restore, setRestore] = useState("")
   const [pendingReload, setPendingReload] = useState<GalleryEditorData | null>(null)
   const endpoint = `/api/admin/products/${encodeURIComponent(data.productId)}/gallery`
-  const color = data.colors.find((c) => c.key === selected),
-    curated = draft.colors.find((c) => c.colorKey === selected)
+  const availableColors = data.colors.filter((c) => c.available)
+  const color = availableColors.find((c) => c.key === selected) ?? availableColors[0],
+    curated = draft.colors.find((c) => c.colorKey === color?.key)
   const readOnly = !color?.available
-  const savedColor = data.draft.colors.find((c) => c.colorKey === selected)
-  const different = (other: typeof curated | null) =>
-    JSON.stringify(galleryColorSelection(curated)) !== JSON.stringify(galleryColorSelection(other))
-  function recoverColor(selection: typeof curated | null) {
+  function recoverColor(colorKey: string, selection: typeof curated | null) {
     change({
       ...draft,
-      colors: [...draft.colors.filter((c) => c.colorKey !== selected), ...(selection ? [selection] : [])],
+      colors: [...draft.colors.filter((c) => c.colorKey !== colorKey), ...(selection ? [selection] : [])],
     })
   }
   const photoUrl = (entry: GalleryEntry) =>
@@ -53,11 +52,12 @@ export function ProductPhotoEditor({ initial }: { initial: GalleryEditorData }) 
     setFailed(false)
   }
   function entries(next: GalleryEntry[]) {
+    if (!color) return
     change({
       ...draft,
       colors: [
-        ...draft.colors.filter((c) => c.colorKey !== selected),
-        { colorKey: selected, entries: next, reviewedBinding: curated?.reviewedBinding ?? null },
+        ...draft.colors.filter((c) => c.colorKey !== color.key),
+        { colorKey: color.key, entries: next, reviewedBinding: curated?.reviewedBinding ?? null },
       ],
     })
   }
@@ -184,9 +184,19 @@ export function ProductPhotoEditor({ initial }: { initial: GalleryEditorData }) 
     ? curated.entries.map((e) => ({
         src: photoUrl(e),
         alt: e.alt,
+        viewKey: e.viewKey,
         ...(e.source === "store" ? { origin: "store" as const } : {}),
       }))
     : (color?.providerImages ?? [])
+  const artwork =
+    data.artwork && color?.hex && /^#(?:[\da-f]{3}|[\da-f]{6})$/i.test(color.hex)
+      ? { ...data.artwork, backgroundColor: color.hex }
+      : null
+  const gallerySelection = useProductGallerySelection({
+    productId: data.productId,
+    images: previewImages,
+    hasArtwork: Boolean(artwork),
+  })
   return (
     <div className="space-y-8">
       <header className="max-w-3xl">
@@ -207,130 +217,86 @@ export function ProductPhotoEditor({ initial }: { initial: GalleryEditorData }) 
           This product is no longer published in Printify. You can prepare a draft; republish before activation.
         </p>
       )}
-      <div className="grid gap-8 lg:grid-cols-[240px_minmax(0,1fr)]">
-        <nav aria-label="Photo colors" className="space-y-3">
-          {data.colors.map((c) => (
-            <button
-              type="button"
-              key={c.key}
-              disabled={busy}
-              aria-pressed={selected === c.key}
-              onClick={() => {
-                setSelected(c.key)
-                setPreview(false)
-              }}
-              className={`min-h-11 w-full rounded-lg border p-4 text-left ${focusRing} ${selected === c.key ? "border-primary bg-primary/5" : "border-border"}`}
-            >
-              <span className="block font-semibold">{c.title}</span>
-              <span className="mt-1 block text-sm text-muted-foreground">
-                Live: {c.activeMode}
-                {c.activeStale ? " · Needs review" : ""}
-                {c.activeInvalid ? " · Unavailable photos" : ""}
-                {!c.available ? " · Color unavailable" : ""}
-              </span>
-            </button>
-          ))}
-          <label className="block pt-4 text-sm font-medium">
-            Shop cover color
-            <select
-              className={`${field} mt-2`}
-              disabled={busy}
-              value={draft.coverColor ?? ""}
-              onChange={(e) => change({ ...draft, coverColor: e.target.value || null })}
-            >
-              <option value="">Keep current default</option>
-              {draft.coverColor && !data.colors.some((c) => c.key === draft.coverColor && c.available) && (
-                <option value={draft.coverColor} disabled>
-                  {data.colors.find((c) => c.key === draft.coverColor)?.title ?? "Saved color"} — retained until
-                  available
-                </option>
-              )}
-              {data.colors
-                .filter((c) => c.available)
-                .map((c) => (
-                  <option key={c.key} value={c.key}>
-                    {c.title}
-                  </option>
-                ))}
-            </select>
-          </label>
-        </nav>
-        <section aria-label={`${color?.title ?? "Selected color"} draft`} className="min-w-0 space-y-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-semibold">{color?.title}</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Draft:{" "}
-                {curated
-                  ? curated.entries.some((e) => e.source === "provider")
-                    ? "Mixed selection"
-                    : "Store photos only"
-                  : "Printify photos"}
-              </p>
-            </div>
-            <Button className="min-h-11" variant="outline" disabled={busy} onClick={() => setPreview(!preview)}>
-              {preview ? "Close preview" : "Preview draft"}
-            </Button>
+      <section aria-label="Photo preview" className="mx-auto max-w-lg space-y-6">
+        <div>
+          <p className="mb-3 text-sm">Private draft preview. Photos keep their original framing.</p>
+          <ProductImageGallery
+            key={`${color?.key ?? "none"}-${JSON.stringify(previewImages)}`}
+            title={data.title}
+            images={previewImages}
+            artwork={artwork}
+            placeholder={color ? "No photos selected" : "No colors are currently available"}
+            initialIndex={gallerySelection.index}
+            onSlideSelect={gallerySelection.selectSlide}
+          />
+        </div>
+        {availableColors.length > 0 ? (
+          <ColorPicker
+            colors={availableColors.map((c) => ({ value: c.key, name: c.title, hex: c.hex }))}
+            value={color?.key ?? null}
+            onChange={setSelected}
+            disabled={busy}
+          />
+        ) : (
+          <p className="text-sm text-muted-foreground">Saved photo choices will return when a color is available.</p>
+        )}
+        <label className="block pt-4 text-sm font-medium">
+          Shop cover color
+          <select
+            className={`${field} mt-2`}
+            disabled={busy}
+            value={draft.coverColor ?? ""}
+            onChange={(e) => change({ ...draft, coverColor: e.target.value || null })}
+          >
+            <option value="">Keep current default</option>
+            {draft.coverColor && !data.colors.some((c) => c.key === draft.coverColor && c.available) && (
+              <option value={draft.coverColor} disabled>
+                {data.colors.find((c) => c.key === draft.coverColor)?.title ?? "Saved color"} — retained until available
+              </option>
+            )}
+            {availableColors.map((c) => (
+              <option key={c.key} value={c.key}>
+                {c.title}
+              </option>
+            ))}
+          </select>
+        </label>
+      </section>
+      {color && (
+        <section aria-label={`${color.title} draft`} className="min-w-0 space-y-6">
+          <div>
+            <h2 className="text-2xl font-semibold">{color.title}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Draft:{" "}
+              {curated
+                ? curated.entries.some((e) => e.source === "provider")
+                  ? "Mixed selection"
+                  : "Store photos only"
+                : "Printify photos"}
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Live: {color.activeMode}
+              {color.activeStale ? " · Needs review" : ""}
+              {color.activeInvalid ? " · Unavailable photos" : ""}
+            </p>
           </div>
-          {color?.activeInvalid && (
+          {color.activeInvalid && (
             <p role="alert" className="rounded-md border border-destructive p-4">
               Unavailable photos for {color.title}. Check image storage or replace the affected photos, then review and
               activate this color again.
             </p>
           )}
-          {color && !color.available && (
-            <div className="space-y-3 rounded-md border p-4">
-              <p>
-                This color is currently unavailable, so its photos are read-only. Keep its saved selection while
-                activating other colors. You can edit it again when it returns.
-              </p>
-              {different(savedColor) && (
-                <Button className="min-h-11" variant="outline" disabled={busy} onClick={() => recoverColor(savedColor)}>
-                  Keep saved photos for {color.title}
-                </Button>
-              )}
-              {different(color.recoverySelection) && (
-                <>
-                  <p>
-                    This draft has different photos for this unavailable color. Restore its last active selection to
-                    activate other colors; their edits will stay.
-                  </p>
-                  <Button
-                    className="min-h-11"
-                    variant="outline"
-                    disabled={busy}
-                    onClick={() => recoverColor(color.recoverySelection)}
-                  >
-                    Restore last active selection for {color.title}
-                  </Button>
-                </>
-              )}
-            </div>
-          )}
-          {preview && (
-            <div className="mx-auto max-w-lg">
-              <p className="mb-3 text-sm">Private draft preview. Photos keep their original framing.</p>
-              <ProductImageGallery
-                key={`${selected}-${JSON.stringify(previewImages)}`}
-                title={data.title}
-                images={previewImages}
-                artwork={data.artwork && color?.hex ? { ...data.artwork, backgroundColor: color.hex } : null}
-                placeholder="No photos selected"
-                onSlideSelect={() => undefined}
-              />
-            </div>
-          )}
           <div className="flex flex-wrap gap-3">
             {!curated ? (
-              <Button className="min-h-11" disabled={busy || !color?.available} onClick={() => entries([])}>
-                {color?.available ? "Choose photos for this color" : "Color currently unavailable"}
+              <Button className="min-h-11" disabled={busy} onClick={() => entries([])}>
+                Choose photos for this color
               </Button>
             ) : (
               <Button
                 className="min-h-11"
                 variant="outline"
                 disabled={busy || readOnly}
-                onClick={() => change({ ...draft, colors: draft.colors.filter((c) => c.colorKey !== selected) })}
+                onClick={() => change({ ...draft, colors: draft.colors.filter((c) => c.colorKey !== color.key) })}
               >
                 Use Printify photos
               </Button>
@@ -539,8 +505,45 @@ export function ProductPhotoEditor({ initial }: { initial: GalleryEditorData }) 
             </>
           )}
         </section>
-      </div>
+      )}
       <section aria-label="Save and activate" className="space-y-4 border-t border-border pt-6">
+        {data.colors
+          .filter((c) => !c.available)
+          .map((c) => {
+            const selection = draft.colors.find((entry) => entry.colorKey === c.key)
+            const saved = data.draft.colors.find((entry) => entry.colorKey === c.key)
+            const different = (other: typeof selection | null) =>
+              JSON.stringify(galleryColorSelection(selection)) !== JSON.stringify(galleryColorSelection(other))
+            if (!different(c.recoverySelection)) return null
+            return (
+              <div key={c.key} role="alert" className="max-w-3xl space-y-3 rounded-md border p-4">
+                <p>
+                  {c.title} is no longer available. Recover its saved photos before saving or activating other colors;
+                  their edits will stay.
+                </p>
+                {different(saved) && (
+                  <Button
+                    className="min-h-11"
+                    variant="outline"
+                    disabled={busy}
+                    onClick={() => recoverColor(c.key, saved)}
+                  >
+                    Keep saved photos for {c.title}
+                  </Button>
+                )}
+                {different(c.recoverySelection) && (
+                  <Button
+                    className="min-h-11"
+                    variant="outline"
+                    disabled={busy}
+                    onClick={() => recoverColor(c.key, c.recoverySelection)}
+                  >
+                    Restore last active selection for {c.title}
+                  </Button>
+                )}
+              </div>
+            )
+          })}
         <p className="text-sm">
           {dirty
             ? "You have unsaved changes. Save before reviewing for activation."
