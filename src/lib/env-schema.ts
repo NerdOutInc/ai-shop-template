@@ -60,6 +60,7 @@ export const envSchema = {
     ADMIN_SETUP_SECRET: z.string().min(32).max(256).optional(),
     SUPABASE_SECRET_KEY: singleLineCredential.min(1).optional(),
     BLOB_READ_WRITE_TOKEN: singleLineCredential.optional(),
+    BLOB_STORE_ID: singleLineCredential.optional(),
     PRIVATE_BLOB_READ_WRITE_TOKEN: singleLineCredential.min(1).optional(),
   },
   client: {

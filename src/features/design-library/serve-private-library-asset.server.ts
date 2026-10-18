@@ -58,7 +58,7 @@ export async function servePrivateLibraryAsset(request: Request, assetId: string
       return new Response(display.body as BodyInit, {
         headers: {
           ...privateResponseHeaders,
-          // No browser cache, like every other admin response: src/proxy.ts sets
+          // No browser cache, like other admin responses: the admin proxy response sets
           // private, no-store across /api/admin. The derivative is cached server-side in
           // the private Blob store, so a repeat visit costs a read rather than a resize.
           "Content-Type": "image/webp",
