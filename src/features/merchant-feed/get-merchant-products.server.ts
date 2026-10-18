@@ -25,7 +25,7 @@ export async function getMerchantProducts(): Promise<MerchantProduct[]> {
     let snapshots: Record<string, unknown>[]
     let profiles: ReadonlyMap<number, GarmentFeedProfile>
     try {
-      snapshots = await listShownProducts()
+      snapshots = (await listShownProducts()).map(({ snapshot }) => snapshot)
       if (!snapshots.length) return []
       profiles = await getPublishingStore().garments.listFeedProfiles()
     } catch {

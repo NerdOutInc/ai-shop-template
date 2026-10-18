@@ -328,6 +328,11 @@ button:disabled {
   object-fit: contain;
   mix-blend-mode: multiply;
 }
+/* Photographs already include their scene; mockup blending would recolor it. */
+.product-main-image[data-photo-origin="store"],
+.product-thumbnail img[data-photo-origin="store"] {
+  mix-blend-mode: normal;
+}
 .product-artwork-image {
   display: grid;
   width: 100%;

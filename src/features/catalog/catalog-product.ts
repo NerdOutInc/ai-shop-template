@@ -41,9 +41,9 @@ export type CatalogProduct = {
   addedToShopAt: string | null
   salesCount: number | null
   defaultColor?: string | null
-  image: { src: string; alt: string; viewKey?: string } | null
+  image: { src: string; alt: string; viewKey?: string; origin?: "store" } | null
   artwork?: { src: string; alt: string; backgroundColor: string | null } | null
-  images: { src: string; alt: string; variantIds: number[]; viewKey?: string }[]
+  images: { src: string; alt: string; variantIds: number[]; viewKey?: string; origin?: "store" }[]
   price: { currency: "USD"; min: number; max: number } | null
   options: { name: string; values: string[] }[]
   variants: CatalogVariant[]

@@ -64,7 +64,7 @@ export function ProductCard({ product, priority = false, isNew = false, headingL
               unoptimized={!canOptimizeProductImage(image.src)}
               loading={priority ? "eager" : "lazy"}
               fetchPriority={priority ? "high" : undefined}
-              className="product-card-mockup h-full w-full object-contain mix-blend-multiply transition-transform duration-300 motion-safe:group-hover:scale-[1.025]"
+              className={`product-card-mockup h-full w-full object-contain ${image.origin === "store" ? "" : "mix-blend-multiply"} transition-transform duration-300 motion-safe:group-hover:scale-[1.025]`}
             />
           ) : (
             <p className="px-4 text-center text-sm text-muted-foreground">

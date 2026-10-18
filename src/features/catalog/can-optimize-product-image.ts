@@ -14,6 +14,7 @@ export function canOptimizeProductImage(src: string, blobHost = env.NEXT_PUBLIC_
         (isPublicBlobHost(blobHost) &&
           url.hostname === blobHost &&
           (/^\/published-mockups\/v1\/[a-f0-9]{64}\.(jpg|png|webp)$/.test(url.pathname) ||
+            /^\/published-product-photos\/v1\/[a-f0-9]{64}\.jpg$/.test(url.pathname) ||
             readPublicArtworkLocation(src) !== null) &&
           !url.search)) &&
       !url.hash &&

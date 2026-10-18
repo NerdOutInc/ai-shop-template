@@ -68,6 +68,28 @@ describe("ProductImageGallery image delivery", () => {
   })
 })
 
+describe("ProductImageGallery photo origin", () => {
+  it("marks store photographs on slides and thumbnails so they skip mockup blending", () => {
+    const container = document.createElement("div")
+    container.innerHTML = renderToStaticMarkup(
+      <ProductImageGallery
+        title="Graphic shirt"
+        images={[
+          { src: "/mockup.png", alt: "Provider mockup" },
+          { src: "/photo.jpg", alt: "Store photo", origin: "store" },
+        ]}
+        artwork={null}
+        placeholder="No photo"
+        onSlideSelect={() => {}}
+      />
+    )
+    const origins = (selector: string) =>
+      [...container.querySelectorAll(selector)].map((image) => image.getAttribute("data-photo-origin"))
+    expect(origins(".product-main-image")).toEqual([null, "store"])
+    expect(origins(".product-thumbnail img")).toEqual([null, "store"])
+  })
+})
+
 describe("ProductImageGallery New badge", () => {
   function renderGallery(isNew?: boolean) {
     const container = document.createElement("div")

@@ -263,3 +263,45 @@ export const TouchArtworkPreview: Story = {
     })
   },
 }
+
+// A neutral stand-in for an owner-supplied photograph: it carries its own scene, unlike a mockup.
+const sampleStorePhoto = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800"><rect width="800" height="800" fill="#6f8f9c"/><rect y="560" width="800" height="240" fill="#b48a62"/><path d="M270 180 160 260 230 370 280 340V620H520V340L570 370 640 260 530 180 460 210H340Z" fill="#ded1be"/><text x="400" y="710" text-anchor="middle" font-family="sans-serif" font-size="24">Illustrative store photo</text></svg>')}`
+
+export const StorePhoto: Story = {
+  args: {
+    product: {
+      ...product,
+      artwork: null,
+      defaultColor: "Black",
+      image: colorImages[0]!,
+      images: [
+        colorImages[0]!,
+        { src: sampleStorePhoto, alt: "Cream shirt photographed on a table", variantIds: [3], origin: "store" },
+      ],
+      colors: [previewColors[0]!, previewColors[2]!],
+      variants: [previewColors[0]!, previewColors[2]!].map((color, index) => ({
+        id: index * 2 + 1,
+        title: `${color.name} / M`,
+        price: 2500,
+        currency: "USD",
+        available: true,
+        color: color.name,
+        size: "M",
+        options: [],
+      })),
+    },
+  },
+  render: (args) => (
+    <div style={{ width: "100%", maxWidth: 320 }}>
+      <ProductCard {...args} />
+    </div>
+  ),
+  play: async ({ canvas }) => {
+    // Provider mockups multiply into the card; a photograph keeps its own colors.
+    await expect(getComputedStyle(canvas.getByAltText("Black shirt mockup")).mixBlendMode).toBe("multiply")
+    await userEvent.click(canvas.getByRole("button", { name: "Cream" }))
+    const photo = canvas.getByAltText("Cream shirt photographed on a table")
+    await expect(photo).toBeVisible()
+    await expect(getComputedStyle(photo).mixBlendMode).toBe("normal")
+  },
+}

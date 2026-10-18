@@ -7,7 +7,9 @@ import type { PoolClient } from "pg"
 
 import { readGoogleCopyProvenance } from "@/features/merchant-feed/read-google-copy-provenance.server"
 import { validateGoogleCopyApproval } from "@/features/merchant-feed/validate-google-copy-approval"
+import { applyGalleryDisplay, type GalleryDisplayRow } from "@/features/product-gallery/apply-gallery-display.server"
 import { ProductGalleryStore } from "@/features/product-gallery/product-gallery-store.server"
+import { queryGalleryDisplay } from "@/features/product-gallery/query-gallery-display.server"
 import { WeeklyHeroStore } from "@/features/weekly-heroes/weekly-hero-store.server"
 import { createPostgresPool } from "@/lib/create-postgres-pool.server"
 
@@ -511,15 +513,15 @@ export class PostgresPublishingStore implements PublishingStore {
 
   /** Gated: every checkout quote resolves products through this. The display read is readRevealableProduct. */
   async readProduct(productId: string) {
-    return (
-      (
-        await this.pool.query<{ snapshot: Record<string, unknown> }>(
-          `select snapshot from commerce.printify_products
-             where shop_id=$1 and product_id=$2 and ${productVisibilitySql.shown}`,
-          [this.shopId, productId]
-        )
-      ).rows[0]?.snapshot ?? null
-    )
+    const row = (
+      await queryGalleryDisplay<GalleryDisplayRow>(
+        this.pool,
+        "snapshot,revision::text",
+        `where shop_id=$1 and product_id=$2 and ${productVisibilitySql.shown}`,
+        [this.shopId, productId]
+      )
+    ).rows[0]
+    return row ? applyGalleryDisplay(row).snapshot : null
   }
 
   /**
@@ -539,12 +541,30 @@ export class PostgresPublishingStore implements PublishingStore {
   /** Gated sibling of listProducts, for the merchant feeds. */
   async listShownProducts() {
     return (
-      await this.pool.query<{ snapshot: Record<string, unknown> }>(
-        `select snapshot from commerce.printify_products
-           where shop_id=$1 and ${productVisibilitySql.shown} order by sort_position,product_id`,
+      await queryGalleryDisplay<GalleryDisplayRow>(
+        this.pool,
+        "snapshot,revision::text",
+        `where shop_id=$1 and ${productVisibilitySql.shown} order by sort_position,product_id`,
         [this.shopId]
       )
-    ).rows.map((row) => row.snapshot)
+    ).rows.map(applyGalleryDisplay)
+  }
+
+  /** Private display consumers only; maintenance keeps listProducts' raw provider snapshots. */
+  async listAdminDisplayProducts() {
+    return (await this.listAdminProducts()).map((row) => row.snapshot)
+  }
+
+  async readAdminDisplayProduct(productId: string) {
+    const row = (
+      await queryGalleryDisplay<GalleryDisplayRow>(
+        this.pool,
+        "snapshot,revision::text",
+        "where shop_id=$1 and product_id=$2 and active",
+        [this.shopId, productId]
+      )
+    ).rows[0]
+    return row ? applyGalleryDisplay(row) : null
   }
 
   /** Ungated on purpose; see listProducts. */
@@ -563,19 +583,16 @@ export class PostgresPublishingStore implements PublishingStore {
    */
   async readRevealableProduct(productId: string) {
     const row = (
-      await this.pool.query<{
-        snapshot: Record<string, unknown>
-        reveal_at: Date | null
-        added_to_shop_at: Date | null
-      }>(
-        `select snapshot,reveal_at,added_to_shop_at from commerce.printify_products
-           where shop_id=$1 and product_id=$2 and ${productVisibilitySql.revealable}`,
+      await queryGalleryDisplay<GalleryDisplayRow & { reveal_at: Date | null; added_to_shop_at: Date | null }>(
+        this.pool,
+        "snapshot,revision::text,reveal_at,added_to_shop_at",
+        `where shop_id=$1 and product_id=$2 and ${productVisibilitySql.revealable}`,
         [this.shopId, productId]
       )
     ).rows[0]
     return row
       ? {
-          snapshot: row.snapshot,
+          snapshot: applyGalleryDisplay(row).snapshot,
           revealAt: isoOrNull(row.reveal_at),
           addedToShopAt: isoOrNull(row.added_to_shop_at),
         }
@@ -595,19 +612,21 @@ export class PostgresPublishingStore implements PublishingStore {
   /** Every active product with the owner's own decision attached, for the admin Products page. */
   async listAdminProducts() {
     return (
-      await this.pool.query<{
-        snapshot: Record<string, unknown>
-        hidden_at: Date | null
-        reveal_at: Date | null
-        revealed_at: Date | null
-        added_to_shop_at: Date | null
-      }>(
-        `select snapshot,hidden_at,reveal_at,revealed_at,added_to_shop_at from commerce.printify_products
-           where shop_id=$1 and active order by sort_position,product_id`,
+      await queryGalleryDisplay<
+        GalleryDisplayRow & {
+          hidden_at: Date | null
+          reveal_at: Date | null
+          revealed_at: Date | null
+          added_to_shop_at: Date | null
+        }
+      >(
+        this.pool,
+        "snapshot,revision::text,hidden_at,reveal_at,revealed_at,added_to_shop_at",
+        "where shop_id=$1 and active order by sort_position,product_id",
         [this.shopId]
       )
     ).rows.map((row) => ({
-      snapshot: row.snapshot,
+      snapshot: applyGalleryDisplay(row).snapshot,
       hiddenAt: isoOrNull(row.hidden_at),
       revealAt: isoOrNull(row.reveal_at),
       revealedAt: isoOrNull(row.revealed_at),

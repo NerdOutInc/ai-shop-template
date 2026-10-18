@@ -32,7 +32,7 @@ export function FeaturedProductContent({
             height={128}
             sizes="64px"
             unoptimized={!canOptimizeProductImage(product.image.src)}
-            className="h-full w-full object-contain mix-blend-multiply"
+            className={`h-full w-full object-contain ${product.image.origin === "store" ? "" : "mix-blend-multiply"}`}
           />
         )}
         {isNew && <NewProductBadge size="compact" />}

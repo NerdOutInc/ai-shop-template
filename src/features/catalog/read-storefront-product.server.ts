@@ -60,6 +60,8 @@ export async function readStorefrontProduct(productId: string): Promise<Record<s
             src: image.src,
             variant_ids: image.variantIds,
             is_default: index === 0,
+            alt: image.alt,
+            ...(image.origin ? { origin: image.origin } : {}),
             ...(image.viewKey ? { view_key: image.viewKey } : {}),
           })),
         }
@@ -70,7 +72,8 @@ export async function readStorefrontProduct(productId: string): Promise<Record<s
       }
     },
     [
-      "published-catalog-product-v1",
+      // v2 keeps approved gallery alt text and photograph origin; v1 projections dropped both.
+      "published-catalog-product-v2",
       productionFingerprintVersion,
       shopId,
       createHash("sha256").update(databaseUrl).digest("hex"),

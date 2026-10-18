@@ -17,8 +17,11 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest
 
 import * as postgresPool from "@/lib/create-postgres-pool.server"
 
+import { readGallerySource } from "@/features/product-gallery/read-gallery-source.server"
+
 import { applyAllMigrations } from "../../../test/apply-all-migrations"
 import { createAdminDatabaseFixture } from "../../../test/create-admin-database-fixture"
+import { galleryProductFixture } from "../../../test/gallery-product-fixture"
 import { seedCompleteGarment } from "../../../test/seed-complete-garment"
 
 import type { PublishingEvent } from "./publishing-event"
@@ -30,6 +33,11 @@ import { processPublishingJobs } from "./process-publishing-jobs.server"
 import { PublishedImageError } from "./published-image-error"
 
 vi.mock("server-only", () => ({}))
+const galleryHost = vi.hoisted(() => "galleryfixtures.public.blob.vercel-storage.com")
+vi.mock("@/lib/env", async (importOriginal) => {
+  const { env } = await importOriginal<typeof import("@/lib/env")>()
+  return { env: { ...env, NEXT_PUBLIC_PRODUCT_IMAGE_BLOB_HOST: galleryHost } }
+})
 const databaseUrl = process.env.PUBLISHING_TEST_DATABASE_URL
 const backfillArtwork = {
   src: `https://catalog.public.blob.vercel-storage.com/published-artwork/v1/${"a".repeat(64)}.webp`,
@@ -1794,7 +1802,7 @@ describe.skipIf(!databaseUrl)("durable Printify publishing", () => {
       ["unpublished", false],
     ] as const)("offers %s to shoppers and checkout: %s", async (productId, offered) => {
       expect((await gated.readProduct(productId)) !== null).toBe(offered)
-      expect((await gated.listShownProducts()).some((snapshot) => snapshot.id === productId)).toBe(offered)
+      expect((await gated.listShownProducts()).some(({ snapshot }) => snapshot.id === productId)).toBe(offered)
     })
 
     // A product waiting for its moment must survive the cache, so the clock can judge it outside.
@@ -2036,6 +2044,157 @@ describe.skipIf(!databaseUrl)("durable Printify publishing", () => {
       await expect(
         pool.query("update commerce.printify_products set reveal_at=now() where product_id='shown'")
       ).rejects.toThrow("printify_products_reveal_while_hidden")
+    })
+  })
+
+  // Curated photos reach every customer and admin display read; maintenance reads stay on provider data.
+  describe("product gallery display overlay", () => {
+    const shop = "9400"
+    const actor = randomUUID()
+    const sha256 = "d".repeat(64)
+    const photo = `https://${galleryHost}/published-product-photos/v1/${sha256}.jpg`
+    let display: PostgresPublishingStore
+    const source = async (snapshot: ReturnType<typeof galleryProductFixture>, revision: string) => {
+      const row = JSON.stringify({ ...snapshot, shop_id: Number(shop) })
+      await pool.query(
+        `insert into commerce.printify_products(shop_id,product_id,snapshot,revision,active,hidden_at,reveal_at)
+           values($1,$2,$3,$4,true,null,null)
+         on conflict(shop_id,product_id) do update set snapshot=excluded.snapshot,revision=excluded.revision`,
+        [shop, snapshot.id, row, revision]
+      )
+      await pool.query(
+        "insert into commerce.printify_product_revisions(shop_id,product_id,revision,snapshot) values($1,$2,$3,$4) on conflict do nothing",
+        [shop, snapshot.id, revision, row]
+      )
+    }
+    beforeAll(async () => {
+      display = new PostgresPublishingStore(databaseUrl!, shop)
+      await source(galleryProductFixture(), "1")
+      await source({ ...galleryProductFixture(), id: "plain" }, "1")
+      const asset = {
+        id: randomUUID(),
+        pathname: `product-gallery/v1/${randomUUID()}.jpg`,
+        sha256,
+        bytes: 100,
+        width: 1000,
+        height: 1200,
+        contentType: "image/jpeg" as const,
+      }
+      await display.galleries.addAsset("shirt", asset, actor)
+      const saved = await display.galleries.save(
+        "shirt",
+        {
+          action: "save",
+          revision: null,
+          productRevision: "1",
+          manifest: {
+            coverColor: "10",
+            colors: [
+              {
+                colorKey: "10",
+                entries: [{ source: "store", assetId: asset.id, alt: "Sample tee on a model", role: "other" }],
+              },
+            ],
+          },
+        },
+        actor,
+        galleryHost
+      )
+      await display.galleries.recordPromotion("shirt", asset, galleryHost, photo)
+      await display.galleries.activate(
+        "shirt",
+        {
+          action: "activate",
+          ...saved,
+          productRevision: "1",
+          confirmations: { "10": readGallerySource(galleryProductFixture(), "1").colors[0]!.binding!.digest },
+        },
+        actor,
+        galleryHost
+      )
+    })
+    afterAll(async () => {
+      await display?.close()
+    })
+    const curated = expect.objectContaining({ src: photo, variant_ids: [101], origin: "store" })
+
+    it("applies the active gallery to checkout, storefront, feed and admin reads", async () => {
+      expect((await display.readProduct("shirt"))?.images).toContainEqual(curated)
+      expect((await display.readRevealableProduct("shirt"))?.snapshot.images).toContainEqual(curated)
+      expect((await display.listShownProducts()).find(({ snapshot }) => snapshot.id === "shirt")).toMatchObject({
+        snapshot: { images: expect.arrayContaining([curated]) },
+        withheldVariantIds: [],
+        diagnostic: null,
+        staleColors: [],
+        invalidColors: [],
+      })
+      const [admin] = await display.listAdminProducts()
+      expect(admin).toMatchObject({ hiddenAt: null, revealAt: null, revealedAt: null, addedToShopAt: null })
+      expect(admin!.snapshot.images).toContainEqual(curated)
+      expect((await display.listAdminDisplayProducts())[0]!.images).toContainEqual(curated)
+      expect(await display.readAdminDisplayProduct("shirt")).toMatchObject({
+        snapshot: { images: expect.arrayContaining([curated]) },
+        withheldVariantIds: [],
+      })
+    })
+
+    it("keeps maintenance reads raw and products without a gallery unchanged", async () => {
+      const raw = (await display.listProducts()).find((snapshot) => snapshot.id === "shirt")
+      expect(raw?.images).toEqual(galleryProductFixture().images)
+      expect(await display.readProduct("plain")).toEqual({
+        ...galleryProductFixture(),
+        id: "plain",
+        shop_id: Number(shop),
+      })
+    })
+
+    it("previews hidden products only through the admin display reads", async () => {
+      await pool.query(
+        "update commerce.printify_products set hidden_at=now() where shop_id=$1 and product_id='shirt'",
+        [shop]
+      )
+      try {
+        expect(await display.readProduct("shirt")).toBeNull()
+        expect((await display.readAdminDisplayProduct("shirt"))?.snapshot.images).toContainEqual(curated)
+        expect(await display.readAdminDisplayProduct("missing")).toBeNull()
+      } finally {
+        await pool.query(
+          "update commerce.printify_products set hidden_at=null where shop_id=$1 and product_id='shirt'",
+          [shop]
+        )
+      }
+    })
+
+    it("withholds a color whose production changed and fails closed on an unreadable gallery", async () => {
+      const changed = galleryProductFixture()
+      changed.print_areas[0]!.placeholders[0]!.images[0]!.y = 0.9
+      await source(changed, "2")
+      try {
+        expect((await display.listShownProducts()).find(({ snapshot }) => snapshot.id === "shirt")).toMatchObject({
+          withheldVariantIds: [101],
+          staleColors: ["10"],
+        })
+        expect((await display.readProduct("shirt"))?.images).not.toContainEqual(curated)
+        const active = (
+          await pool.query("select active_manifest from commerce.product_galleries where shop_id=$1", [shop])
+        ).rows[0].active_manifest
+        await pool.query(
+          'update commerce.product_galleries set active_manifest=\'{"colors":"bad"}\' where shop_id=$1',
+          [shop]
+        )
+        try {
+          expect(await display.readAdminDisplayProduct("shirt")).toMatchObject({
+            snapshot: { images: [] },
+            withheldVariantIds: [101, 201],
+            diagnostic: expect.any(String),
+          })
+          expect((await display.readRevealableProduct("shirt"))?.snapshot.images).toEqual([])
+        } finally {
+          await pool.query("update commerce.product_galleries set active_manifest=$2 where shop_id=$1", [shop, active])
+        }
+      } finally {
+        await source(galleryProductFixture(), "1")
+      }
     })
   })
 

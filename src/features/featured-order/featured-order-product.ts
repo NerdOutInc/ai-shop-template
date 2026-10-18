@@ -1,7 +1,7 @@
 export type FeaturedOrderProduct = {
   id: string
   title: string
-  image: { src: string; alt: string } | null
+  image: { src: string; alt: string; origin?: "store" } | null
   /** When the owner hid it. Null means the shop is showing it. */
   hiddenAt: string | null
   /** A scheduled end to the hide, so the page can say when it comes back rather than just "hidden". */
