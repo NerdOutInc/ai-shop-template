@@ -32,14 +32,17 @@ describe.skipIf(!databaseUrl)("drop email overview", () => {
   })
 
   it("counts the list and summarizes each drop email through the runtime role, newest first", async () => {
+    // Historical recipients must predate these drops, regardless of when the test runs.
     const ids = (
       await database.query<{ id: string; email: string }>(
-        `insert into commerce.drop_subscribers (email, source, consent_copy_version, unsubscribed_at, subscription_state)
-         values ('a@example.com', 'design-of-the-week', 'v1', null, 'legacy'),
-                ('b@example.com', 'design-of-the-week', 'v1', null, 'legacy'),
-                ('c@example.com', 'design-of-the-week', 'v1', now(), 'legacy'),
-                ('d@example.com', 'design-of-the-week', 'v1', null, 'legacy')
-         returning id, email`
+        `insert into commerce.drop_subscribers
+           (email, source, consent_copy_version, unsubscribed_at, subscription_state, created_at, consented_at)
+         values ('a@example.com', 'design-of-the-week', 'v1', null, 'legacy', $1, $1),
+                ('b@example.com', 'design-of-the-week', 'v1', null, 'legacy', $1, $1),
+                ('c@example.com', 'design-of-the-week', 'v1', now(), 'legacy', $1, $1),
+                ('d@example.com', 'design-of-the-week', 'v1', null, 'legacy', $1, $1)
+         returning id, email`,
+        ["2026-10-01T09:00:00Z"]
       )
     ).rows
     await database.query(
