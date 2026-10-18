@@ -1,6 +1,8 @@
 -- Additive upgrade after the template migration chain through 20261017173935.
 -- Requires commerce + store_app_runtime. Apply once via migration history, before app rollout.
 -- Prior app revisions ignore these tables; no product rows are rewritten and nothing is backfilled.
+-- Retry only after checking failed transaction/history state. Verification/rollback:
+-- docs/product-gallery-workflow.md.
 -- Provider publication snapshots stay canonical; only approved display selections live here.
 -- Without a gallery row a product keeps showing its provider images.
 create table commerce.product_gallery_assets (

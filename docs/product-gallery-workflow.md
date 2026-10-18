@@ -37,11 +37,46 @@ Required existing configuration:
 - `PRIVATE_BLOB_READ_WRITE_TOKEN` for private photo uploads/previews.
 - `BLOB_READ_WRITE_TOKEN` or Vercel OIDC with `BLOB_STORE_ID` for public promotion, with `NEXT_PUBLIC_PRODUCT_IMAGE_BLOB_HOST` matching that public store at both build and runtime.
 
-Use separate preview/local data and credentials. The implementation does not run production migrations or copy existing archives automatically. Before the gallery table exists, display reads retain provider behavior so deployment ahead of migration does not interrupt checkout or the catalog. This fallback requires PostgreSQL `42P01` and confirmation that `commerce.product_galleries` is absent. Once it exists, missing dependencies, missing grants and storage errors do not restore removed provider photos. Gallery editing still requires the migration and configured storage.
+Use separate preview/local data and credentials. The implementation does not run production migrations or copy existing archives automatically. Before the gallery table exists, display reads retain provider behavior so deployment ahead of migration does not interrupt checkout or the catalog. This fallback requires PostgreSQL `42P01` and confirmation that `commerce.product_galleries` is absent. Once the table exists there is no fallback: a missing dependency or runtime grant makes product pages and cards, checkout quotes, merchant feeds and the admin previews fail closed (product unavailable or a 503) instead of reverting to provider photos, so verify the rollout below before deploying. Storage errors affect only gallery uploads, previews and activation. Gallery editing still requires the migration and configured storage.
 
 Uploads accept one JPEG/PNG/WebP, up to 3 MB, at least 800 pixels on both sides and at most 40 million decoded pixels. Animated images and SVGs are refused. The server applies phone orientation, converts to sRGB, flattens transparency onto the store's theme background, strips metadata, preserves composition and produces a JPEG at most 2000 pixels on the long edge. This derivative is stored privately. Activation promotes exact verified bytes to an immutable content-addressed public path. Removing a gallery reference does **not** erase an already-public CDN URL.
 
 A color can have 1–12 distinct photos, a product at most 80 curated colors/120 selections, and each product's private upload library at most 500 assets. Activation copies at most two photos concurrently within a bounded request. Draft saves/uploads do not invalidate public caches; successful activation refreshes them. A separately reported cache-refresh failure does not roll back a committed activation.
+
+### Schema rollout and verification
+
+Apply the gallery migration with the store's existing migration operator after reviewing its target environment. It adds the four gallery tables and their policies; it does not alter prior migrations, products, publications, orders or accounts.
+
+- **Preconditions:** template migrations through `20261017173935_weekly_hero_schedule.sql`; the existing `commerce` schema and `commerce.printify_products`; and a restricted runtime login named exactly `store_app_runtime`, as [store setup](store-setup.md) requires. The migration grants access and creates policies only when that role exists and silently skips them otherwise. A runtime login with any other name would then fail every display read described above.
+- **Compatibility:** apply the migration before this application revision. The previous application ignores these additive tables and can run after migration. The new application falls back to provider photos only while `commerce.product_galleries` is absent. Fresh installations apply the complete sequence; operating stores apply only pending migrations.
+- **Locks and retry:** the migration creates four new, empty tables and their policies; it does not scan, rewrite or backfill products. Apply it once through migration history. On failure, verify transaction/history state before retrying; do not replay the baseline or manually mark a partial run complete.
+- **Rollback:** redeploy the previous application and keep the tables, private photos and promoted public photos. Already-public CDN URLs persist. Do not drop the tables or delete photos as a routine rollback.
+- **Verification:** with the migration-owner connection, run the queries below and `scripts/database/audit-browser-privileges.sql`, which must return zero rows. Then confirm that a storefront product page, a checkout quote and the merchant feed still succeed in the receiving environment before anyone uses the editor.
+
+```sql
+-- Expect four rows, each true.
+select c.relname, c.relrowsecurity
+from pg_class c join pg_namespace n on n.oid = c.relnamespace
+where n.nspname = 'commerce'
+  and c.relname in ('product_gallery_assets', 'product_galleries', 'product_gallery_revisions', 'product_gallery_promotions');
+
+-- Expect SELECT and INSERT on all four, UPDATE only on product_galleries and DELETE on none.
+-- "role does not exist" means the migration skipped its grants and policies.
+select t.table_name,
+       has_table_privilege('store_app_runtime', 'commerce.' || t.table_name, 'SELECT') as can_select,
+       has_table_privilege('store_app_runtime', 'commerce.' || t.table_name, 'INSERT') as can_insert,
+       has_table_privilege('store_app_runtime', 'commerce.' || t.table_name, 'UPDATE') as can_update,
+       has_table_privilege('store_app_runtime', 'commerce.' || t.table_name, 'DELETE') as can_delete
+from unnest(array['product_gallery_assets', 'product_galleries', 'product_gallery_revisions',
+                  'product_gallery_promotions']) as t(table_name);
+
+-- Expect nine store_runtime_* policies for store_app_runtime: select and insert on each table,
+-- plus update on product_galleries.
+select tablename, policyname, cmd, roles
+from pg_policies
+where schemaname = 'commerce' and tablename like 'product_galler%'
+order by tablename, policyname;
+```
 
 ## Authenticated API for agents
 

@@ -2198,6 +2198,41 @@ describe.skipIf(!databaseUrl)("durable Printify publishing", () => {
         await source(galleryProductFixture(), "1")
       }
     })
+
+    // The documented deploy window runs this code before the gallery migration. Every display
+    // reader must reach the provider images then, while any other missing relation still fails.
+    it("keeps checkout, storefront, feed and admin reads on provider images before the gallery migration", async () => {
+      const provider = galleryProductFixture().images
+      await pool.query("alter table commerce.product_galleries rename to product_galleries_migration_test")
+      try {
+        expect((await display.readProduct("shirt"))?.images).toEqual(provider)
+        expect((await display.readRevealableProduct("shirt"))?.snapshot.images).toEqual(provider)
+        expect((await display.listShownProducts()).find(({ snapshot }) => snapshot.id === "shirt")).toMatchObject({
+          snapshot: { images: provider },
+          withheldVariantIds: [],
+        })
+        expect(
+          (await display.listAdminProducts()).find(({ snapshot }) => snapshot.id === "shirt")?.snapshot.images
+        ).toEqual(provider)
+        expect((await display.listAdminDisplayProducts()).find(({ id }) => id === "shirt")?.images).toEqual(provider)
+        expect(await display.readAdminDisplayProduct("shirt")).toMatchObject({
+          snapshot: { images: provider },
+          withheldVariantIds: [],
+        })
+      } finally {
+        await pool.query("alter table commerce.product_galleries_migration_test rename to product_galleries")
+      }
+      await pool.query(
+        "alter table commerce.printify_product_revisions rename to printify_product_revisions_migration_test"
+      )
+      try {
+        await expect(display.readProduct("shirt")).rejects.toMatchObject({ code: "42P01" })
+      } finally {
+        await pool.query(
+          "alter table commerce.printify_product_revisions_migration_test rename to printify_product_revisions"
+        )
+      }
+    })
   })
 
   describe("garment gate", () => {
