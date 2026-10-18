@@ -145,6 +145,14 @@ describe("subscribeToDrops", () => {
     await after.mock.calls[0]![0]()
     expect(warn.mock.calls).toEqual([["Signup confirmation deferred"]])
   })
+  it("logs only its unsent request when a prompt worker is busy", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    store.subscribe.mockResolvedValue("request-id")
+    runSignupConfirmations.mockResolvedValue({ sent: 0, errors: 0, busy: true, saturated: false })
+    expect(await subscribeToDrops({ email: "shopper@example.com", source: "footer" })).toBe("saved")
+    await after.mock.calls[0]![0]()
+    expect(warn.mock.calls).toEqual([["Signup confirmation deferred"]])
+  })
   it("keeps the durable request accepted when a prompt run cannot be scheduled", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => {})
     store.subscribe.mockResolvedValue("request-id")
