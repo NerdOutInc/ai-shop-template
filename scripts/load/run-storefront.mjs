@@ -334,7 +334,12 @@ try {
         "--port",
         String(port),
       ],
-      { ...config.environment, VERCEL: "1", DATABASE_URL: runtimeUrl.toString() }
+      {
+        ...config.environment,
+        VERCEL: "1",
+        DATABASE_URL: runtimeUrl.toString(),
+        CHECKOUT_CAPACITY_LIMITS: JSON.stringify(checkoutCapacityLimits),
+      }
     )
     await ready(`http://127.0.0.1:${port}/api/health`, app)
   }
