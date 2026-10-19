@@ -54,6 +54,10 @@ test("removing a selected test file cannot silently reduce commerce coverage", (
     mkdirSync(join(fixture, "test"))
     mkdirSync(join(fixture, "scripts", "ci"), { recursive: true })
     copyFileSync(
+      new URL("../../test/assert-isolated-database.ts", import.meta.url),
+      join(fixture, "test", "assert-isolated-database.ts")
+    )
+    copyFileSync(
       new URL("../../test/assert-commerce-test-scope.ts", import.meta.url),
       join(fixture, "test", "assert-commerce-test-scope.ts")
     )

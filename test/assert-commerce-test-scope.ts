@@ -1,5 +1,7 @@
 import { existsSync } from "node:fs"
 
+import { assertIsolatedDatabase } from "./assert-isolated-database"
+
 import { resolveCommerceTestScope } from "./resolve-commerce-test-scope"
 
 export function assertCommerceTestScope(environment: NodeJS.ProcessEnv = process.env) {
@@ -11,21 +13,9 @@ export function assertCommerceTestScope(environment: NodeJS.ProcessEnv = process
   }
 
   for (const [name, database] of Object.entries(commerceScope.databases)) {
-    const value = environment[name]?.trim()
-    let url: URL | undefined
     try {
-      url = value ? new URL(value) : undefined
+      assertIsolatedDatabase(environment[name]?.trim(), database)
     } catch {
-      // Report the variable only: database URLs can contain credentials.
-    }
-    if (
-      !url ||
-      !["postgres:", "postgresql:"].includes(url.protocol) ||
-      !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) ||
-      url.pathname !== `/${database}` ||
-      url.search ||
-      url.hash
-    ) {
       throw new Error(`[commerce tests] ${name} must name disposable local ${database}; no tests were started.`)
     }
   }

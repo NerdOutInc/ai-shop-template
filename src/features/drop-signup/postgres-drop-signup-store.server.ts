@@ -1,5 +1,7 @@
 import "server-only"
 
+import type { Pool } from "pg"
+
 import { hashSignupRequestSubject } from "./hash-signup-request-subject.server"
 
 import { createPostgresPool } from "@/lib/create-postgres-pool.server"
@@ -10,10 +12,12 @@ import { confirmDropSignup } from "./confirm-drop-signup.server"
 export class PostgresDropSignupStore {
   private readonly pool
 
-  constructor(connectionString: string) {
-    // One connection: a marketing form must never compete with checkout or publishing for the
-    // database. Signup transactions hold only the short admission-first queue/consent locks.
-    this.pool = createPostgresPool(connectionString, 1)
+  constructor(
+    connectionString: string,
+    private readonly sharedPool?: Pool
+  ) {
+    // Signup transactions hold only short admission-first queue/consent locks; checkout is isolated.
+    this.pool = sharedPool ?? createPostgresPool(connectionString, 1)
   }
 
   /**
@@ -100,6 +104,6 @@ export class PostgresDropSignupStore {
   }
 
   close() {
-    return this.pool.end()
+    return this.sharedPool ? Promise.resolve() : this.pool.end()
   }
 }

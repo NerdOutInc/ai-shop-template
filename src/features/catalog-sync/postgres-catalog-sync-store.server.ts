@@ -1,5 +1,7 @@
 import "server-only"
 
+import type { Pool } from "pg"
+
 import { createPostgresPool } from "@/lib/create-postgres-pool.server"
 
 type RefreshKind = "stock" | "popularity"
@@ -12,11 +14,12 @@ export class PostgresCatalogSyncStore {
 
   constructor(
     connectionString: string,
-    private readonly shopId: string
+    private readonly shopId: string,
+    private readonly sharedPools?: { requests: Pool; worker: Pool }
   ) {
     if (!/^[1-9]\d*$/.test(shopId)) throw new Error("A Printify shop is required")
-    this.pool = createPostgresPool(connectionString, 1)
-    this.workerPool = createPostgresPool(connectionString, 2)
+    this.pool = sharedPools?.requests ?? createPostgresPool(connectionString, 1)
+    this.workerPool = sharedPools?.worker ?? createPostgresPool(connectionString, 2)
   }
 
   async read(kind: RefreshKind): Promise<Observation | null> {
@@ -74,6 +77,6 @@ export class PostgresCatalogSyncStore {
   }
 
   async close() {
-    await Promise.all([this.pool.end(), this.workerPool.end()])
+    if (!this.sharedPools) await Promise.all([this.pool.end(), this.workerPool.end()])
   }
 }

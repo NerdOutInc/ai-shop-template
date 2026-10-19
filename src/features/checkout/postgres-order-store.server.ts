@@ -1,10 +1,8 @@
 import "server-only"
 
-import { Pool } from "pg"
+import type { Pool } from "pg"
 
-import { attachPostgresPoolLifecycle } from "@/lib/attach-postgres-pool-lifecycle.server"
-import { env } from "@/lib/env"
-import { postgresConnectionConfig } from "@/lib/postgres-connection-config.server"
+import { createPostgresPool } from "@/lib/create-postgres-pool.server"
 
 import { CheckoutError } from "./checkout-error"
 import type { CheckoutOrder, OrderStore, StoredOrder } from "./checkout-order"
@@ -36,23 +34,15 @@ function normalize(row?: OrderRow): StoredOrder | null {
 export class PostgresOrderStore implements OrderStore {
   private readonly pool: Pool
 
-  constructor(connectionString: string) {
-    let config: ReturnType<typeof postgresConnectionConfig>
+  constructor(
+    connectionString: string,
+    private readonly sharedPool?: Pool
+  ) {
     try {
-      config = postgresConnectionConfig(connectionString, env.DATABASE_SSL_CA)
+      this.pool = sharedPool ?? createPostgresPool(connectionString)
     } catch {
       throw new CheckoutError("NOT_CONFIGURED", "Checkout is unavailable while we finish connecting the shop.")
     }
-    this.pool = new Pool({
-      ...config,
-      max: 3,
-      idleTimeoutMillis: 5_000,
-      connectionTimeoutMillis: 8_000,
-      query_timeout: 10_000,
-    })
-    // Checkout shares the session pool budget with admin and publishing requests.
-    attachPostgresPoolLifecycle(this.pool)
-    this.pool.on("error", () => console.error("Checkout database connection unavailable"))
   }
 
   async withLock<T>(requestId: string, callback: Parameters<OrderStore["withLock"]>[1]): Promise<T> {
@@ -175,6 +165,6 @@ export class PostgresOrderStore implements OrderStore {
   }
 
   async close() {
-    await this.pool.end()
+    if (!this.sharedPool) await this.pool.end()
   }
 }

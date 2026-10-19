@@ -8,9 +8,21 @@ vi.mock("server-only", () => ({}))
 const databaseUrl = process.env.CHECKOUT_TEST_DATABASE_URL
 
 afterEach(() => {
+  vi.restoreAllMocks()
   vi.useRealTimers()
   vi.unstubAllEnvs()
   vi.unstubAllGlobals()
+})
+
+it("labels idle pool failures without logging credentials or raw database errors", async () => {
+  const log = vi.spyOn(console, "error").mockImplementation(() => {})
+  const pool = createPostgresPool("postgresql://fixture:private-password@localhost/store_commerce_test", 2, "checkout")
+  try {
+    pool.emit("error", new Error("connection failed: private-password"))
+    expect(log).toHaveBeenCalledExactlyOnceWith("Database connection unavailable", { purpose: "checkout" })
+  } finally {
+    await pool.end()
+  }
 })
 
 describe.skipIf(!databaseUrl)("Postgres pool suspension", () => {

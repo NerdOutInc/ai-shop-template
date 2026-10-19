@@ -5,6 +5,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import { applyAllMigrations } from "../../../test/apply-all-migrations"
 import { createAdminDatabaseFixture } from "../../../test/create-admin-database-fixture"
 
+import { getSharedPostgresPool } from "@/lib/get-shared-postgres-pool.server"
+
 import { PostgresCheckoutCapacity } from "./postgres-checkout-capacity.server"
 
 vi.mock("server-only", () => ({}))
@@ -37,6 +39,27 @@ describe.skipIf(!databaseUrl)("durable checkout capacity", () => {
   afterAll(async () => {
     await Promise.all(replicas?.map((replica) => replica.close()) ?? [])
     await pool?.end()
+  })
+
+  it("keeps a shared admission pool usable after a borrower closes", async () => {
+    vi.stubGlobal("storePostgresPools", new Map())
+    const url = new URL(databaseUrl!)
+    url.searchParams.set("options", "-c role=store_app_runtime")
+    const shared = getSharedPostgresPool(url.toString(), "admission")
+    const options = { secret: "capacity-test-secret-not-for-deployment", vercel: true }
+    const first = new PostgresCheckoutCapacity(url.toString(), options, shared)
+    const second = new PostgresCheckoutCapacity(url.toString(), options, shared)
+    try {
+      await first.admit(headers(1))
+      await first.close()
+      await expect(second.admit(headers(2))).resolves.toBeUndefined()
+      expect(getSharedPostgresPool(url.toString(), "admission")).toBe(shared)
+      expect(shared.totalCount).toBe(1)
+    } finally {
+      await second.close()
+      await shared.end()
+      vi.unstubAllGlobals()
+    }
   })
 
   it("allows six concurrent retries across replicas and denies the rest atomically", async () => {

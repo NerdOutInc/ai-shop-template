@@ -1,3 +1,7 @@
+import { assertIsolatedDatabase } from "../../test/assert-isolated-database"
+import { setTimeout as pause } from "node:timers/promises"
+import { readProviderDelay } from "./read-provider-delay"
+
 import { randomUUID } from "node:crypto"
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http"
 
@@ -8,16 +12,10 @@ import { configuredStoreConfig } from "../../test/configured-store-config"
 import { commerceTestConfig as config } from "./test-config"
 
 if (process.env.COMMERCE_E2E !== "true") throw new Error("Commerce provider server is test-only")
-const database = new URL(config.databaseUrl)
-if (
-  !["postgres:", "postgresql:"].includes(database.protocol) ||
-  !["localhost", "127.0.0.1"].includes(database.hostname) ||
-  database.pathname !== "/store_catalog_e2e" ||
-  database.search
-)
-  throw new Error("Commerce providers require the isolated local database")
+assertIsolatedDatabase(config.databaseUrl, "store_catalog_e2e")
 
 const pool = new Pool({ connectionString: config.databaseUrl })
+const delayMs = readProviderDelay()
 const sessions = new Map<string, { session: Stripe.Checkout.Session; lines: unknown[]; creates: number }>()
 type ProviderOrder = {
   id: string
@@ -44,6 +42,7 @@ function json(response: ServerResponse, value: unknown, status = 200) {
 async function handle(request: IncomingMessage, response: ServerResponse) {
   const url = new URL(request.url!, config.providerURL)
   const path = url.pathname
+  if (delayMs && (path.startsWith("/v1/") || path === "/emails")) await pause(delayMs)
   if (path === "/health") return json(response, { ok: true })
   if (path === "/confirmation-emails" && request.method === "GET")
     return json(

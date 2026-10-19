@@ -2,6 +2,7 @@ import "server-only"
 
 import Stripe from "stripe"
 
+import { getSharedPostgresPool } from "@/lib/get-shared-postgres-pool.server"
 import { env } from "@/lib/env"
 
 import { CheckoutError } from "./checkout-error"
@@ -29,19 +30,31 @@ function createServices() {
   ) {
     throw new CheckoutError("NOT_CONFIGURED", "Checkout is unavailable while we finish connecting the shop.")
   }
+  let store: PostgresOrderStore
+  let capacity: PostgresCheckoutCapacity
+  try {
+    store = new PostgresOrderStore(env.DATABASE_URL, getSharedPostgresPool(env.DATABASE_URL, "checkout"))
+    capacity = new PostgresCheckoutCapacity(
+      env.DATABASE_URL,
+      {
+        secret: env.CHECKOUT_RATE_LIMIT_SECRET,
+        vercel: env.VERCEL === "1",
+        certificate: env.DATABASE_SSL_CA,
+        limits: env.CHECKOUT_CAPACITY_LIMITS,
+      },
+      getSharedPostgresPool(env.DATABASE_URL, "admission")
+    )
+  } catch {
+    throw new CheckoutError("NOT_CONFIGURED", "Checkout is unavailable while we finish connecting the shop.")
+  }
   return {
     stripe: new Stripe(env.STRIPE_SECRET_KEY, {
       apiVersion: "2026-09-30.endive",
       maxNetworkRetries: 2,
       timeout: 15_000,
     }),
-    store: new PostgresOrderStore(env.DATABASE_URL),
-    capacity: new PostgresCheckoutCapacity(env.DATABASE_URL, {
-      secret: env.CHECKOUT_RATE_LIMIT_SECRET,
-      vercel: env.VERCEL === "1",
-      certificate: env.DATABASE_SSL_CA,
-      limits: env.CHECKOUT_CAPACITY_LIMITS,
-    }),
+    store,
+    capacity,
     printify: new PrintifyClient({ apiToken: env.PRINTIFY_API_TOKEN, shopId: env.PRINTIFY_SHOP_ID }),
     webhookSecret: env.STRIPE_WEBHOOK_SECRET,
     siteUrl: url.origin,
