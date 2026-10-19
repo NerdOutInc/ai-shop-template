@@ -61,7 +61,7 @@ export const ReviewThenCreate: Story = {
     await expect(canvas.getByRole("button", { name: "Create Printify draft" })).toHaveFocus()
     await userEvent.keyboard("{Enter}")
     await expect(await canvas.findByRole("heading", { name: "Sample Character on Next Level 6210" })).toHaveFocus()
-    await expect(canvas.getByText("CVC Espresso, 3XL: Printify cannot make it right now")).toBeVisible()
+    await expect(canvas.getByText("Espresso, 3XL: Printify cannot make it right now")).toBeVisible()
     await expect(canvas.getByText("Sample Garden Illustration")).toBeVisible()
     await expect(canvas.queryByText("Review the placement")).not.toBeInTheDocument()
     await userEvent.tab()

@@ -5,6 +5,8 @@ import Image from "next/image"
 import Link from "next/link"
 import { type RefObject, useRef } from "react"
 
+import { displayCartItemTitle } from "@/features/cart/display-cart-item-title"
+import { displayColorName } from "@/lib/display-color-name"
 import type { CartItem } from "@/features/cart/cart-item"
 import { useCart } from "@/features/cart/use-cart"
 
@@ -55,7 +57,7 @@ export function AddToCartConfirmation({
           {item && (
             <>
               <Dialog.Description className="sr-only">
-                {item.title}, {item.variantTitle}. Quantity: {item.quantity}.
+                {displayCartItemTitle(item)}, {displayColorName(item.variantTitle)}. Quantity: {item.quantity}.
               </Dialog.Description>
               <div className="cart-confirmation-item">
                 {item.image ? (
@@ -69,8 +71,8 @@ export function AddToCartConfirmation({
                   />
                 ) : null}
                 <div className="min-w-0 flex-1">
-                  <p className="cart-confirmation-product">{item.title}</p>
-                  <p className="text-sm text-muted-foreground">{item.variantTitle}</p>
+                  <p className="cart-confirmation-product">{displayCartItemTitle(item)}</p>
+                  <p className="text-sm text-muted-foreground">{displayColorName(item.variantTitle)}</p>
                   <div className="mt-3 flex flex-wrap items-baseline justify-between gap-2">
                     <p className="text-sm text-muted-foreground">Quantity: {item.quantity}</p>
                     <p className="font-semibold">{usd.format((item.unitAmount * item.quantity) / 100)}</p>

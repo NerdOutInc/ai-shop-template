@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import type { CSSProperties } from "react"
 import { expect, userEvent, within } from "storybook/test"
 
+import { displayColorName } from "@/lib/display-color-name"
 import { storeConfig } from "@/lib/store-config"
 
 import type { CatalogProduct } from "./catalog-product"
@@ -371,5 +372,42 @@ export const BeforeLaunch: Story = {
   play: async ({ canvas }) => {
     await expect(canvas.getByText(/Our first collection is on its way/)).toBeVisible()
     await expect(canvas.queryByText(/quick breather/)).not.toBeInTheDocument()
+  },
+}
+
+export const ColorFamilies: Story = {
+  args: {
+    catalog: {
+      status: "ready",
+      products: [
+        { name: "Heather Cool Blue", hex: "#32548a" },
+        { name: "CVC Midnight Navy", hex: "#283244" },
+        { name: "CVC Ice Blue", hex: "#ccdfe2" },
+        { name: "CVC Red", hex: "#d01f2c" },
+        { name: "CVC Clay", hex: "#b37a58" },
+      ].map((color, index) =>
+        catalogProductFixture({
+          id: `color-family-${index}`,
+          title: `Sample shirt in ${displayColorName(color.name)}`,
+          image: product.image,
+          colors: [color],
+          variants: [{ ...product.variants[0]!, color: color.name, size: index === 2 ? "M" : "S" }],
+        })
+      ),
+    },
+  },
+  play: async ({ canvas }) => {
+    const filters = canvas.queryByRole("button", { name: "Filters +" })
+    if (filters) await userEvent.click(filters)
+    await expect(canvas.getAllByRole("checkbox", { name: "Blue" })).toHaveLength(1)
+    await userEvent.click(canvas.getByRole("checkbox", { name: "Blue" }))
+    await expect(canvas.getAllByRole("article")).toHaveLength(3)
+    await userEvent.click(canvas.getByRole("checkbox", { name: "M" }))
+    await expect(canvas.getByRole("article")).toHaveAccessibleName("Sample shirt in Ice Blue")
+    await userEvent.click(canvas.getByRole("button", { name: "Clear all" }))
+    await expect(canvas.getAllByRole("article")).toHaveLength(5)
+    await userEvent.click(canvas.getByRole("checkbox", { name: "Clay" }))
+    await expect(canvas.getByRole("article")).toHaveAccessibleName("Sample shirt in Clay")
+    await userEvent.click(canvas.getByRole("button", { name: "Clear all" }))
   },
 }

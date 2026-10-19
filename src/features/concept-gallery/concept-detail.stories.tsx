@@ -49,16 +49,16 @@ export const PromotingAGarmentColor: Story = {
   play: async ({ canvas }) => {
     const palette = within(canvas.getByRole("group", { name: "All garment colors" }))
     await expect(palette.getAllByRole("button")).toHaveLength(36)
-    await userEvent.click(palette.getByRole("button", { name: "CVC Cream" }))
+    await userEvent.click(palette.getByRole("button", { name: "Cream" }))
     await expect(canvas.getByText("is one of the five.")).toBeVisible()
     await expect(canvas.getByRole("img", { name: design.title }).parentElement).toHaveStyle({
       backgroundColor: "#ded1be",
     })
-    await userEvent.click(palette.getByRole("button", { name: "CVC Purple Rush" }))
+    await userEvent.click(palette.getByRole("button", { name: "Purple Rush" }))
     await expect(canvas.getByText("is not offered yet.")).toBeVisible()
     // Five is the rule: adding a sixth asks for a removal instead of dropping one silently.
     await expect(canvas.getByRole("button", { name: "Add to the five" })).toBeDisabled()
-    await expect(canvas.getByText(/Remove one before adding CVC Purple Rush/)).toBeVisible()
+    await expect(canvas.getByText(/Remove one before adding Purple Rush/)).toBeVisible()
   },
 }
 

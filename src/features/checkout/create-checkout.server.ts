@@ -4,6 +4,7 @@ import { createHash } from "node:crypto"
 
 import type Stripe from "stripe"
 
+import { displayColorName } from "@/lib/display-color-name"
 import { deliveryEstimates } from "@/features/store-policies/delivery-estimates"
 import { storeConfig } from "@/lib/store-config"
 
@@ -163,7 +164,7 @@ export async function createCheckout(services: Services, request: Request) {
           unit_amount: item.unitAmount,
           tax_behavior: "exclusive",
           product_data: {
-            name: `${item.title} — ${item.variantLabel}`,
+            name: `${item.title} — ${displayColorName(item.variantLabel)}`,
             ...(item.imageUrl ? { images: [item.imageUrl] } : {}),
             metadata: { product_id: item.productId, variant_id: String(item.variantId) },
           },

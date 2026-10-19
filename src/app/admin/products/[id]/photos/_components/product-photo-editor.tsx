@@ -3,6 +3,7 @@
 import Image from "next/image"
 import { useRef, useState } from "react"
 
+import { displayColorName } from "@/lib/display-color-name"
 import { ColorPicker } from "@/components/color-picker"
 import { Button } from "@/components/ui/button"
 import { canOptimizeProductImage } from "@/features/catalog/can-optimize-product-image"
@@ -223,6 +224,7 @@ export function ProductPhotoEditor({ initial }: { initial: GalleryEditorData }) 
           <ProductImageGallery
             key={`${color?.key ?? "none"}-${JSON.stringify(previewImages)}`}
             title={data.title}
+            colorNames={data.colors.map(({ title }) => title)}
             images={previewImages}
             artwork={artwork}
             placeholder={color ? "No photos selected" : "No colors are currently available"}
@@ -251,21 +253,22 @@ export function ProductPhotoEditor({ initial }: { initial: GalleryEditorData }) 
             <option value="">Keep current default</option>
             {draft.coverColor && !data.colors.some((c) => c.key === draft.coverColor && c.available) && (
               <option value={draft.coverColor} disabled>
-                {data.colors.find((c) => c.key === draft.coverColor)?.title ?? "Saved color"} — retained until available
+                {displayColorName(data.colors.find((c) => c.key === draft.coverColor)?.title ?? "Saved color")} —
+                retained until available
               </option>
             )}
             {availableColors.map((c) => (
               <option key={c.key} value={c.key}>
-                {c.title}
+                {displayColorName(c.title)}
               </option>
             ))}
           </select>
         </label>
       </section>
       {color && (
-        <section aria-label={`${color.title} draft`} className="min-w-0 space-y-6">
+        <section aria-label={`${displayColorName(color.title)} draft`} className="min-w-0 space-y-6">
           <div>
-            <h2 className="text-2xl font-semibold">{color.title}</h2>
+            <h2 className="text-2xl font-semibold">{displayColorName(color.title)}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Draft:{" "}
               {curated
@@ -282,8 +285,8 @@ export function ProductPhotoEditor({ initial }: { initial: GalleryEditorData }) 
           </div>
           {color.activeInvalid && (
             <p role="alert" className="rounded-md border border-destructive p-4">
-              Unavailable photos for {color.title}. Check image storage or replace the affected photos, then review and
-              activate this color again.
+              Unavailable photos for {displayColorName(color.title)}. Check image storage or replace the affected
+              photos, then review and activate this color again.
             </p>
           )}
           <div className="flex flex-wrap gap-3">
@@ -518,8 +521,8 @@ export function ProductPhotoEditor({ initial }: { initial: GalleryEditorData }) 
             return (
               <div key={c.key} role="alert" className="max-w-3xl space-y-3 rounded-md border p-4">
                 <p>
-                  {c.title} is no longer available. Recover its saved photos before saving or activating other colors;
-                  their edits will stay.
+                  {displayColorName(c.title)} is no longer available. Recover its saved photos before saving or
+                  activating other colors; their edits will stay.
                 </p>
                 {different(saved) && (
                   <Button
@@ -528,7 +531,7 @@ export function ProductPhotoEditor({ initial }: { initial: GalleryEditorData }) 
                     disabled={busy}
                     onClick={() => recoverColor(c.key, saved)}
                   >
-                    Keep saved photos for {c.title}
+                    Keep saved photos for {displayColorName(c.title)}
                   </Button>
                 )}
                 {different(c.recoverySelection) && (
@@ -538,7 +541,7 @@ export function ProductPhotoEditor({ initial }: { initial: GalleryEditorData }) 
                     disabled={busy}
                     onClick={() => recoverColor(c.key, c.recoverySelection)}
                   >
-                    Restore last active selection for {c.title}
+                    Restore last active selection for {displayColorName(c.title)}
                   </Button>
                 )}
               </div>
@@ -574,8 +577,8 @@ export function ProductPhotoEditor({ initial }: { initial: GalleryEditorData }) 
                     }
                   />
                   <span>
-                    I reviewed {current?.title ?? c.colorKey}: these photos show the current garment, color, artwork and
-                    print placement.
+                    I reviewed {displayColorName(current?.title ?? c.colorKey)}: these photos show the current garment,
+                    color, artwork and print placement.
                     {!current?.binding && " Production details are unavailable; republish before review."}
                   </span>
                 </label>
@@ -592,7 +595,7 @@ export function ProductPhotoEditor({ initial }: { initial: GalleryEditorData }) 
                 const photoIndex = typeof issue.path[3] === "number" ? issue.path[3] + 1 : undefined
                 return (
                   <li key={index}>
-                    {name ? `${name}: ` : ""}
+                    {name ? `${displayColorName(name)}: ` : ""}
                     {photoIndex ? `Photo ${photoIndex}, ` : ""}
                     {issue.path.at(-1) === "alt"
                       ? "enter a description (1–300 characters)."

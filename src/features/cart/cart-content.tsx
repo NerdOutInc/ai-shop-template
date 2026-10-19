@@ -3,16 +3,20 @@
 import Image from "next/image"
 import Link from "next/link"
 
+import { displayColorName } from "@/lib/display-color-name"
 import { canOptimizeProductImage } from "@/features/catalog/can-optimize-product-image"
 import { cartLimits } from "@/lib/cart-limits"
 
+import { displayCartItemTitle } from "./display-cart-item-title"
 import { CartCheckout } from "./cart-checkout"
 import type { CartItem } from "./cart-item"
 import { useCart } from "./use-cart"
 
 const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" })
 
-function itemLabel({ title, variantTitle }: CartItem) {
+function itemLabel(item: CartItem) {
+  const title = displayCartItemTitle(item)
+  const variantTitle = displayColorName(item.variantTitle)
   return title.endsWith(` – ${variantTitle}`) ? title : `${title}, ${variantTitle}`
 }
 
@@ -67,7 +71,7 @@ export function CartContent({ cancelled = false }: { cancelled?: boolean }) {
               <li key={`${item.productId}:${item.variantId}`} className="flex gap-4 py-6 sm:gap-6">
                 <Link
                   href={`/shop/${item.productId}`}
-                  aria-label={`View ${item.title}`}
+                  aria-label={`View ${displayCartItemTitle(item)}`}
                   className="block h-fit w-24 shrink-0 overflow-hidden rounded-xl bg-white sm:w-32"
                 >
                   {item.image ? (
@@ -89,11 +93,11 @@ export function CartContent({ cancelled = false }: { cancelled?: boolean }) {
                 <div className="min-w-0 flex-1">
                   <h3 className="text-lg leading-6 font-bold">
                     <Link href={`/shop/${item.productId}`} className="hover:underline">
-                      {item.title}
+                      {displayCartItemTitle(item)}
                     </Link>
                   </h3>
-                  {itemLabel(item) !== item.title ? (
-                    <p className="mt-2 text-sm leading-5 text-foreground/70">{item.variantTitle}</p>
+                  {itemLabel(item) !== displayCartItemTitle(item) ? (
+                    <p className="mt-2 text-sm leading-5 text-foreground/70">{displayColorName(item.variantTitle)}</p>
                   ) : null}
                   <p className="mt-2 text-sm font-semibold">{usd.format(item.unitAmount / 100)} each</p>
                   <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">

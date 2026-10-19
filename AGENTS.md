@@ -28,6 +28,7 @@ For updates after initial setup, follow the [store update contract](docs/store-u
 ## Organization and naming
 
 Follow [docs/architecture.md](docs/architecture.md) for the folder map, import boundaries, examples, and exact exceptions.
+See [color names and shop filters](docs/color-filters.md) for provider identities, display labels, and shade-family mapping.
 
 - Keep routing, page composition, and global styles in `src/app/`. Put route-owned presentation in that segment's `_components/`; only that segment and its descendants may use it.
 - Keep feature-owned behavior together in `src/features/<feature>/`. Start flat and create subfolders only for responsibilities that actually need them.

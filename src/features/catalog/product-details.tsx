@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useEffect, useId, useRef, useState } from "react"
 
+import { displayColorName } from "@/lib/display-color-name"
 import { ColorPicker } from "@/components/color-picker"
 import { trackStoreEvent } from "@/features/analytics/track-store-event"
 import { metaPixel } from "@/features/analytics/meta-pixel"
@@ -95,7 +96,7 @@ export function ProductDetails({
       productId: product.id,
       variantId: variant.id,
       title,
-      variantTitle: variant.title,
+      variantTitle: displayColorName(variant.title),
       // The artwork URL alone would lose its garment-color background in the cart.
       image: selectedImage?.src,
       unitAmount: variant.price,
@@ -117,6 +118,7 @@ export function ProductDetails({
       <ProductImageGallery
         key={`${product.id}-${color}`}
         title={title}
+        colorNames={product.colors.map(({ name }) => name)}
         images={images}
         artwork={artwork && artworkColor ? { ...artwork, backgroundColor: artworkColor } : null}
         placeholder={color ? "No photo for this color yet" : "Product image coming soon"}
@@ -184,7 +186,8 @@ export function ProductDetails({
             <div id={availabilityNoteId} role="status" aria-live="polite" aria-atomic="true">
               {unavailableSize && (
                 <p className="mt-3 text-sm">
-                  {unavailableSize} isn’t available in {color}. Choose another size or color.
+                  {unavailableSize} isn’t available in {color ? displayColorName(color) : color}. Choose another size or
+                  color.
                 </p>
               )}
             </div>

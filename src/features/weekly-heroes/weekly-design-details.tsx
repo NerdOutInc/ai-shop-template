@@ -1,8 +1,11 @@
 import Link from "next/link"
 
+import { displayColorText } from "@/lib/display-color-text"
+import { displayColorName } from "@/lib/display-color-name"
 import { JsonLdScript } from "@/components/json-ld-script"
 import { listCadenceSlots } from "@/features/publishing/list-cadence-slots"
 import { formatStoreMoment } from "@/lib/format-store-moment"
+
 import type { WeeklyHeroProduct } from "./read-weekly-hero-products.server"
 
 export function WeeklyDesignDetails({
@@ -32,11 +35,11 @@ export function WeeklyDesignDetails({
             <li key={product.id}>
               <Link href={product.href} tabIndex={-1}>
                 {product.title}
-                {product.color ? ` — ${product.color}` : ""}
+                {product.color ? ` — ${displayColorName(product.color)}` : ""}
               </Link>
               {product.image && (
                 <a href={product.image.src} tabIndex={-1}>
-                  View {product.image.alt} photo
+                  View {displayColorText(product.image.alt, product.color ? [product.color] : [])} photo
                 </a>
               )}
             </li>
@@ -68,7 +71,7 @@ export function WeeklyDesignDetails({
                 "@id": new URL(`/shop/${encodeURIComponent(product.id)}#product`, siteUrl).href,
                 name: product.title,
                 url: new URL(product.href, siteUrl).href,
-                ...(product.color ? { color: product.color } : {}),
+                ...(product.color ? { color: displayColorName(product.color) } : {}),
                 ...(product.image ? { image: product.image.src } : {}),
               },
             })),

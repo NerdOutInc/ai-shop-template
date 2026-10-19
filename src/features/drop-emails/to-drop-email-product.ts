@@ -1,3 +1,4 @@
+import { displayColorText } from "@/lib/display-color-text"
 import type { CatalogProduct } from "@/features/catalog/catalog-product"
 import { displayProductTitle } from "@/features/catalog/display-product-title"
 
@@ -8,7 +9,13 @@ export function toDropEmailProduct(product: CatalogProduct): DropEmailProduct {
   return {
     id: product.id,
     title: displayProductTitle(product.title),
-    image: image && { src: image.src, alt: image.alt },
+    image: image && {
+      src: image.src,
+      alt: displayColorText(
+        image.alt,
+        product.colors.map(({ name }) => name)
+      ),
+    },
     price: product.price && { min: product.price.min, max: product.price.max },
   }
 }

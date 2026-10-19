@@ -26,6 +26,19 @@ const product = {
 }
 
 describe("buildProductMetadata", () => {
+  it("cleans the known color in both social image alts while preserving the product name and surrounding prose", () => {
+    const metadata = buildProductMetadata({
+      ...product,
+      title: "The CVC tee",
+      colors: [{ name: "CVC Midnight Navy", hex: "#283244" }],
+      image: { ...product.image, alt: "The CVC tee in CVC Midnight Navy" },
+    })
+    expect(metadata.title).toBe("The CVC tee")
+    const images = [{ url: product.image.src, alt: "The CVC tee in Midnight Navy" }]
+    expect(metadata.openGraph).toMatchObject({ images })
+    expect(metadata.twitter).toMatchObject({ images })
+  })
+
   it("uses the crop profile in search and both social cards without tee or unisex claims", () => {
     const metadata = buildProductMetadata({
       ...product,

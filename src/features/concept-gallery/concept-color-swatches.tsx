@@ -1,5 +1,6 @@
 "use client"
 
+import { displayColorName } from "@/lib/display-color-name"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import type { GarmentColor } from "@/features/design-library/garment-colors"
 import { cn } from "@/lib/cn"
@@ -35,8 +36,8 @@ export function ConceptColorSwatches({
         <ToggleGroupItem
           key={color.name}
           value={color.name}
-          aria-label={color.name}
-          title={color.name}
+          aria-label={displayColorName(color.name)}
+          title={displayColorName(color.name)}
           className="size-11 min-w-11 rounded-full p-2 data-pressed:bg-transparent"
         >
           <span

@@ -1,3 +1,4 @@
+import { displayColorName } from "@/lib/display-color-name"
 import type { CatalogProduct } from "@/features/catalog/catalog-product"
 import type { GarmentFeedProfile } from "@/features/garment-catalog/garment-feed-profile-schema"
 import type { parsePrintifyProduct } from "@/lib/printify/parse-printify-product"
@@ -60,7 +61,7 @@ export function resolveGoogleMerchantCopy(
         continue
       }
       try {
-        const content = `${copy.content} Color: ${variant.color}. Size: ${variant.size}.`
+        const content = `${copy.content} Color: ${displayColorName(variant.color)}. Size: ${variant.size}.`
         merchantField("description", content, 5000)
         variants.set(variant.id, {
           content,

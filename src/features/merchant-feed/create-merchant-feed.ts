@@ -1,3 +1,4 @@
+import { displayColorName } from "@/lib/display-color-name"
 import { storeConfig } from "@/lib/store-config"
 import { displayProductTitle } from "@/features/catalog/display-product-title"
 import { displayProductVariantTitle } from "@/features/catalog/display-product-variant-title"
@@ -58,9 +59,14 @@ export function createMerchantFeed(
           merchantField("id", id, 50),
           merchantField("item_group_id", product.id, 50),
           merchantField("item_group_title", title, 150),
-          ...(["color", "size"] as const).map(
-            (attribute) =>
-              `<g:variant_option>${merchantField("name", attribute, 250)}${merchantField("value", variant[attribute], 250)}</g:variant_option>`
+          ...(
+            [
+              ["color", displayColorName(variant.color)],
+              ["size", variant.size],
+            ] as const
+          ).map(
+            ([name, value]) =>
+              `<g:variant_option>${merchantField("name", name, 250)}${merchantField("value", value, 250)}</g:variant_option>`
           ),
           merchantField("title", displayProductVariantTitle(product.title, variant), 150),
           ...(copy?.origin === "generated"
@@ -90,7 +96,7 @@ export function createMerchantFeed(
           merchantField("age_group", apparel.ageGroup, 20),
           merchantField("gender", apparel.gender, 20),
           merchantField("size_system", apparel.sizeSystem, 20),
-          merchantField("color", variant.color, 100),
+          merchantField("color", displayColorName(variant.color), 100),
           merchantField("size", variant.size, 100),
           "</item>",
         ].join("")
