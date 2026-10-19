@@ -8,10 +8,11 @@
     "reviewedThroughSourceCommit": "3c7b7b1b88116bec2867bf6a4f3c8acdb775ccb2",
     "firstParentCommitCount": 39,
     "reviewedAt": "2026-10-18",
-    "boundary": "The provenance record covers extraction through afterSourceCommit. This ledger accounts for the subsequent thirty-nine first-parent commits through merged source PR #203. Reviewed does not mean merged into the template, released or deployed; receiving merge receipts and unresolved production proof remain separate. Source PRs #205 and #210 are reviewed separately as scoped forward ports in additionalReviewedSourceCommits; the contiguous review boundary and count above are unchanged.",
+    "boundary": "The provenance record covers extraction through afterSourceCommit. This ledger accounts for the subsequent thirty-nine first-parent commits through merged source PR #203. Reviewed does not mean merged into the template, released or deployed; receiving merge receipts and unresolved production proof remain separate. Source PRs #205, #209 and #210 are reviewed separately as scoped forward ports in additionalReviewedSourceCommits; the contiguous review boundary and count above are unchanged.",
     "additionalReviewedSourceCommits": [
       "5f428aa9b4d501269b8f5be1491e2ff4ce087a06",
-      "dbd476f3b34c01cb6b9c21b41581a953f8f500ab"
+      "dbd476f3b34c01cb6b9c21b41581a953f8f500ab",
+      "c53bd4ca460fa2be65bddc7784007cb5c5195aa5"
     ]
   },
   "dispositions": [
@@ -914,6 +915,32 @@
       "sourcePullRequestNumber": 210,
       "reviewedAt": "2026-10-19",
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/69"
+    },
+    {
+      "sourceCommit": "c53bd4ca460fa2be65bddc7784007cb5c5195aa5",
+      "parentCommit": "4a5f998dd63f1aa66807642e59c07b1f5c0df7a9",
+      "disposition": "accepted",
+      "classification": "retina-weekly-hero-exports",
+      "paths": [
+        "src/features/weekly-heroes/upload-hero-image.server.ts",
+        "src/features/weekly-heroes/weekly-hero-editor.tsx",
+        "src/features/weekly-heroes/weekly-hero-poster.tsx",
+        "next.config.ts",
+        "scripts/artwork/export-weekly-hero-upload-packs.mjs",
+        "scripts/artwork/read-weekly-hero-package.mjs",
+        "scripts/artwork/render-weekly-hero.mjs",
+        "scripts/artwork/verify-final-weekly-hero.mjs",
+        "docs/weekly-hero-admin.md",
+        "docs/weekly-hero-agent-workflow.md",
+        "docs/weekly-hero-images.md",
+        "assets/heroes/README.md"
+      ],
+      "reason": "Selected port of source PR #209 after the earlier contiguous review boundary. Adopt Retina upload minima, original-layer assembly and exact replay, adapted to ignored staging restored from private storage, per-garment artwork and the receiving edge-quantization contract. Preserve current-eligibility checks and private revalidation; explicitly exclude application asset routes from the optimizer instead of adopting persistent optimized delivery. All merchant images, compositions, release receipts, IDs, offer copy and schedules remain excluded.",
+      "evidence": "Reviewed merged source commit and receiving private-storage, original-artwork, geometry and withdrawal contracts. Source rendering/library inputs are hash checked; output verification compares decoded pixels and exact WebP bytes. No source history imported.",
+      "templateCommit": null,
+      "followUp": "Prepared in template PR #70. Exact-head hosted Required checks are recorded on the PR; receiving merge and any deployment are separate. No migration, remote upload, source-store asset rebuild or schedule mutation.",
+      "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/70",
+      "assessedAgainstTemplateCommit": "f4d28f5bbeaaadaf644c4e56c9f0a84744e270ec"
     }
   ],
   "outboundPorts": [],

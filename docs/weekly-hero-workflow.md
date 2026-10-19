@@ -41,3 +41,9 @@ PR #55 records the adaptation, migration identity and verification in its source
 | Deployment and evidence            | An authorized migration and deployment are distinct from a code merge. Test draft/future privacy, current-week eligibility, stale saves, time-zone boundaries and changed visibility; verify the saved preview and actual live state separately.  |
 
 Keep receiving-store rollout scoped to the runtime and necessary schema/configuration changes. It does not need another store's product photographs, model portraits, concept archive or hardcoded weekly product IDs. Verify migration, configuration, saved preview and current publication state in the receiving store before describing a concept package as scheduled or live.
+
+## Retina export follow-up
+
+Source PR #209 (`c53bd4ca460fa2be65bddc7784007cb5c5195aa5`) contributes the original-layer Retina export and upload requirements. The receiving adaptation is documented in [private Retina exports](weekly-hero-exports.md). It uses ignored staging restored from private storage, per-garment original artwork, the template’s edge quantization and exact replay checks. No merchant assets or release receipts are imported.
+
+The template continues serving eligible originals through its revocable route. Its optimizer allowlist blocks application asset routes; it does not adopt the source’s persistent optimizer caching or quality settings. Existing heroes keep their approvals and schedules. There is no migration, provider change, automatic upload, or publication step in this port. The source-port ledger records this selected follow-up independently of its earlier contiguous review boundary.

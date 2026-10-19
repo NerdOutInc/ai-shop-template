@@ -37,12 +37,12 @@ export async function uploadHeroImage(request: Request, actor: string) {
   if (metadata.orientation && metadata.orientation !== 1)
     throw new WeeklyHeroError("Export the image with its rotation applied first.")
   const ratio = kind === "desktop" ? 3 : 4 / 7
-  const minWidth = kind === "desktop" ? 1800 : 800
+  const minWidth = kind === "desktop" ? 6144 : 2100
   if (metadata.width < minWidth || Math.abs(metadata.width / metadata.height - ratio) > 0.005)
     throw new WeeklyHeroError(
       kind === "desktop"
-        ? "Use a 3:1 desktop panorama at least 1800 pixels wide."
-        : "Use a separate 4:7 mobile composition at least 800 pixels wide."
+        ? "Use a 3:1 desktop panorama at least 6144 pixels wide, composed from original layers."
+        : "Use a separate 4:7 mobile composition at least 2100 pixels wide, composed from original layers."
     )
   try {
     await sharp(bytes, { limitInputPixels: 40_000_000, failOn: "truncated" }).timeout({ seconds: 5 }).stats()

@@ -188,9 +188,9 @@ export function WeeklyHeroEditor({
               />
               <span className="text-sm text-muted-foreground">
                 {kind === "desktop"
-                  ? "At least 1800px wide. Keep essential text and linked products in the central half."
-                  : "At least 800px wide. Design for phones; do not crop the desktop poster."}{" "}
-                Include all lettering and shop labels. Maximum 3 MB per image.
+                  ? "At least 6144px wide. Keep essential text and linked products in the central half."
+                  : "At least 2100px wide. Design for phones; do not crop the desktop poster."}{" "}
+                Compose from original layers and include all lettering and shop labels. Maximum 3 MB per image.
               </span>
             </label>
           ))}

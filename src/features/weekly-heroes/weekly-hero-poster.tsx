@@ -18,6 +18,7 @@ export function WeeklyHeroPoster({ hero, privatePreview = false }: { hero: Weekl
       alt: hero.manifest.alt,
       loading: "eager",
       fetchPriority: "high",
+      // Serve the Retina original through eligibility checks, including after withdrawal.
       unoptimized: true,
     }).props
   const layout = getWeeklyHeroLayout()
