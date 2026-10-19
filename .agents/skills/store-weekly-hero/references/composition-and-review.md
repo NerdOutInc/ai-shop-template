@@ -14,11 +14,19 @@ Only add a ban on people, hands or props if the project's brief calls for one. I
 
 ## A responsive example, not a universal setting
 
-A renderer may use a 3:1 desktop panorama whose middle half remains visible on ordinary screens and whose outer quarters reveal scenery on wide screens. For a 2400 × 800 source, that safe center is x = 600 through 1800. Headline, offer, whole products and their shop labels must fit inside it. The scenery should continue naturally into the sides, not become padded bands or blurred duplicate wings.
+A renderer may use a 3:1 desktop panorama whose middle half remains visible on ordinary screens and whose outer quarters reveal scenery on wide screens. For a 6144 × 2048 export, that safe center is x = 1536 through 4608. Headline, offer, whole products and their shop labels must fit inside it. The scenery should continue naturally into the sides, not become padded bands or blurred duplicate wings.
 
 The same renderer may use an independent 4:7 mobile composition. Arrange its type, merchandise and links deliberately. Shrinking the desktop poster or putting a detached block of text above it often loses the composition's hierarchy. Neither ratio is a requirement of this skill: inspect the target before choosing it.
 
 [The illustrative layout](hero-layout.svg) shows source coordinates and safe regions. It is a schematic with no real products or brand assets. [The layout helper](layout-helper.md) converts final measured pixel rectangles using the **full source canvas**, not only the desktop's safe center.
+
+## Match the display density
+
+Read the actual frame size before choosing export dimensions. For a panorama displayed at up to 3072 CSS pixels, export at least 6144 pixels wide for 2× density. A portrait displayed up to 700 CSS pixels needs 2100 pixels for 3× density. The template’s runtime uses these minimums; another host may need different dimensions.
+
+Sample the original approved ink, photographic blanks and separate lettering directly at the final canvas resolution. Never resize a previous flattened hero or already printed garment to create the master. Preserve floating-point placement until final rasterization, following the garment guide’s edge-quantization rule. Keep promotional type as separate high-resolution layers and request the largest native scenery available. Record any baked-in lettering or scenery whose native detail remains limited; bigger dimensions alone do not create detail.
+
+Inspect the source and served image at 100% physical pixels on wide 2× and narrow 3× displays, as well as the full composition. Check actual selected source dimensions and byte size. Private previews may intentionally bypass an optimizer: do not enable persistent caching around a revocable image endpoint.
 
 ## Inspect before multiplying a mistake
 
