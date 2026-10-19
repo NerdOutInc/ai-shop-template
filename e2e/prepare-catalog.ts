@@ -1,3 +1,4 @@
+import { assertIsolatedDatabase } from "../test/assert-isolated-database"
 import { storeConfig } from "../test/store-config"
 import { parsePrintifyProduct } from "@/lib/printify/parse-printify-product"
 import { productionFingerprintVersion } from "@/lib/printify/production-fingerprint-version"
@@ -12,14 +13,7 @@ import { withheldCatalogProducts } from "./withheld-catalog-products"
 /** "Fixture Newest Design", shown after this week's drop began. */
 const newestDesignIndex = 2
 
-const url = new URL(process.env.CATALOG_E2E_DATABASE_URL ?? "http://missing-database")
-if (
-  !["postgres:", "postgresql:"].includes(url.protocol) ||
-  !["localhost", "127.0.0.1"].includes(url.hostname) ||
-  url.pathname !== "/store_catalog_e2e" ||
-  url.search
-)
-  throw new Error("CATALOG_E2E_DATABASE_URL must use the isolated local store_catalog_e2e database")
+const url = assertIsolatedDatabase(process.env.CATALOG_E2E_DATABASE_URL, "store_catalog_e2e")
 const pool = await createAdminDatabaseFixture(url.toString())
 try {
   await applyAllMigrations(pool)

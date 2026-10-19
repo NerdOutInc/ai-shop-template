@@ -7,6 +7,8 @@ import { createAdminDatabaseFixture } from "../../../test/create-admin-database-
 import { Pool } from "pg"
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 
+import { getSharedPostgresPool } from "@/lib/get-shared-postgres-pool.server"
+
 import type { CheckoutOrder, CheckoutPayment, OrderStore, StoredOrder } from "./checkout-order"
 import { PrintifyClient } from "./printify-client.server"
 
@@ -67,6 +69,42 @@ describe.skipIf(!databaseUrl)("Postgres checkout durability", () => {
     await firstStore?.close()
     await secondStore?.close()
     await pool?.end()
+  })
+
+  it("keeps duplicate-order exclusion while the shared request pool is saturated", async () => {
+    vi.stubGlobal("storePostgresPools", new Map())
+    const requests = getSharedPostgresPool(databaseUrl!, "requests")
+    const admin = getSharedPostgresPool(databaseUrl!, "admin")
+    const signups = getSharedPostgresPool(databaseUrl!, "signups")
+    const admission = getSharedPostgresPool(databaseUrl!, "admission")
+    const checkout = getSharedPostgresPool(databaseUrl!, "checkout")
+    const first = new PostgresOrderStore(databaseUrl!, checkout)
+    const second = new PostgresOrderStore(databaseUrl!, getSharedPostgresPool(databaseUrl!, "checkout"))
+    const occupied = []
+    const requestId = randomUUID()
+    try {
+      occupied.push(...(await Promise.all([admin.connect(), admin.connect(), signups.connect(), admission.connect()])))
+      // Saturated admin and signup budgets leave storefront reads available.
+      expect((await requests.query("select 1 as available")).rows[0].available).toBe(1)
+      occupied.push(...(await Promise.all([requests.connect(), requests.connect()])))
+      expect(getSharedPostgresPool(databaseUrl!, "requests")).toBe(requests)
+      // Saturating the non-checkout request budgets cannot take an order lock's connection.
+      await first.withLock(requestId, async () => {
+        await expect(second.withLock(requestId, async () => "duplicate")).rejects.toMatchObject({
+          code: "ORDER_BUSY",
+        })
+        await second.withLock(randomUUID(), async (record) => expect(await record.get()).toBeNull())
+      })
+      // A store borrowing a runtime pool does not own its lifetime.
+      await first.close()
+      await second.withLock(requestId, async (record) => expect(await record.get()).toBeNull())
+      expect(checkout.totalCount).toBeLessThanOrEqual(4)
+    } finally {
+      occupied.forEach((client) => client.release())
+      await second.close()
+      await Promise.all([requests.end(), admin.end(), signups.end(), admission.end(), checkout.end()])
+      vi.unstubAllGlobals()
+    }
   })
 
   it("pins one commerce identity across competing instances and survives reconnects", async () => {

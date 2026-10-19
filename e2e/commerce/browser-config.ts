@@ -1,16 +1,10 @@
+import { assertIsolatedDatabase } from "../../test/assert-isolated-database"
 import { devices, type PlaywrightTestConfig } from "@playwright/test"
 
 import { commerceTestConfig as config } from "./test-config"
 
 export function commerceBrowserConfig(): PlaywrightTestConfig {
-  const database = new URL(config.databaseUrl || "http://missing-database")
-  if (
-    !["postgres:", "postgresql:"].includes(database.protocol) ||
-    !["localhost", "127.0.0.1"].includes(database.hostname) ||
-    database.pathname !== "/store_catalog_e2e" ||
-    database.search
-  )
-    throw new Error("Use the isolated local store_catalog_e2e database for commerce E2E")
+  assertIsolatedDatabase(config.databaseUrl, "store_catalog_e2e")
 
   return {
     testDir: "./e2e/commerce",

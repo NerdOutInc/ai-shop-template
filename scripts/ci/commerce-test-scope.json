@@ -17,6 +17,7 @@
     "src/features/checkout/create-checkout-ingress.server.test.ts",
     "src/features/checkout/create-checkout.server.test.ts",
     "src/features/checkout/fulfill-checkout.server.test.ts",
+    "src/features/checkout/get-commerce-services.server.test.ts",
     "src/features/checkout/postgres-checkout-capacity.server.test.ts",
     "src/features/checkout/postgres-order-store.server.test.ts",
     "src/features/checkout/protect-checkout-request.server.test.ts",

@@ -3,7 +3,7 @@ import "server-only"
 import { createHash } from "node:crypto"
 import { isDeepStrictEqual } from "node:util"
 
-import type { PoolClient } from "pg"
+import type { Pool, PoolClient } from "pg"
 
 import { readGoogleCopyProvenance } from "@/features/merchant-feed/read-google-copy-provenance.server"
 import { validateGoogleCopyApproval } from "@/features/merchant-feed/validate-google-copy-approval"
@@ -44,12 +44,13 @@ export class PostgresPublishingStore implements PublishingStore {
 
   constructor(
     connectionString: string,
-    private readonly shopId: string
+    private readonly shopId: string,
+    private readonly sharedPools?: { requests: Pool; worker: Pool }
   ) {
     if (!/^[1-9]\d*$/.test(shopId)) throw new Error("A Printify shop is required")
-    // Keep the same three-connection budget, reserving intake capacity during provider I/O.
-    this.pool = createPostgresPool(connectionString, 2)
-    this.workerPool = createPostgresPool(connectionString, 1)
+    // Runtime requests share capacity; workers still reserve a separate session for provider I/O.
+    this.pool = sharedPools?.requests ?? createPostgresPool(connectionString, 2)
+    this.workerPool = sharedPools?.worker ?? createPostgresPool(connectionString, 1)
     this.garments = new PostgresGarmentStore(this.pool, shopId)
     this.productSchedule = new PostgresProductScheduleStore(this.pool, shopId)
     this.weeklyHeroes = new WeeklyHeroStore(this.pool, shopId)
@@ -826,6 +827,6 @@ export class PostgresPublishingStore implements PublishingStore {
   }
 
   async close() {
-    await Promise.all([this.pool.end(), this.workerPool.end()])
+    if (!this.sharedPools) await Promise.all([this.pool.end(), this.workerPool.end()])
   }
 }

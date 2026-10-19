@@ -6,8 +6,8 @@ import { attachPostgresPoolLifecycle } from "./attach-postgres-pool-lifecycle.se
 import { env } from "./env"
 import { postgresConnectionConfig } from "./postgres-connection-config.server"
 
-export function createPostgresPool(connectionString: string, maxConnections = 3) {
-  if (!Number.isInteger(maxConnections) || maxConnections < 1 || maxConnections > 3)
+export function createPostgresPool(connectionString: string, maxConnections = 3, purpose = "standalone") {
+  if (!Number.isInteger(maxConnections) || maxConnections < 1 || maxConnections > 4)
     throw new Error("Use a bounded Postgres connection pool")
   const pool = new Pool({
     ...postgresConnectionConfig(connectionString, env.DATABASE_SSL_CA),
@@ -17,6 +17,6 @@ export function createPostgresPool(connectionString: string, maxConnections = 3)
     query_timeout: 10_000,
   })
   attachPostgresPoolLifecycle(pool)
-  pool.on("error", () => console.error("Publishing database connection unavailable"))
+  pool.on("error", () => console.error("Database connection unavailable", { purpose }))
   return pool
 }

@@ -18,8 +18,13 @@ export class PostgresCheckoutCapacity {
 
   constructor(
     connectionString: string,
-    private readonly options: { secret?: string; vercel: boolean; certificate?: string; limits?: string }
+    private readonly options: { secret?: string; vercel: boolean; certificate?: string; limits?: string },
+    private readonly sharedPool?: Pool
   ) {
+    if (sharedPool) {
+      this.pool = sharedPool
+      return
+    }
     this.pool = new Pool({
       ...postgresConnectionConfig(connectionString, options.certificate),
       max: 1,
@@ -112,6 +117,6 @@ export class PostgresCheckoutCapacity {
   }
 
   async close() {
-    await this.pool.end()
+    if (!this.sharedPool) await this.pool.end()
   }
 }

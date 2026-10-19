@@ -192,6 +192,8 @@ Before asking the owner to enter a password, install PostgreSQL's client tools f
 
 Use a direct connection or the Supabase **session pooler on port 5432**. Transaction pooling on 6543 cannot preserve the session advisory locks and is rejected. Non-loopback URLs require `sslmode=verify-full`; Supabase hosts require the full provider CA PEM in `DATABASE_SSL_CA` or a readable runtime `sslrootcert` file. Other providers require their CA whenever it is not already trusted. Preserve line breaks and do not disable certificate verification to suppress an error. Connection URL `host` or `port` overrides are rejected. [Supabase connection options](https://supabase.com/docs/guides/database/connecting-to-postgres) describe the current provider choices.
 
+The application shares bounded pools by workload within each process. Review [connection budgets and isolated load testing](connection-pooling.md) before sizing the deployment; session-locked checkout and fulfillment must retain a session connection.
+
 Reconnect through the actual runtime connection, using a private password prompt, and inspect only role/privilege metadata:
 
 ```sql

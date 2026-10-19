@@ -2,7 +2,7 @@ import "server-only"
 
 import type { Pool } from "pg"
 import { getCommerceServices } from "@/features/checkout/get-commerce-services.server"
-import { createPostgresPool } from "@/lib/create-postgres-pool.server"
+import { getSharedPostgresPool } from "@/lib/get-shared-postgres-pool.server"
 import { env } from "@/lib/env"
 import { processOrderAlerts } from "./process-order-alerts.server"
 import { readOrderPayment } from "./read-order-payment.server"
@@ -22,7 +22,7 @@ export async function runOrderAlerts() {
     throw new Error("Owner alerts are not configured")
   const services = getCommerceServices()
   if (!services.expectedLivemode) throw new Error("Owner alerts require live payment reads")
-  pool ??= createPostgresPool(env.DATABASE_URL, 1)
+  pool ??= getSharedPostgresPool(env.DATABASE_URL, "alerts")
   return processOrderAlerts({
     pool,
     shopId: env.PRINTIFY_SHOP_ID,
