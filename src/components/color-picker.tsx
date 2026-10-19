@@ -1,5 +1,7 @@
 "use client"
 
+import { displayColorName } from "@/lib/display-color-name"
+
 type ColorOption = { value: string; name: string; hex?: string | null; disabled?: boolean }
 
 export function ColorPicker({
@@ -13,12 +15,13 @@ export function ColorPicker({
   onChange: (value: string) => void
   disabled?: boolean
 }) {
+  const selected = colors.find((color) => color.value === value)
   return (
     <fieldset className="product-option" disabled={disabled}>
       <legend>
         Color{" "}
         <span className="ml-1 text-sm font-normal text-muted-foreground">
-          {colors.find((color) => color.value === value)?.name}
+          {selected ? displayColorName(selected.name) : null}
         </span>
       </legend>
       <div className="product-colors">
@@ -27,8 +30,8 @@ export function ColorPicker({
             type="button"
             className="color-option"
             key={color.value}
-            title={color.name}
-            aria-label={color.name}
+            title={displayColorName(color.name)}
+            aria-label={displayColorName(color.name)}
             aria-pressed={value === color.value}
             disabled={color.disabled}
             onClick={() => onChange(color.value)}

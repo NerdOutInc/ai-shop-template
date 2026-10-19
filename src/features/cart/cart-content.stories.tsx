@@ -1,9 +1,9 @@
-import { configuredStoreConfig } from "../../../test/configured-store-config"
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect } from "storybook/test"
 
 import { storeConfig } from "@/lib/store-config"
 
+import { configuredStoreConfig } from "../../../test/configured-store-config"
 import { CartContent } from "./cart-content"
 import { CartProvider } from "./cart-provider"
 
@@ -53,6 +53,34 @@ const meta = {
 
 export default meta
 type Story = StoryObj<typeof meta>
+
+export const SavedProviderColor: Story = {
+  beforeEach: () =>
+    window.localStorage.setItem(
+      "your-store-cart-v1",
+      JSON.stringify({
+        ...cart,
+        entries: [
+          { ...cart.entries[0]!, title: "The CVC tee", variantTitle: "CVC Midnight Navy / M" },
+          {
+            ...cart.entries[0]!,
+            entryId: "legacy-meta-shirt",
+            productId: "bbbbbbbbbbbbbbbbbbbbbbbb",
+            title: "Another CVC tee – CVC Midnight Navy / M",
+            variantTitle: "CVC Midnight Navy / M",
+          },
+        ],
+      })
+    ),
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("Midnight Navy / M", { exact: true })).toBeVisible()
+    await expect(canvas.getByRole("heading", { name: "The CVC tee" })).toBeVisible()
+    await expect(canvas.getByRole("heading", { name: "Another CVC tee – Midnight Navy / M" })).toBeVisible()
+    await expect(
+      canvas.getByRole("button", { name: "Increase quantity of The CVC tee, Midnight Navy / M" })
+    ).toBeEnabled()
+  },
+}
 
 export const Populated: Story = {
   play: async ({ canvas, userEvent }) => {

@@ -25,6 +25,22 @@ const product = (overrides: Partial<CatalogProduct> = {}): CatalogProduct => ({
 })
 
 describe("toDropEmailProduct", () => {
+  it("cleans known provider shades in email alt text without editing prose or the source photo", () => {
+    const original = product({
+      title: "The CVC tee",
+      colors: [{ name: "CVC Midnight Navy", hex: "#283244" }],
+      image: {
+        src: "https://example.com/tee.jpg",
+        alt: "The CVC tee in CVC Midnight Navy, beside cvc black lettering",
+      },
+    })
+    expect(toDropEmailProduct(original)).toMatchObject({
+      title: "The CVC tee",
+      image: { alt: "The CVC tee in Midnight Navy, beside cvc black lettering" },
+    })
+    expect(original.image?.alt).toBe("The CVC tee in CVC Midnight Navy, beside cvc black lettering")
+  })
+
   it("keeps only what the email shows, with the shop's display title", () => {
     expect(toDropEmailProduct(product())).toEqual({
       id: "0a1b2c3d4e5f60718293a4b5",

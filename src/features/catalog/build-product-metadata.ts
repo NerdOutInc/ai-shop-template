@@ -1,5 +1,7 @@
-import { storeConfig } from "@/lib/store-config"
 import type { Metadata } from "next"
+
+import { displayColorText } from "@/lib/display-color-text"
+import { storeConfig } from "@/lib/store-config"
 
 import type { CatalogProduct } from "./catalog-product"
 import { displayProductTitle } from "./display-product-title"
@@ -34,7 +36,15 @@ export function buildProductMetadata(product: CatalogProduct): Metadata {
   const introduction = fitIntroduction(getProductIntroduction(product), descriptionLimit - garmentContext.length - 1)
   const description = `${introduction} ${garmentContext}`
   const images = product.image
-    ? [{ url: product.image.src, alt: product.image.alt }]
+    ? [
+        {
+          url: product.image.src,
+          alt: displayColorText(
+            product.image.alt,
+            product.colors.map(({ name }) => name)
+          ),
+        },
+      ]
     : [{ url: "/opengraph-image", alt: storeConfig.description }]
 
   return {

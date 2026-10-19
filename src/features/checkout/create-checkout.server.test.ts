@@ -25,6 +25,19 @@ beforeEach(() => {
 })
 
 describe("createCheckout", () => {
+  it("cleans Stripe color labels while retaining the official order snapshot and variant metadata", async () => {
+    const fixture = hostedFixture()
+    const item = { ...fixture.order.items[0]!, variantLabel: "CVC Midnight Navy / M" }
+    vi.mocked(readCheckoutItems).mockResolvedValue([item])
+    await createCheckout(fixture.services, fixture.request)
+    const params = vi.mocked(fixture.stripe.checkout.sessions.create).mock.calls[0]![0]
+    expect(params?.line_items?.[0]?.price_data?.product_data).toMatchObject({
+      name: `${item.title} — Midnight Navy / M`,
+      metadata: { product_id: item.productId, variant_id: String(item.variantId) },
+    })
+    expect(fixture.getStored()?.order.items[0]).toEqual(item)
+  })
+
   it.each([
     [495, 0],
     [0, 795],

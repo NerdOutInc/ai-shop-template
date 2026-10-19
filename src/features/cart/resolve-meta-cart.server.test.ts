@@ -94,18 +94,20 @@ describe("Meta cart catalog resolution", () => {
     {
       title: "Sample Conversation — Fixture Store | Next Level 6210",
       color: "CVC Midnight Navy",
-      expectedTitle: "Sample Conversation – CVC Midnight Navy / M",
+      expectedTitle: "Sample Conversation – Midnight Navy / M",
+      expectedVariantTitle: "Midnight Navy / M",
       expectedOtherTitle: "Sample Conversation – Clay / XL",
     },
     {
       title: "<Keep> & \"Going\" 'Together' — Fixture Store | Next Level 6210",
       color: 'Black & "White"',
+      expectedVariantTitle: 'Black & "White" / M',
       expectedTitle: '<Keep> & "Going" \'Together\' – Black & "White" / M',
       expectedOtherTitle: "<Keep> & \"Going\" 'Together' – Clay / XL",
     },
   ])(
     "matches decoded feed names by exact item ID for $title",
-    async ({ title, color, expectedTitle, expectedOtherTitle }) => {
+    async ({ title, color, expectedTitle, expectedOtherTitle, expectedVariantTitle }) => {
       const current: CatalogProduct = {
         ...product,
         title,
@@ -139,7 +141,7 @@ describe("Meta cart catalog resolution", () => {
           productId: product.id,
           variantId: 1001,
           title: expectedTitle,
-          variantTitle: `${color} / M`,
+          variantTitle: expectedVariantTitle,
           image: "https://example.com/black.jpg",
           unitAmount: 2800,
           quantity: 4,

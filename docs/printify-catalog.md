@@ -24,6 +24,9 @@ The admin **Products** page (`/admin/products`) controls Featured order. Drag a 
 
 ## Display and refresh behavior
 
+Official color names remain provider identities; shopper labels remove CVC and shop filters group
+shades into families. See [color names and shop filters](color-filters.md) for the display rules and mapping.
+
 - Prices are saved USD retail cents. Available options require both `is_enabled` and `is_available`. Product detail can show enabled unavailable combinations without allowing their purchase.
 - A product with no available variants stays visible as Currently unavailable. Equal prices show one amount; differing prices show From. Descriptions become plain text, with supported size-guide tables parsed into safe rows and cells.
 - The selected Primary mockup determines the initial image/color. Galleries retain variant associations and Printify color names. Approved transparent artwork previews are pinned to the exact immutable revision and production fingerprint. Private masters never enter public presentation models.

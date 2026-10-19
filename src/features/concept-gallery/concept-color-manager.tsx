@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 
+import { displayColorName } from "@/lib/display-color-name"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { GARMENT_COLORS } from "@/features/design-library/garment-colors"
@@ -72,7 +73,7 @@ export function ConceptColorManager({
         <p className="text-sm">
           {selected ? (
             <>
-              <span className="font-semibold">{selected}</span>
+              <span className="font-semibold">{displayColorName(selected)}</span>
               {isOffered ? " is one of the five." : " is not offered yet."}
             </>
           ) : (
@@ -92,7 +93,7 @@ export function ConceptColorManager({
       </div>
       {selected && !isOffered && full && (
         <p className="text-sm text-muted-foreground">
-          This design already offers five colors. Remove one before adding {selected}.
+          This design already offers five colors. Remove one before adding {displayColorName(selected)}.
         </p>
       )}
       {error && (

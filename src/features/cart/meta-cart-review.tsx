@@ -11,6 +11,7 @@ import { calculateCartShipping } from "@/features/checkout/calculate-cart-shippi
 import { storeConfig } from "@/lib/store-config"
 import { cartLimits } from "@/lib/cart-limits"
 
+import { displayCartItemTitle } from "./display-cart-item-title"
 import { CartContent } from "./cart-content"
 import type { CartItem } from "./cart-item"
 import { useCart } from "./use-cart"
@@ -108,7 +109,7 @@ export function MetaCartReview({ items, importKey }: { items: CartItem[]; import
                 />
               ) : null}
               <div className="min-w-0">
-                <h3 className="text-lg font-bold">{item.title}</h3>
+                <h3 className="text-lg font-bold">{displayCartItemTitle(item)}</h3>
                 <p className="mt-2 text-sm">Quantity: {item.quantity}</p>
                 <p className="mt-2 text-sm font-semibold">{usd.format(item.unitAmount / 100)} each</p>
               </div>

@@ -110,6 +110,28 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+export const CleanColorNames: Story = {
+  args: {
+    product: {
+      ...product,
+      colors: [{ name: "CVC Midnight Navy", hex: "#283244" }],
+      variants: [{ ...product.variants[1]!, color: "CVC Midnight Navy", title: "CVC Midnight Navy / S" }],
+    },
+  },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Midnight Navy" }))
+    await userEvent.click(canvas.getByRole("button", { name: "S" }))
+    await expect(new URLSearchParams(canvas.getByTestId("product-selection-url").dataset.search).get("color")).toBe(
+      "CVC Midnight Navy"
+    )
+    await userEvent.click(canvas.getByRole("button", { name: "Add to cart" }))
+    const dialog = within(document.body).getByRole("dialog")
+    await expect(dialog).toHaveTextContent("Midnight Navy / S")
+    await expect(dialog).not.toHaveTextContent("CVC")
+    await userEvent.click(within(dialog).getByRole("button", { name: "Continue shopping" }))
+  },
+}
+
 function productWithPrintifySizeGuide(name: string): CatalogProduct {
   const fixture = printifySizeGuideDescriptions.find((item) => item.name === name)!
   return {
@@ -248,7 +270,7 @@ export const ColorChangeAvailability: Story = {
     await expect(green).toHaveFocus()
     await expect(canvas.getByRole("button", { name: /^M$/ })).toHaveAttribute("aria-pressed", "true")
     await expect(canvas.getByRole("button", { name: "Add to cart" })).toBeEnabled()
-    await userEvent.click(canvas.getByRole("button", { name: "CVC Midnight Navy" }))
+    await userEvent.click(canvas.getByRole("button", { name: "Midnight Navy" }))
     await userEvent.click(canvas.getByRole("button", { name: "5XL" }))
     green.focus()
     await userEvent.keyboard("{Enter}")

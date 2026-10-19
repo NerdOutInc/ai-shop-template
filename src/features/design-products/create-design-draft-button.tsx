@@ -4,6 +4,7 @@ import { Shirt } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 
+import { displayColorName } from "@/lib/display-color-name"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 
@@ -152,7 +153,7 @@ export function CreateDesignDraftButton({
             <dl className="flex flex-col gap-2 text-sm">
               <div>
                 <dt className="font-medium">Colors</dt>
-                <dd className="text-muted-foreground">{proposal.colors.join(", ")}</dd>
+                <dd className="text-muted-foreground">{proposal.colors.map(displayColorName).join(", ")}</dd>
               </div>
               <div>
                 <dt className="font-medium">Sizes and prices</dt>
@@ -186,7 +187,7 @@ export function CreateDesignDraftButton({
                     <ul className="flex flex-col gap-1">
                       {proposal.skipped.map(({ color, size, reason }) => (
                         <li key={`${color}:${size}`}>
-                          {size ? `${color}, ${size}` : color}: {reason}
+                          {size ? `${displayColorName(color)}, ${size}` : displayColorName(color)}: {reason}
                         </li>
                       ))}
                     </ul>
