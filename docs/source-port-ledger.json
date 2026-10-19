@@ -909,10 +909,11 @@
       "reason": "Port broad shade families, same-available-variant color/size filtering, per-pass family lookups and precise display-only shade cleanup. Preserve official provider names, variant URLs, production fingerprints and order snapshots. Retain configured store identity, policy gates, theme tokens, neutral fixtures and existing photo-editor recovery behavior. No provider, schema, dependency or private-asset changes.",
       "evidence": "Selective forward port against template main f4d28f5bbeaaadaf644c4e56c9f0a84744e270ec. Passed 288 focused unit tests, all 657 focused commerce regressions using disposable local PostgreSQL 17 databases and the documented container-supplied psql client, 70 interactive Chromium Storybook checks, and all 131 template tests. Passed template hygiene, immutable migration history and references, structure, lint, typecheck and formatting. Desktop and 390px browser checks verified grouped Blue results, unknown Clay fallback with its original swatch, no horizontal overflow and visible keyboard focus. Preserved template configuration, neutral fixtures, policy and consent gates, storage namespace, gallery recovery, dependency pins and provider identities. These are local/synthetic checks; exact-head hosted Required checks, merge, provider acceptance and deployment remain separate.",
       "templateCommit": null,
-      "followUp": "Prepared on codex/port-color-mapping; receiving PR receipt is added before handoff. Record the merge commit only after an authorized merge; no production rollout is claimed.",
+      "followUp": "Prepared in draft template PR #69. Exact-head hosted Required checks are recorded on the PR and remain distinct from local/synthetic validation. Record the receiving merge commit only after an authorized merge; no production rollout is claimed.",
       "assessedAgainstTemplateCommit": "f4d28f5bbeaaadaf644c4e56c9f0a84744e270ec",
       "sourcePullRequestNumber": 210,
-      "reviewedAt": "2026-10-19"
+      "reviewedAt": "2026-10-19",
+      "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/69"
     }
   ],
   "outboundPorts": [],
