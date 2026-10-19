@@ -1,11 +1,13 @@
 "use client"
 
-import { storeConfig } from "@/lib/store-config"
 import { useState } from "react"
 import { Check } from "lucide-react"
 
+import { storeConfig } from "@/lib/store-config"
+
 import type { CatalogResult } from "./catalog-product"
 import { filterProducts, type CatalogSort } from "./filter-products"
+import { getColorFamily } from "./get-color-family"
 import { ProductCard } from "./product-card"
 import { useCategorySelection } from "./use-category-selection"
 
@@ -40,7 +42,10 @@ export function ProductList({ catalog, initialSort = "featured" }: ProductListPr
             product.variants.some((variant) => variant.available && variant.color === color.name)
           )
         )
-        .map((color) => [color.name, color])
+        .map((color) => {
+          const family = getColorFamily(color.name)
+          return [family.name, { ...family, hex: family.hex ?? color.hex }] as const
+        })
     ).values(),
   ].toSorted((a, b) => a.name.localeCompare(b.name))
   const allSizes = [

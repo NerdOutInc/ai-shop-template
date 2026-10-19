@@ -63,6 +63,8 @@ The next five source merges, through #203, were reviewed on 2026-10-18. The #200
 
 Accepted entries name their template pull request until its merge commit is recorded in the ledger. This is a thirty-nine-commit review, not a claim that every historical or later source change, or any unmerged source work, has been audited. Before each template release, the maintainer checks the source's subsequent first-parent range with read-only access and records each change as accepted, already equivalent, skipped, deferred, conflict or unresolved. Accepted/equivalent entries need destination code and validation evidence; deferred/conflict/unresolved entries need an owner and follow-up. Advance `reviewedThroughSourceCommit` only across a contiguous accounted-for range, including any merged changes inspected within it. It never means every change was integrated. Keep private code, credentials and unreleased security details within their original access boundary.
 
+Source PR #210 is a separate scoped color-mapping port: broad shade-family filters and display-only cleanup of provider color prefixes, including known-shade alt text and legacy cart labels. Its full source/parent SHAs and receiving evidence are recorded in the ledger. This scoped review does not advance the contiguous source-review boundary, and it changes no provider configuration or migration history.
+
 ### Send template fixes back before engine adoption
 
 An existing operating store may have neither shared ancestry nor a template-origin SHA. It still receives relevant fixes through individual reviewed ports; do not postpone security or correctness fixes until stage 4 of the engine pilot.

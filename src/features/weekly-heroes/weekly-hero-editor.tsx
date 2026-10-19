@@ -1,10 +1,13 @@
 "use client"
-import { formatWeeklyCadence } from "@/features/publishing/format-weekly-cadence"
 import Link from "next/link"
 import { useState } from "react"
+
+import { displayColorName } from "@/lib/display-color-name"
+import { formatWeeklyCadence } from "@/features/publishing/format-weekly-cadence"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
+
 import { findHeroLinkSpace } from "./find-hero-link-space"
 import { HeroLinkAreaEditor } from "./hero-link-area-editor"
 import { weeklyHeroSchema, type HeroAsset, type WeeklyHeroDraft, type WeeklyHeroManifest } from "./weekly-hero-schema"
@@ -223,7 +226,9 @@ export function WeeklyHeroEditor({
                 >
                   <NativeSelectOption value="">Product’s default color</NativeSelectOption>
                   {product?.colors.map((color) => (
-                    <NativeSelectOption key={color}>{color}</NativeSelectOption>
+                    <NativeSelectOption key={color} value={color}>
+                      {displayColorName(color)}
+                    </NativeSelectOption>
                   ))}
                 </NativeSelect>
               </label>

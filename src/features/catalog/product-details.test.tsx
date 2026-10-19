@@ -202,6 +202,27 @@ beforeEach(() => {
 })
 
 describe("ProductDetails", () => {
+  it("displays a clean shade while keeping the provider color in deep links and the correct cart variant", async () => {
+    const user = userEvent.setup()
+    const name = "CVC Midnight Navy"
+    window.history.replaceState(null, "", `?${new URLSearchParams({ color: name, size: "S" })}`)
+    render(
+      <ProductDetails
+        product={{
+          ...product,
+          colors: [{ name, hex: "#283244" }],
+          variants: [{ ...product.variants[1]!, color: name, title: `${name} / S` }],
+        }}
+      />
+    )
+    expect(screen.getByRole("button", { name: "Midnight Navy" })).toHaveAttribute("aria-pressed", "true")
+    expect(new URLSearchParams(window.location.search).get("color")).toBe(name)
+    await user.click(screen.getByRole("button", { name: "Add to cart" }))
+    expect(addItem).toHaveBeenCalledWith(expect.objectContaining({ variantId: 1, variantTitle: "Midnight Navy / S" }))
+    expect(screen.getByRole("dialog")).toHaveTextContent("Midnight Navy / S")
+    expect(screen.getByRole("dialog")).not.toHaveTextContent("CVC")
+  })
+
   it("carries an available size through repeated color changes without an unavailable-size message", async () => {
     const user = userEvent.setup()
     render(

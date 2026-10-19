@@ -3,6 +3,9 @@
 import Image from "next/image"
 import { useState } from "react"
 
+import { displayColorText } from "@/lib/display-color-text"
+import { displayColorName } from "@/lib/display-color-name"
+
 import type { CatalogProduct } from "./catalog-product"
 import { canOptimizeProductImage } from "./can-optimize-product-image"
 import { displayProductTitle } from "./display-product-title"
@@ -57,7 +60,10 @@ export function ProductCard({ product, priority = false, isNew = false, headingL
           {image ? (
             <Image
               src={image.src}
-              alt={image.alt}
+              alt={displayColorText(
+                image.alt,
+                product.colors.map(({ name }) => name)
+              )}
               width={800}
               height={1000}
               sizes="(min-width: 1336px) 322px, (min-width: 1024px) calc(33.33vw - 124px), (min-width: 640px) 50vw, calc(100vw - 32px)"
@@ -106,9 +112,9 @@ export function ProductCard({ product, priority = false, isNew = false, headingL
               key={item.name}
               type="button"
               className="color-option"
-              aria-label={item.name}
+              aria-label={displayColorName(item.name)}
               aria-pressed={color === item.name}
-              title={item.name}
+              title={displayColorName(item.name)}
               onClick={() => setSelectedColor(item.name)}
             >
               <span style={{ background: item.hex ?? "#e1ddd3" }} />

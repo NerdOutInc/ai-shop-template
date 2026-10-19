@@ -1,9 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect, userEvent, within } from "storybook/test"
+
+import { displayColorName } from "@/lib/display-color-name"
 import type {
   GoogleCopyEditorState,
   GoogleCopyPreview,
 } from "@/features/merchant-feed/google-merchant-copy-editor-state"
+
 import { GoogleMerchantCopyEditor } from "./google-merchant-copy-editor"
 
 function controlledResponses(outcome: "success" | "unknown" | "delayed") {
@@ -57,7 +60,7 @@ function controlledResponses(outcome: "success" | "unknown" | "delayed") {
                 id: v.id,
                 label: v.label,
                 content: identity
-                  ? `${body.content} Color: ${identity.color}. Size: ${identity.size}.`
+                  ? `${body.content} Color: ${displayColorName(identity.color)}. Size: ${identity.size}.`
                   : "Published description fallback.",
                 origin: identity ? body.origin : "fallback",
                 effect: identity ? "added" : "fallback",

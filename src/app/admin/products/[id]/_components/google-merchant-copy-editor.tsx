@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 
+import { displayColorName } from "@/lib/display-color-name"
 import { Button } from "@/components/ui/button"
 import type {
   GoogleCopyEditorState,
@@ -289,7 +290,7 @@ export function GoogleMerchantCopyEditor({ productId }: { productId: string }) {
                   }}
                 />
                 <span className="min-w-0 break-words">
-                  {variant.label} ({variant.id})
+                  {displayColorName(variant.label)} ({variant.id})
                   {variant.reason && (
                     <span className="block text-muted-foreground">
                       {reasonLabels[variant.reason] ?? "Fresh review required."}
@@ -319,15 +320,15 @@ export function GoogleMerchantCopyEditor({ productId }: { productId: string }) {
           <p className="text-sm">This preview does not reserve eligibility. Apply rechecks saved facts.</p>
           {removed.length > 0 && (
             <p className="text-sm">
-              Coverage removed: {removed.map((v) => `${v.label} (${v.id})`).join(", ")}. Enabled variants use their
-              published-description fallback; disabled or removed variants emit no item.
+              Coverage removed: {removed.map((v) => `${displayColorName(v.label)} (${v.id})`).join(", ")}. Enabled
+              variants use their published-description fallback; disabled or removed variants emit no item.
             </p>
           )}
           <ul className="space-y-4">
             {preview.descriptions.map((description) => (
               <li key={description.id} className="space-y-2 border-t border-border pt-4">
                 <p className="font-semibold break-words">
-                  {description.label} ({description.id})
+                  {displayColorName(description.label)} ({description.id})
                 </p>
                 <p className="text-sm">
                   Coverage: {description.effect}. Origin: {description.origin}.

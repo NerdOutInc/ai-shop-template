@@ -49,7 +49,7 @@ describe("CreateDesignDraftButton", () => {
     render(button())
     await userEvent.click(screen.getByRole("button", { name: "Create Printify draft" }))
     expect(await screen.findByRole("heading", { name: "Good Holds on Next Level 6210" })).toBeVisible()
-    expect(screen.getByText("CVC Black, Heather Maroon")).toBeVisible()
+    expect(screen.getByText("Black, Heather Maroon")).toBeVisible()
     expect(screen.getByText("M $28.00, 2XL $32.00")).toBeVisible()
     expect(screen.getByText("Heather Maroon, 2XL: Printify cannot make it right now")).toBeVisible()
     expect(screen.getByText("Sample Garden Illustration")).toBeVisible()

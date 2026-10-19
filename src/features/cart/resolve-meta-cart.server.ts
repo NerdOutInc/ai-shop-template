@@ -2,6 +2,7 @@ import "server-only"
 
 import { createHash } from "node:crypto"
 
+import { displayColorName } from "@/lib/display-color-name"
 import { displayProductTitle } from "@/features/catalog/display-product-title"
 import { displayProductVariantTitle } from "@/features/catalog/display-product-variant-title"
 import { getCatalogProduct } from "@/features/catalog/get-catalog-product.server"
@@ -41,7 +42,9 @@ export async function resolveMetaCart(params: MetaCartSearchParams): Promise<Met
         unavailableItem: {
           title: displayProductTitle(result.product.title),
           variantTitle:
-            publicVariant?.color && publicVariant.size ? `${publicVariant.color} / ${publicVariant.size}` : null,
+            publicVariant?.color && publicVariant.size
+              ? `${displayColorName(publicVariant.color)} / ${publicVariant.size}`
+              : null,
           href: `/shop/${encodeURIComponent(result.product.id)}`,
         },
       }
@@ -50,7 +53,7 @@ export async function resolveMetaCart(params: MetaCartSearchParams): Promise<Met
       const item: CartItem = {
         ...selection,
         title: displayProductVariantTitle(result.product.title, variant),
-        variantTitle: `${variant.color} / ${variant.size}`,
+        variantTitle: `${displayColorName(variant.color)} / ${variant.size}`,
         image: variant.images[0],
         unitAmount: variant.price,
       }

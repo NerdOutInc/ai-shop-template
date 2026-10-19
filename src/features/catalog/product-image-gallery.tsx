@@ -11,6 +11,7 @@ import {
   CarouselPrevious,
   type CarouselApi,
 } from "@/components/ui/carousel"
+import { displayColorText } from "@/lib/display-color-text"
 
 import type { CatalogProduct } from "./catalog-product"
 import { canOptimizeProductImage } from "./can-optimize-product-image"
@@ -19,6 +20,7 @@ import { ProductArtworkImage } from "./product-artwork-image"
 
 type ProductImageGalleryProps = {
   title: string
+  colorNames?: string[]
   images: NonNullable<CatalogProduct["image"]>[]
   artwork: (NonNullable<CatalogProduct["artwork"]> & { backgroundColor: string }) | null
   placeholder: string
@@ -29,6 +31,7 @@ type ProductImageGalleryProps = {
 
 export function ProductImageGallery({
   title,
+  colorNames = [],
   images,
   artwork,
   placeholder,
@@ -91,7 +94,7 @@ export function ProductImageGallery({
                   className="product-main-image"
                   src={item.src}
                   data-photo-origin={item.origin}
-                  alt={item.alt}
+                  alt={displayColorText(item.alt, colorNames)}
                   width={1000}
                   height={1000}
                   sizes="(max-width: 640px) calc(100vw - 32px), (max-width: 850px) calc(57.5vw - 45px), (max-width: 1335px) calc(57.5vw - 92px), 677px"

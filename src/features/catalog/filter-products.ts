@@ -1,4 +1,5 @@
 import type { CatalogProduct } from "./catalog-product"
+import { getColorFamily } from "./get-color-family"
 
 export type CatalogSort = "featured" | "newest" | "popular"
 
@@ -6,6 +7,19 @@ export function filterProducts(
   products: CatalogProduct[],
   filters: { colors: string[]; sizes: string[]; categories?: string[]; sort: CatalogSort; leadingIds?: string[] }
 ) {
+  const selectedColors = new Set(filters.colors)
+  const colorFamilies = new Map<string, string>()
+  function matchesColor(color: string | null) {
+    if (!selectedColors.size) return true
+    if (color === null) return false
+    let family = colorFamilies.get(color)
+    if (family === undefined) {
+      family = getColorFamily(color).name
+      colorFamilies.set(color, family)
+    }
+    return selectedColors.has(family)
+  }
+
   const filtered = products.filter((product) => {
     const category = product.garment?.categorySlug
     if (filters.categories?.length && (!category || !filters.categories.includes(category))) return false
@@ -14,7 +28,7 @@ export function filterProducts(
     return product.variants.some(
       (variant) =>
         variant.available &&
-        (!filters.colors.length || (variant.color !== null && filters.colors.includes(variant.color))) &&
+        matchesColor(variant.color) &&
         (!filters.sizes.length || (variant.size !== null && filters.sizes.includes(variant.size)))
     )
   })

@@ -120,6 +120,47 @@ const categoryProducts = [
 ]
 
 describe("ProductList", () => {
+  it("groups blue shades while requiring the requested size on an available blue variant", async () => {
+    const user = userEvent.setup()
+    const shades = [
+      "Heather Cool Blue",
+      "CVC Midnight Navy",
+      "CVC Ice Blue",
+      "CVC Royal",
+      "CVC Red",
+      "CVC Mint",
+      "CVC Clay",
+      "Antique Denim",
+      "Chambray",
+      "CVC Turquoise",
+      "CVC Silk",
+    ]
+    const products = shades.map((name, index) =>
+      catalogProductFixture({
+        id: `shade-${index}`,
+        title: `Shirt ${index}`,
+        colors: [{ name, hex: name === "CVC Clay" ? "#b37a58" : null }],
+        variants: [{ ...product.variants[0]!, color: name, size: index === 2 ? "M" : "S", available: index !== 5 }],
+      })
+    )
+    render(<ProductList catalog={{ status: "ready", products }} />)
+    await user.click(screen.getByRole("button", { name: "Filters +" }))
+    expect(screen.getAllByRole("checkbox", { name: "Blue" })).toHaveLength(1)
+    expect(screen.queryByRole("checkbox", { name: "Green" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("checkbox", { name: "CVC Midnight Navy" })).not.toBeInTheDocument()
+    await user.click(screen.getByRole("checkbox", { name: "Blue" }))
+    expect(screen.getAllByRole("article")).toHaveLength(7)
+    await user.click(screen.getByRole("checkbox", { name: "M" }))
+    expect(screen.getByRole("article")).toHaveAccessibleName("Shirt 2")
+    await user.click(screen.getByRole("button", { name: "Clear all" }))
+    expect(screen.getAllByRole("article")).toHaveLength(11)
+    await user.click(screen.getByRole("checkbox", { name: "Clay" }))
+    expect(screen.getByRole("article")).toHaveAccessibleName("Shirt 6")
+    await user.click(screen.getByRole("button", { name: "Clear all" }))
+    await user.click(screen.getByRole("checkbox", { name: "Gray" }))
+    expect(screen.getByRole("article")).toHaveAccessibleName("Shirt 10")
+  })
+
   it("follows the owner's category order, with slug order breaking ties", () => {
     const tee = categoryProducts[1]!
     const crop = categoryProducts[0]!

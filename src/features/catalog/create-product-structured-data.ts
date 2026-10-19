@@ -1,3 +1,4 @@
+import { displayColorName } from "@/lib/display-color-name"
 import { storeConfig } from "@/lib/store-config"
 import { getStorePolicyIds } from "@/features/store-policies/get-store-policy-ids"
 
@@ -13,10 +14,10 @@ export function createProductStructuredData(product: CatalogProduct, siteUrl: UR
   const hasVariant = getProductVariantListings(product, siteUrl).map((variant) => ({
     "@type": "Product" as const,
     "@id": `${productUrl}#variant-${variant.id}`,
-    name: `${title} – ${variant.color} / ${variant.size}`,
+    name: `${title} – ${displayColorName(variant.color)} / ${variant.size}`,
     ...(description ? { description } : {}),
     sku: `${product.id}-${variant.id}`,
-    color: variant.color,
+    color: displayColorName(variant.color),
     size: variant.size,
     image: variant.images,
     url: variant.url,

@@ -1,6 +1,9 @@
 import { getImageProps } from "next/image"
 import Link from "next/link"
 import type { CSSProperties } from "react"
+
+import { displayColorName } from "@/lib/display-color-name"
+
 import { getWeeklyHeroLayout } from "./get-weekly-hero-layout"
 import type { WeeklyHero } from "./weekly-hero-schema"
 import styles from "./weekly-hero-poster.module.css"
@@ -43,7 +46,7 @@ export function WeeklyHeroPoster({ hero, privatePreview = false }: { hero: Weekl
             key={link.productId}
             className={styles.link}
             href={`${privatePreview ? "/admin/products" : "/shop"}/${encodeURIComponent(link.productId)}${link.color ? `?color=${encodeURIComponent(link.color)}` : ""}`}
-            aria-label={`${link.label} — ${hero.manifest.title}${link.color ? ` in ${link.color}` : ""}`}
+            aria-label={`${link.label} — ${hero.manifest.title}${link.color ? ` in ${displayColorName(link.color)}` : ""}`}
             style={
               Object.fromEntries(
                 ["desktop", "mobile"].flatMap((kind) =>
@@ -54,7 +57,7 @@ export function WeeklyHeroPoster({ hero, privatePreview = false }: { hero: Weekl
           >
             <span className="sr-only">
               {link.label} — {hero.manifest.title}
-              {link.color ? ` in ${link.color}` : ""}
+              {link.color ? ` in ${displayColorName(link.color)}` : ""}
             </span>
           </Link>
         ))}
