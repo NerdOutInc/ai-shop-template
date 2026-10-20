@@ -5,7 +5,7 @@ description: Create garment-only, studio and lifestyle product photographs using
 
 # Natural photographs, faithful garments
 
-Work from the caller's brand direction, selected identity, actual garment and approved artwork. This skill includes a calibrated compositor, not an image generator, product catalog or ready-made cast. Read the host's image-generation/editing instructions and use its supported tool. If code-based image editing requires explicit opt-in, check authorization in the active conversation before compositing; the presence of this script is not permission.
+Work from the caller's brand direction, selected identity, actual garment and approved artwork. This skill includes a calibrated compositor, not an image generator, product catalog or ready-made cast. Generate blanks, backgrounds and new exposures through the host's image tool or a provider key by way of the repository's `pnpm imagegen` adapter, following [image generation](../../../docs/image-generation.md); outside this repository, use the host's supported image tool with the same records. Approved artwork is never a generation input: ink comes from the private library's exact revision and is placed by the compositor. If code-based image editing requires explicit opt-in, check authorization in the active conversation before compositing; the presence of this script is not permission.
 
 For garment-only catalog photos or background replacements, follow [garment backgrounds](references/garment-backgrounds.md). Preserve an already-approved garment/ink composite for a background-only edit; the blank-first model workflow below applies when creating a new exposure or rebuilding the print.
 
@@ -19,7 +19,7 @@ Inspect current provider and manufacturer evidence for fabric weight, fit, colla
 
 Read [photographic direction](references/photographic-direction.md). Choose a specific moment, camera position and coherent light before deciding how to display the print. A useful question is whether the photograph would work with a blank shirt. For a mix that includes closer garment views, consult the [Taylor Stitch framing examples](references/taylor-stitch-inspiration.md); head crops are optional, not a set-wide default.
 
-Keep the selected person recognizable while making each requested exposure distinct. Change pose, gesture, expression, camera or scene rather than recoloring the same photograph. Review anatomy, identity marks, body support/contact, shared lighting/focus and actual garment construction before adding ink. A successful generation call does not approve the photograph.
+Keep the selected person recognizable while making each requested exposure distinct: pass the identity anchor in `referenceImages` with its role stated in the prompt, and ask for a blank garment in the selected color so the exact artwork can be composited afterwards. Change pose, gesture, expression, camera or scene rather than recoloring the same photograph. Review anatomy, identity marks, body support/contact, shared lighting/focus and actual garment construction before adding ink. A successful generation call does not approve the photograph.
 
 A studio image usually needs the shirt large enough to inspect. Lifestyle framing follows the moment and may hide part of the front. Respect the caller's visibility needs without shifting or shrinking the print to reveal it. Hands, hair, straps and folded-over fabric need explicit foreground masks when they cross the ink.
 

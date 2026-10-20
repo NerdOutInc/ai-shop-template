@@ -7,7 +7,7 @@ description: Create paired desktop and mobile homepage hero concepts for an exis
 
 Turn a verified product lineup into a reviewable pair of homepage compositions. The product is evidence; the scenery is the creative playground.
 
-This folder is portable. It does not include an image generator, store credentials, a scheduler or a particular brand's artwork. Discover available image, filesystem and browser tools. Read the target project's instructions and current hero implementation before choosing dimensions or performing a store action. No sibling skill is required; if a garment-photography skill is available, it can supply the more detailed cloth-compositing method.
+This folder is portable. It does not include an image generator, store credentials, a scheduler or a particular brand's artwork. In this repository, generate scenery, lettering and blank garment layers through `pnpm imagegen` following [image generation](../../../docs/image-generation.md); elsewhere, discover the host's image tool and keep the same records. Discover available filesystem and browser tools. Read the target project's instructions and current hero implementation before choosing dimensions or performing a store action. No sibling skill is required; if a garment-photography skill is available, it can supply the more detailed cloth-compositing method.
 
 ## Start with the release and the output contract
 
@@ -21,7 +21,7 @@ Read the receiving renderer/upload contract for dimensions, crops, safe areas, l
 
 Read [garment fidelity](references/garment-fidelity.md). Prepare one measured garment layer per product/color from its current reference and the original approved high-resolution PNG. Record neckline gap, horizontal center, print width/height and lower-fabric clearance separately. Inspect the first finished pair at native size and phone width before generating the remaining requested directions; correct its calibration first.
 
-Keep calibrated merchandise outside whole-poster generation. Generate scenery and lettering separately where possible. Preserve the approved garment construction and original ink; uniform garment transforms are different from changing the print on the garment. Code-based image edits require whatever explicit opt-in the active image tool demands. If unavailable, report that constraint and use a supported workflow without pretending the artwork stayed pixel-exact.
+Keep calibrated merchandise outside whole-poster generation. Generate scenery and lettering separately where possible: one request per layer, scenery opaque at the largest supported size, lettering and blank garment cutouts with `background: "transparent"`, and the approved product photo in `referenceImages` only when a blank garment layer must copy its construction. The approved artwork is never a reference image; it is composited from the exact revision bytes afterwards. Keep each layer's receipt for the composition record. Preserve the approved garment construction and original ink; uniform garment transforms are different from changing the print on the garment. Code-based image edits require whatever explicit opt-in the active image tool demands. If unavailable, report that constraint and use a supported workflow without pretending the artwork stayed pixel-exact.
 
 ## Compose, review and retain
 

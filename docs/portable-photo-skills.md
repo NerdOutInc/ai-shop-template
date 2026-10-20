@@ -52,7 +52,7 @@ git -C /path/to/new-source-checkout checkout --detach FETCH_HEAD
 
 Then copy either complete skill folder into your agent host's supported skills directory. Keep `SKILL.md`, `references/`, `scripts/`, `assets/` when present, and `agents/` together. Neither package needs this application, its database, Node dependencies or repository-relative documents. Follow your host's reload/restart instructions after installation. Do not overwrite a locally modified installed skill without reviewing the update.
 
-Casting validation uses Python's standard library. The compositor/guide requires its own isolated Python environment with [pinned dependencies](../.agents/skills/store-garment-photography/scripts/requirements.txt); it does not share the repository's lint environment. Image generation/editing still requires a supported host tool and any authorization that tool requires.
+Casting validation uses Python's standard library. The compositor/guide requires its own isolated Python environment with [pinned dependencies](../.agents/skills/store-garment-photography/scripts/requirements.txt); it does not share the repository's lint environment. Image generation/editing still requires a supported host tool and any authorization that tool requires; inside this repository, [image generation](image-generation.md) wraps that tool or an owner-authorized provider key.
 
 For repository development, create the same isolated environment before running `pnpm test:skills`:
 
