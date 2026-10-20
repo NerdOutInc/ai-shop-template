@@ -81,7 +81,7 @@ describe("the public JSON catalog", () => {
       code: "STOCK_UNAVAILABLE",
       productId: "shirt",
     })
-    vi.mocked(getMerchantProducts).mockRejectedValue(new Error("postgresql://user:private-password@db/store"))
+    vi.mocked(getMerchantProducts).mockRejectedValue(new Error("connection refused for private-password"))
     expect((await createAgentCatalogResponse()).status).toBe(503)
     expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain("private-password")
   })
