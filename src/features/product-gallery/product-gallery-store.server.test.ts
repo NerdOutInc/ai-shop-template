@@ -87,6 +87,20 @@ describe.skipIf(!url)("product gallery durable publication boundary", () => {
     )
     await source()
   })
+  it("stamps the product's content date on activation and not on a draft save", async () => {
+    const contentDate = async () =>
+      (
+        await pool.query<{ updated_at: Date }>(
+          "select updated_at from commerce.printify_products where shop_id='123' and product_id='shirt'"
+        )
+      ).rows[0]!.updated_at.getTime()
+    const published = await contentDate()
+    const input = await save()
+    expect(await contentDate()).toBe(published)
+    await promote()
+    await store.activate("shirt", input, actor, host)
+    expect(await contentDate()).toBeGreaterThan(published)
+  })
   it("keeps drafts private, refuses unconfirmed activation and preserves active state on incomplete promotion", async () => {
     const input = await save()
     expect((await store.read("shirt")).published).toBeNull()

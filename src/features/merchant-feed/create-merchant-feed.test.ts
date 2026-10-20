@@ -12,6 +12,7 @@ const namespace = "http://base.google.com/ns/1.0"
 function fixture(): MerchantProduct {
   return {
     apparel: { googleProductCategory: 212, ageGroup: "adult", gender: "unisex", sizeSystem: "US" },
+    blueprintId: 1317,
     product: normalizeCatalogProduct({
       id: "sample-shirt",
       shop_id: 123,

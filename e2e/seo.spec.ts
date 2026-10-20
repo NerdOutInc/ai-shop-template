@@ -272,3 +272,135 @@ test("uses a per-page canonical while keeping utility and missing pages out of s
     await expect(page.locator('link[rel="canonical"]')).toHaveCount(0)
   }
 })
+
+test("publishes the agent-readable catalog, llms.txt and dated sitemap for the configured store", async ({
+  request,
+}) => {
+  const robots = await (await request.get("/robots.txt")).text()
+  for (const agent of ["GPTBot", "ClaudeBot", "PerplexityBot", "Google-Extended", "CCBot"]) {
+    expect(robots).toMatch(new RegExp(`User-Agent: ${agent}\\n`, "i"))
+  }
+  expect(robots).toMatch(/Allow: \/api\/catalog\n/)
+  expect(robots).toMatch(/Allow: \/llms\.txt\n/)
+  expect(robots).toMatch(/Disallow: \/feeds\/\n/)
+  expect(robots).toMatch(/Disallow: \/checkout\/\n/)
+  expect(robots).not.toMatch(/Disallow: \/\n/)
+
+  const catalogResponse = await request.get("/api/catalog")
+  expect(catalogResponse.status()).toBe(200)
+  expect(catalogResponse.headers()["content-type"]).toContain("application/json")
+  expect(catalogResponse.headers()["cache-control"]).toBe("public, s-maxage=300, stale-while-revalidate=600")
+  expect(catalogResponse.headers()["x-robots-tag"]).toBe("noindex")
+  const variant = z.object({
+    id: z.number(),
+    sku: z.string(),
+    color: z.string(),
+    size: z.string(),
+    price: z.string(),
+    currency: z.literal("USD"),
+    available: z.boolean(),
+    url: z.url(),
+    images: z.array(z.url()).min(1),
+  })
+  const product = z.object({
+    id: z.string(),
+    url: z.url(),
+    title: z.string(),
+    description: z.string(),
+    brand: z.literal("Fixture Store"),
+    category: z.string().nullable(),
+    images: z.array(z.url()).min(1),
+    priceRange: z.object({ min: z.string(), max: z.string(), currency: z.literal("USD") }).nullable(),
+    colors: z.array(z.string()),
+    sizes: z.array(z.string()),
+    variants: z.array(variant).min(1),
+  })
+  const store = z.object({
+    name: z.literal("Fixture Store"),
+    url: z.literal("https://example.com/"),
+    currency: z.literal("USD"),
+    shippingPolicyUrl: z.literal("https://example.com/shipping"),
+    returnPolicyUrl: z.literal("https://example.com/returns"),
+    privacyUrl: z.literal("https://example.com/privacy"),
+  })
+  const catalog = z.object({ store, products: z.array(product) }).parse(await catalogResponse.json())
+  const ids = catalog.products.map((item) => item.id)
+  for (const id of selectedProductIds) expect(ids).toContain(id)
+  expect(ids).toContain("f1de0000000000000000ca03")
+  for (const id of ["f1de0000000000000000ca01", "f1de0000000000000000ca02"]) expect(ids).not.toContain(id)
+  const first = catalog.products.find((item) => item.id === selectedProductIds[0])!
+  expect(first).toMatchObject({
+    url: `https://example.com/shop/${selectedProductIds[0]}`,
+    title: "Fixture First Design",
+    category: "T-shirts",
+    priceRange: { min: "28.00", max: "32.00", currency: "USD" },
+    colors: ["Black", "Clay"],
+    sizes: ["M", "L", "XL"],
+  })
+  expect(first.variants.find((item) => item.sku === `${selectedProductIds[0]}-1004`)).toEqual({
+    id: 1004,
+    sku: `${selectedProductIds[0]}-1004`,
+    color: "Clay",
+    size: "XL",
+    price: "32.00",
+    currency: "USD",
+    available: true,
+    url: `https://example.com/shop/${selectedProductIds[0]}?color=Clay&size=XL`,
+    images: ["https://e2e.test/clay-shirt.png", "https://e2e.test/clay-shirt-back.png"],
+  })
+  expect(first.variants.find((item) => item.id === 1002)?.available).toBe(false)
+
+  const single = await request.get(`/api/catalog/${selectedProductIds[0]}`)
+  expect(single.status()).toBe(200)
+  expect(z.object({ store, product }).parse(await single.json()).product).toEqual(first)
+  for (const id of ["f1de0000000000000000ca01", "missing-product"]) {
+    const withheld = await request.get(`/api/catalog/${id}`)
+    expect(withheld.status()).toBe(404)
+    expect(withheld.headers()["cache-control"]).toBe("no-store")
+  }
+
+  const llms = await request.get("/llms.txt")
+  expect(llms.status()).toBe(200)
+  expect(llms.headers()["content-type"]).toContain("text/markdown")
+  const text = await llms.text()
+  expect(text.startsWith("# Fixture Store\n\n> Original shirts")).toBe(true)
+  for (const line of [
+    "- [Product catalog (JSON)](https://example.com/api/catalog)",
+    "- [Sitemap](https://example.com/sitemap.xml)",
+    "- [Shipping](https://example.com/shipping)",
+    `- [Fixture First Design](https://example.com/shop/${selectedProductIds[0]})`,
+    "- [Fixture Already Dropped](https://example.com/shop/f1de0000000000000000ca03)",
+  ]) {
+    expect(text).toContain(line)
+  }
+  expect(text).not.toContain("f1de0000000000000000ca01")
+
+  const sitemap = await (await request.get("/sitemap.xml")).text()
+  expect(sitemap).toContain('xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"')
+  expect(sitemap).toMatch(
+    new RegExp(
+      `<url><loc>https://example.com/shop/${selectedProductIds[0]}</loc><lastmod>\\d{4}-\\d{2}-\\d{2}T[^<]+</lastmod><image:image><image:loc>https://e2e.test/clay-shirt.png</image:loc></image:image></url>`
+    )
+  )
+  expect(sitemap).not.toMatch(/<loc>https:\/\/example.com\/shop<\/loc><lastmod>/)
+
+  const shop = z
+    .object({
+      "@type": z.literal("ItemList"),
+      numberOfItems: z.number(),
+      itemListElement: z.array(z.object({ url: z.url() })),
+    })
+    .parse(readInitialStructuredData(await (await request.get("/shop")).text()))
+  expect(shop.numberOfItems).toBe(ids.length)
+  expect(shop.itemListElement.map((item) => item.url)).toContain(`https://example.com/shop/${selectedProductIds[0]}`)
+})
+
+test("keeps an unconfigured store out of the agent surfaces", async ({ request }) => {
+  for (const path of ["/api/catalog", `/api/catalog/${selectedProductIds[0]}`, "/llms.txt"]) {
+    const response = await request.get(`http://127.0.0.1:${offlinePort}${path}`)
+    expect(response.status()).toBe(404)
+    expect(response.headers()["cache-control"]).toBe("no-store")
+    expect(response.headers()["x-robots-tag"]).toBe("noindex")
+  }
+  expect(await (await request.get(`http://127.0.0.1:${offlinePort}/robots.txt`)).text()).toMatch(/Disallow: \/\n/)
+})

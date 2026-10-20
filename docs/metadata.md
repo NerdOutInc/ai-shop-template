@@ -1,6 +1,6 @@
 # Metadata during client navigation
 
-Keep canonical URLs and search/social metadata in the Next.js Metadata API. The shared configuration disables metadata streaming with `htmlLimitedBots: /.*/` so initial head hydration finishes with the route, before a fast client navigation can abandon it. Canonicals should travel light: one destination, one tag.
+Keep canonical URLs and search/social metadata in the Next.js Metadata API. The home title comes from `storeConfig.seo.title`; the public JSON catalog, `llms.txt`, sitemap dates and crawler policy are described in [agent-readable storefront](agent-commerce.md). The shared configuration disables metadata streaming with `htmlLimitedBots: /.*/` so initial head hydration finishes with the route, before a fast client navigation can abandon it. Canonicals should travel light: one destination, one tag.
 
 Next 16.4.2 needs the pinned `patches/next@16.4.2.patch` for static pages to honor this setting. Its export configuration omits the normalized `htmlLimitedBots` setting, and its export worker unconditionally enables streaming. The patch passes the normalized value through and honors the exact `/.*/` opt-out for non-PPR prerenders.
 

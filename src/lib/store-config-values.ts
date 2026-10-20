@@ -64,4 +64,7 @@ export const storeConfigValues = {
     returnsSummary: "",
     privacyText: [],
   },
+  // Leave title empty to derive it from the name and tagline. Block AI crawlers to keep AI shopping
+  // agents and answer engines out of the public catalog, llms.txt and product pages.
+  seo: { title: "", aiCrawlers: "allow" },
 } satisfies StoreConfigInput

@@ -60,4 +60,5 @@ export const storeConfig = storeConfigSchema.parse({
     returnsSummary: "",
     privacyText: [],
   },
+  seo: { title: "", aiCrawlers: "allow" },
 })

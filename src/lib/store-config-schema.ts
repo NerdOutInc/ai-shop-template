@@ -113,6 +113,13 @@ export const storeConfigSchema = z
       returnsSummary: z.string().trim().max(240).default(""),
       privacyText: z.array(text),
     }),
+    seo: z
+      .object({
+        // Empty derives "name – tagline" when that fits a search result, otherwise the name alone.
+        title: z.string().trim().max(70).default(""),
+        aiCrawlers: z.enum(["allow", "block"]).default("allow"),
+      })
+      .default({ title: "", aiCrawlers: "allow" }),
   })
   .superRefine((store, context) => {
     const textPairs = [
@@ -152,6 +159,11 @@ export const storeConfigSchema = z
     ) {
       context.addIssue({ code: "custom", message: "All three owner-approved policies are required before publishing" })
     }
+  })
+  .transform((store) => {
+    if (store.seo.title) return store
+    const combined = `${store.name} – ${store.tagline}`
+    return { ...store, seo: { ...store.seo, title: combined.length <= 70 ? combined : store.name } }
   })
 
 export type StoreConfigInput = z.input<typeof storeConfigSchema>

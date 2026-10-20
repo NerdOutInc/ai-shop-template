@@ -22,13 +22,15 @@ export function prepareMerchantProduct(
   const withheld = new Set(withheldVariantIds)
   const display = { ...parsed.data, variants: parsed.data.variants.filter((v) => !withheld.has(v.id)) }
   if (snapshot.visible === false) throw new MerchantFeedError("SNAPSHOT_HIDDEN", display.id)
-  const apparel = typeof snapshot.blueprint_id === "number" ? profiles.get(snapshot.blueprint_id) : undefined
-  if (!apparel) throw new MerchantFeedError("UNSUPPORTED_BLUEPRINT", display.id)
+  const blueprintId = typeof snapshot.blueprint_id === "number" ? snapshot.blueprint_id : null
+  const apparel = blueprintId === null ? undefined : profiles.get(blueprintId)
+  if (blueprintId === null || !apparel) throw new MerchantFeedError("UNSUPPORTED_BLUEPRINT", display.id)
   const production = parsePrintifyProduct(snapshot, { productId: display.id, shopId })
   if (!production) throw new MerchantFeedError("SNAPSHOT_PRODUCTION_INVALID", display.id)
   const merchantProduct: MerchantProduct = {
     product: normalizeCatalogProduct(display),
     apparel,
+    blueprintId,
   }
   const copy = resolveGoogleMerchantCopy(snapshot.google_merchant_copy, merchantProduct.product, production, apparel)
   merchantProduct.googleCopy = copy.variants

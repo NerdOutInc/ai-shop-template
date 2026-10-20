@@ -584,9 +584,11 @@ export class PostgresPublishingStore implements PublishingStore {
    */
   async readRevealableProduct(productId: string) {
     const row = (
-      await queryGalleryDisplay<GalleryDisplayRow & { reveal_at: Date | null; added_to_shop_at: Date | null }>(
+      await queryGalleryDisplay<
+        GalleryDisplayRow & { reveal_at: Date | null; added_to_shop_at: Date | null; updated_at: Date }
+      >(
         this.pool,
-        "snapshot,revision::text,reveal_at,added_to_shop_at",
+        "snapshot,revision::text,reveal_at,added_to_shop_at,updated_at",
         `where shop_id=$1 and product_id=$2 and ${productVisibilitySql.revealable}`,
         [this.shopId, productId]
       )
@@ -596,6 +598,8 @@ export class PostgresPublishingStore implements PublishingStore {
           snapshot: applyGalleryDisplay(row).snapshot,
           revealAt: isoOrNull(row.reveal_at),
           addedToShopAt: isoOrNull(row.added_to_shop_at),
+          // Every publication, image replacement, gallery activation or visibility write stamps this: the content date.
+          updatedAt: isoOrNull(row.updated_at),
         }
       : null
   }
