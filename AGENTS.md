@@ -29,6 +29,7 @@ For updates after initial setup, follow the [store update contract](docs/store-u
 
 Follow [docs/architecture.md](docs/architecture.md) for the folder map, import boundaries, examples, and exact exceptions.
 See [color names and shop filters](docs/color-filters.md) for provider identities, display labels, and shade-family mapping.
+See [agent-readable storefront](docs/agent-commerce.md) for the public JSON catalog contract, `llms.txt`, sitemap dates and crawler policy; keep that JSON shape stable.
 
 - Keep routing, page composition, and global styles in `src/app/`. Put route-owned presentation in that segment's `_components/`; only that segment and its descendants may use it.
 - Keep feature-owned behavior together in `src/features/<feature>/`. Start flat and create subfolders only for responsibilities that actually need them.

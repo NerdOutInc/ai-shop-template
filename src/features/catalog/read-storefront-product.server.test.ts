@@ -6,7 +6,7 @@ import { parsePrintifyProduct } from "@/lib/printify/parse-printify-product"
 
 import { readRevealableProduct } from "@/features/publishing/read-revealable-product.server"
 
-import { getSitemapProductIds } from "./get-sitemap-product-ids.server"
+import { getSitemapProducts } from "./get-sitemap-products.server"
 import { listStorefrontProductIds } from "./list-storefront-product-ids.server"
 import { normalizeCatalogProduct } from "./normalize-catalog-product"
 import { PublishedSnapshotRejectedError } from "./published-snapshot-rejected-error"
@@ -253,12 +253,22 @@ describe("storefront publication cache", () => {
       )
       const fetchMock = vi.spyOn(globalThis, "fetch")
 
-      await expect(getSitemapProductIds()).resolves.toEqual(["valid"])
+      await expect(getSitemapProducts()).resolves.toEqual([
+        {
+          id: "valid",
+          title: fixture().title,
+          lastModified: "2026-09-14T12:00:00.000Z",
+          image: fixture().images.find((image) => image.is_default)!.src,
+        },
+      ])
       expect(fetchMock).not.toHaveBeenCalled()
 
       // A rejected cache fill must not keep a repaired publication out of the sitemap.
       vi.mocked(readRevealableProduct).mockImplementation(async (id) => revealable({ ...fixture(), id }))
-      await expect(getSitemapProductIds()).resolves.toEqual(["valid", "rejected"])
+      await expect(getSitemapProducts().then((products) => products.map((product) => product.id))).resolves.toEqual([
+        "valid",
+        "rejected",
+      ])
     }
   )
 
@@ -274,7 +284,7 @@ describe("storefront publication cache", () => {
         return revealable({ ...fixture(), id })
       })
 
-      await expect(getSitemapProductIds()).rejects.toThrow("Published product unavailable")
+      await expect(getSitemapProducts()).rejects.toThrow("Published product unavailable")
     }
   )
 

@@ -17,6 +17,20 @@ describe("storeConfigSchema", () => {
     })
   })
 
+  it("derives the search title from the name and tagline until the owner sets one", () => {
+    const { seo, ...withoutSeo } = storeConfig
+    expect(seo).toEqual({ title: "Fixture Store – Wear your Friday feeling.", aiCrawlers: "allow" })
+    expect(storeConfigSchema.parse(withoutSeo).seo).toEqual(seo)
+    expect(storeConfigSchema.parse({ ...storeConfig, seo: { title: " Fixture Store | Friday tees " } }).seo).toEqual({
+      title: "Fixture Store | Friday tees",
+      aiCrawlers: "allow",
+    })
+    // A long tagline would overflow a search result, so the derived title falls back to the name.
+    const tagline = "A tagline long enough that the derived title would no longer fit a search result"
+    expect(storeConfigSchema.parse({ ...withoutSeo, tagline }).seo.title).toBe("Fixture Store")
+    expect(storeConfigSchema.parse({ ...storeConfig, seo: { aiCrawlers: "block" } }).seo.aiCrawlers).toBe("block")
+  })
+
   it("defaults omitted returns summaries to hidden and rejects overlong purchase copy", () => {
     const legacyPolicies = { ...storeConfig.policies }
     Reflect.deleteProperty(legacyPolicies, "returnsSummary")
@@ -103,6 +117,8 @@ describe("storeConfigSchema", () => {
       change: { socialLinks: [{ label: "Community", url: "http://social.example/brand" }] },
       path: ["socialLinks", 0, "url"],
     },
+    { field: "search title", change: { seo: { title: "x".repeat(71) } }, path: ["seo", "title"] },
+    { field: "AI crawler policy", change: { seo: { aiCrawlers: "maybe" } }, path: ["seo", "aiCrawlers"] },
     {
       field: "negative shipping",
       change: { commerce: { ...storeConfig.commerce, firstItemShippingCents: -1 } },

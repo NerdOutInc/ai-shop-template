@@ -15,25 +15,25 @@ import { StoreHeader } from "./_components/store-header"
 
 import "./globals.css"
 
-const { name, description, theme } = storeConfig
+const { name, description, theme, seo } = storeConfig
 
 export const metadata: Metadata = {
   metadataBase: getSiteUrl(),
   robots: isIndexableSite() ? undefined : { index: false, follow: false },
-  title: { default: name, template: `%s | ${name}` },
+  title: { default: seo.title, template: `%s | ${name}` },
   description,
   icons: {
     icon: [{ url: "/icon.svg", sizes: "any", type: "image/svg+xml" }],
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
   openGraph: {
-    title: name,
+    title: seo.title,
     description,
     siteName: name,
     type: "website",
     locale: storeConfig.locale.replace("-", "_"),
   },
-  twitter: { card: "summary_large_image", title: name, description },
+  twitter: { card: "summary_large_image", title: seo.title, description },
 }
 
 export const viewport: Viewport = { themeColor: theme.primary }

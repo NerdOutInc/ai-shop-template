@@ -5,5 +5,7 @@ import type { GarmentFeedProfile } from "@/features/garment-catalog/garment-feed
 export type MerchantProduct = {
   product: CatalogProduct
   apparel: GarmentFeedProfile
+  /** The garment the apparel profile was read for; the agent catalog resolves its display category by it. */
+  blueprintId: number
   googleCopy?: ReadonlyMap<number, ResolvedGoogleCopy>
 }

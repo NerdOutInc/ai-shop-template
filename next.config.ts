@@ -13,7 +13,11 @@ const config: NextConfig = {
   // Next patch also applies this opt-out to prerendered pages (see docs/metadata.md).
   htmlLimitedBots: /.*/,
   async rewrites() {
-    return [{ source: "/sitemap.xml", destination: "/sitemap" }]
+    // Route folders are kebab-case, so the dotted public names map onto plain routes.
+    return [
+      { source: "/sitemap.xml", destination: "/sitemap" },
+      { source: "/llms.txt", destination: "/llms" },
+    ]
   },
   images: {
     formats: ["image/avif", "image/webp"],

@@ -35,7 +35,11 @@ test("the frozen pre-update snapshot loads with optional additions disabled", as
   const { readFileSync } = await import("node:fs")
   const prior = JSON.parse(readFileSync(new URL("./fixtures/store-config@09b9fc8.json", import.meta.url), "utf8"))
   assert.equal(Object.hasOwn(prior.policies, "returnsSummary"), false)
-  const expected = { ...prior, policies: { ...prior.policies, returnsSummary: "" } }
+  const expected = {
+    ...prior,
+    policies: { ...prior.policies, returnsSummary: "" },
+    seo: { title: "Your Store – Make room for your next favorite.", aiCrawlers: "allow" },
+  }
   assert.deepEqual(storeConfigSchema.parse(prior), expected)
   const { features, ...withoutFeatures } = prior
   assert.deepEqual(storeConfigSchema.parse(withoutFeatures), {

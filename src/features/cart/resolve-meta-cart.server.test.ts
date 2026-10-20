@@ -119,6 +119,7 @@ describe("Meta cart catalog resolution", () => {
           {
             product: current,
             apparel: { googleProductCategory: 212, ageGroup: "adult", gender: "unisex", sizeSystem: "US" },
+            blueprintId: 1317,
           },
         ],
         new URL("https://example.com")
