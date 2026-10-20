@@ -26,7 +26,7 @@
     "imageGeneration": {
       "provider": null,
       "paidApi": false,
-      "note": "Set paidApi true only after the owner authorizes paid image generation in conversation; pnpm imagegen reads this and --authorized-by-owner. See docs/image-generation.md."
+      "note": "Record paidApi true only after the owner delegated paid image generation in conversation. pnpm imagegen reports it as evidence in --dry-run; spending still needs --authorized-by-owner from the active conversation. See docs/image-generation.md."
     }
   },
   "providers": {

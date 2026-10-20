@@ -21,16 +21,16 @@ Write a JSON file and point the CLI at it:
 }
 ```
 
-| Field             | Meaning                                                                                                                                                                                                                                        |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `prompt`          | The complete self-contained prompt. Write the prompt the skill tells you to write; the adapter adds nothing except a transparency instruction for providers that need one.                                                                     |
-| `referenceImages` | Optional PNG, JPEG or WebP paths. Each one's SHA-256 lands in the receipt. OpenAI receives them through the edits endpoint; Gemini receives them inline. State each reference's role in the prompt (identity only, garment construction only). |
-| `size`            | `auto`, `1024x1024`, `1536x1024`, `1024x1536`, `1792x1024` or `1024x1792`. OpenAI accepts the first four; Gemini maps a size to an aspect ratio.                                                                                               |
-| `quality`         | `auto`, `low`, `medium` or `high`. OpenAI passes it through. Gemini asks for a 2K image at `high`, which only some Gemini image models support.                                                                                                |
-| `background`      | `opaque` (default) or `transparent`. OpenAI renders real alpha. Gemini is asked for alpha in the prompt and does not guarantee it; the receipt reports what the file carries.                                                                  |
-| `count`           | 1–10 images from this prompt. OpenAI takes them in one request; Gemini takes one request per image.                                                                                                                                            |
-| `outputDir`       | Ignored local staging, created on demand. Private masters never go to `public/` or Git.                                                                                                                                                        |
-| `baseName`        | Files are written as `<baseName>-1.png`, `<baseName>-2.png`, … plus `<baseName>.receipt.json`. Existing files are never overwritten; pick a new name for a retry so the reviewed bytes stay put.                                               |
+| Field             | Meaning                                                                                                                                                                                                                                                                  |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `prompt`          | The complete self-contained prompt. Write the prompt the skill tells you to write; the adapter adds nothing except a transparency instruction for providers that need one.                                                                                               |
+| `referenceImages` | Optional PNG, JPEG or WebP paths. Each one's SHA-256 lands in the receipt. OpenAI receives them through the edits endpoint; Gemini receives them inline. State each reference's role in the prompt (identity only, garment construction only).                           |
+| `size`            | `auto`, `1024x1024`, `1536x1024`, `1024x1536`, `1792x1024` or `1024x1792`. OpenAI accepts the first four; Gemini maps a size to an aspect ratio.                                                                                                                         |
+| `quality`         | `auto`, `low`, `medium` or `high`. OpenAI passes it through. Gemini asks for a 2K image at `high`, which only the Gemini 3 image models accept; the default `gemini-2.5-flash-image` renders at a fixed resolution, so `high` is rejected before any request or dry run. |
+| `background`      | `opaque` (default) or `transparent`. OpenAI renders real alpha. Gemini is asked for alpha in the prompt and does not guarantee it; the receipt reports what the file carries.                                                                                            |
+| `count`           | 1–10 images from this prompt. OpenAI takes them in one request; Gemini takes one request per image.                                                                                                                                                                      |
+| `outputDir`       | Ignored local staging, created on demand. Private masters never go to `public/` or Git.                                                                                                                                                                                  |
+| `baseName`        | Files are written as `<baseName>-1.png`, `<baseName>-2.png`, … plus `<baseName>.receipt.json`. Existing files are never overwritten; pick a new name for a retry so the reviewed bytes stay put.                                                                         |
 
 Paths resolve against the current directory. Run the CLI from the repository root.
 
@@ -84,12 +84,9 @@ Set the key in the process environment, or set `OPENAI_API_KEY_FILE` / `GEMINI_A
 
 ## Cost controls and owner authorization
 
-The creative skills already say that a large requested count does not authorize switching to a paid API. The CLI enforces that sentence. A paid provider refuses to run unless one of these is true:
+The creative skills already say that a large requested count does not authorize switching to a paid API. The CLI enforces that sentence. A paid provider refuses to run unless the command includes `--authorized-by-owner`, which asserts that the owner authorized paid generation in the active conversation. Pass it only when that is true; an authorization the owner already gave in the conversation covers the batch it describes and need not be asked for again.
 
-- The command includes `--authorized-by-owner`, because the owner authorized paid generation in the active conversation.
-- `.store-setup.local.json` records `delegation.imageGeneration.paidApi: true`, because the owner delegated that choice earlier during setup and the agent inspected the saved file.
-
-A saved file is evidence, not a fresh approval; follow the setup skill's [authority rule](../.agents/skills/store-setup/SKILL.md#authority-and-saved-progress) and keep the delegation `false` until the owner actually says yes. The flag is per command, so an agent cannot inherit it from an earlier batch by accident. The host route and `--dry-run` need no authorization: neither spends anything.
+`.store-setup.local.json` can record `delegation.imageGeneration.paidApi: true` when the owner delegated that choice during setup. The CLI reads it and reports it as `savedDelegation` in the dry run, so the agent can cite it, but the saved value never authorizes spending by itself: it is copied into later worktrees by `.worktreeinclude`, where the owner's actual instruction and its scope may be unknown. Follow the setup skill's [authority rule](../.agents/skills/store-setup/SKILL.md#authority-and-saved-progress) and keep the delegation `false` until the owner actually says yes. The flag is per command, so an agent cannot inherit it from an earlier batch by accident. The host route and `--dry-run` need no authorization: neither spends anything.
 
 Before any paid batch, dry-run it and show the owner the cost-relevant numbers:
 
@@ -108,7 +105,7 @@ IMAGE_PROVIDER=openai pnpm imagegen --input .tmp/concepts/batch-7f3c/slot-03/req
   "quality": "high",
   "background": "transparent",
   "referenceImages": 0,
-  "authorization": { "authorized": false, "source": "none" },
+  "authorization": { "authorized": false, "source": "none", "savedDelegation": null },
   "wouldWrite": ["slot-03-badger-hammock-1.png", "slot-03-badger-hammock-2.png"],
   "outputDir": "/work/store/.tmp/concepts/batch-7f3c/slot-03"
 }
@@ -116,13 +113,16 @@ IMAGE_PROVIDER=openai pnpm imagegen --input .tmp/concepts/batch-7f3c/slot-03/req
 
 Count, size and quality are the three parameters that drive the bill on every provider. Multiply the planned number of slots by `count`, name the model and quality, and let the owner decide. Keep `count` small while the brief is still moving; one inspected representative output is cheaper than ten wrong ones. Retries cost the same as first attempts and are provenance, not extra delivered concepts.
 
+The destination is checked before any request: a `baseName` whose receipt is already complete, or whose output file already exists, fails without a provider call. When a multi-image Gemini batch stops partway (a rate limit, a blocked answer, a network failure), every image already returned is on disk and the receipt is saved with `status: "incomplete"`, `completed` and `requested`; rerunning the same command with the same request verifies those files by hash and generates only the missing ones, so a retry never pays twice for a finished image. A different request under the same `baseName` is refused.
+
 ## What the adapter never does
 
 - It never redraws, repairs, upscales or "cleans up" approved artwork. Ink always comes from the private library's exact revision bytes; compositing scripts place it. A reference image is for identity, garment construction or style, never a way to regenerate a print.
 - It never removes a background, validates transparency or judges print readiness. `alphaChannel` in the receipt says whether the PNG carries an alpha channel; the skill still inspects decoded pixels, contact sheets and garment-color previews.
 - It never uploads anything. Private masters reach the store only through `pnpm design-agent upload` and the revision handshake, and public assets only through the documented public paths.
 - It never chooses a provider, a model or a count on its own, and never spends without the authorization above.
-- It never overwrites an existing output file.
+- It never overwrites an existing output file, and never resumes a receipt that belongs to a different request.
+- It never prints a key, and it redacts anything shaped like a credential or signed URL from provider error messages before they reach the terminal.
 
 ## Receipts feed provenance
 
@@ -136,6 +136,9 @@ A successful run writes `<baseName>.receipt.json` next to the images and prints 
   "model": "gpt-image-1",
   "requestId": "req_7c1d…",
   "seed": null,
+  "status": "complete",
+  "requested": 2,
+  "completed": 2,
   "request": {
     "prompt": "…",
     "size": "1024x1536",
@@ -154,11 +157,12 @@ A successful run writes `<baseName>.receipt.json` next to the images and prints 
       "height": 1536,
       "alphaChannel": true
     }
-  ]
+  ],
+  "notes": []
 }
 ```
 
-`seed` is whatever the provider reports; today both providers report none, so it is `null` and no skill may claim deterministic regeneration. `requestId` is the provider's own identifier for support questions.
+`seed` is whatever the provider reports; today both providers report none, so it is `null` and no skill may claim deterministic regeneration. `requestId` is the provider's own identifier for support questions. `status` is `complete` only when `completed` equals `requested`; register nothing from an incomplete receipt until the rerun finishes it.
 
 The receipt is the bridge into the store's records:
 

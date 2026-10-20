@@ -10,6 +10,10 @@ export function imageFilePath(request, index, mimeType = "image/png") {
   return join(request.outputDir, `${request.baseName}-${index}.${extensions[mimeType] ?? "png"}`)
 }
 
+export function receiptFilePath(request) {
+  return join(request.outputDir, `${request.baseName}.receipt.json`)
+}
+
 function describe(path, bytes, mimeType) {
   const header = mimeType === "image/png" ? readPngHeader(bytes) : null
   return {
@@ -23,20 +27,100 @@ function describe(path, bytes, mimeType) {
   }
 }
 
+const requestFields = ["prompt", "size", "quality", "background", "count"]
+
 /**
- * Write generated images and the receipt that later feeds slot.register / asset.upload provenance.
- * Files are never overwritten: a second run with the same baseName must choose a new name, so an
- * earlier generation stays exactly as it was reviewed.
+ * Look at the destination before any paid request. A complete receipt or a stray output file
+ * means this baseName was already used: fail now, not after the provider has billed. An incomplete
+ * receipt for the same request is resumable, so its saved images are kept and only the rest run.
  */
-export async function writeImageReceipt({ request, provider, images, references = [] }) {
+export async function prepareImageOutput(request, references) {
   await mkdir(request.outputDir, { recursive: true })
-  const written = []
-  for (const [index, image] of images.entries()) {
-    const path = imageFilePath(request, index + 1, image.mimeType)
-    await writeFile(path, image.bytes, { flag: "wx" })
-    written.push(describe(path, image.bytes, image.mimeType))
+  const existing = await readFile(receiptFilePath(request), "utf8")
+    .then((text) => JSON.parse(text))
+    .catch(() => null)
+  if (existing) {
+    if (existing.status !== "incomplete")
+      throw new Error(
+        `${receiptFilePath(request)} already records a complete generation; choose a new baseName instead of paying for it again`
+      )
+    const same =
+      requestFields.every((field) => existing.request?.[field] === request[field]) &&
+      JSON.stringify((existing.request?.referenceImages ?? []).map((item) => item.sha256)) ===
+        JSON.stringify(references.map((item) => item.sha256))
+    if (!same)
+      throw new Error(
+        `${receiptFilePath(request)} records an incomplete generation of a different request; choose a new baseName`
+      )
+    const images = Array.isArray(existing.images) ? existing.images : []
+    for (const image of images) {
+      const bytes = await readFile(image.path).catch(() => null)
+      if (!bytes || sha256(bytes) !== image.sha256)
+        throw new Error(`${image.path} is missing or changed since its incomplete receipt; choose a new baseName`)
+    }
+    return { images, resumed: true }
   }
-  return saveReceipt(request, provider, written, references)
+  for (let index = 1; index <= request.count; index++) {
+    const path = imageFilePath(request, index)
+    if (
+      await readFile(path).then(
+        () => true,
+        () => false
+      )
+    )
+      throw new Error(`${path} already exists; choose a new baseName so reviewed output is never replaced`)
+  }
+  return { images: [], resumed: false }
+}
+
+/**
+ * Write each generated image the moment it arrives and keep the receipt current, so a failure on
+ * a later image leaves the earlier paid results on disk, recorded as an incomplete batch that the
+ * same command can resume. Image files use exclusive writes; only this run's receipt is rewritten.
+ */
+export function createImageWriter({ request, provider, references, images = [] }) {
+  const state = { requestId: provider.requestId ?? null, seed: provider.seed ?? null, notes: [] }
+  const save = (status) =>
+    writeFile(receiptFilePath(request), JSON.stringify(receipt(status), null, 2) + "\n").then(() => receipt(status))
+  const receipt = (status) => ({
+    schemaVersion: 1,
+    createdAt: new Date().toISOString(),
+    status,
+    provider: provider.name,
+    model: provider.model ?? null,
+    requestId: state.requestId,
+    seed: state.seed,
+    requested: request.count,
+    completed: images.length,
+    request: {
+      prompt: request.prompt,
+      size: request.size,
+      quality: request.quality,
+      background: request.background,
+      count: request.count,
+      referenceImages: references,
+    },
+    images,
+    notes: state.notes,
+  })
+  return {
+    get completed() {
+      return images.length
+    },
+    async add(image, { requestId = null, seed = null } = {}) {
+      state.requestId ??= requestId
+      state.seed ??= seed
+      const path = imageFilePath(request, images.length + 1, image.mimeType)
+      await writeFile(path, image.bytes, { flag: "wx" })
+      images.push(describe(path, image.bytes, image.mimeType))
+      await save("incomplete")
+    },
+    async finish({ notes = [] } = {}) {
+      state.notes = notes
+      const saved = await save(images.length >= request.count ? "complete" : "incomplete")
+      return { ...saved, receiptPath: receiptFilePath(request) }
+    },
+  }
 }
 
 /** Hash files a host tool produced at the expected paths, producing the same receipt shape. */
@@ -48,7 +132,9 @@ export async function completeHostReceipt({ request, provider, references = [] }
     if (!bytes) throw new Error(`Expected host output is missing: ${path}`)
     images.push(describe(path, bytes, "image/png"))
   }
-  return saveReceipt(request, provider, images, references)
+  await mkdir(request.outputDir, { recursive: true })
+  const writer = createImageWriter({ request, provider, references, images })
+  return writer.finish()
 }
 
 export async function hashReferenceImages(paths) {
@@ -66,27 +152,4 @@ export function detectMimeType(bytes) {
   if (bytes[0] === 0xff && bytes[1] === 0xd8) return "image/jpeg"
   if (bytes.toString("latin1", 0, 4) === "RIFF" && bytes.toString("latin1", 8, 12) === "WEBP") return "image/webp"
   throw new Error("Reference images must be PNG, JPEG or WebP")
-}
-
-async function saveReceipt(request, provider, images, references) {
-  const receipt = {
-    schemaVersion: 1,
-    createdAt: new Date().toISOString(),
-    provider: provider.name,
-    model: provider.model ?? null,
-    requestId: provider.requestId ?? null,
-    seed: provider.seed ?? null,
-    request: {
-      prompt: request.prompt,
-      size: request.size,
-      quality: request.quality,
-      background: request.background,
-      count: request.count,
-      referenceImages: references,
-    },
-    images,
-  }
-  const path = join(request.outputDir, `${request.baseName}.receipt.json`)
-  await writeFile(path, JSON.stringify(receipt, null, 2) + "\n", { flag: "wx" })
-  return { ...receipt, receiptPath: path }
 }

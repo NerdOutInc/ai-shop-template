@@ -4,7 +4,7 @@ import { pathToFileURL } from "node:url"
 import { normalizeImageRequest } from "./request.mjs"
 import { readProviderKey } from "./credentials.mjs"
 import { resolvePaidApiAuthorization } from "./authorization.mjs"
-import { hashReferenceImages, writeImageReceipt, completeHostReceipt } from "./receipt.mjs"
+import { hashReferenceImages, prepareImageOutput, createImageWriter, completeHostReceipt } from "./receipt.mjs"
 import { createOpenAiProvider } from "./openai.mjs"
 import { createGeminiProvider } from "./gemini.mjs"
 import { createHostProvider } from "./host.mjs"
@@ -50,6 +50,7 @@ export async function runImageGeneration({ argv, environment = process.env, fetc
   const authorization = await resolvePaidApiAuthorization({ flags, cwd })
   if (flags.includes("--dry-run")) {
     const provider = definition.create({ key: "", environment, fetcher })
+    provider.validate(request)
     return {
       dryRun: true,
       provider: providerName,
@@ -66,18 +67,35 @@ export async function runImageGeneration({ argv, environment = process.env, fetc
   }
   if (!authorization.authorized)
     throw new Error(
-      `Paid image generation needs the owner's authorization: pass --authorized-by-owner after the owner approves it in the active conversation, or record delegation.imageGeneration.paidApi: true in .store-setup.local.json. A large requested count never authorizes a paid API by itself.`
+      `Paid image generation needs the owner's authorization from the active conversation: pass --authorized-by-owner once the owner has approved paid generation there. ${
+        authorization.savedDelegation === true
+          ? "The saved delegation.imageGeneration.paidApi in .store-setup.local.json is evidence to cite, not permission on its own."
+          : "A saved delegation in .store-setup.local.json is evidence only and never authorizes spending by itself."
+      } A large requested count never authorizes a paid API.`
     )
   const key = await readProviderKey(definition.key, environment)
   const provider = definition.create({ key, environment, fetcher })
-  const result = await provider.generate(request, references)
-  const receipt = await writeImageReceipt({
+  provider.validate(request)
+  // Collisions and resumable progress are settled before the provider can bill anything.
+  const { images, resumed } = await prepareImageOutput(request, publicReferences)
+  const writer = createImageWriter({
     request,
-    provider: { name: provider.name, model: provider.model, requestId: result.requestId, seed: result.seed },
-    images: result.images,
+    provider: { name: provider.name, model: provider.model },
     references: publicReferences,
+    images,
   })
-  return { ...receipt, authorization: authorization.source, notes: result.notes }
+  let notes = []
+  try {
+    notes = (await provider.generate(request, references, writer)).notes
+  } catch (error) {
+    if (writer.completed === 0) throw error
+    const receipt = await writer.finish({ notes: [`generation stopped: ${error.message}`] })
+    throw new Error(
+      `${error.message}. ${receipt.completed} of ${request.count} images are saved and recorded as incomplete in ${receipt.receiptPath}; rerun the same command to generate only the remaining ${request.count - receipt.completed}.`
+    )
+  }
+  const receipt = await writer.finish({ notes })
+  return { ...receipt, authorization: authorization.source, resumed }
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

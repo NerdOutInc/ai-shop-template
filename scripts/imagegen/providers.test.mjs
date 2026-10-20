@@ -200,7 +200,16 @@ test("gemini maps size to an aspect ratio, inlines references and asks for trans
 
 test("provider errors become actionable messages that never include the key", async () => {
   const cases = [
-    [401, { error: { message: "Incorrect API key provided: sk-xxx" } }, /rejected the API key/],
+    [401, { error: { message: `Incorrect API key provided: ${KEY}` } }, /rejected the API key.*\[redacted\]/],
+    [
+      403,
+      {
+        error: {
+          message: "Forbidden for Bearer abcdefghijklmnop at https://proxy.example/v1?key=AIzaSyA1234567890abcdefghijk",
+        },
+      },
+      /rejected the API key/,
+    ],
     [429, { error: { message: "Rate limit" } }, /rate limit or quota/],
     [
       400,
@@ -226,7 +235,10 @@ test("provider errors become actionable messages that never include the key", as
           return true
         }
       )
-      await assert.rejects(readFile(join(directory, "out", "badger.receipt.json")), "no receipt on failure")
+      await assert.rejects(
+        readFile(join(directory, "out", "badger.receipt.json")),
+        "no receipt when nothing was generated"
+      )
     } finally {
       await cleanup()
     }
@@ -250,9 +262,13 @@ test("gemini reports a blocked or empty answer instead of writing a partial rece
   }
 })
 
-test("existing output files are never overwritten", async () => {
+test("a completed baseName or a stray output file fails before the provider is called again", async () => {
   const { directory, input, cleanup } = await workspace()
-  const fetcher = async () => jsonResponse({ data: [{ b64_json: makeTestPng().toString("base64") }] })
+  let calls = 0
+  const fetcher = async () => {
+    calls++
+    return jsonResponse({ data: [{ b64_json: makeTestPng().toString("base64") }] })
+  }
   const run = () =>
     runImageGeneration({
       argv: ["--input", input, "--authorized-by-owner"],
@@ -262,8 +278,108 @@ test("existing output files are never overwritten", async () => {
     })
   try {
     const first = await run()
-    await assert.rejects(run, /EEXIST/)
+    assert.equal(first.status, "complete")
+    await assert.rejects(run, /already records a complete generation; choose a new baseName/)
+    assert.equal(calls, 1, "the second run must not bill the provider")
     assert.equal(sha256(await readFile(first.images[0].path)), first.images[0].sha256)
+    const { mkdir, rm: remove, writeFile: write } = await import("node:fs/promises")
+    await remove(join(directory, "out"), { recursive: true, force: true })
+    await mkdir(join(directory, "out"), { recursive: true })
+    await write(join(directory, "out", "badger-1.png"), makeTestPng({ seed: 99 }))
+    await assert.rejects(run, /badger-1\.png already exists; choose a new baseName/)
+    assert.equal(calls, 1)
+  } finally {
+    await cleanup()
+  }
+})
+
+test("gemini keeps every finished image when a later call fails, and the same command resumes the rest", async () => {
+  const { directory, input, cleanup } = await workspace({ count: 3 })
+  const calls = []
+  let failSecond = true
+  const fetcher = async (_url, init) => {
+    calls.push(JSON.parse(init.body))
+    if (failSecond && calls.length === 2)
+      return jsonResponse({ error: { message: "Resource exhausted" } }, { status: 429 })
+    return jsonResponse({
+      responseId: `resp_${calls.length}`,
+      candidates: [
+        {
+          content: {
+            parts: [
+              { inlineData: { mimeType: "image/png", data: makeTestPng({ seed: calls.length }).toString("base64") } },
+            ],
+          },
+        },
+      ],
+    })
+  }
+  const run = () =>
+    runImageGeneration({
+      argv: ["--input", input, "--authorized-by-owner"],
+      environment: { IMAGE_PROVIDER: "gemini", GEMINI_API_KEY: KEY },
+      fetcher,
+      cwd: directory,
+    })
+  try {
+    await assert.rejects(
+      run,
+      /rate limit or quota reached.*1 of 3 images are saved and recorded as incomplete.*remaining 2/s
+    )
+    const partial = JSON.parse(await readFile(join(directory, "out", "badger.receipt.json"), "utf8"))
+    assert.equal(partial.status, "incomplete")
+    assert.deepEqual(
+      [partial.completed, partial.requested, partial.images.length, partial.requestId],
+      [1, 3, 1, "resp_1"]
+    )
+    assert.match(partial.notes[0], /generation stopped/)
+    const firstHash = partial.images[0].sha256
+    assert.equal(sha256(await readFile(partial.images[0].path)), firstHash)
+    failSecond = false
+    const receipt = await run()
+    assert.equal(receipt.status, "complete")
+    assert.equal(receipt.resumed, true)
+    assert.equal(calls.length, 4, "only the two missing images are generated again")
+    assert.equal(receipt.images.length, 3)
+    assert.equal(receipt.images[0].sha256, firstHash)
+    assert.deepEqual(
+      receipt.images.map((image) => image.path.endsWith("badger-" + (receipt.images.indexOf(image) + 1) + ".png")),
+      [true, true, true]
+    )
+  } finally {
+    await cleanup()
+  }
+})
+
+test("gemini sends a 2K image size only to a model that accepts it", async () => {
+  const { directory, input, cleanup } = await workspace({ quality: "high" })
+  const bodies = []
+  const fetcher = async (_url, init) => {
+    bodies.push(JSON.parse(init.body))
+    return jsonResponse({
+      candidates: [
+        { content: { parts: [{ inlineData: { mimeType: "image/png", data: makeTestPng().toString("base64") } }] } },
+      ],
+    })
+  }
+  try {
+    await assert.rejects(
+      runImageGeneration({
+        argv: ["--input", input, "--authorized-by-owner"],
+        environment: { IMAGE_PROVIDER: "gemini", GEMINI_API_KEY: KEY },
+        fetcher,
+        cwd: directory,
+      }),
+      /gemini-2\.5-flash-image renders at a fixed resolution/
+    )
+    assert.equal(bodies.length, 0)
+    await runImageGeneration({
+      argv: ["--input", input, "--authorized-by-owner"],
+      environment: { IMAGE_PROVIDER: "gemini", GEMINI_API_KEY: KEY, IMAGE_MODEL: "gemini-3-pro-image-preview" },
+      fetcher,
+      cwd: directory,
+    })
+    assert.deepEqual(bodies[0].generationConfig.imageConfig, { imageSize: "2K" })
   } finally {
     await cleanup()
   }

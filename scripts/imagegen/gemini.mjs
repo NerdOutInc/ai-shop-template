@@ -8,18 +8,29 @@ const aspectRatios = {
   "1792x1024": "16:9",
   "1024x1792": "9:16",
 }
+// Only the Gemini 3 image models take a configurable imageSize; gemini-2.5-flash-image renders at
+// a fixed resolution and rejects the field, so "high" must not reach it.
+const configurableSize = /^gemini-3/
 
 /** Gemini image generation through generateContent, one call per requested image. */
 export function createGeminiProvider({ key, environment = process.env, fetcher = fetch }) {
   const model = environment.IMAGE_MODEL || "gemini-2.5-flash-image"
   const baseUrl = (environment.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com").replace(/\/$/, "")
+  const twoK = (request) => request.quality === "high"
   return {
     name: "gemini",
     model,
     describe() {
       return { endpoint: `models/${model}:generateContent`, model }
     },
-    async generate(request, references) {
+    validate(request) {
+      if (twoK(request) && !configurableSize.test(model))
+        throw new Error(
+          `${model} renders at a fixed resolution and does not accept quality "high" (2K); use quality auto, low or medium, or set IMAGE_MODEL to a Gemini 3 image model`
+        )
+    },
+    async generate(request, references, writer) {
+      this.validate(request)
       const prompt =
         request.background === "transparent"
           ? `${request.prompt}\n\nOutput a PNG with a fully transparent background (alpha channel), no backdrop, no checkerboard.`
@@ -32,11 +43,9 @@ export function createGeminiProvider({ key, environment = process.env, fetcher =
       ]
       const imageConfig = {
         ...(parseImageSize(request.size) ? { aspectRatio: aspectRatios[request.size] } : {}),
-        ...(request.quality === "high" ? { imageSize: "2K" } : {}),
+        ...(twoK(request) ? { imageSize: "2K" } : {}),
       }
-      const images = []
-      let requestId = null
-      for (let index = 0; index < request.count; index++) {
+      while (writer.completed < request.count) {
         const response = await fetcher(`${baseUrl}/v1beta/models/${model}:generateContent`, {
           method: "POST",
           headers: { "x-goog-api-key": key, "content-type": "application/json" },
@@ -46,21 +55,18 @@ export function createGeminiProvider({ key, environment = process.env, fetcher =
           }),
         })
         const body = await response.json().catch(() => null)
-        if (!response.ok) throw translateProviderError("gemini", response.status, body)
+        if (!response.ok) throw translateProviderError("gemini", response.status, body, { key })
         const image = body?.candidates?.[0]?.content?.parts?.find((part) => part.inlineData?.data)?.inlineData
         if (!image) {
           const reason = body?.candidates?.[0]?.finishReason ?? body?.promptFeedback?.blockReason
-          throw new Error(
-            `gemini returned no image${reason ? ` (${reason})` : ""}; ${images.length} of ${request.count} written so far were discarded`
-          )
+          throw new Error(`gemini returned no image${reason ? ` (${reason})` : ""}`)
         }
-        images.push({ bytes: Buffer.from(image.data, "base64"), mimeType: image.mimeType || "image/png" })
-        requestId ??= body.responseId ?? null
+        await writer.add(
+          { bytes: Buffer.from(image.data, "base64"), mimeType: image.mimeType || "image/png" },
+          { requestId: body.responseId ?? null }
+        )
       }
       return {
-        requestId,
-        seed: null,
-        images,
         notes:
           request.background === "transparent"
             ? ["gemini does not guarantee an alpha channel; check alphaChannel and the decoded pixels before use"]

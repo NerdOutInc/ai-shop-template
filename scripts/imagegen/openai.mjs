@@ -12,13 +12,18 @@ export function createOpenAiProvider({ key, environment = process.env, fetcher =
     describe(request) {
       return { endpoint: request.referenceImages.length ? "images/edits" : "images/generations", model }
     },
-    async generate(request, references) {
+    /** Reject what the provider would reject, before a dry run reports it or a request is billed. */
+    validate(request) {
       if (!supportedSizes.includes(request.size))
         throw new Error(`openai supports sizes ${supportedSizes.join(", ")}; choose one of those`)
+    },
+    async generate(request, references, writer) {
+      this.validate(request)
+      const remaining = request.count - writer.completed
       const fields = {
         model,
         prompt: request.prompt,
-        n: String(request.count),
+        n: String(remaining),
         size: request.size,
         quality: request.quality,
         background: request.background,
@@ -43,20 +48,18 @@ export function createOpenAiProvider({ key, environment = process.env, fetcher =
         response = await fetcher(`${baseUrl}/images/generations`, {
           method: "POST",
           headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
-          body: JSON.stringify({ ...fields, n: request.count }),
+          body: JSON.stringify({ ...fields, n: remaining }),
         })
       }
       const body = await response.json().catch(() => null)
-      if (!response.ok) throw translateProviderError("openai", response.status, body)
+      if (!response.ok) throw translateProviderError("openai", response.status, body, { key })
       const data = Array.isArray(body?.data) ? body.data : []
       if (!data.length || data.some((item) => typeof item.b64_json !== "string"))
         throw new Error("openai returned no base64 image data; nothing was written")
-      return {
-        requestId: response.headers.get("x-request-id"),
-        seed: null,
-        images: data.map((item) => ({ bytes: Buffer.from(item.b64_json, "base64"), mimeType: "image/png" })),
-        notes: [],
-      }
+      const requestId = response.headers.get("x-request-id")
+      for (const item of data.slice(0, remaining))
+        await writer.add({ bytes: Buffer.from(item.b64_json, "base64"), mimeType: "image/png" }, { requestId })
+      return { notes: [] }
     },
   }
 }

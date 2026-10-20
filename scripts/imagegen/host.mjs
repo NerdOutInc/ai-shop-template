@@ -9,6 +9,7 @@ export function createHostProvider() {
   return {
     name: "host",
     model: null,
+    validate() {},
     describe() {
       return { endpoint: "host image tool", model: null }
     },

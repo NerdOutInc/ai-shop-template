@@ -66,27 +66,40 @@ test("a paid provider refuses to run without owner authorization and never conta
         fetcher: neverFetch,
         cwd: directory,
       }),
-      /needs the owner's authorization.*--authorized-by-owner.*delegation\.imageGeneration\.paidApi/s
+      /needs the owner's authorization from the active conversation.*--authorized-by-owner.*saved delegation.*evidence only/s
     )
   } finally {
     await cleanup()
   }
 })
 
-test("a recorded delegation in .store-setup.local.json authorizes paid generation", async () => {
+test("a saved delegation in .store-setup.local.json is evidence only and never spends by itself", async () => {
   const { directory, input, cleanup } = await workspace({ count: 1 })
   await writeFile(
     join(directory, ".store-setup.local.json"),
     JSON.stringify({ delegation: { imageGeneration: { paidApi: true } } })
   )
+  const environment = { IMAGE_PROVIDER: "openai", OPENAI_API_KEY: KEY }
   try {
+    await assert.rejects(
+      runImageGeneration({ argv: ["--input", input], environment, fetcher: neverFetch, cwd: directory }),
+      /saved delegation\.imageGeneration\.paidApi in \.store-setup\.local\.json is evidence to cite, not permission/
+    )
+    const plan = await runImageGeneration({
+      argv: ["--input", input, "--dry-run"],
+      environment,
+      fetcher: neverFetch,
+      cwd: directory,
+    })
+    assert.deepEqual(plan.authorization, { authorized: false, source: "none", savedDelegation: true })
     const receipt = await runImageGeneration({
-      argv: ["--input", input],
-      environment: { IMAGE_PROVIDER: "openai", OPENAI_API_KEY: KEY },
+      argv: ["--input", input, "--authorized-by-owner"],
+      environment,
       fetcher: async () => Response.json({ data: [{ b64_json: makeTestPng().toString("base64") }] }),
       cwd: directory,
     })
-    assert.equal(receipt.authorization, ".store-setup.local.json")
+    assert.equal(receipt.authorization, "flag")
+    assert.equal(receipt.status, "complete")
     assert.equal(receipt.images[0].path, join(directory, "out", "tee-1.png"))
   } finally {
     await cleanup()
@@ -138,7 +151,7 @@ test("dry run prints the cost-relevant parameters and authorization source witho
       quality: "high",
       background: "opaque",
       referenceImages: 1,
-      authorization: { authorized: false, source: "none" },
+      authorization: { authorized: false, source: "none", savedDelegation: null },
       wouldWrite: ["tee-1.png", "tee-2.png"],
       outputDir: join(directory, "out"),
     })
@@ -149,7 +162,16 @@ test("dry run prints the cost-relevant parameters and authorization source witho
       cwd: directory,
     })
     assert.equal(gemini.endpoint, "models/gemini-3-pro-image-preview:generateContent")
-    assert.deepEqual(gemini.authorization, { authorized: true, source: "flag" })
+    assert.deepEqual(gemini.authorization, { authorized: true, source: "flag", savedDelegation: null })
+    await assert.rejects(
+      runImageGeneration({
+        argv: ["--input", input, "--dry-run", "--authorized-by-owner"],
+        environment: { IMAGE_PROVIDER: "gemini" },
+        fetcher: neverFetch,
+        cwd: directory,
+      }),
+      /gemini-2\.5-flash-image renders at a fixed resolution and does not accept quality "high"/
+    )
   } finally {
     await cleanup()
   }
