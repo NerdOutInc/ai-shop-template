@@ -351,6 +351,51 @@ test("gemini keeps every finished image when a later call fails, and the same co
   }
 })
 
+test("an incomplete batch resumes only under the same provider and model, and only when no orphaned file is in the way", async () => {
+  const { directory, input, cleanup } = await workspace({ count: 3 })
+  let calls = 0
+  const fetcher = async () => {
+    calls++
+    if (calls === 2) return jsonResponse({ error: { message: "Resource exhausted" } }, { status: 429 })
+    return jsonResponse({
+      candidates: [
+        {
+          content: {
+            parts: [{ inlineData: { mimeType: "image/png", data: makeTestPng({ seed: calls }).toString("base64") } }],
+          },
+        },
+      ],
+    })
+  }
+  const run = (environment) =>
+    runImageGeneration({ argv: ["--input", input, "--authorized-by-owner"], environment, fetcher, cwd: directory })
+  try {
+    await assert.rejects(run({ IMAGE_PROVIDER: "gemini", GEMINI_API_KEY: KEY }), /1 of 3 images are saved/)
+    assert.equal(calls, 2)
+    await assert.rejects(
+      run({ IMAGE_PROVIDER: "openai", OPENAI_API_KEY: KEY }),
+      /incomplete gemini\/gemini-2\.5-flash-image generation of a different request; choose a new baseName rather than mixing provenance/
+    )
+    await assert.rejects(
+      run({ IMAGE_PROVIDER: "gemini", GEMINI_API_KEY: KEY, IMAGE_MODEL: "gemini-3-pro-image-preview" }),
+      /mixing provenance/
+    )
+    assert.equal(calls, 2, "a provider or model mismatch never reaches the provider")
+    const { writeFile: write } = await import("node:fs/promises")
+    await write(join(directory, "out", "badger-2.png"), makeTestPng({ seed: 77 }))
+    await assert.rejects(
+      run({ IMAGE_PROVIDER: "gemini", GEMINI_API_KEY: KEY }),
+      /badger-2\.png exists but is not recorded in the incomplete receipt.*before resuming/
+    )
+    assert.equal(calls, 2, "an orphaned output file is detected before billing")
+    const receipt = JSON.parse(await readFile(join(directory, "out", "badger.receipt.json"), "utf8"))
+    assert.equal(receipt.status, "incomplete")
+    assert.equal(receipt.provider, "gemini")
+  } finally {
+    await cleanup()
+  }
+})
+
 test("gemini sends a 2K image size only to a model that accepts it", async () => {
   const { directory, input, cleanup } = await workspace({ quality: "high" })
   const bodies = []

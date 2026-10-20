@@ -28,60 +28,88 @@ function describe(path, bytes, mimeType) {
 }
 
 const requestFields = ["prompt", "size", "quality", "background", "count"]
+const exists = (path) =>
+  readFile(path).then(
+    () => true,
+    () => false
+  )
+
+/** The same request, references, provider and model: the identity a receipt may be continued under. */
+function sameGeneration(existing, request, references, provider) {
+  return (
+    existing.provider === provider.name &&
+    (existing.model ?? null) === (provider.model ?? null) &&
+    requestFields.every((field) => existing.request?.[field] === request[field]) &&
+    JSON.stringify((existing.request?.referenceImages ?? []).map((item) => item.sha256)) ===
+      JSON.stringify(references.map((item) => item.sha256))
+  )
+}
+
+async function readReceipt(request) {
+  return readFile(receiptFilePath(request), "utf8")
+    .then((text) => JSON.parse(text))
+    .catch(() => null)
+}
+
+async function verifyRecordedImages(images) {
+  for (const image of images) {
+    const bytes = await readFile(image.path).catch(() => null)
+    if (!bytes || sha256(bytes) !== image.sha256) return false
+  }
+  return true
+}
 
 /**
  * Look at the destination before any paid request. A complete receipt or a stray output file
  * means this baseName was already used: fail now, not after the provider has billed. An incomplete
- * receipt for the same request is resumable, so its saved images are kept and only the rest run.
+ * receipt for the same request, provider and model is resumable, so its saved images are kept and
+ * only the rest run; a different provider or model would mislabel the saved images' provenance.
  */
-export async function prepareImageOutput(request, references) {
+export async function prepareImageOutput(request, references, provider) {
   await mkdir(request.outputDir, { recursive: true })
-  const existing = await readFile(receiptFilePath(request), "utf8")
-    .then((text) => JSON.parse(text))
-    .catch(() => null)
+  const existing = await readReceipt(request)
+  let images = []
   if (existing) {
     if (existing.status !== "incomplete")
       throw new Error(
         `${receiptFilePath(request)} already records a complete generation; choose a new baseName instead of paying for it again`
       )
-    const same =
-      requestFields.every((field) => existing.request?.[field] === request[field]) &&
-      JSON.stringify((existing.request?.referenceImages ?? []).map((item) => item.sha256)) ===
-        JSON.stringify(references.map((item) => item.sha256))
-    if (!same)
+    if (!sameGeneration(existing, request, references, provider))
       throw new Error(
-        `${receiptFilePath(request)} records an incomplete generation of a different request; choose a new baseName`
+        `${receiptFilePath(request)} records an incomplete ${existing.provider}/${existing.model ?? "unknown"} generation of a different request; choose a new baseName rather than mixing provenance`
       )
-    const images = Array.isArray(existing.images) ? existing.images : []
-    for (const image of images) {
-      const bytes = await readFile(image.path).catch(() => null)
-      if (!bytes || sha256(bytes) !== image.sha256)
-        throw new Error(`${image.path} is missing or changed since its incomplete receipt; choose a new baseName`)
-    }
-    return { images, resumed: true }
+    images = Array.isArray(existing.images) ? existing.images : []
+    if (!(await verifyRecordedImages(images)))
+      throw new Error(`An image recorded in ${receiptFilePath(request)} is missing or changed; choose a new baseName`)
   }
-  for (let index = 1; index <= request.count; index++) {
+  for (let index = images.length + 1; index <= request.count; index++) {
     const path = imageFilePath(request, index)
-    if (
-      await readFile(path).then(
-        () => true,
-        () => false
+    if (await exists(path))
+      throw new Error(
+        existing
+          ? `${path} exists but is not recorded in the incomplete receipt (an interrupted run left it behind); inspect it, move it aside or choose a new baseName before resuming`
+          : `${path} already exists; choose a new baseName so reviewed output is never replaced`
       )
-    )
-      throw new Error(`${path} already exists; choose a new baseName so reviewed output is never replaced`)
   }
-  return { images: [], resumed: false }
+  return { images, resumed: Boolean(existing) }
 }
 
 /**
  * Write each generated image the moment it arrives and keep the receipt current, so a failure on
  * a later image leaves the earlier paid results on disk, recorded as an incomplete batch that the
- * same command can resume. Image files use exclusive writes; only this run's receipt is rewritten.
+ * same command can resume. Image files use exclusive writes; only a receipt this run created, or a
+ * validated incomplete one it resumed, is ever rewritten.
  */
-export function createImageWriter({ request, provider, references, images = [] }) {
+export function createImageWriter({ request, provider, references, images = [], resumed = false }) {
   const state = { requestId: provider.requestId ?? null, seed: provider.seed ?? null, notes: [] }
-  const save = (status) =>
-    writeFile(receiptFilePath(request), JSON.stringify(receipt(status), null, 2) + "\n").then(() => receipt(status))
+  let owned = resumed
+  const save = async (status) => {
+    await writeFile(receiptFilePath(request), JSON.stringify(receipt(status), null, 2) + "\n", {
+      flag: owned ? "w" : "wx",
+    })
+    owned = true
+    return receipt(status)
+  }
   const receipt = (status) => ({
     schemaVersion: 1,
     createdAt: new Date().toISOString(),
@@ -123,7 +151,11 @@ export function createImageWriter({ request, provider, references, images = [] }
   }
 }
 
-/** Hash files a host tool produced at the expected paths, producing the same receipt shape. */
+/**
+ * Hash files a host tool produced at the expected paths, producing the same receipt shape. A
+ * completed receipt is immutable: the identical completion is returned as it is, anything else
+ * (a changed prompt, a receipt from a paid provider) is refused rather than relabelled.
+ */
 export async function completeHostReceipt({ request, provider, references = [] }) {
   const images = []
   for (let index = 1; index <= request.count; index++) {
@@ -133,6 +165,18 @@ export async function completeHostReceipt({ request, provider, references = [] }
     images.push(describe(path, bytes, "image/png"))
   }
   await mkdir(request.outputDir, { recursive: true })
+  const existing = await readReceipt(request)
+  if (existing) {
+    const identical =
+      existing.status === "complete" &&
+      sameGeneration(existing, request, references, provider) &&
+      JSON.stringify((existing.images ?? []).map((image) => image.sha256)) ===
+        JSON.stringify(images.map((image) => image.sha256))
+    if (identical) return { ...existing, receiptPath: receiptFilePath(request) }
+    throw new Error(
+      `${receiptFilePath(request)} already exists for a different ${existing.provider ?? "unknown"} generation; receipts are immutable, so choose a new baseName`
+    )
+  }
   const writer = createImageWriter({ request, provider, references, images })
   return writer.finish()
 }

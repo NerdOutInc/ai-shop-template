@@ -76,7 +76,7 @@ Generate with the host tool, save each PNG at its expected path, then:
 pnpm imagegen --input .tmp/concepts/batch-7f3c/slot-03/request.json --complete
 ```
 
-`--complete` reads the files, hashes them and writes the same receipt a paid provider would, with `provider: "host"` and `model: null`. Record the host tool's name and any version it exposes in the skill's own manifest (`toolMetadata.tool`); the adapter cannot see it.
+`--complete` reads the files, hashes them and writes the same receipt a paid provider would, with `provider: "host"` and `model: null`. A completed receipt is immutable: running `--complete` again with the same prompt and files returns it unchanged, and a changed prompt or a receipt written by a paid provider is refused. Record the host tool's name and any version it exposes in the skill's own manifest (`toolMetadata.tool`); the adapter cannot see it.
 
 ## Keys stay out of chat, Git and logs
 
@@ -113,7 +113,7 @@ IMAGE_PROVIDER=openai pnpm imagegen --input .tmp/concepts/batch-7f3c/slot-03/req
 
 Count, size and quality are the three parameters that drive the bill on every provider. Multiply the planned number of slots by `count`, name the model and quality, and let the owner decide. Keep `count` small while the brief is still moving; one inspected representative output is cheaper than ten wrong ones. Retries cost the same as first attempts and are provenance, not extra delivered concepts.
 
-The destination is checked before any request: a `baseName` whose receipt is already complete, or whose output file already exists, fails without a provider call. When a multi-image Gemini batch stops partway (a rate limit, a blocked answer, a network failure), every image already returned is on disk and the receipt is saved with `status: "incomplete"`, `completed` and `requested`; rerunning the same command with the same request verifies those files by hash and generates only the missing ones, so a retry never pays twice for a finished image. A different request under the same `baseName` is refused.
+The destination is checked before any request: a `baseName` whose receipt is already complete, or whose output file already exists, fails without a provider call. When a multi-image Gemini batch stops partway (a rate limit, a blocked answer, a network failure), every image already returned is on disk and the receipt is saved with `status: "incomplete"`, `completed` and `requested`; rerunning the same command with the same request, provider and model verifies those files by hash, checks that no unrecorded file sits at a remaining path, and generates only the missing ones, so a retry never pays twice for a finished image. A different request, provider or model under the same `baseName` is refused rather than relabelling the saved images' provenance, and an unrecorded file left by an interrupted run must be inspected and moved aside before resuming.
 
 ## What the adapter never does
 

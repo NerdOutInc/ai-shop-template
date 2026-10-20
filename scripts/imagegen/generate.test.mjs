@@ -101,6 +101,12 @@ test("a saved delegation in .store-setup.local.json is evidence only and never s
     assert.equal(receipt.authorization, "flag")
     assert.equal(receipt.status, "complete")
     assert.equal(receipt.images[0].path, join(directory, "out", "tee-1.png"))
+    // A paid-provider receipt can never be rewritten with host provenance.
+    await assert.rejects(
+      runImageGeneration({ argv: ["--input", input, "--complete"], environment, fetcher: neverFetch, cwd: directory }),
+      /already exists for a different openai generation; receipts are immutable/
+    )
+    assert.equal(JSON.parse(await readFile(join(directory, "out", "tee.receipt.json"), "utf8")).provider, "openai")
   } finally {
     await cleanup()
   }
@@ -231,6 +237,42 @@ test("the host provider prints the exact prompt and expected paths, then --compl
     )
     assert.equal(receipt.request.referenceImages[0].sha256, sha256(anchor))
     assert.ok(JSON.parse(await readFile(join(directory, "out", "tee.receipt.json"), "utf8")).images.length === 2)
+    // Completing again with the same files and prompt is idempotent; a changed prompt is refused, not relabelled.
+    const again = await runImageGeneration({
+      argv: ["--input", input, "--complete"],
+      environment: {},
+      fetcher: neverFetch,
+      cwd: directory,
+    })
+    assert.equal(again.createdAt, receipt.createdAt)
+    assert.deepEqual(
+      again.images.map((image) => image.sha256),
+      receipt.images.map((image) => image.sha256)
+    )
+    await writeFile(
+      input,
+      JSON.stringify({
+        prompt: "Folded blank tee, navy",
+        outputDir: "out",
+        baseName: "tee",
+        count: 2,
+        background: "transparent",
+        referenceImages: ["anchor.png"],
+      })
+    )
+    await assert.rejects(
+      runImageGeneration({
+        argv: ["--input", input, "--complete"],
+        environment: {},
+        fetcher: neverFetch,
+        cwd: directory,
+      }),
+      /tee\.receipt\.json already exists for a different host generation; receipts are immutable/
+    )
+    assert.equal(
+      JSON.parse(await readFile(join(directory, "out", "tee.receipt.json"), "utf8")).request.prompt,
+      "Folded blank tee"
+    )
   } finally {
     await cleanup()
   }

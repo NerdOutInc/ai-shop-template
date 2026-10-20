@@ -77,12 +77,13 @@ export async function runImageGeneration({ argv, environment = process.env, fetc
   const provider = definition.create({ key, environment, fetcher })
   provider.validate(request)
   // Collisions and resumable progress are settled before the provider can bill anything.
-  const { images, resumed } = await prepareImageOutput(request, publicReferences)
+  const { images, resumed } = await prepareImageOutput(request, publicReferences, provider)
   const writer = createImageWriter({
     request,
     provider: { name: provider.name, model: provider.model },
     references: publicReferences,
     images,
+    resumed,
   })
   let notes = []
   try {
