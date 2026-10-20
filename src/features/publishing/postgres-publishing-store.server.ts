@@ -598,7 +598,7 @@ export class PostgresPublishingStore implements PublishingStore {
           snapshot: applyGalleryDisplay(row).snapshot,
           revealAt: isoOrNull(row.reveal_at),
           addedToShopAt: isoOrNull(row.added_to_shop_at),
-          // Every publication, image replacement or visibility write stamps this: the content date.
+          // Every publication, image replacement, gallery activation or visibility write stamps this: the content date.
           updatedAt: isoOrNull(row.updated_at),
         }
       : null
