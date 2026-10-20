@@ -17,6 +17,11 @@ export function createAgentCatalog(sources: readonly AgentCatalogSource[], siteU
     // The same listing rule as the Product JSON-LD and merchant feeds: only options a page can preselect.
     const listings = getProductVariantListings(product, siteUrl)
     if (!listings.length) return []
+    // Gallery order, so images[0] is the storefront's and sitemap's cover photo, not the first variant's.
+    const listable = new Set(listings.flatMap((variant) => variant.images))
+    const images = [...new Set(product.images.map((image) => new URL(image.src, siteUrl).href))].filter((url) =>
+      listable.has(url)
+    )
     return [
       {
         id: product.id,
@@ -25,7 +30,7 @@ export function createAgentCatalog(sources: readonly AgentCatalogSource[], siteU
         description: product.description.trim(),
         brand: storeConfig.name,
         category,
-        images: [...new Set(listings.flatMap((variant) => variant.images))],
+        images,
         priceRange: product.price
           ? { min: money(product.price.min), max: money(product.price.max), currency: product.price.currency }
           : null,

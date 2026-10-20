@@ -78,6 +78,20 @@ it("reports no price range for a sold-out product and keeps provider color names
   })
 })
 
+it("keeps the gallery's cover photo first even when it belongs to a later variant's color", () => {
+  const raw = galleryProductFixture()
+  const navy = `https://galleryfixtures.public.blob.vercel-storage.com/published-mockups/v1/${"b".repeat(64)}.jpg`
+  raw.images = [
+    { src: image, variant_ids: [101], is_default: false },
+    { src: navy, variant_ids: [201], is_default: true },
+  ]
+  const product = normalizeCatalogProduct(raw)
+  expect(product.image?.src).toBe(navy)
+  const [listed] = createAgentCatalog([{ product, category: null }], siteUrl).products
+  expect(listed?.images).toEqual([navy, image])
+  expect(listed?.variants.map((variant) => variant.images)).toEqual([[image], [navy]])
+})
+
 it("leaves out a product whose variants cannot be preselected from a product page", () => {
   const raw = galleryProductFixture()
   raw.options.pop()

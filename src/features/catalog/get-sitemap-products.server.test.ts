@@ -42,6 +42,24 @@ describe("sitemap publication membership", () => {
       },
     ])
   })
+  it("dates a republished product by its content write and a revealed one by its arrival", async () => {
+    vi.mocked(listStorefrontProductIds).mockResolvedValue(["republished", "revealed", "unstamped"])
+    vi.mocked(readStorefrontProduct).mockImplementation(async (id) =>
+      snapshot(
+        id,
+        id === "republished"
+          ? { storefront_added_to_shop_at: "2026-09-01T12:00:00.000Z", storefront_updated_at: "2026-09-20T08:00:00Z" }
+          : id === "revealed"
+            ? { storefront_added_to_shop_at: "2026-09-25T17:30:00.000Z", storefront_updated_at: "2026-09-20T08:00:00Z" }
+            : { storefront_updated_at: "not a date" }
+      )
+    )
+    expect((await getSitemapProducts()).map((product) => [product.id, product.lastModified])).toEqual([
+      ["republished", "2026-09-20T08:00:00.000Z"],
+      ["revealed", "2026-09-25T17:30:00.000Z"],
+      ["unstamped", null],
+    ])
+  })
   it("strips the store suffix from titles and tolerates a missing stamp or photo", async () => {
     vi.mocked(listStorefrontProductIds).mockResolvedValue(["bare"])
     vi.mocked(readStorefrontProduct).mockResolvedValue(

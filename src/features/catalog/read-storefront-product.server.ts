@@ -29,7 +29,7 @@ export async function readStorefrontProduct(productId: string): Promise<Record<s
       }
       try {
         if (!revealable) return null
-        const { snapshot: raw, revealAt, addedToShopAt } = revealable
+        const { snapshot: raw, revealAt, addedToShopAt, updatedAt } = revealable
         const parsed = catalogProductSchema.safeParse(raw)
         if (!parsed.success) throw new PublishedSnapshotRejectedError()
         const snapshot = parsed.data
@@ -47,6 +47,8 @@ export async function readStorefrontProduct(productId: string): Promise<Record<s
           // Clock-free, so safe to settle inside the cache: this projection only leaves
           // readStorefrontProduct once its reveal has arrived, and then the reveal is the arrival.
           storefront_added_to_shop_at: readAddedToShopAt({ addedToShopAt, revealAt }),
+          // The last publication or image write; the sitemap dates a product by the later of this and its arrival.
+          storefront_updated_at: updatedAt,
           variants: snapshot.variants
             .filter((variant) => variant.is_enabled)
             .map((variant) => ({
@@ -72,8 +74,8 @@ export async function readStorefrontProduct(productId: string): Promise<Record<s
       }
     },
     [
-      // v2 keeps approved gallery alt text and photograph origin; v1 projections dropped both.
-      "published-catalog-product-v2",
+      // v3 carries the content timestamp; v2 kept gallery alt text and origin; v1 dropped both.
+      "published-catalog-product-v3",
       productionFingerprintVersion,
       shopId,
       createHash("sha256").update(databaseUrl).digest("hex"),

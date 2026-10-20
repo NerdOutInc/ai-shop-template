@@ -1972,6 +1972,38 @@ describe.skipIf(!databaseUrl)("durable Printify publishing", () => {
       expect(await gated.readRevealableProduct("already-up")).toMatchObject({ addedToShopAt: arrived })
     })
 
+    // The sitemap dates a page by the later of these two, so a republish must move one without the other.
+    it("stamps a republished product's content date while leaving its arrival alone", async () => {
+      const { event, product } = publishingFixture()
+      await first.enqueue(event)
+      await first.withProductLock(event.productId, async (record) => {
+        await record.activate(event, product, "source")
+        await record.finish(event.id, "complete")
+      })
+      // A new publication starts hidden; the owner shows it, then the arrival is backdated so a
+      // republish cannot pass by landing in the same second as the Show.
+      expect(await first.setProductHidden(event.productId, false)).toMatchObject({ hiddenAt: null })
+      const arrived = "2026-09-01T12:00:00.000Z"
+      await pool.query("update commerce.printify_products set added_to_shop_at=$3 where shop_id=$1 and product_id=$2", [
+        "123",
+        event.productId,
+        arrived,
+      ])
+      const published = await first.readRevealableProduct(event.productId)
+      expect(published).toMatchObject({ addedToShopAt: arrived, updatedAt: expect.any(String) })
+
+      const republish = { ...event, id: randomUUID(), createdAt: new Date(Date.now() + 1000).toISOString() }
+      await first.enqueue(republish)
+      await first.withProductLock(event.productId, async (record) => {
+        await record.activate(republish, { ...product, title: "Toast, second slice" }, "source")
+        await record.finish(republish.id, "complete")
+      })
+      const republished = await first.readRevealableProduct(event.productId)
+      expect(republished?.snapshot.title).toBe("Toast, second slice")
+      expect(republished?.addedToShopAt).toBe(arrived)
+      expect(Date.parse(republished!.updatedAt!)).toBeGreaterThan(Date.parse(published!.updatedAt!))
+    })
+
     // Hiding keeps the arrival, so the undo runbook's raw `hidden_at = null` puts a tee back where it
     // was. Showing it again by hand is a new arrival: the tee the owner put back most recently is
     // the newest one, even if it has been on the wall before.

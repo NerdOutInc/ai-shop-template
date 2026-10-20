@@ -11,13 +11,24 @@ import { readStorefrontProduct } from "./read-storefront-product.server"
 export type SitemapProduct = {
   id: string
   title: string
-  /** When the product most recently entered the shop; null when the publication carries no stamp. */
+  /**
+   * The later of the product's last publication or image write and its most recent shop arrival,
+   * so a republished page and a reveal both move the date; null when neither stamp is known.
+   */
   lastModified: string | null
   /** The product's default photo, already limited to public https sources. */
   image: string | null
 }
 
 /** Every product a crawler may list: the sitemap, llms.txt and the shop ItemList share this membership. */
+function lastModified(product: { addedToShopAt: string | null }, snapshot: Record<string, unknown>) {
+  const stamps = [product.addedToShopAt, snapshot.storefront_updated_at]
+    .filter((value): value is string => typeof value === "string")
+    .map((value) => Date.parse(value))
+    .filter((value) => Number.isFinite(value))
+  return stamps.length ? new Date(Math.max(...stamps)).toISOString() : null
+}
+
 export async function getSitemapProducts(): Promise<SitemapProduct[]> {
   if (!env.PRINTIFY_PUBLISHING_ENABLED) throw new Error("Published catalog is not enabled")
   const ids = await listStorefrontProductIds()
@@ -40,7 +51,7 @@ export async function getSitemapProducts(): Promise<SitemapProduct[]> {
       {
         id: product.id,
         title: displayProductTitle(product.title),
-        lastModified: product.addedToShopAt,
+        lastModified: lastModified(product, snapshot),
         image: product.image?.src ?? null,
       },
     ]

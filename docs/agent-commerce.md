@@ -75,7 +75,7 @@ A product that the product page could not preselect unambiguously (a variant wit
 
 ## Sitemap and ItemList
 
-The sitemap dates each product with `<lastmod>` from when it most recently entered the shop (the owner's last Show in shop or the scheduled reveal that brought it back) and adds an `<image:image>` entry for its default photo. Static pages carry no date because nothing records when their copy changed. `/shop` renders a schema.org `ItemList` whose `ListItem`s carry only `position` and `url`, the summary-page form Google documents, so each product page remains the single full `Product` graph.
+The sitemap dates each product with `<lastmod>` from the later of its last publication or image write (`updated_at`, which every republish, photo replacement and visibility change stamps) and its most recent shop arrival (the owner's last Show in shop or the scheduled reveal that brought it back, which writes nothing when its moment passes). It adds an `<image:image>` entry for the default photo. Static pages carry no date because nothing records when their copy changed. `/shop` renders a schema.org `ItemList` whose `ListItem`s carry only `position` and `url`, the summary-page form Google documents, so each product page remains the single full `Product` graph.
 
 ## Crawler policy
 
