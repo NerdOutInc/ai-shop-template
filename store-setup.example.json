@@ -22,6 +22,13 @@
     "printifyPrintProviderId": null,
     "commerceIdentity": null
   },
+  "delegation": {
+    "imageGeneration": {
+      "provider": null,
+      "paidApi": false,
+      "note": "Set paidApi true only after the owner authorizes paid image generation in conversation; pnpm imagegen reads this and --authorized-by-owner. See docs/image-generation.md."
+    }
+  },
   "providers": {
     "github": {
       "status": "not-started",

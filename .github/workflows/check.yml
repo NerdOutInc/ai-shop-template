@@ -178,6 +178,8 @@ jobs:
         run: pnpm test:artwork
       - name: Test design-agent CLI
         run: pnpm test:design-agent
+      - name: Test image generation adapter
+        run: pnpm test:imagegen
       - name: Verify template portability
         run: pnpm check:template
 

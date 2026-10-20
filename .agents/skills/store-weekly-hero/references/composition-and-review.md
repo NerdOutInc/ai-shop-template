@@ -2,7 +2,7 @@
 
 Start with the garment scale and the target viewport crop. Build the scene around the calibrated products. Distinct concepts vary their scene structure, palette, lettering and arrangement; a new color wash on the same layout is not a new direction.
 
-Generate scenery separately from merchandise where possible. A useful prompt skeleton is:
+Generate scenery separately from merchandise where possible. Put the finished prompt in a `pnpm imagegen` request file ([image generation](../../../../docs/image-generation.md)) so the layer gets a receipt. A useful prompt skeleton is:
 
 > Create a [target canvas/aspect] background for [approved visual direction]. Leave [measured regions] clear for actual product photographs to be composited later. Use [brand palette, lighting/material language]. Include only [approved lettering if needed]. Preserve [specific accepted composition elements]. Do not invent extra products, logos, offers or slogans. Return the best native resolution supported by the tool.
 

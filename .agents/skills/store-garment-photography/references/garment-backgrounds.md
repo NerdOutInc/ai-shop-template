@@ -8,7 +8,7 @@ Inspect the exact current provider garment/color and the approved photo being re
 
 For a background-only edit, retain the full-resolution approved garment-and-ink composite when its exact-art provenance and placement have been verified. Do not regenerate the shirt or reapply already-correct ink. A provider preview or thumbnail alone does not establish that provenance. If the print needs rebuilding, follow the main skill's original high-resolution artwork and measured-placement workflow first.
 
-Generate or edit the empty background with the host's supported image tool. Composite only when the host permits it and any required user authorization is already present. A style reference supplies lighting, surface and mood; do not copy its garment, artwork or website interface. Match the background light and contact shadow to the preserved garment's existing light. Preserve framing for a background-only replacement.
+Generate or edit the empty background through `pnpm imagegen` (host route or an authorized provider; see [image generation](../../../../docs/image-generation.md)) with an opaque background, the collection's shared surface description in the prompt and the approved style reference, if any, in `referenceImages`. Never pass the garment-and-ink composite as a reference for regeneration; it is preserved and composited over the new background. Composite only when the host permits it and any required user authorization is already present. A style reference supplies lighting, surface and mood; do not copy its garment, artwork or website interface. Match the background light and contact shadow to the preserved garment's existing light. Preserve framing for a background-only replacement.
 
 ## Separate cloth edges from the old background and shadow
 

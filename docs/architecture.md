@@ -20,6 +20,7 @@ Paths below are relative to the repository root. They describe where code belong
 | `public/`                 | Assets deliberately served by the website                               |
 | `assets/print/`           | README-only pointer to private artwork and production storage           |
 | `scripts/artwork/`        | Existing Python artwork tools                                           |
+| `scripts/imagegen/`       | Provider-neutral image-generation CLI used by the creative skills       |
 | `test/`                   | Shared test setup, fixtures, and support; never production dependencies |
 | `e2e/`                    | Browser journeys and their support                                      |
 
