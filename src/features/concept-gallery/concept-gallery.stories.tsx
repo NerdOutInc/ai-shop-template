@@ -57,18 +57,18 @@ export const Library: Story = {
     )
     const colors = within(canvas.getByRole("group", { name: "Garment color for design #149" }))
     await expect(colors.getAllByRole("button")).toHaveLength(5)
-    await expect(colors.getByRole("button", { name: "CVC Midnight Navy" })).toHaveAttribute("aria-pressed", "true")
+    await expect(colors.getByRole("button", { name: "Midnight Navy" })).toHaveAttribute("aria-pressed", "true")
     const artwork = () => canvas.getByRole("img", { name: first.title }).parentElement
     await expect(artwork()).toHaveStyle({ backgroundColor: "#283244" })
 
-    await userEvent.click(colors.getByRole("button", { name: "CVC Cream" }))
+    await userEvent.click(colors.getByRole("button", { name: "Cream" }))
     await expect(artwork()).toHaveStyle({ backgroundColor: "#ded1be" })
     // A saved favorite reopens on the garment it was judged against.
     await expect(canvas.getByRole("img", { name: second.title }).parentElement).toHaveStyle({
       backgroundColor: "#ded1be",
     })
     await userEvent.keyboard("{ArrowRight} ")
-    await expect(colors.getByRole("button", { name: "CVC Black" })).toHaveFocus()
+    await expect(colors.getByRole("button", { name: "Black" })).toHaveFocus()
     await expect(artwork()).toHaveStyle({ backgroundColor: "#242529" })
 
     const toggle = canvas.queryByRole("button", { name: "Filters +" })
