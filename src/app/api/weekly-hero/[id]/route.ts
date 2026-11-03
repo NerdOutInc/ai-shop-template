@@ -14,7 +14,16 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const asset = await getWeeklyHeroStore().currentAsset(id.toLowerCase())
     if (!asset) return new Response(null, { status: 404, headers: privateResponseHeaders })
     const etag = `"${asset.sha256}"`
-    const headers = { ...privateResponseHeaders, "Cache-Control": "private, no-cache", ETag: etag }
+    // This route resolves the current public asset independently of visitor identity.
+    const headers = {
+      "Cache-Control": "private, no-cache",
+      "CDN-Cache-Control": "no-store",
+      "Vercel-CDN-Cache-Control": "no-store",
+      "X-Robots-Tag": "noindex, nofollow, noarchive",
+      "X-Content-Type-Options": "nosniff",
+      "Referrer-Policy": "no-referrer",
+      ETag: etag,
+    }
     if (matchesEntityTag(request.headers.get("if-none-match"), etag))
       return new Response(null, { status: 304, headers })
     const image = await readHeroImage(asset)
