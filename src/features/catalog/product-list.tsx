@@ -8,6 +8,7 @@ import { storeConfig } from "@/lib/store-config"
 import type { CatalogResult } from "./catalog-product"
 import { filterProducts, type CatalogSort } from "./filter-products"
 import { getColorFamily } from "./get-color-family"
+import { getFilteredColor } from "./get-filtered-color"
 import { ProductCard } from "./product-card"
 import { useCategorySelection } from "./use-category-selection"
 
@@ -65,6 +66,8 @@ export function ProductList({ catalog, initialSort = "featured" }: ProductListPr
     catalog.popularityStatus !== "ready" || catalog.products.some((product) => product.salesCount === null)
 
   const newProducts = new Set(catalog.newProductIds ?? [])
+  // Sorted so the key reads the same whichever order the families were checked in.
+  const colorFilterKey = colors.toSorted().join("|")
   const products = filterProducts(catalog.products, {
     sort: sort === "popular" && popularityUnavailable ? "featured" : sort,
     colors,
@@ -240,7 +243,13 @@ export function ProductList({ catalog, initialSort = "featured" }: ProductListPr
             >
               {products.map((product, index) => (
                 <li key={product.id} className="min-w-0">
-                  <ProductCard product={product} priority={index === 0} isNew={newProducts.has(product.id)} />
+                  <ProductCard
+                    product={product}
+                    priority={index === 0}
+                    isNew={newProducts.has(product.id)}
+                    filteredColor={getFilteredColor(product, { colors, sizes })}
+                    filterKey={colorFilterKey}
+                  />
                 </li>
               ))}
             </ul>

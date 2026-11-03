@@ -485,6 +485,84 @@ describe("ProductList", () => {
     expect(badged()).toEqual(["Fresh shirt", "Fresh drop shirt"])
   })
 
+  it("pre-selects each card's first purchasable color in a filtered family and shows its photo", async () => {
+    const user = userEvent.setup()
+    const shirt = catalogProductFixture({
+      defaultColor: "Black",
+      image: { src: "/black.jpg", alt: "Black mockup" },
+      images: [
+        { src: "/black.jpg", alt: "Black mockup", variantIds: [1] },
+        { src: "/navy.jpg", alt: "Navy mockup", variantIds: [3] },
+        { src: "/royal.jpg", alt: "Royal mockup", variantIds: [4] },
+      ],
+      colors: [...product.colors, { name: "Navy", hex: "#283244" }, { name: "Royal", hex: "#2b4f9e" }],
+      variants: [
+        ...product.variants,
+        { ...product.variants[0]!, id: 3, color: "Navy", size: "S" },
+        { ...product.variants[0]!, id: 4, color: "Royal", size: "M" },
+      ],
+    })
+    render(<ProductList catalog={{ status: "ready", products: [shirt] }} />)
+    const card = () => within(screen.getByRole("article"))
+    expect(card().getByRole("img", { name: "Black mockup" })).toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "Filters +" }))
+    // A swatch clicked before any filter must not resurface once the filter is turned off again.
+    await user.click(card().getByRole("button", { name: "Royal" }))
+    expect(card().getByRole("img", { name: "Royal mockup" })).toBeInTheDocument()
+    await user.click(screen.getByRole("checkbox", { name: "Blue" }))
+    expect(card().getByRole("button", { name: "Navy" })).toHaveAttribute("aria-pressed", "true")
+    await user.click(screen.getByRole("checkbox", { name: "Blue" }))
+    expect(card().getByRole("img", { name: "Black mockup" })).toHaveAttribute("src", "/black.jpg")
+    expect(card().getByRole("button", { name: "Black" })).toHaveAttribute("aria-pressed", "true")
+
+    await user.click(screen.getByRole("checkbox", { name: "Blue" }))
+    expect(card().getByRole("img", { name: "Navy mockup" })).toHaveAttribute("src", "/navy.jpg")
+    expect(card().getByRole("button", { name: "Navy" })).toHaveAttribute("aria-pressed", "true")
+    expect(card().getByRole("link")).toHaveAttribute("href", `/shop/${shirt.id}?color=Navy`)
+
+    // Navy has no M, so the shown blue must be one the shopper can buy in the chosen size.
+    await user.click(screen.getByRole("checkbox", { name: "M" }))
+    expect(card().getByRole("img", { name: "Royal mockup" })).toBeInTheDocument()
+    expect(card().getByRole("button", { name: "Royal" })).toHaveAttribute("aria-pressed", "true")
+
+    // A swatch click on the card still wins until the color filter changes again.
+    await user.click(card().getByRole("button", { name: "Heather Grey" }))
+    expect(card().getByRole("button", { name: "Heather Grey" })).toHaveAttribute("aria-pressed", "true")
+    await user.click(screen.getByRole("checkbox", { name: "M" }))
+    await user.click(screen.getByRole("checkbox", { name: "Blue" }))
+    await user.click(screen.getByRole("checkbox", { name: "Gray" }))
+    expect(card().queryByRole("img")).not.toBeInTheDocument()
+    expect(card().getByText("No photo for this color yet")).toBeInTheDocument()
+    expect(card().getByRole("button", { name: "Heather Grey" })).toHaveAttribute("aria-pressed", "true")
+    expect(card().getByRole("link")).toHaveAttribute("href", `/shop/${shirt.id}?color=Heather+Grey`)
+
+    await user.click(screen.getByRole("button", { name: "Clear all" }))
+    expect(card().getByRole("img", { name: "Black mockup" })).toHaveAttribute("src", "/black.jpg")
+    expect(card().getByRole("button", { name: "Black" })).toHaveAttribute("aria-pressed", "true")
+    expect(card().getByRole("link")).toHaveAttribute("href", `/shop/${shirt.id}?color=Black`)
+
+    // Toggling a family resets the click even when this product's matched color stays the same,
+    // while a re-sort keeps it.
+    await user.click(screen.getByRole("checkbox", { name: "Black" }))
+    await user.click(screen.getByRole("checkbox", { name: "Blue" }))
+    expect(card().getByRole("button", { name: "Black" })).toHaveAttribute("aria-pressed", "true")
+    await user.click(card().getByRole("button", { name: "Royal" }))
+    await user.selectOptions(screen.getByRole("combobox", { name: "Sort by" }), "newest")
+    expect(card().getByRole("button", { name: "Royal" })).toHaveAttribute("aria-pressed", "true")
+    await user.click(screen.getByRole("checkbox", { name: "Blue" }))
+    expect(card().getByRole("img", { name: "Black mockup" })).toHaveAttribute("src", "/black.jpg")
+    expect(card().getByRole("button", { name: "Black" })).toHaveAttribute("aria-pressed", "true")
+    expect(card().getByRole("link")).toHaveAttribute("href", `/shop/${shirt.id}?color=Black`)
+
+    // Adding a family must also discard a manual choice when the first match remains Black.
+    await user.click(card().getByRole("button", { name: "Heather Grey" }))
+    await user.click(screen.getByRole("checkbox", { name: "Blue" }))
+    expect(card().getByRole("button", { name: "Black" })).toHaveAttribute("aria-pressed", "true")
+    expect(card().getByRole("img", { name: "Black mockup" })).toHaveAttribute("src", "/black.jpg")
+    expect(card().getByRole("link")).toHaveAttribute("href", `/shop/${shirt.id}?color=Black`)
+  })
+
   it("requires selected color and size to coexist on an available variant", async () => {
     const user = userEvent.setup()
     render(<ProductList catalog={{ status: "ready", products: [product] }} />)
