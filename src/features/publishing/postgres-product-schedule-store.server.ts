@@ -144,10 +144,11 @@ export class PostgresProductScheduleStore {
            returning id`,
         [this.shopId, ids, liveAt, input.featuredBy]
       )
+      // A late addition belongs to the whole feature week, but first becomes shoppable at this write.
       await client.query(
-        `update commerce.printify_products set reveal_at=$3,updated_at=now()
+        `update commerce.printify_products set reveal_at=case when $4::boolean then clock_timestamp() else $3::timestamptz end,updated_at=now()
            where shop_id=$1 and product_id=any($2::text[]) and active and ${productVisibilitySql.hiddenAtWrite}`,
-        [this.shopId, ids, liveAt]
+        [this.shopId, ids, liveAt, input.currentWeek === true]
       )
       const receipt = await this.receipt(client, ids)
       await client.query("commit")

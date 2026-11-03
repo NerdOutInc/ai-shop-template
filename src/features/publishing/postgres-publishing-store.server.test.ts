@@ -2467,6 +2467,7 @@ describe.skipIf(!databaseUrl)("durable Printify publishing", () => {
         first.productSchedule.schedule({ productIds: [replacement], liveAt: date, featuredBy, currentWeek: true })
       expect(await join(new Date(Date.parse(liveAt) - 1000).toISOString())).toMatchObject({ status: "past" })
       expect(await first.readProduct(replacement)).toBeNull()
+      const addedAfter = await pool.query<{ now: Date }>("select clock_timestamp() as now")
       const saved = await join(liveAt)
       expect(saved).toMatchObject({
         status: "saved",
@@ -2475,6 +2476,8 @@ describe.skipIf(!databaseUrl)("durable Printify publishing", () => {
           expect.objectContaining({ liveAt: next }),
         ]),
       })
+      const revealed = await first.readRevealableProduct(replacement)
+      expect(Date.parse(revealed!.revealAt!)).toBeGreaterThanOrEqual(addedAfter.rows[0]!.now.getTime())
       expect(await first.readProduct(replacement)).not.toBeNull()
     })
 
