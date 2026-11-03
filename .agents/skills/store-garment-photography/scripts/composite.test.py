@@ -117,6 +117,16 @@ class CompositeTests(unittest.TestCase):
         self.job["quad"] = [[500, 400], [850, 600], [600, 1050], [250, 850]]
         self.prepare()
 
+    def test_projection_uses_the_requested_canvas_and_field_bounds(self):
+        art = Image.new("RGBA", (8, 8), "white")
+        for width, height in ((96, 80), (1250, 96)):
+            quad = [[width - 40, 16], [width - 8, 16], [width - 8, 48], [width - 40, 48]]
+            field = np.zeros((height, width), dtype=np.float32)
+            projected = compositor.project(art, quad, dx=field, dy=field, output_size=(width, height))
+            self.assertEqual(projected.size, (width, height))
+            self.assertEqual(projected.getpixel((width - 24, 32))[3], 255)
+            self.assertEqual(projected.getpixel((4, 32))[3], 0)
+
     def test_broad_bends_do_not_clip_at_the_old_fixed_mesh_margin(self):
         art = Image.open(self.root / "art.png")
         for fraction, rows in ((-0.3, slice(0, 450)), (0.3, slice(1050, 1500))):
