@@ -1057,10 +1057,9 @@
         "src/features/publishing/postgres-publishing-store.server.test.ts",
         "src/features/publishing/postgres-publishing-store.server.ts",
         "src/features/publishing/read-revealable-product.server.ts",
-        "src/lib/format-decimal-price.ts",
-        "supabase/migrations/20261020190508_product_public_content_timestamp.sql"
+        "src/lib/format-decimal-price.ts"
       ],
-      "reason": "Share the discovery product set, calculate ranges from available listed variants and distinguish public content dates from private writes. Preserve template configuration and snapshot validation.",
+      "reason": "Share the discovery product set, calculate ranges from available listed variants and distinguish public content dates from private writes. Preserve template configuration and snapshot validation. Receiving PR #87 contains the additive public-content timestamp migration, version 20261020190508.",
       "evidence": "Template draft 7fb3daf593ecc57fb2f5c3b69214f07e671bc67c. 200 discovery, publishing and gallery tests with disposable PostgreSQL, plus migration checks.",
       "templateCommit": null,
       "followUp": "Template maintainer to review #87 and record its merge or final disposition.",
