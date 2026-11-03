@@ -93,7 +93,7 @@ const verifyHeader: NonNullable<Story["play"]> = async ({ canvas, canvasElement,
   await expect(getComputedStyle(shop).outlineColor).toBe("rgb(255, 255, 255)")
 
   await userEvent.click(canvas.getByRole("button", { name: "Add sample shirts" }))
-  const cart = canvas.getByRole("link", { name: "Cart, 2 items" })
+  const cart = canvas.getByRole("link", { name: "Cart 2 items" })
   const count = cart.querySelector(".cart-count")!
   await expect(count).toHaveTextContent("2")
   await expect(count).toBeVisible()

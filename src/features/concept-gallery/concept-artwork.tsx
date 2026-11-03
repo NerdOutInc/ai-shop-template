@@ -49,6 +49,7 @@ export function ConceptArtwork({ revision, title, background, size, large = fals
         />
       ) : (
         <p className="m-5 rounded-sm bg-background p-4 text-center text-sm text-muted-foreground">
+          {!large && <span className="sr-only">{title}: </span>}
           {source ? "Artwork could not load. Refresh to try again." : missingMessage}
         </p>
       )}

@@ -595,7 +595,7 @@ test("keeps keyboard focus in the cart confirmation and restores it after every 
     await expect(addButton).toBeFocused()
   }
 
-  await page.getByRole("link", { name: "Cart, 3 items", exact: true }).click()
+  await page.getByRole("link", { name: "Cart 3 items", exact: true }).click()
   await expect(page.getByRole("heading", { name: "The good stuff (3)" })).toBeVisible()
 })
 

@@ -1,8 +1,8 @@
 diff --git a/dist/build/templates/app-page-runtime.js b/dist/build/templates/app-page-runtime.js
-index fc5eef172bc3e2567ab414416590f85fb49e4ef1..954d88aebaa19babd21fe637f393a647caeba5dd 100644
+index 393c9ef1e93e87628f25ba89c765804283a88214..f26aa8c050802756dae2b418f7d2ab559761a02f 100644
 --- a/dist/build/templates/app-page-runtime.js
 +++ b/dist/build/templates/app-page-runtime.js
-@@ -335,11 +335,10 @@ function createAppPageEntrypoint({ tree, page, pathname, require: __next_app_req
+@@ -353,11 +353,10 @@ function createAppPageEntrypoint({ tree, page, pathname, require: __next_app_req
          // generated, so we will always either return a static response or a 404.
          const rawSegmentPrefetchHeader = req.headers[_approuterheaders.NEXT_ROUTER_SEGMENT_PREFETCH_HEADER];
          const segmentPrefetchHeader = (0, _requestmeta.getRequestMeta)(req, 'segmentPrefetchRSCRequest') ?? (isPrefetchRSCRequest ? typeof rawSegmentPrefetchHeader === 'string' ? rawSegmentPrefetchHeader : Array.isArray(rawSegmentPrefetchHeader) ? rawSegmentPrefetchHeader[0] : undefined : undefined);
@@ -19,10 +19,10 @@ index fc5eef172bc3e2567ab414416590f85fb49e4ef1..954d88aebaa19babd21fe637f393a647
          // Blocking metadata resolved during the resume would therefore be emitted
          // after the head, where HTML-limited bots cannot observe it. Bypass the
 diff --git a/dist/esm/build/templates/app-page-runtime.js b/dist/esm/build/templates/app-page-runtime.js
-index 96beb1b9bd89e6eb55e9d0cfbed49fa3aa9c42ea..57232f1a7883390af54401bc166ec81a8f312649 100644
+index b28d926ad23b76fcf34963f3862ad9b76e42235f..7d2e7d1c703ab1aa7037349ec3e2e774f048253f 100644
 --- a/dist/esm/build/templates/app-page-runtime.js
 +++ b/dist/esm/build/templates/app-page-runtime.js
-@@ -354,11 +354,10 @@ export function createAppPageEntrypoint({ tree, page, pathname, require: __next_
+@@ -376,11 +376,10 @@ export function createAppPageEntrypoint({ tree, page, pathname, require: __next_
          // generated, so we will always either return a static response or a 404.
          const rawSegmentPrefetchHeader = req.headers[NEXT_ROUTER_SEGMENT_PREFETCH_HEADER];
          const segmentPrefetchHeader = getRequestMeta(req, 'segmentPrefetchRSCRequest') ?? (isPrefetchRSCRequest ? typeof rawSegmentPrefetchHeader === 'string' ? rawSegmentPrefetchHeader : Array.isArray(rawSegmentPrefetchHeader) ? rawSegmentPrefetchHeader[0] : undefined : undefined);

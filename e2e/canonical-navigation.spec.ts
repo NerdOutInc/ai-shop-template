@@ -104,7 +104,7 @@ for (const from of ["/", "/about"]) {
     const initialDocument = await page.evaluateHandle(() => document)
     await page
       .getByRole("navigation", { name: "Primary navigation" })
-      .getByRole("link", { name: "Cart, 0 items" })
+      .getByRole("link", { name: "Cart 0 items" })
       .click()
     await expect(page).toHaveURL("/cart")
     expect(await page.evaluate((initial) => initial === document, initialDocument)).toBe(true)

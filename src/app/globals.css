@@ -675,7 +675,7 @@ button:disabled {
     gap: 4px;
   }
   .cart-word {
-    display: none;
+    @apply sr-only;
   }
   .cart-count {
     position: absolute;

@@ -79,7 +79,13 @@ export function ConceptFavoriteButton({
         variant={selected ? "default" : "outline"}
         size={compact ? "icon-lg" : "lg"}
         className={compact ? "size-11" : "min-h-11"}
-        aria-label={anotherRevisionSaved ? `Save this revision of design #${displayNumber} to my favorites` : label}
+        aria-label={
+          compact
+            ? anotherRevisionSaved
+              ? `Save this revision of design #${displayNumber} to my favorites`
+              : label
+            : undefined
+        }
         aria-pressed={selected}
         disabled={pending || !revisionId}
         onClick={toggleFavorite}

@@ -23,7 +23,7 @@ describe("ConceptFavoriteButton", () => {
         colorName="CVC Midnight Navy"
       />
     )
-    await userEvent.click(screen.getByRole("button", { name: "Favorite design #149" }))
+    await userEvent.click(screen.getByRole("button", { name: "Save to my favorites" }))
     expect(request).toHaveBeenCalledWith(
       "/api/admin/concepts/design-1/favorite",
       expect.objectContaining({
@@ -67,7 +67,7 @@ describe("ConceptFavoriteButton", () => {
       />
     )
     expect(request).not.toHaveBeenCalled()
-    await userEvent.click(screen.getByRole("button", { name: "Save this revision of design #149 to my favorites" }))
+    await userEvent.click(screen.getByRole("button", { name: "Save this revision to favorites" }))
     expect(request).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({ body: '{"selected":true,"revisionId":"revision-2","colorName":"CVC Midnight Navy"}' })

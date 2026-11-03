@@ -77,6 +77,6 @@ test("keeps About immediately left of Shop at the narrowest supported width", as
   expect(shop).not.toBeNull()
   expect(about!.x + about!.width).toBeLessThan(shop!.x)
   expect(about!.y).toBe(shop!.y)
-  await expect(navigation.getByRole("link", { name: "Cart, 0 items" })).toBeVisible()
+  await expect(navigation.getByRole("link", { name: "Cart 0 items" })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
 })

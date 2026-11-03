@@ -55,7 +55,7 @@ describe("store header admin navigation", () => {
     vi.mocked(usePathname).mockReturnValue("/shop")
     vi.mocked(useSelectedLayoutSegment).mockReturnValue("shop")
     render(<StoreHeader adminEnabled />)
-    expect(screen.getByRole("link", { name: "Cart, 2 items" })).toHaveAttribute("href", "/cart")
+    expect(screen.getByRole("link", { name: "Cart 2 items" })).toHaveAttribute("href", "/cart")
     expect(screen.queryByRole("link", { name: "Account" })).not.toBeInTheDocument()
   })
 })

@@ -71,9 +71,9 @@ export function CartContent({ cancelled = false }: { cancelled?: boolean }) {
               <li key={`${item.productId}:${item.variantId}`} className="flex gap-4 py-6 sm:gap-6">
                 <Link
                   href={`/shop/${item.productId}`}
-                  aria-label={`View ${displayCartItemTitle(item)}`}
                   className="block h-fit w-24 shrink-0 overflow-hidden rounded-xl bg-white sm:w-32"
                 >
+                  <span className="sr-only">View {displayCartItemTitle(item)}</span>
                   {item.image ? (
                     <Image
                       src={item.image}

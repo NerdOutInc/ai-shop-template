@@ -291,8 +291,8 @@ test("owner setup, passkeys, exact private downloads, personal favorites and rev
   expect(Buffer.from(await again.body()).equals(Buffer.from(smallBytes))).toBe(true)
   expect((await context.request.get(`${downloadURL}&size=enormous`)).status()).toBe(404)
 
-  await page.getByRole("button", { name: "Favorite design #1", exact: true }).click()
-  await expect(page.getByRole("button", { name: "Remove design #1 from my favorites", exact: true })).toBeVisible()
+  await page.getByRole("button", { name: "Save to my favorites", exact: true }).click()
+  await expect(page.getByRole("button", { name: "Saved to my favorites", exact: true })).toBeVisible()
 
   const secondDevice = await browser.newContext({ baseURL: config.baseURL })
   const secondPage = await secondDevice.newPage()
