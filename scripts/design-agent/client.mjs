@@ -117,7 +117,7 @@ export async function createDesignAgentClient({ environment = process.env, fetch
         })
         if (!response.ok || !response.body) throw new Error(`Artwork download failed (${response.status})`)
         const expectedHash = response.headers.get("x-content-sha256")
-        const expectedBytes = Number(response.headers.get("content-length"))
+        const expectedBytes = Number(response.headers.get("x-content-bytes") ?? response.headers.get("content-length"))
         if (
           !/^[a-f0-9]{64}$/.test(expectedHash ?? "") ||
           !Number.isSafeInteger(expectedBytes) ||

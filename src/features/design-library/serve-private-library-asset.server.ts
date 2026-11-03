@@ -77,7 +77,8 @@ export async function servePrivateLibraryAsset(request: Request, assetId: string
         ...privateResponseHeaders,
         "Content-Type": asset.mimeType,
         "Content-Disposition": named(null),
-        ...(asset.bytes ? { "Content-Length": String(asset.bytes) } : {}),
+        // Next may remove HTTP framing headers. The agent verifies the registered size after transport decoding.
+        ...(asset.bytes ? { "Content-Length": String(asset.bytes), "X-Content-Bytes": String(asset.bytes) } : {}),
         ...(asset.sha256 ? { "X-Content-SHA256": asset.sha256 } : {}),
         "Content-Security-Policy": "default-src 'none'; sandbox",
       },

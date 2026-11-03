@@ -273,6 +273,7 @@ test("owner setup, passkeys, exact private downloads, personal favorites and rev
   expect(response.status()).toBe(200)
   expect(response.headers()["content-disposition"]).toContain("attachment")
   const bytes = await response.body()
+  expect(response.headers()["x-content-bytes"]).toBe(String(bytes.byteLength))
   expect(createHash("sha256").update(bytes).digest("hex")).toBe(response.headers()["x-content-sha256"])
   expect(response.headers()["cache-control"]).toContain("no-store")
 
