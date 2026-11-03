@@ -8,7 +8,7 @@
     "reviewedThroughSourceCommit": "9f577107e6b0b9612146db59bc521daf963c8fa0",
     "firstParentCommitCount": 59,
     "reviewedAt": "2026-11-03",
-    "boundary": "This contiguous review covers the 59 first-parent changes through original-store #226. Receiving PRs identify proposed ports. A non-null templateCommit records a merged implementation.",
+    "boundary": "This contiguous review covers the 59 first-parent changes through original-store #226. Receiving PRs and template commits identify the merged implementations.",
     "additionalReviewedSourceCommits": []
   },
   "dispositions": [
@@ -994,9 +994,9 @@
       "classification": "provider-red-shade",
       "paths": ["docs/color-filters.md", "src/features/catalog/get-color-family.ts"],
       "reason": "Map Smoked Paprika to the Red family.",
-      "evidence": "Template draft 537d171ea0e625075eb14861d7a25758e69313ad. 49 card/list unit tests and 17 interactive Chromium stories.",
-      "templateCommit": null,
-      "followUp": "Template maintainer to review #85 and record its merge or final disposition.",
+      "evidence": "Initial verification on 537d171ea0e625075eb14861d7a25758e69313ad. 49 card/list unit tests and 17 interactive Chromium stories. Final PR checks: https://github.com/NerdOutInc/ai-shop-template/actions/runs/41691140527.",
+      "templateCommit": "5bfc48d9c672021b76a454e8d10c3feea23578cc",
+      "followUp": null,
       "assessedAgainstTemplateCommit": "a62c838283a8bbfd740a23b3e206c9d628fb22d0",
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/85"
     },
@@ -1013,9 +1013,9 @@
         "src/features/catalog/product-list.tsx"
       ],
       "reason": "Select a purchasable matching swatch and photo for the current size and color filters.",
-      "evidence": "Template draft 537d171ea0e625075eb14861d7a25758e69313ad. 49 card/list unit tests and 17 interactive Chromium stories.",
-      "templateCommit": null,
-      "followUp": "Template maintainer to review #85 and record its merge or final disposition.",
+      "evidence": "Initial verification on 537d171ea0e625075eb14861d7a25758e69313ad. 49 card/list unit tests and 17 interactive Chromium stories. Final PR checks: https://github.com/NerdOutInc/ai-shop-template/actions/runs/41691140527.",
+      "templateCommit": "5bfc48d9c672021b76a454e8d10c3feea23578cc",
+      "followUp": null,
       "assessedAgainstTemplateCommit": "a62c838283a8bbfd740a23b3e206c9d628fb22d0",
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/85"
     },
@@ -1026,9 +1026,9 @@
       "classification": "public-hero-revalidation",
       "paths": ["src/app/api/weekly-hero/[id]/route.test.ts", "src/app/api/weekly-hero/[id]/route.ts"],
       "reason": "Adopt the cookie-independent validator for eligible public images. The photo focus, revocation and optimizer guards already exist.",
-      "evidence": "Template draft 9fc9ef85f316cfbb1a8560933501ce741fda3ba0. 10 public route and conditional-request validator tests.",
-      "templateCommit": null,
-      "followUp": "Template maintainer to review #88 and record its merge or final disposition.",
+      "evidence": "Initial verification on 9fc9ef85f316cfbb1a8560933501ce741fda3ba0. 10 public route and conditional-request validator tests. Final PR checks: https://github.com/NerdOutInc/ai-shop-template/actions/runs/41695958510.",
+      "templateCommit": "010ef4d36d1c1217d7470bb523bec49fd68f61bd",
+      "followUp": null,
       "assessedAgainstTemplateCommit": "a62c838283a8bbfd740a23b3e206c9d628fb22d0",
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/88"
     },
@@ -1057,12 +1057,13 @@
         "src/features/publishing/postgres-publishing-store.server.test.ts",
         "src/features/publishing/postgres-publishing-store.server.ts",
         "src/features/publishing/read-revealable-product.server.ts",
-        "src/lib/format-decimal-price.ts"
+        "src/lib/format-decimal-price.ts",
+        "supabase/migrations/20261020190508_product_public_content_timestamp.sql"
       ],
       "reason": "Share the discovery product set, calculate ranges from available listed variants and distinguish public content dates from private writes. Preserve template configuration and snapshot validation. Receiving PR #87 contains the additive public-content timestamp migration, version 20261020190508.",
-      "evidence": "Template draft 7fb3daf593ecc57fb2f5c3b69214f07e671bc67c. 200 discovery, publishing and gallery tests with disposable PostgreSQL, plus migration checks.",
-      "templateCommit": null,
-      "followUp": "Template maintainer to review #87 and record its merge or final disposition.",
+      "evidence": "Initial verification on 7fb3daf593ecc57fb2f5c3b69214f07e671bc67c. 200 discovery, publishing and gallery tests with disposable PostgreSQL, plus migration checks. Final PR checks: https://github.com/NerdOutInc/ai-shop-template/actions/runs/41695067479.",
+      "templateCommit": "99945fa6611ee6aafe241f65ba494011e2ab468e",
+      "followUp": null,
       "assessedAgainstTemplateCommit": "a62c838283a8bbfd740a23b3e206c9d628fb22d0",
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/87"
     },
@@ -1080,9 +1081,9 @@
         "src/features/catalog/product-card.tsx"
       ],
       "reason": "Keep the product title as the accessible link name and preserve full-card activation and focus visibility.",
-      "evidence": "Template draft 537d171ea0e625075eb14861d7a25758e69313ad. 49 card/list unit tests and 17 interactive Chromium stories.",
-      "templateCommit": null,
-      "followUp": "Template maintainer to review #85 and record its merge or final disposition.",
+      "evidence": "Initial verification on 537d171ea0e625075eb14861d7a25758e69313ad. 49 card/list unit tests and 17 interactive Chromium stories. Final PR checks: https://github.com/NerdOutInc/ai-shop-template/actions/runs/41691140527.",
+      "templateCommit": "5bfc48d9c672021b76a454e8d10c3feea23578cc",
+      "followUp": null,
       "assessedAgainstTemplateCommit": "a62c838283a8bbfd740a23b3e206c9d628fb22d0",
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/85"
     },
@@ -1096,9 +1097,9 @@
         "src/features/weekly-heroes/weekly-design-details.tsx"
       ],
       "reason": "Use WebPage items for homepage links so only product detail pages describe variant offers.",
-      "evidence": "Template draft 5334eb6359ea721bd362d769faedb9a0baa1eeed. 15 server-rendered homepage and product structured-data tests.",
-      "templateCommit": null,
-      "followUp": "Template maintainer to review #84 and record its merge or final disposition.",
+      "evidence": "Initial verification on 5334eb6359ea721bd362d769faedb9a0baa1eeed. 15 server-rendered homepage and product structured-data tests. Final PR checks: https://github.com/NerdOutInc/ai-shop-template/actions/runs/41693580669.",
+      "templateCommit": "6b591a77bfc5075ec281a6f69bd6c78c3fe95df7",
+      "followUp": null,
       "assessedAgainstTemplateCommit": "a62c838283a8bbfd740a23b3e206c9d628fb22d0",
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/84"
     },
@@ -1119,9 +1120,9 @@
         "src/features/design-products/validate-design-draft-input.ts"
       ],
       "reason": "Carry exact front_dtg placement through draft validation and recovered recipes.",
-      "evidence": "Template draft 5b9240227a0291ab971a8696979ebcece5093639. 287 focused draft and artwork tests on disposable fixtures.",
-      "templateCommit": null,
-      "followUp": "Template maintainer to review #83 and record its merge or final disposition.",
+      "evidence": "Initial verification on 5b9240227a0291ab971a8696979ebcece5093639. 287 focused draft and artwork tests on disposable fixtures. Final PR checks: https://github.com/NerdOutInc/ai-shop-template/actions/runs/41692892650.",
+      "templateCommit": "672b2c7aa151b5dc73fe98bb60b44a38dfb43b22",
+      "followUp": null,
       "assessedAgainstTemplateCommit": "a62c838283a8bbfd740a23b3e206c9d628fb22d0",
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/83"
     },
@@ -1151,9 +1152,9 @@
         "src/features/design-products/printify-design-draft-client.server.ts"
       ],
       "reason": "Distinguish safe reasons for rejected inventory scans.",
-      "evidence": "Template draft 5b9240227a0291ab971a8696979ebcece5093639. 287 focused draft and artwork tests on disposable fixtures.",
-      "templateCommit": null,
-      "followUp": "Template maintainer to review #83 and record its merge or final disposition.",
+      "evidence": "Initial verification on 5b9240227a0291ab971a8696979ebcece5093639. 287 focused draft and artwork tests on disposable fixtures. Final PR checks: https://github.com/NerdOutInc/ai-shop-template/actions/runs/41692892650.",
+      "templateCommit": "672b2c7aa151b5dc73fe98bb60b44a38dfb43b22",
+      "followUp": null,
       "assessedAgainstTemplateCommit": "a62c838283a8bbfd740a23b3e206c9d628fb22d0",
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/83"
     },
@@ -1167,9 +1168,9 @@
         "src/features/design-products/printify-design-draft-client.server.ts"
       ],
       "reason": "Start one independently validated fresh inventory scan after a failed read. Creation remains single-attempt.",
-      "evidence": "Template draft 5b9240227a0291ab971a8696979ebcece5093639. 287 focused draft and artwork tests on disposable fixtures.",
-      "templateCommit": null,
-      "followUp": "Template maintainer to review #83 and record its merge or final disposition.",
+      "evidence": "Initial verification on 5b9240227a0291ab971a8696979ebcece5093639. 287 focused draft and artwork tests on disposable fixtures. Final PR checks: https://github.com/NerdOutInc/ai-shop-template/actions/runs/41692892650.",
+      "templateCommit": "672b2c7aa151b5dc73fe98bb60b44a38dfb43b22",
+      "followUp": null,
       "assessedAgainstTemplateCommit": "a62c838283a8bbfd740a23b3e206c9d628fb22d0",
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/83"
     },
@@ -1185,9 +1186,9 @@
         "src/features/publishing/postgres-product-schedule-store.server.ts"
       ],
       "reason": "Allow explicit active-week additions with garment checks, store-local cadence and preservation of a future feature.",
-      "evidence": "Template draft dbc0edc77d95c6e53209b7be0a667c987627fda8. 205 publishing, route and lineup tests with disposable PostgreSQL plus 21 interactive Chromium stories.",
-      "templateCommit": null,
-      "followUp": "Template maintainer to review #86 and record its merge or final disposition.",
+      "evidence": "Initial verification on dbc0edc77d95c6e53209b7be0a667c987627fda8. 205 publishing, route and lineup tests with disposable PostgreSQL plus 21 interactive Chromium stories. Final PR checks: https://github.com/NerdOutInc/ai-shop-template/actions/runs/41694264299.",
+      "templateCommit": "d9d617215f3c115a71a86a35a4a9158c03c8a2eb",
+      "followUp": null,
       "assessedAgainstTemplateCommit": "a62c838283a8bbfd740a23b3e206c9d628fb22d0",
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/86"
     },
@@ -1198,9 +1199,9 @@
       "classification": "compositor-canvas-bounds",
       "paths": [".agents/skills/store-garment-photography/scripts/compositor.py"],
       "reason": "Port canvas-aware projection and displacement sampling. Keep the original campaigns, private inputs and merchant-specific crop scripts in their store.",
-      "evidence": "Template draft 497561c019b808e2e1940d776d7730b606bc20ea. 17 compositor regressions, including two nonstandard canvas sizes, plus the other skill suites.",
-      "templateCommit": null,
-      "followUp": "Template maintainer to review #89 and record its merge or final disposition.",
+      "evidence": "Initial verification on 497561c019b808e2e1940d776d7730b606bc20ea. 17 compositor regressions, including two nonstandard canvas sizes, plus the other skill suites. Final PR checks: https://github.com/NerdOutInc/ai-shop-template/actions/runs/41690441455.",
+      "templateCommit": "b34d10cf825eafced8672604aeb4c17e04eb282a",
+      "followUp": null,
       "assessedAgainstTemplateCommit": "a62c838283a8bbfd740a23b3e206c9d628fb22d0",
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/89"
     },
@@ -1213,10 +1214,10 @@
         ".agents/skills/store-garment-photography/SKILL.md",
         ".agents/skills/store-garment-photography/references/garment-backgrounds.md"
       ],
-      "reason": "The source adapted the guidance from template draft #82 for its pinned photography skill. That draft already covers the reusable changes to cutouts, masking, compositing and background replacement.",
-      "evidence": "Compared both instruction changes with template draft 98a66b7d3f4eb8005d75e76b520592a88f3b81a8 and verified both upstream pointers in the source copy receipt. Template #82 passed Required checks.",
-      "templateCommit": null,
-      "followUp": "Review the existing template draft #82 and record its merge or final disposition here.",
+      "reason": "The source copied template #82 into its pinned photography skill. The template already contains the reusable guidance for cutouts, masking, compositing and background replacement.",
+      "evidence": "Compared both instruction changes with template draft 98a66b7d3f4eb8005d75e76b520592a88f3b81a8 and verified both upstream pointers in the source copy receipt. Final PR checks: https://github.com/NerdOutInc/ai-shop-template/actions/runs/41513296898.",
+      "templateCommit": "dbc8568921967a0cc50ee9306ec068bbae21ad58",
+      "followUp": null,
       "assessedAgainstTemplateCommit": "a62c838283a8bbfd740a23b3e206c9d628fb22d0",
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/82"
     }
