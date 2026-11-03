@@ -189,6 +189,7 @@ export function FeaturedOrderList({
   const currentWeek = resolveProductWeek(entries, now)
   const currentHero = heroes?.find((hero) => isCurrentCadenceWeek(hero.liveAt, now))
   const currentHeroWeek = currentWeek?.liveAt ?? currentHero?.liveAt
+  const pickerSlots = currentWeek ? [...slots, { value: currentWeek.liveAt, label: "This week", current: true }] : slots
   const drop = new Set(schedule ? (currentWeek?.productIds ?? []) : designOfWeekProductIds)
   const designOfWeek = products.filter((product) => drop.has(product.id) && isProductOnTheWall(product, now))
   const available = products.filter((product) => !drop.has(product.id) && isProductOnTheWall(product, now))
@@ -402,7 +403,7 @@ export function FeaturedOrderList({
     setMoveMessage(`${product.title} is still ${hidden ? "in the shop" : "hidden"}.`)
   }
 
-  async function saveSchedule(ids: string[], liveAt: string): Promise<string | null> {
+  async function saveSchedule(ids: string[], liveAt: string, currentWeek = false): Promise<string | null> {
     if (!startProductMutation(ids)) return "A selected product is still saving. Wait a moment, then try again."
     setError(null)
     try {
@@ -410,7 +411,7 @@ export function FeaturedOrderList({
         method: "PUT",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productIds: ids, liveAt }),
+        body: JSON.stringify({ productIds: ids, liveAt, ...(currentWeek ? { currentWeek: true } : {}) }),
       })
       const body = (await response.json().catch(() => null)) as
         | (Partial<ProductScheduleReceipt> & {
@@ -752,8 +753,8 @@ export function FeaturedOrderList({
           product={picker.product}
           initialWeek={picker.week}
           products={products}
-          slots={slots}
-          entries={futureEntries}
+          slots={pickerSlots}
+          entries={entries}
           busyIds={pending}
           onClose={closePicker}
           onSave={saveSchedule}
