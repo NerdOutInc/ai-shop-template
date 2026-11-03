@@ -54,7 +54,7 @@ export function StoreHeader({ adminEnabled = false }: { adminEnabled?: boolean }
           )}
           {!adminPage && (
             <Link href="/cart" aria-current={pathname === "/cart" ? "page" : undefined} className="cart-link">
-              <span className="cart-word">Cart</span>
+              <span className="cart-word">Cart</span>{" "}
               <svg
                 width="27"
                 height="27"
@@ -71,7 +71,7 @@ export function StoreHeader({ adminEnabled = false }: { adminEnabled?: boolean }
                 <circle cx="8" cy="21" r="1" />
                 <circle cx="18" cy="21" r="1" />
               </svg>
-              <span className={count > 0 ? "cart-count" : "sr-only"}>{count}</span>
+              <span className={count > 0 ? "cart-count" : "sr-only"}>{count}</span>{" "}
               <span className="sr-only">{count === 1 ? "item" : "items"}</span>
             </Link>
           )}
