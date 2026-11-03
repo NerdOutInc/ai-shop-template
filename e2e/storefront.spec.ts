@@ -76,7 +76,8 @@ test("previews artwork on the pictured shirt color and offers it as the last gal
       await page.keyboard.press(tabKey)
     await expect(link).toBeFocused()
     await expect(artwork).toBeVisible()
-    expect(await link.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe("none")
+    // The card link draws its focus ring on the ::before that stretches over the title row.
+    expect(await link.evaluate((element) => getComputedStyle(element, "::before").outlineStyle)).not.toBe("none")
     await page.keyboard.press("Enter")
   } else {
     await link.tap()
@@ -297,7 +298,10 @@ test("swipes the mobile gallery through photos and artwork while preserving vert
   await swipe("right", true)
   await expect(artwork).toHaveAttribute("aria-pressed", "true")
   await expectSettled()
-  await page.getByRole("button", { name: "Black", exact: true }).tap()
+  const black = page.getByRole("button", { name: "Black", exact: true })
+  await black.tap()
+  // The old gallery also has artwork selected. Wait for the new color to commit before swiping it.
+  await expect(black).toHaveAttribute("aria-pressed", "true")
   await expect(artwork).toHaveAttribute("aria-pressed", "true")
   await expectSettled()
   await swipe("left")
