@@ -3,7 +3,7 @@ import "server-only"
 import { GARMENT_MODEL } from "@/features/design-library/garment-model"
 import { env } from "@/lib/env"
 
-import type { DesignCatalogVariant } from "./design-draft-types"
+import type { DesignCatalogVariant, DesignDraftRecipe } from "./design-draft-types"
 import type { PublishedProductRecipe } from "./list-published-product-recipes.server"
 
 import { DesignDraftError } from "./design-draft-error"
@@ -16,7 +16,7 @@ export type DesignRecipeSourceOptions = {
   listCatalogVariants?: (model: {
     blueprintId: number
     printProviderId: number
-    position: "front"
+    position: DesignDraftRecipe["placement"]["position"]
   }) => Promise<DesignCatalogVariant[]>
 }
 
@@ -52,7 +52,7 @@ export async function readDesignRecipeSources(options: DesignRecipeSourceOptions
     ? await listCatalogVariants({
         blueprintId: GARMENT_MODEL.blueprintId,
         printProviderId: GARMENT_MODEL.printProviderId,
-        position: "front",
+        position: model.placement?.position ?? "front",
       })
     : []
   return { model, catalog }

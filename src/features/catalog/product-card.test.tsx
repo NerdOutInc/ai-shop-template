@@ -364,8 +364,10 @@ describe("ProductCard", () => {
     rerender(<ProductCard product={product} isNew />)
     const badge = screen.getByText("New")
     expect(badge).toBeVisible()
-    // Over the IMAGE, not the card: the media box is the only element whose box is the image.
-    expect(badge.closest(".product-card-media")).not.toBeNull()
+    // Over the IMAGE: pinned to the box the media square tops, beside the link rather than inside it,
+    // so its text never counts as link text.
+    expect(badge.parentElement!.querySelector(".product-card-media")).not.toBeNull()
+    expect(screen.getByRole("link")).not.toContainElement(badge)
     // A touch on the badge must fall through to the link rather than read as an artwork preview.
     expect(badge).toHaveClass("pointer-events-none")
     // Not a heading, a link or a button, and not folded into the card's name.

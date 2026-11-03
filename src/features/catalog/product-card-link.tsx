@@ -121,7 +121,9 @@ export function ProductCardLink({ href, labelledBy, hasArtwork, children }: Prod
       href={href}
       aria-labelledby={labelledBy}
       data-touch-preview={hasArtwork && touchPreview ? "true" : undefined}
-      className={`product-card-link block rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring ${hasArtwork ? "product-card-link-with-artwork" : ""}`}
+      // The ::before stretches the click target and focus ring over the nearest positioned ancestor:
+      // the card box that also holds the title and price, which are not link content.
+      className={`product-card-link block outline-none before:absolute before:inset-0 before:rounded-sm focus-visible:before:outline-2 focus-visible:before:outline-offset-4 focus-visible:before:outline-ring ${hasArtwork ? "product-card-link-with-artwork" : ""}`}
       onPointerDown={(event) => {
         if (!event.isPrimary) {
           if (gestureRef.current) gestureRef.current.canceled = true
