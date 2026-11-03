@@ -53,9 +53,9 @@ function revealable(
   snapshot: Record<string, unknown>,
   revealAt: string | null = null,
   addedToShopAt: string | null = "2026-09-14T12:00:00.000Z",
-  updatedAt: string | null = "2026-09-20T08:00:00.000Z"
+  contentUpdatedAt: string | null = "2026-09-20T08:00:00.000Z"
 ) {
-  return { snapshot, revealAt, addedToShopAt, updatedAt }
+  return { snapshot, revealAt, addedToShopAt, contentUpdatedAt }
 }
 
 function fixture() {
@@ -125,7 +125,7 @@ describe("storefront publication cache", () => {
     expect(JSON.stringify(normalizeCatalogProduct(snapshot))).not.toContain("fingerprint")
     expect(snapshot?.images).toHaveLength(2)
     expect(snapshot?.storefront_added_to_shop_at).toBe("2026-09-14T12:00:00.000Z")
-    expect(snapshot?.storefront_updated_at).toBe("2026-09-20T08:00:00.000Z")
+    expect(snapshot?.storefront_content_updated_at).toBe("2026-09-20T08:00:00.000Z")
     expect(normalizeCatalogProduct(snapshot)).toMatchObject({
       defaultColor: "Green",
       image: { src: "https://images.printify.com/green.jpg" },
@@ -134,7 +134,7 @@ describe("storefront publication cache", () => {
     await readStorefrontProduct("shirt")
     expect(readRevealableProduct).toHaveBeenCalledExactlyOnceWith("shirt")
     expect(vi.mocked(unstable_cache).mock.calls[0]?.[1]).toEqual([
-      "published-catalog-product-v3",
+      "published-catalog-product-v4",
       "v2",
       "123",
       expect.stringMatching(/^[a-f0-9]{64}$/),

@@ -3,6 +3,7 @@
 Shop filters group purchasable shades into broad families. Blue includes Heather Cool Blue,
 Midnight Navy, Ice Blue, Royal, Indigo, Storm, Turquoise, Denim, Chambray, and the other named
 blues (including Tahiti Blue and Bondi Blue). Teal has its own group. Silk belongs to Gray.
+Smoked Paprika belongs to Red.
 Cream and Sand share Beige; Banana Cream belongs to Yellow. A family and size
 must match the same available variant. Sold-out shades do not add filter options.
 

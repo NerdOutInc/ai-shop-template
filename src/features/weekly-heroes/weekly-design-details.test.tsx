@@ -37,11 +37,14 @@ it("puts the design name, both product photos/destinations and shop link in HTML
   ).toEqual(
     products.map((product) =>
       expect.objectContaining({
+        "@type": "WebPage",
+        "@id": `https://store.example/shop/${product.id}`,
         name: product.title,
         image: product.image.src,
         url: `https://store.example${product.href}`,
       })
     )
   )
+  expect(JSON.stringify(data)).not.toMatch(/"@type":"(?:ProductGroup|Product|Offer)"/)
   expect(data.temporalCoverage).toBe("2026-10-16T22:30:00.000Z/2026-10-23T22:30:00.000Z")
 })

@@ -2,21 +2,19 @@ import type { CatalogProduct } from "@/features/catalog/catalog-product"
 import { displayProductTitle } from "@/features/catalog/display-product-title"
 import { getProductVariantListings } from "@/features/catalog/get-product-variant-listings"
 import { displayColorName } from "@/lib/display-color-name"
+import { formatDecimalPrice } from "@/lib/format-decimal-price"
 import { storeConfig } from "@/lib/store-config"
 
 import type { AgentCatalog, AgentCatalogProduct } from "./agent-catalog"
 
 export type AgentCatalogSource = { product: CatalogProduct; category: string | null }
 
-function money(cents: number) {
-  return (cents / 100).toFixed(2)
-}
-
 export function createAgentCatalog(sources: readonly AgentCatalogSource[], siteUrl: URL): AgentCatalog {
   const products = sources.flatMap(({ product, category }): AgentCatalogProduct[] => {
     // The same listing rule as the Product JSON-LD and merchant feeds: only options a page can preselect.
     const listings = getProductVariantListings(product, siteUrl)
     if (!listings.length) return []
+    const prices = listings.filter((variant) => variant.available).map((variant) => variant.price)
     // Gallery order, so images[0] is the storefront's and sitemap's cover photo, not the first variant's.
     const listable = new Set(listings.flatMap((variant) => variant.images))
     const images = [...new Set(product.images.map((image) => new URL(image.src, siteUrl).href))].filter((url) =>
@@ -31,8 +29,12 @@ export function createAgentCatalog(sources: readonly AgentCatalogSource[], siteU
         brand: storeConfig.name,
         category,
         images,
-        priceRange: product.price
-          ? { min: money(product.price.min), max: money(product.price.max), currency: product.price.currency }
+        priceRange: prices.length
+          ? {
+              min: formatDecimalPrice(Math.min(...prices)),
+              max: formatDecimalPrice(Math.max(...prices)),
+              currency: "USD",
+            }
           : null,
         colors: [...new Set(listings.map((variant) => displayColorName(variant.color)))],
         sizes: [...new Set(listings.map((variant) => variant.size))],
@@ -41,7 +43,7 @@ export function createAgentCatalog(sources: readonly AgentCatalogSource[], siteU
           sku: `${product.id}-${variant.id}`,
           color: displayColorName(variant.color),
           size: variant.size,
-          price: money(variant.price),
+          price: formatDecimalPrice(variant.price),
           currency: variant.currency,
           available: variant.available,
           url: variant.url,

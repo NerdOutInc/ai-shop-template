@@ -414,7 +414,7 @@ export const ScheduleTogether: Story = {
     await waitFor(() =>
       expect(
         dialog.getByText(
-          `Hidden products appear in the shop on ${formatWeeklyCadence()}. Removing a product from a future week leaves its shop visibility unchanged. Products stay for sale after their featured week ends.`
+          `Choosing this week shows hidden products immediately. Future features appear on ${formatWeeklyCadence()}. Removing a product from a future week leaves its shop visibility unchanged. Products stay for sale after their featured week ends.`
         )
       ).toBeVisible()
     )
@@ -430,7 +430,13 @@ export const ScheduleTogether: Story = {
 }
 
 export const ScheduleDialogKeyboardFocus: Story = {
-  args: scheduleArgs,
+  args: {
+    ...scheduleArgs,
+    schedule: {
+      slots,
+      entries: [{ id: "current", productId: "everyday-type", liveAt: new Date(now - 1000).toISOString() }],
+    },
+  },
   beforeEach: mockSave(200),
   play: async ({ canvas, canvasElement, userEvent }) => {
     const page = within(canvasElement.ownerDocument.body)
@@ -440,7 +446,11 @@ export const ScheduleDialogKeyboardFocus: Story = {
     await waitFor(() => expect(page.getByRole("menuitem", { name: "Show in shop" })).toHaveFocus())
     await userEvent.keyboard("{ArrowDown}{Enter}")
     const dialog = within(await page.findByRole("dialog", { name: "Add to Design of the week" }))
-    await waitFor(() => expect(dialog.getByRole("combobox", { name: "Featured week" })).toHaveFocus())
+    const picker = dialog.getByRole("combobox", { name: "Featured week" })
+    await waitFor(() => expect(picker).toHaveFocus())
+    await expect(picker).toHaveValue(slots[0]!.value)
+    await userEvent.selectOptions(picker, dialog.getByRole("option", { name: "This week" }))
+    await expect(picker).toHaveValue("current")
     await userEvent.keyboard("{Escape}")
     await waitFor(() => expect(page.queryByRole("dialog")).toBeNull())
     await waitFor(() => expect(trigger).toHaveFocus())

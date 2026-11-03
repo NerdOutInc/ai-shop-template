@@ -10,7 +10,7 @@ export function readRevealableProduct(productId: string): Promise<{
   snapshot: Record<string, unknown>
   revealAt: string | null
   addedToShopAt: string | null
-  updatedAt: string | null
+  contentUpdatedAt: string | null
 } | null> {
   return getPublishingStore().readRevealableProduct(productId)
 }

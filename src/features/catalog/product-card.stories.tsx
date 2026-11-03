@@ -155,7 +155,7 @@ export const NewBadge: Story = {
     await expect(badge).toBeVisible()
     // Out of the card's name: the link is still named by the heading alone.
     await expect(link).toHaveAccessibleName("Artwork preview")
-    const media = badge.closest(".product-card-media")!.getBoundingClientRect()
+    const media = canvasElement.querySelector(".product-card-media")!.getBoundingClientRect()
     const box = badge.getBoundingClientRect()
     await expect(box.top - media.top).toBeCloseTo(8, 0)
     await expect(media.right - box.right).toBeCloseTo(8, 0)
@@ -201,7 +201,16 @@ export const ArtworkPreview: Story = {
     await waitFor(() => expect((artwork as HTMLImageElement).naturalWidth).toBeGreaterThan(0))
     await expect(artwork.parentElement).toHaveStyle({ backgroundColor: "#222222" })
     await expect(getComputedStyle(artwork).mixBlendMode).toBe("normal")
-    await expect(getComputedStyle(link).outlineStyle).not.toBe("none")
+    // The ring is drawn by the link's stretched ::before, which fills the card box that also holds
+    // the title row, so the title stays inside the ring and the click target without being link text.
+    const ring = getComputedStyle(link, "::before")
+    await expect(ring.outlineStyle).not.toBe("none")
+    await expect(getComputedStyle(link).outlineStyle).toBe("none")
+    const title = canvas.getByRole("heading", { name: "Artwork preview" })
+    await expect(link).not.toContainElement(title)
+    const box = link.parentElement!.getBoundingClientRect()
+    await expect(parseFloat(ring.height)).toBeCloseTo(box.height, 0)
+    await expect(box.bottom).toBeGreaterThanOrEqual(title.getBoundingClientRect().bottom)
   },
 }
 

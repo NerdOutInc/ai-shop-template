@@ -2,7 +2,7 @@
 
 Search engines read the Product, OnlineStore and BreadcrumbList JSON-LD on each page. AI shopping agents and answer engines want the same facts without rendering pages, so a launched store also publishes three machine-readable surfaces. All of them share the merchant feeds' product set: shown, revealed, stock-checked publications whose every color has a mockup. Think of it as the shop's back door for well-behaved robots; the front door still has the nicer sign.
 
-Every surface returns `404` until [`isIndexableSite()`](../src/lib/is-indexable-site.ts) is true: a configured brand, published policies, confirmed shipping, a public site URL and a production deployment. Previews, local builds and the neutral template stay invisible, exactly like the sitemap.
+Every surface returns `404` until [`isIndexableSite()`](../src/lib/is-indexable-site.ts) is true and Printify publishing is enabled: a configured brand, published policies, confirmed shipping, a public site URL and a production deployment. Previews, local builds and the neutral template stay invisible, exactly like the sitemap.
 
 ## Public JSON catalog
 
@@ -58,7 +58,7 @@ The contract, typed in [`agent-catalog.ts`](../src/features/agent-catalog/agent-
 | `id`                           | The Printify product id, also the `/shop/{id}` path segment and the sitemap entry                                                                                    |
 | `title`, `description`         | The storefront title without the store suffix, and the published plain-text description                                                                              |
 | `category`                     | The garment's shop category name, or `null` when its profile is unlabeled or unreadable                                                                              |
-| `priceRange`                   | Across the variants in stock; `null` when every variant is sold out, while `variants[].price` keeps listing each price                                               |
+| `priceRange`                   | Across listed variants in stock; `null` when every variant is sold out, while `variants[].price` keeps listing each price                                            |
 | `colors`, `sizes`              | Display labels in variant order; `colors` strips provider prefixes such as `CVC` while `variants[].url` keeps the exact provider name the product page preselects by |
 | `variants[].id`                | The provider variant id that the cart and checkout already use                                                                                                       |
 | `variants[].sku`               | `{product id}-{variant id}`, the same identity as the Product JSON-LD `sku` and the merchant feeds' item `id`                                                        |
@@ -71,11 +71,13 @@ A product that the product page could not preselect unambiguously (a variant wit
 
 ## llms.txt
 
-`GET /llms.txt` follows the [llms.txt convention](https://llmstxt.org/): an `H1` with the store name, a blockquote summary from `storeConfig.description`, the tagline, then link lists for the shop, the JSON catalog, the sitemap, the About page when enabled, the three policy pages, and one `- [title](url)` line per published product from the sitemap product reader. It is served as `text/markdown` with the sitemap's `public, max-age=0, s-maxage=300` caching, and `503` with `Retry-After` when the catalog cannot be read. Route folders are kebab-case, so [`src/app/llms/route.ts`](../src/app/llms/route.ts) answers and `next.config.ts` rewrites `/llms.txt` onto it, like `/sitemap.xml`.
+`GET /llms.txt` follows the [llms.txt convention](https://llmstxt.org/): an `H1` with the store name, a blockquote summary from `storeConfig.description`, the tagline, then link lists for the shop, the JSON catalog, the sitemap, the About page when enabled, the three policy pages, and one `- [title](url)` line per product in the same stock-checked catalog as the JSON endpoint. It is served as `text/markdown` with the sitemap's `public, max-age=0, s-maxage=300` caching, and `503` with `Retry-After` when the catalog cannot be read. Route folders are kebab-case, so [`src/app/llms/route.ts`](../src/app/llms/route.ts) answers and `next.config.ts` rewrites `/llms.txt` onto it, like `/sitemap.xml`.
 
 ## Sitemap and ItemList
 
-The sitemap dates each product with `<lastmod>` from the later of its last publication or image write (`updated_at`, which every republish, photo replacement, curated-gallery activation and visibility change stamps) and its most recent shop arrival (the owner's last Show in shop or the scheduled reveal that brought it back, which writes nothing when its moment passes). It adds an `<image:image>` entry for the default photo. Static pages carry no date because nothing records when their copy changed. `/shop` renders a schema.org `ItemList` whose `ListItem`s carry only `position` and `url`, the summary-page form Google documents, so each product page remains the single full `Product` graph.
+The sitemap dates each product with `<lastmod>` from the later of its latest public content change (`content_updated_at`, written on changed publication content, public image or artwork replacement, or a change to the active gallery) and its most recent shop arrival (the owner's last Show in shop or the scheduled reveal that brought it back, which writes nothing when its moment passes). Apply the [additive migration](../supabase/migrations/20261020190508_product_public_content_timestamp.sql) before deploying this reader. Existing content dates remain unknown. Private merchant-copy, draft and scheduling writes do not stamp public content. It adds an `<image:image>` entry for the default photo. Static pages carry no date because nothing records when their copy changed. `/shop` renders a schema.org `ItemList` whose `ListItem`s carry only `position` and `url`, the summary-page form Google documents, so each product page remains the single full `Product` graph.
+
+For an existing store, the migration adds one nullable column to `commerce.printify_products` with no default or backfill. It needs a brief exclusive table lock; apply it once through the migration runner before updating the app. Verify that `information_schema.columns` lists `content_updated_at` as nullable `timestamp with time zone` on that table. If the runner was interrupted, check its migration history and the actual column before retrying. The prior app can run against the expanded schema; rolling it back does not require dropping the column.
 
 ## Crawler policy
 

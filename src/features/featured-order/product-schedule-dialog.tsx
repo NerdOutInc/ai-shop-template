@@ -22,7 +22,7 @@ import { formatStoreMoment } from "@/lib/format-store-moment"
 import { isProductOnTheWall } from "./is-product-on-the-wall"
 import type { FeaturedOrderProduct } from "./featured-order-product"
 
-export type ProductScheduleSlot = { value: string; label: string }
+export type ProductScheduleSlot = { value: string; label: string; current?: boolean }
 
 export function ProductScheduleDialog({
   product,
@@ -44,24 +44,28 @@ export function ProductScheduleDialog({
   entries: ProductScheduleEntry[]
   busyIds: string[]
   onClose: () => void
-  onSave: (ids: string[], liveAt: string) => Promise<string | null>
+  onSave: (ids: string[], liveAt: string, currentWeek?: boolean) => Promise<string | null>
   returnFocus: HTMLElement | null
 }) {
-  const [week, setWeek] = useState(
+  const [choice, setChoice] = useState(
     slots.some((slot) => slot.value === initialWeek) ? initialWeek! : (slots[0]?.value ?? "")
   )
+  const slot = slots.find((item) => (item.current ? "current" : item.value) === choice)
+  const week = slot?.value
   const [selected, setSelected] = useState<string[]>(product ? [product.id] : [])
   const [query, setQuery] = useState("")
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const currentDates = new Map(entries.map((entry) => [entry.productId, entry.liveAt]))
+  const currentDates = new Map(
+    entries.filter((entry) => Date.parse(entry.liveAt) > now).map((entry) => [entry.productId, entry.liveAt])
+  )
   const matching = products.filter((item) => item.title.toLocaleLowerCase().includes(query.toLocaleLowerCase()))
 
   async function save() {
     if (pending || !week || !selected.length || selected.some((id) => busyIds.includes(id))) return
     setPending(true)
     setError(null)
-    const error = await onSave(selected, week)
+    const error = await onSave(selected, week, slot?.current)
     setPending(false)
     if (error) setError(error)
     else onClose()
@@ -108,16 +112,16 @@ export function ProductScheduleDialog({
           <NativeSelect
             id="product-feature-week"
             className="w-full [&_select]:min-h-11"
-            value={week}
+            value={choice}
             disabled={pending}
             onChange={(event) => {
-              setWeek(event.target.value)
+              setChoice(event.target.value)
               setSelected(product ? [product.id] : [])
               setError(null)
             }}
           >
             {slots.map((slot) => (
-              <option key={slot.value} value={slot.value}>
+              <option key={slot.value} value={slot.current ? "current" : slot.value}>
                 {slot.label}
               </option>
             ))}
@@ -139,7 +143,7 @@ export function ProductScheduleDialog({
               <legend className="sr-only">Products to feature</legend>
               {matching.map((item) => {
                 const date = currentDates.get(item.id)
-                const alreadyHere = date === week
+                const alreadyHere = entries.some((entry) => entry.productId === item.id && entry.liveAt === week)
                 const blocked = Boolean(item.garmentSetup) && !isProductOnTheWall(item, now)
                 const checked = selected.includes(item.id)
                 return (
@@ -168,9 +172,11 @@ export function ProductScheduleDialog({
                             : alreadyHere
                               ? "Already in this week"
                               : date
-                                ? `Moves from ${formatStoreMoment(date, { dateStyle: "medium" })}`
+                                ? `${slot?.current ? "Also scheduled for" : "Moves from"} ${formatStoreMoment(date, { dateStyle: "medium" })}`
                                 : !isProductOnTheWall(item, now)
-                                  ? "Hidden until this week starts"
+                                  ? slot?.current
+                                    ? "Shows immediately"
+                                    : "Hidden until this week starts"
                                   : "Already in the shop"}
                       </span>
                     </span>
@@ -184,8 +190,9 @@ export function ProductScheduleDialog({
           </>
         )}
         <p className="text-sm text-muted-foreground">
-          Hidden products appear in the shop on {formatWeeklyCadence()}. Removing a product from a future week leaves
-          its shop visibility unchanged. Products stay for sale after their featured week ends.
+          Choosing this week shows hidden products immediately. Future features appear on {formatWeeklyCadence()}.
+          Removing a product from a future week leaves its shop visibility unchanged. Products stay for sale after their
+          featured week ends.
         </p>
         {error && (
           <Alert variant="destructive">
