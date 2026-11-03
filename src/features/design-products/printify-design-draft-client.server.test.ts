@@ -102,19 +102,21 @@ describe("documented Printify product client boundaries", () => {
     )
     expect(request).toHaveBeenCalledTimes(2)
   })
-  it.each(["duplicate", "foreign", "missing", "changing-total"])(
+  it.each(["duplicate", "foreign", "malformed-shop", "missing", "blank", "changing-total", "changing-last-page"])(
     "rejects %s inventory instead of declaring absence",
     async (mode) => {
       const request = vi.fn<typeof fetch>(async (url) => {
         const page = Number(new URL(String(url)).searchParams.get("page"))
         return Response.json({
           current_page: page,
-          last_page: 2,
+          last_page: mode === "changing-last-page" && page === 1 ? 3 : 2,
           total: mode === "changing-total" && page === 2 ? 3 : 2,
           data: [
             {
-              ...(mode === "missing" ? {} : { id: mode === "duplicate" ? "same" : `p${page}` }),
-              shop_id: mode === "foreign" ? 43 : 42,
+              ...(mode === "missing"
+                ? {}
+                : { id: mode === "duplicate" ? "same" : mode === "blank" && page === 1 ? " " : `p${page}` }),
+              shop_id: mode === "foreign" ? 43 : mode === "malformed-shop" ? [42] : 42,
             },
           ],
         })

@@ -93,7 +93,7 @@ export class PrintifyDesignDraftClient implements DesignDraftClient {
         !parsed.success ||
         parsed.data.current_page !== page ||
         parsed.data.last_page < page ||
-        (total !== undefined && total !== parsed.data.total)
+        (total !== undefined && (total !== parsed.data.total || lastPage !== parsed.data.last_page))
       )
         throw new DesignDraftError(
           "PROVIDER_UNAVAILABLE",
@@ -106,9 +106,13 @@ export class PrintifyDesignDraftClient implements DesignDraftClient {
         throw new DesignDraftError("PROVIDER_UNAVAILABLE", "Printify inventory pagination needs operator review")
     }
     const uniqueProducts = new Set(products.map((value) => value.id)).size
-    const inventoryProblem = products.some((value) => typeof value.id !== "string" || !value.id)
+    const inventoryProblem = products.some((value) => typeof value.id !== "string" || !value.id.trim())
       ? "a product identity is missing"
-      : products.some((value) => String(value.shop_id) !== this.shopId)
+      : products.some(
+            (value) =>
+              value.shop_id !== this.shopId &&
+              !(typeof value.shop_id === "number" && String(value.shop_id) === this.shopId)
+          )
         ? "a product does not identify the requested shop"
         : products.length !== total
           ? `received ${products.length} products but the provider reported ${total}`
