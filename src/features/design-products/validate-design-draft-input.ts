@@ -43,7 +43,7 @@ const schema = z
           .max(200),
         placement: z
           .object({
-            position: z.literal("front"),
+            position: z.enum(["front", "front_dtg"]),
             x: z.number().min(0).max(1),
             y: z.number().min(0).max(1),
             scale: z.number().positive().max(10),

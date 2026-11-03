@@ -218,12 +218,14 @@ describe("ProductCardLink touch artwork preview", () => {
 
   it("does not turn a touch on the title into an artwork hold", () => {
     const { link } = renderCard()
-    const title = screen.getByRole("heading", { name: product.title })
+    // The title sits beside the link under its stretched ::before, so a real touch there targets the
+    // link itself, outside the media box.
+    expect(link).not.toContainElement(screen.getByRole("heading", { name: product.title }))
 
-    pointerEvent(title, "pointerdown")
+    pointerEvent(link, "pointerdown")
     vi.advanceTimersByTime(600)
-    pointerEvent(title, "pointerup")
-    touchClick(title)
+    pointerEvent(link, "pointerup")
+    touchClick(link)
 
     expect(link).not.toHaveAttribute("data-touch-preview", "true")
     expect(navigate).toHaveBeenCalledExactlyOnceWith("/shop/touch-preview")

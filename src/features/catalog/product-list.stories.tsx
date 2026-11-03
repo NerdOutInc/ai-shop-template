@@ -60,14 +60,23 @@ function catalogProductFixture(overrides: Partial<CatalogProduct> = {}): Catalog
   }
 }
 
-const sampleImage = `data:image/svg+xml,${encodeURIComponent(
-  '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800"><rect width="800" height="800" fill="#ededed"/><path d="M270 180 160 260 230 370 280 340V620H520V340L570 370 640 260 530 180 460 210H340Z" fill="#595959"/><text x="400" y="400" text-anchor="middle" font-family="sans-serif" font-size="30" fill="#fafafa">Sample shirt</text><text x="400" y="720" text-anchor="middle" font-family="sans-serif" font-size="24" fill="#595959">Illustrative test image</text></svg>'
-)}`
+function sampleShirt(fill: string, label: string) {
+  return `data:image/svg+xml,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800"><rect width="800" height="800" fill="#ededed"/><path d="M270 180 160 260 230 370 280 340V620H520V340L570 370 640 260 530 180 460 210H340Z" fill="${fill}"/><text x="400" y="400" text-anchor="middle" font-family="sans-serif" font-size="30" fill="#fafafa">${label}</text><text x="400" y="720" text-anchor="middle" font-family="sans-serif" font-size="24" fill="#595959">Illustrative test image</text></svg>`
+  )}`
+}
+const sampleImage = sampleShirt("#595959", "Sample shirt")
+const greySampleImage = sampleShirt("#aaaaaa", "Grey sample shirt")
 
 const product = catalogProductFixture({
   id: "sample-shirt",
   title: "Sample graphic shirt",
+  defaultColor: "Black",
   image: { src: sampleImage, alt: "Illustrative sample shirt, not a production mockup" },
+  images: [
+    { src: sampleImage, alt: "Illustrative sample shirt, not a production mockup", variantIds: [1] },
+    { src: greySampleImage, alt: "Illustrative grey sample shirt, not a production mockup", variantIds: [2] },
+  ],
 })
 
 const meta = {
@@ -175,14 +184,18 @@ export const SortingAndFilters: Story = {
         catalogProductFixture({
           id: "new-shirt",
           title: "Newest shirt",
+          defaultColor: product.defaultColor,
           image: product.image,
+          images: product.images,
           addedToShopAt: "2026-09-15T12:00:00.000Z",
           salesCount: 10,
         }),
         catalogProductFixture({
           id: "drop-shirt",
           title: "Drop shirt",
+          defaultColor: product.defaultColor,
           image: product.image,
+          images: product.images,
           addedToShopAt: "2026-09-14T12:00:00.000Z",
           salesCount: 1,
         }),
@@ -214,6 +227,12 @@ export const SortingAndFilters: Story = {
 
     const toggle = canvas.queryByRole("button", { name: "Filters +" })
     if (toggle) await userEvent.click(toggle)
+    // The color filter picks each card's matching color, so the grey photo replaces the black cover.
+    await userEvent.click(canvas.getByRole("checkbox", { name: "Gray" }))
+    await expect(canvas.getAllByRole("img", { name: /grey sample shirt/ })).toHaveLength(3)
+    await expect(canvas.getAllByRole("button", { name: "Heather Grey", pressed: true })).toHaveLength(3)
+    await userEvent.click(canvas.getByRole("checkbox", { name: "Gray" }))
+    await expect(canvas.getAllByRole("button", { name: "Black", pressed: true })).toHaveLength(3)
     await userEvent.click(canvas.getByRole("checkbox", { name: "Black" }))
     await userEvent.click(canvas.getByRole("checkbox", { name: "M" }))
     await expect(canvas.getByText("No products match that combination.")).toBeVisible()

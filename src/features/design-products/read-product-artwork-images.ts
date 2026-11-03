@@ -83,8 +83,8 @@ export function readProductArtworkImages(raw: unknown) {
   })
   return {
     images,
-    front: images.filter((entry) => entry.position === "front"),
-    hasOtherArtwork: images.some((entry) => entry.position !== "front"),
+    front: images.filter((entry) => entry.position === "front" || entry.position === "front_dtg"),
+    hasOtherArtwork: images.some((entry) => entry.position !== "front" && entry.position !== "front_dtg"),
     hasLayeredArtwork: areas.some((area) =>
       area.placeholders.some(
         (placeholder) => placeholder.images.filter((entry) => !isProviderCareLabel(placeholder, entry)).length > 1
