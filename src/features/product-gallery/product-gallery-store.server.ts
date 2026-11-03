@@ -1,5 +1,6 @@
 import "server-only"
 import { randomUUID } from "node:crypto"
+import { isDeepStrictEqual } from "node:util"
 import type { Pool, PoolClient } from "pg"
 import { readProductImageViewKey } from "@/features/catalog/read-product-image-view-key"
 import { galleryManifestSchema, type GalleryManifest, type GalleryEntry } from "./gallery-manifest-schema"
@@ -208,12 +209,13 @@ export class ProductGalleryStore {
       `insert into commerce.product_gallery_revisions(shop_id,product_id,revision,action,manifest,created_by) values($1,$2,$3,$4,$5,$6)`,
       [this.shopId, product, revision, action, JSON.stringify(manifest), actor]
     )
-    // Activation changes the public page, so it stamps the product's content date (the sitemap's
-    // lastmod) like a publication does. Draft saves and restores leave the public photos alone.
+    // An unchanged activation still has an audit revision, but does not redate the public page.
     if (action === "activate")
       await client.query(
-        "update commerce.printify_products set updated_at=now(),content_updated_at=now() where shop_id=$1 and product_id=$2",
-        [this.shopId, product]
+        `update commerce.printify_products set updated_at=now(),
+           content_updated_at=case when $3::boolean then now() else content_updated_at end
+           where shop_id=$1 and product_id=$2`,
+        [this.shopId, product, !isDeepStrictEqual(state.published ?? empty, manifest)]
       )
     return { revision }
   }
