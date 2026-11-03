@@ -45,7 +45,11 @@ test.describe("About social previews", () => {
 test("opens About from the header by keyboard and connects the story to the shop", async ({ page, browserName }) => {
   await page.goto("/")
   const navigation = page.getByRole("navigation", { name: "Primary navigation" })
-  await expect(navigation.getByRole("link")).toHaveText(["About", "Shop", "Cart"])
+  await expect(navigation).toMatchAriaSnapshot(`
+    - link "About"
+    - link "Shop"
+    - link "Cart 0 items"
+  `)
   const about = navigation.getByRole("link", { name: "About", exact: true })
   const tabKey = await beginKeyboardNavigation(page, browserName)
   for (let step = 0; step < 5 && !(await about.evaluate((element) => element === document.activeElement)); step++)
