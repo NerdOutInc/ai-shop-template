@@ -76,7 +76,8 @@ test("previews artwork on the pictured shirt color and offers it as the last gal
       await page.keyboard.press(tabKey)
     await expect(link).toBeFocused()
     await expect(artwork).toBeVisible()
-    expect(await link.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe("none")
+    // The card link draws its focus ring on the ::before that stretches over the title row.
+    expect(await link.evaluate((element) => getComputedStyle(element, "::before").outlineStyle)).not.toBe("none")
     await page.keyboard.press("Enter")
   } else {
     await link.tap()
