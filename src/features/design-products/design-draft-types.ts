@@ -5,7 +5,7 @@ export type DesignDraftRecipe = {
   productModelLabel: string
   printProviderId: number
   variants: { id: number; price: number; color: string; size: string }[]
-  placement: { position: "front"; x: number; y: number; scale: number; angle: number }
+  placement: { position: "front" | "front_dtg"; x: number; y: number; scale: number; angle: number }
   description: string
   titleTemplate: string
 }
@@ -45,7 +45,10 @@ export type DesignProductPayload = {
   variants: { id: number; price: number; is_enabled: true }[]
   print_areas: {
     variant_ids: number[]
-    placeholders: { position: "front"; images: { id: string; x: number; y: number; scale: number; angle: number }[] }[]
+    placeholders: {
+      position: DesignDraftRecipe["placement"]["position"]
+      images: { id: string; x: number; y: number; scale: number; angle: number }[]
+    }[]
   }[]
 }
 export type DesignDraftClient = {
