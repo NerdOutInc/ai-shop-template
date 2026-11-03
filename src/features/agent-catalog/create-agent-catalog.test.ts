@@ -97,3 +97,16 @@ it("leaves out a product whose variants cannot be preselected from a product pag
   raw.options.pop()
   expect(createAgentCatalog([{ product: normalizeCatalogProduct(raw), category: null }], siteUrl).products).toEqual([])
 })
+
+it("quotes only prices of available variants present in the catalog", () => {
+  const product = normalizeCatalogProduct(galleryProductFixture())
+  product.variants[1]!.size = null
+  product.variants[1]!.price = 100
+  product.price = { min: 100, max: 3300, currency: "USD" }
+  const sources = [{ product, category: null }]
+  const listed = createAgentCatalog(sources, siteUrl).products[0]!
+  expect(listed.variants).toHaveLength(1)
+  expect(listed.priceRange).toEqual({ min: "33.00", max: "33.00", currency: "USD" })
+  product.variants[0]!.available = false
+  expect(createAgentCatalog(sources, siteUrl).products[0]!.priceRange).toBeNull()
+})

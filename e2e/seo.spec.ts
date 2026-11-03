@@ -373,6 +373,10 @@ test("publishes the agent-readable catalog, llms.txt and dated sitemap for the c
   ]) {
     expect(text).toContain(line)
   }
+  const listedUrls = [...text.split("## Products")[1]!.matchAll(/\]\((https:\/\/example\.com\/shop\/[^)]+)\)/g)].map(
+    (match) => match[1]
+  )
+  expect(listedUrls.sort()).toEqual(catalog.products.map((item) => item.url).sort())
   expect(text).not.toContain("f1de0000000000000000ca01")
 
   const sitemap = await (await request.get("/sitemap.xml")).text()

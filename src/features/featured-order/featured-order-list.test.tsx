@@ -764,9 +764,7 @@ describe("product scheduling from the shop lineup", () => {
       )
     ).toBeVisible()
     const dialog = await openWeek(0)
-    expect(
-      dialog.getByText(/^Hidden products appear in the shop on Thursday at 6:15 PM \(Asia\/Kathmandu\)/)
-    ).toBeVisible()
+    expect(dialog.getByText(/Future features appear on Thursday at 6:15 PM \(Asia\/Kathmandu\)/)).toBeVisible()
   })
 
   it("renders six dated weeks and previews hidden published products through the private route", () => {

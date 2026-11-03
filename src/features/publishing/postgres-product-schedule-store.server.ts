@@ -71,6 +71,7 @@ export class PostgresProductScheduleStore {
     productIds: readonly string[]
     liveAt: string
     featuredBy: string
+    currentWeek?: boolean
   }): Promise<
     | ({ status: "saved" } & ProductScheduleReceipt)
     | { status: "missing" | "garment-incomplete" | "past"; productIds: string[] }
@@ -116,11 +117,14 @@ export class PostgresProductScheduleStore {
         await client.query("rollback")
         return { status: "garment-incomplete", productIds: incomplete }
       }
-      // A row/garment lock may have waited across the deadline. Reject that moment before writing.
-      const future = await client.query<{ future: boolean }>("select $1::timestamptz > clock_timestamp() as future", [
-        liveAt,
-      ])
-      if (!future.rows[0]?.future) {
+      // Recheck after locks. A future request that crosses its deadline still fails; only an
+      // explicit current-week selection may join the feature already underway.
+      const clock = await client.query<{ now: Date }>("select clock_timestamp() as now")
+      const now = clock.rows[0]!.now.getTime()
+      const allowed = input.currentWeek
+        ? resolveProductWeek(await this.listWith(client), now)?.liveAt === liveAt
+        : Date.parse(liveAt) > now
+      if (!allowed) {
         await client.query("rollback")
         return { status: "past", productIds: ids }
       }
@@ -128,7 +132,8 @@ export class PostgresProductScheduleStore {
       // without a time-dependent index predicate. Current features remain while next week is queued.
       await client.query(
         `update commerce.product_week_schedule set ended_at=now(),updated_at=now()
-           where shop_id=$1 and product_id=any($2::text[]) and ended_at is null and live_at>clock_timestamp() and live_at<>$3`,
+           where shop_id=$1 and product_id=any($2::text[]) and ended_at is null and live_at>clock_timestamp() and live_at<>$3
+             and $3::timestamptz>clock_timestamp()`,
         [this.shopId, ids, liveAt]
       )
       await client.query(
@@ -139,10 +144,11 @@ export class PostgresProductScheduleStore {
            returning id`,
         [this.shopId, ids, liveAt, input.featuredBy]
       )
+      // A late addition belongs to the whole feature week, but first becomes shoppable at this write.
       await client.query(
-        `update commerce.printify_products set reveal_at=$3,updated_at=now()
+        `update commerce.printify_products set reveal_at=case when $4::boolean then clock_timestamp() else $3::timestamptz end,updated_at=now()
            where shop_id=$1 and product_id=any($2::text[]) and active and ${productVisibilitySql.hiddenAtWrite}`,
-        [this.shopId, ids, liveAt]
+        [this.shopId, ids, liveAt, input.currentWeek === true]
       )
       const receipt = await this.receipt(client, ids)
       await client.query("commit")

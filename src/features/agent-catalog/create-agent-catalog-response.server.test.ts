@@ -15,7 +15,8 @@ vi.mock("@/features/garment-catalog/list-garment-display-profiles.server", () =>
   listGarmentDisplayProfiles: vi.fn(),
 }))
 vi.mock("@/lib/get-site-url", () => ({ getSiteUrl: () => new URL("https://store.example") }))
-const config = vi.hoisted(() => ({ indexable: true }))
+const config = vi.hoisted(() => ({ indexable: true, PRINTIFY_PUBLISHING_ENABLED: true }))
+vi.mock("@/lib/env", () => ({ env: config }))
 vi.mock("@/lib/is-indexable-site", () => ({ isIndexableSite: () => config.indexable }))
 
 const apparel = { googleProductCategory: 212, ageGroup: "adult", gender: "unisex", sizeSystem: "US" } as const
@@ -29,6 +30,7 @@ const garment = {
 } as const
 
 beforeEach(() => {
+  config.PRINTIFY_PUBLISHING_ENABLED = true
   config.indexable = true
   vi.mocked(getMerchantProducts).mockResolvedValue([
     { product: normalizeCatalogProduct(galleryProductFixture()), apparel, blueprintId: 12 },
@@ -91,6 +93,9 @@ describe("the public JSON catalog", () => {
       expect(response.status).toBe(404)
       expect(response.headers.get("X-Robots-Tag")).toBe("noindex")
     }
+    config.indexable = true
+    config.PRINTIFY_PUBLISHING_ENABLED = false
+    expect((await createAgentCatalogResponse()).status).toBe(404)
     expect(getMerchantProducts).not.toHaveBeenCalled()
   })
 })

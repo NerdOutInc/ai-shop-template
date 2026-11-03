@@ -104,11 +104,12 @@ export function createImageWriter({ request, provider, references, images = [], 
   const state = { requestId: provider.requestId ?? null, seed: provider.seed ?? null, notes: [] }
   let owned = resumed
   const save = async (status) => {
-    await writeFile(receiptFilePath(request), JSON.stringify(receipt(status), null, 2) + "\n", {
+    const snapshot = receipt(status)
+    await writeFile(receiptFilePath(request), JSON.stringify(snapshot, null, 2) + "\n", {
       flag: owned ? "w" : "wx",
     })
     owned = true
-    return receipt(status)
+    return snapshot
   }
   const receipt = (status) => ({
     schemaVersion: 1,
