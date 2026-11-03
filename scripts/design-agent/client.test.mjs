@@ -229,6 +229,11 @@ test("never exposes a downloaded file with missing metadata, truncated bytes, or
     for (const headers of [
       {},
       {
+        "x-content-bytes": "13.0000000000000001",
+        "content-length": "13",
+        "x-content-sha256": createHash("sha256").update("verifiedbytes").digest("hex"),
+      },
+      {
         "x-content-bytes": "14",
         "content-length": "13",
         "x-content-sha256": createHash("sha256").update("verifiedbytes").digest("hex"),
