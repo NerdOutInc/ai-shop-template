@@ -36,6 +36,14 @@ function product(overrides: Record<string, unknown> = {}) {
 beforeEach(() => vi.clearAllMocks())
 
 describe("listPublishedProductRecipes", () => {
+  it("preserves the DTG front identifier when recovering a production placement", async () => {
+    const saved = product()
+    saved.print_areas[0]!.placeholders[0]!.position = "front_dtg"
+    listPublishedProducts.mockResolvedValue([saved])
+    const [model] = (await listPublishedProductRecipes()).models
+    expect(model!.placement).toEqual({ position: "front_dtg", x: 0.5, y: 0.1, scale: 0.63, angle: 0 })
+    expect(model!.blocked).toEqual([])
+  })
   it("offers one entry per published model, recovered from the products themselves", async () => {
     listPublishedProducts.mockResolvedValue([product(), product({ id: "tee-b", title: "Sample Evening Scene" })])
     const result = await listPublishedProductRecipes()

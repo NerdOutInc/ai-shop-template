@@ -69,19 +69,54 @@ describe("documented Printify product client boundaries", () => {
     expect(String(request.mock.calls[0]?.[0])).toContain("limit=50&page=1")
     expect(request.mock.calls[0]?.[1]).toMatchObject({ redirect: "error", cache: "no-store" })
   })
-  it.each(["duplicate", "foreign", "missing", "changing-total"])(
+  it("recovers inconsistent pages only after a separately complete inventory scan", async () => {
+    const products = Array.from({ length: 56 }, (_, index) => ({ id: `p${index}`, shop_id: 42 }))
+    const request = vi.fn<typeof fetch>(async (url) => {
+      const params = new URL(String(url)).searchParams
+      const limit = Number(params.get("limit"))
+      const page = Number(params.get("page"))
+      return Response.json({
+        current_page: page,
+        last_page: Math.ceil(products.length / limit),
+        total: limit === 50 ? 55 : products.length,
+        data: products.slice((page - 1) * limit, page * limit),
+      })
+    })
+    expect(await new PrintifyDesignDraftClient("token", "42", request).listProducts()).toEqual(products)
+    expect(request).toHaveBeenCalledTimes(5)
+    expect(request.mock.calls.map(([url]) => new URL(String(url)).search)).toEqual([
+      "?limit=50&page=1",
+      "?limit=50&page=2",
+      "?limit=25&page=1",
+      "?limit=25&page=2",
+      "?limit=25&page=3",
+    ])
+    expect(request.mock.calls[0]?.[1]?.headers).toMatchObject({ "Cache-Control": "no-cache" })
+  })
+  it("stops after one fresh scan when provider counts remain inconsistent", async () => {
+    const request = vi.fn<typeof fetch>(async () =>
+      Response.json({ current_page: 1, last_page: 1, total: 2, data: [{ id: "p1", shop_id: 42 }] })
+    )
+    await expect(new PrintifyDesignDraftClient("token", "42", request).listProducts()).rejects.toThrow(
+      "received 1 products but the provider reported 2"
+    )
+    expect(request).toHaveBeenCalledTimes(2)
+  })
+  it.each(["duplicate", "foreign", "malformed-shop", "missing", "blank", "changing-total", "changing-last-page"])(
     "rejects %s inventory instead of declaring absence",
     async (mode) => {
       const request = vi.fn<typeof fetch>(async (url) => {
         const page = Number(new URL(String(url)).searchParams.get("page"))
         return Response.json({
           current_page: page,
-          last_page: 2,
+          last_page: mode === "changing-last-page" && page === 1 ? 3 : 2,
           total: mode === "changing-total" && page === 2 ? 3 : 2,
           data: [
             {
-              ...(mode === "missing" ? {} : { id: mode === "duplicate" ? "same" : `p${page}` }),
-              shop_id: mode === "foreign" ? 43 : 42,
+              ...(mode === "missing"
+                ? {}
+                : { id: mode === "duplicate" ? "same" : mode === "blank" && page === 1 ? " " : `p${page}` }),
+              shop_id: mode === "foreign" ? 43 : mode === "malformed-shop" ? [42] : 42,
             },
           ],
         })
@@ -89,6 +124,26 @@ describe("documented Printify product client boundaries", () => {
       await expect(new PrintifyDesignDraftClient("token", "42", request).listProducts()).rejects.toThrow(/inventory/)
     }
   )
+  it("distinguishes inventory count and identity failures without exposing provider records", async () => {
+    for (const [data, total, message] of [
+      [[{ id: "private-product", shop_id: 42 }], 2, "received 1 products but the provider reported 2"],
+      [
+        [
+          { id: "private-product", shop_id: 42 },
+          { id: "private-product", shop_id: 42 },
+        ],
+        2,
+        "received 2 products with only 1 unique identities",
+      ],
+      [[{ id: "private-product", shop_id: 99 }], 1, "a product does not identify the requested shop"],
+      [[{ title: "private-product", shop_id: 42 }], 1, "a product identity is missing"],
+    ] as const) {
+      const request = vi.fn<typeof fetch>(async () => Response.json({ current_page: 1, last_page: 1, total, data }))
+      const failure = new PrintifyDesignDraftClient("token", "42", request).listProducts()
+      await expect(failure).rejects.toThrow(message)
+      await expect(failure).rejects.not.toThrow("private-product")
+    }
+  })
   it("uploads by URL and creates drafts using documented fields without publication or invented idempotency", async () => {
     const request = vi.fn<typeof fetch>(async (url) =>
       Response.json(
@@ -173,6 +228,57 @@ describe("documented Printify product client boundaries", () => {
     expect(() =>
       validateDesignDraftInput({ ...input, recipe: { ...recipe, variants: [recipe.variants[0], recipe.variants[0]] } })
     ).toThrow("once")
+  })
+  it("validates the exact DTG front position without substituting a different print area", async () => {
+    const requested = validateDesignDraftInput({
+      ...input,
+      recipe: { ...recipe, placement: { ...recipe.placement, position: "front_dtg" } },
+    }).recipe
+    const request = vi.fn<typeof fetch>(async () =>
+      Response.json({
+        variants: [
+          {
+            id: 1,
+            options: { color: "Black", size: "M" },
+            placeholders: [{ position: "front_dtg", decoration_method: "dtg" }],
+          },
+        ],
+      })
+    )
+    const client = new PrintifyDesignDraftClient("token", "42", request)
+    await expect(client.validateRecipe(requested)).resolves.toBeUndefined()
+    expect(await client.listCatalogVariants({ blueprintId: 145, printProviderId: 99, position: "front_dtg" })).toEqual([
+      { id: 1, color: "Black", size: "M", available: true },
+    ])
+    await expect(client.validateRecipe(validateDesignDraftInput(input).recipe)).rejects.toThrow("unavailable")
+    for (const position of ["front_dtf", "back_dtg", "front_embroidery"])
+      expect(() =>
+        validateDesignDraftInput({ ...input, recipe: { ...recipe, placement: { ...recipe.placement, position } } })
+      ).toThrow("placement")
+    request.mockImplementation(async () =>
+      Response.json({
+        variants: [
+          {
+            id: 1,
+            options: { color: "Black", size: "M" },
+            placeholders: [{ position: "front_dtg", decoration_method: "dtf" }],
+          },
+        ],
+      })
+    )
+    await expect(client.validateRecipe(requested)).rejects.toThrow("unavailable")
+  })
+  it("checks DTG front artwork dimensions and keeps the saved production position exact", () => {
+    const requested = structuredClone(payload)
+    requested.print_areas[0]!.placeholders[0]!.position = "front_dtg"
+    const saved = structuredClone(requested)
+    Object.assign(saved.print_areas[0]!.placeholders[0]!.images[0]!, { width: 3908, height: 4072 })
+    expect(readProductArtworkImages(saved)).toMatchObject({ hasOtherArtwork: false, hasUnsupportedArtwork: false })
+    expect(matchDesignProduct(saved, requested, { width: 3908, height: 4072 })).toBe(true)
+    expect(matchDesignProduct(saved, requested, { width: 1254, height: 1254 })).toBe(false)
+    expect(matchDesignProduct(saved, payload)).toBe(false)
+    Object.assign(saved.print_areas[0]!.placeholders[0]!, { decoration_method: "dtf" })
+    expect(matchDesignProduct(saved, requested)).toBe(false)
   })
   it("matches provider area regrouping but detects layers, changed pricing and flipped art", () => {
     const regrouped = {
