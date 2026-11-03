@@ -6,6 +6,7 @@ import { readFile } from "node:fs/promises"
 import { expect, test, type Page } from "@playwright/test"
 import { createClient } from "@supabase/supabase-js"
 import { Pool } from "pg"
+import sharp from "sharp"
 
 import { seedCompleteGarment } from "../../test/seed-complete-garment"
 import { listCadenceSlots } from "@/features/publishing/list-cadence-slots"
@@ -282,7 +283,12 @@ test("owner setup, passkeys, exact private downloads, personal favorites and rev
   expect(small.headers()["content-type"]).toBe("image/webp")
   const smallBytes = await small.body()
   expect(smallBytes.byteLength).toBeLessThan(bytes.byteLength / 2)
-  expect(Number(small.headers()["content-length"])).toBe(smallBytes.byteLength)
+  // Next can stream this response without a Content-Length. Decode the downloaded artwork
+  // to catch truncated or print-sized files regardless of the transport.
+  const { info } = await sharp(smallBytes, { failOn: "warning" }).raw().toBuffer({ resolveWithObject: true })
+  expect(info).toMatchObject({ width: 480, height: 480, channels: 4 })
+  const advertisedLength = small.headers()["content-length"]
+  if (advertisedLength !== undefined) expect(Number(advertisedLength)).toBe(smallBytes.byteLength)
   // The admin proxy puts private, no-store on /api/admin responses; a derived size is
   // still private artwork and gets the same treatment.
   expect(small.headers()["cache-control"]).toContain("no-store")
