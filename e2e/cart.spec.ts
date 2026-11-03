@@ -56,7 +56,7 @@ test("edits and persists the bag with accessible keyboard controls and no narrow
   await page.reload()
   await expect(page.getByRole("heading", { name: "The good stuff (2)" })).toBeVisible()
   await page.setViewportSize({ width: 320, height: 800 })
-  await expect(page.getByRole("link", { name: "Cart, 2 items", exact: true })).toBeVisible()
+  await expect(page.getByRole("link", { name: "Cart 2 items", exact: true })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   await page.screenshot({ path: testInfo.outputPath("cart-320px.png"), fullPage: true })
   expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([])

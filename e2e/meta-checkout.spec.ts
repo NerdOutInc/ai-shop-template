@@ -75,7 +75,7 @@ test("reviews exact Meta variants, preserves the existing cart and cannot duplic
   await expect(importStatus).toBeFocused()
   expect(await importStatus.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe("none")
   await page.keyboard.press(tabKey)
-  await expect(page.getByRole("link", { name: "View Existing shirt", exact: true })).toBeFocused()
+  await expect(page.getByRole("link", { name: "View Existing shirt Made to order", exact: true })).toBeFocused()
   await expect(page.getByText("Existing shirt", { exact: true })).toBeVisible()
   await expect(page.getByText("$128.15", { exact: true })).toBeVisible()
   await page.reload()

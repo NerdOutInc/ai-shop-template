@@ -30,7 +30,7 @@ test("attaches the first public campaign to checkout across navigation and a ret
   await page.evaluate((item) => {
     localStorage.setItem("your-store-cart-v1", JSON.stringify({ version: 1, entries: [item], checkouts: {} }))
   }, item)
-  await page.getByRole("link", { name: /^Cart,/ }).click()
+  await page.getByRole("link", { name: /^Cart / }).click()
   await expect(page).toHaveURL(/\/cart$/)
   await page.reload()
   await expect(page.getByRole("button", { name: "Checkout", exact: true })).toBeVisible()

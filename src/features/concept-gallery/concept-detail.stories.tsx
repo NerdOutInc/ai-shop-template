@@ -118,10 +118,7 @@ export const PinnedFavoriteAndProductStates: Story = {
     }),
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: "Remove design #149 from my favorites" })).toHaveAttribute(
-      "aria-pressed",
-      "true"
-    )
+    await expect(canvas.getByRole("button", { name: "Saved to my favorites" })).toHaveAttribute("aria-pressed", "true")
     await expect(canvas.getByRole("link", { name: "View in store" })).toHaveAttribute("href", "/shop/shirt-product")
     await expect(canvas.getByText("Not yet verified")).toBeVisible()
     await expect(canvas.getByRole("button", { name: "Archive design #149" })).toBeVisible()

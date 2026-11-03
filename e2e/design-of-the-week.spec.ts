@@ -90,7 +90,9 @@ test("reaches the home section from both footer locations using the keyboard", a
     await expect(firstProduct).toBeVisible()
     await beginKeyboardNavigation(page, browserName)
     await expect(firstProduct).toBeFocused()
-    expect(await firstProduct.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe("none")
+    expect(await firstProduct.evaluate((element) => getComputedStyle(element, "::before").outlineStyle)).not.toBe(
+      "none"
+    )
   }
 })
 

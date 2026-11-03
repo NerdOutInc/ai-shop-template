@@ -170,7 +170,9 @@ test("requires inbox confirmation, deduplicates signup and honors unsubscribe", 
   try {
     await page.goto("/#design-of-the-week", { waitUntil: "commit" })
     // A customer can type while JavaScript is still loading; submission must use the visible address.
+    await field.click()
     await field.pressSequentially(email)
+    await expect(field).toHaveValue(email)
   } finally {
     releaseScripts()
   }

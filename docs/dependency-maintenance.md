@@ -4,9 +4,9 @@ Use the Node and pnpm versions pinned by `.node-version` and `package.json`. Kee
 
 ## The Next metadata patch
 
-`package.json` uses `next@~16.4.2` to apply `patches/next@16.4.2.patch` to compatible patch releases in the 16.4 line. The patch filename records its original base; it is not the version selector. Runtime Next remains pinned to an exact version.
+`package.json` uses `next@~16.4.5` to apply `patches/next@16.4.5.patch` to compatible patch releases in the 16.4 line. The patch filename records its original base; it is not the version selector. Runtime Next remains pinned to an exact version.
 
-[pnpm 10 supports version-range patch selectors](https://pnpm.io/10.x/cli/patch#patcheddependencies). An exact `next@16.4.2` selector makes the patch unused when Next moves to a later patch version; pnpm rejects the lockfile update. The range lets a patch update proceed while retaining normal errors for unused patches and patches that no longer apply. Do not enable `allowUnusedPatches` or `ignorePatchFailures` to bypass these checks.
+[pnpm 10 supports version-range patch selectors](https://pnpm.io/10.x/cli/patch#patcheddependencies). An exact `next@16.4.5` selector makes the patch unused when Next moves to a later patch version; pnpm rejects the lockfile update. The range lets a patch update proceed while retaining normal errors for unused patches and patches that no longer apply. Do not enable `allowUnusedPatches` or `ignorePatchFailures` to bypass these checks.
 
 Run `pnpm test:dependencies` after installing dependencies. The offline regression uses the eight actual installed patch targets, reverses the patch in a disposable directory, and packages them as local Next fixtures. It proves the exact selector rejects a simulated patch upgrade, the configured range preserves all eight patched files, the next minor is rejected, and changed upstream content fails installation. It uses a private temporary pnpm store and removes its fixtures afterward. This proves pnpm behavior, not compatibility with an unreleased Next version.
 
@@ -26,15 +26,13 @@ The publishing browser fixture intercepts both `fetch` and Node HTTPS: Next 16.4
 
 ## Storybook with Next 16.4
 
-Storybook's Next adapter 10.6.2 still supplies the older `parentCacheNode` router context, while Next 16.4's `useRouter` reads `parentRenderTree.data.bfcacheId`. This crashes the framework redirect boundary before any story renders. `patches/@storybook__nextjs-vite@10.6.2.patch` adds the missing render-tree data to the adapter's existing mock context and preserves its older fields. The exact version selector deliberately requires review when upgrading the adapter.
-
-Run the complete `pnpm test:stories` interaction and accessibility suite after a change to either package. Remove this patch when an upstream adapter provides the new context and the same stories pass without it; do not skip failing stories or patch the production router to accommodate a test adapter.
+Storybook's Next adapter supplies the `parentRenderTree.data.bfcacheId` router context that Next 16.4 reads. Version 10.6.5 includes this upstream, so the template no longer patches the adapter. Keep the adapter, Storybook and its addons on the same release and run the complete `pnpm test:stories` interaction and accessibility suite after a change to either Next or Storybook.
 
 ## Stripe SDK 23
 
-Stripe 23 uses API version `2026-09-30.endive`; the checkout client explicitly pins that version. The [Endive migration](https://docs.stripe.com/changelog/endive/2026-09-30/remove-payment-method-types-checkout-sessions) removes the `payment_method_types` request parameter. This store already uses dynamic payment methods and does not send that parameter. Keep that behavior when editing Checkout Session creation.
+Stripe SDK 23.1 uses [API version 2026-10-28.endive](https://docs.stripe.com/changelog#2026-10-28.endive); the checkout client explicitly pins that version. The [Endive migration](https://docs.stripe.com/changelog/endive/2026-09-30/remove-payment-method-types-checkout-sessions) removes the `payment_method_types` request parameter. This store already uses dynamic payment methods and does not send that parameter. Keep that behavior when editing Checkout Session creation.
 
-The webhook handler verifies signatures with the SDK's default timestamp tolerance and retrieves the session before fulfillment; it does not depend on the webhook's embedded session fields beyond its ID. The checkout and signed-webhook regressions cover these contracts, including expired signatures. The signed-webhook regressions run against both `2026-08-26.dahlia` and `2026-09-30.endive` event snapshots, so destinations still on the previous version keep fulfilling. The offline commerce Stripe stub rejects any other `Stripe-Version` header and any `payment_method_types` parameter, so update its pinned version with the client during the next upgrade. Repository tests use offline providers and do not establish live Stripe acceptance or change an account's default API or webhook endpoint version.
+The webhook handler verifies signatures with the SDK's default timestamp tolerance and retrieves the session before fulfillment; it does not depend on the webhook's embedded session fields beyond its ID. The checkout and signed-webhook regressions cover these contracts, including expired signatures. The signed-webhook regressions run against `2026-08-26.dahlia`, `2026-09-30.endive` and `2026-10-28.endive` event snapshots, so destinations still on the previous version keep fulfilling. The offline commerce Stripe stub rejects any other `Stripe-Version` header and any `payment_method_types` parameter, so update its pinned version with the client during the next upgrade. Repository tests use offline providers and do not establish live Stripe acceptance or change an account's default API or webhook endpoint version.
 
 ## Repository security settings
 

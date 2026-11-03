@@ -54,11 +54,8 @@ export function ConceptPreview({
       {large ? (
         artwork
       ) : (
-        <Link
-          href={`/admin/concepts/${design.displayNumber}`}
-          aria-label={`View design #${design.displayNumber}: ${design.title}`}
-          className="block rounded-sm"
-        >
+        <Link href={`/admin/concepts/${design.displayNumber}`} className="block rounded-sm">
+          <span className="sr-only">View design #{design.displayNumber}:</span>
           {artwork}
         </Link>
       )}

@@ -89,7 +89,7 @@ async function handle(request: IncomingMessage, response: ServerResponse) {
       return json(response, { error: { message: "Unexpected Stripe credentials" } }, 401)
     // Mirrors the pinned client version in src/features/checkout/get-commerce-services.server.ts; update both
     // during Stripe upgrades (docs/dependency-maintenance.md).
-    if (request.headers["stripe-version"] !== "2026-09-30.endive")
+    if (request.headers["stripe-version"] !== "2026-10-28.endive")
       return json(response, { error: { message: "Unexpected Stripe API version" } }, 400)
     if (path === "/v1/checkout/sessions" && request.method === "POST") {
       const params = new URLSearchParams(await body(request))
