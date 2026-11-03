@@ -39,6 +39,7 @@ it("serves only the active hero's image with private browser revalidation but no
   expect(mocks.read).toHaveBeenCalledWith(asset)
   expect(response.status).toBe(200)
   expect(response.headers.get("cache-control")).toBe("private, no-cache")
+  expect(response.headers.has("vary")).toBe(false)
   expect(response.headers.get("etag")).toBe(`"${"a".repeat(64)}"`)
   expect(response.headers.get("cdn-cache-control")).toBe("no-store")
   expect(await response.text()).toBe("image")
@@ -60,9 +61,13 @@ it.each([`"${"a".repeat(64)}"`, `W/"${"a".repeat(64)}"`, `"other", "${"a".repeat
   async (validator) => {
     mocks.currentAsset.mockResolvedValue({ id, sha256: "a".repeat(64) })
     const request = () =>
-      new Request(`https://store.test/api/weekly-hero/${id}`, { headers: { "if-none-match": validator } })
+      new Request(`https://store.test/api/weekly-hero/${id}`, {
+        headers: { "if-none-match": validator, cookie: "session=changed" },
+      })
     const response = await GET(request(), { params: Promise.resolve({ id }) })
     expect(response.status).toBe(304)
+    expect(response.headers.has("vary")).toBe(false)
+    expect(response.headers.get("cdn-cache-control")).toBe("no-store")
     expect(await response.text()).toBe("")
     expect(response.headers.get("cache-control")).toBe("private, no-cache")
     expect(mocks.currentAsset).toHaveBeenCalledOnce()

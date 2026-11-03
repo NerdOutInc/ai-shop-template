@@ -1,4 +1,5 @@
-import { getSitemapProducts } from "@/features/catalog/get-sitemap-products.server"
+import { getAgentCatalog } from "@/features/agent-catalog/get-agent-catalog.server"
+import { env } from "@/lib/env"
 import { getSiteUrl } from "@/lib/get-site-url"
 import { isIndexableSite } from "@/lib/is-indexable-site"
 import { storeConfig } from "@/lib/store-config"
@@ -13,11 +14,11 @@ function markdownText(value: string) {
 
 /** Served as /llms.txt by the rewrite in next.config.ts; see docs/agent-commerce.md. */
 export async function GET() {
-  if (!isIndexableSite()) {
+  if (!isIndexableSite() || !env.PRINTIFY_PUBLISHING_ENABLED) {
     return new Response(null, { status: 404, headers: { "Cache-Control": "no-store", "X-Robots-Tag": "noindex" } })
   }
   try {
-    const products = await getSitemapProducts()
+    const { products } = await getAgentCatalog()
     const siteUrl = getSiteUrl()
     const href = (path: string) => new URL(path, siteUrl).href
     const lines = [
