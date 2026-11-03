@@ -1,3 +1,4 @@
+import { formatDecimalPrice } from "@/lib/format-decimal-price"
 import { displayColorName } from "@/lib/display-color-name"
 import { storeConfig } from "@/lib/store-config"
 import { getStorePolicyIds } from "@/features/store-policies/get-store-policy-ids"
@@ -24,7 +25,7 @@ export function createProductStructuredData(product: CatalogProduct, siteUrl: UR
     offers: {
       "@type": "Offer" as const,
       url: variant.url,
-      price: (variant.price / 100).toFixed(2),
+      price: formatDecimalPrice(variant.price),
       priceCurrency: variant.currency,
       availability: variant.available ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       itemCondition: "https://schema.org/NewCondition",

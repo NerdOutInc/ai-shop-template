@@ -1,25 +1,38 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { storeConfig } from "@/lib/store-config"
-import { getSitemapProducts } from "@/features/catalog/get-sitemap-products.server"
+import { getAgentCatalog } from "@/features/agent-catalog/get-agent-catalog.server"
+import { createAgentCatalog } from "@/features/agent-catalog/create-agent-catalog"
+import { normalizeCatalogProduct } from "@/features/catalog/normalize-catalog-product"
+import { galleryProductFixture } from "../../../test/gallery-product-fixture"
 
 import { GET } from "./route"
 
-vi.mock("@/features/catalog/get-sitemap-products.server", () => ({ getSitemapProducts: vi.fn() }))
+vi.mock("@/features/agent-catalog/get-agent-catalog.server", () => ({ getAgentCatalog: vi.fn() }))
 vi.mock("@/lib/get-site-url", () => ({ getSiteUrl: () => new URL("https://store.example") }))
-const config = vi.hoisted(() => ({ indexable: true }))
+const config = vi.hoisted(() => ({ indexable: true, PRINTIFY_PUBLISHING_ENABLED: true }))
 vi.mock("@/lib/is-indexable-site", () => ({ isIndexableSite: () => config.indexable }))
+vi.mock("@/lib/env", () => ({ env: config }))
 beforeEach(() => {
   storeConfig.features.about = true
+  config.PRINTIFY_PUBLISHING_ENABLED = true
   config.indexable = true
 })
 
 describe("llms.txt", () => {
-  it("describes the store, its policies, the catalog endpoint and every published product", async () => {
-    vi.mocked(getSitemapProducts).mockResolvedValue([
-      { id: "tee", title: "Friday [Tee]\nSecond line", lastModified: null, image: null },
-      { id: "a&b", title: "Ampersand", lastModified: null, image: null },
-    ])
+  it("describes the store, its policies, the catalog endpoint and every agent-catalog product", async () => {
+    vi.mocked(getAgentCatalog).mockResolvedValue(
+      createAgentCatalog(
+        [
+          { id: "tee", title: "Friday [Tee]\nSecond line" },
+          { id: "a&b", title: "Ampersand" },
+        ].map((identity) => ({
+          product: normalizeCatalogProduct({ ...galleryProductFixture(), ...identity }),
+          category: null,
+        })),
+        new URL("https://store.example")
+      )
+    )
     const response = await GET()
     expect(response.status).toBe(200)
     expect(response.headers.get("Content-Type")).toBe("text/markdown; charset=utf-8")
@@ -43,11 +56,11 @@ describe("llms.txt", () => {
   })
   it("omits the disabled About page", async () => {
     storeConfig.features.about = false
-    vi.mocked(getSitemapProducts).mockResolvedValue([])
+    vi.mocked(getAgentCatalog).mockResolvedValue(createAgentCatalog([], new URL("https://store.example")))
     expect(await (await GET()).text()).not.toContain("/about")
   })
   it("returns an uncached retryable 503 when catalog reads fail, without leaking provider errors", async () => {
-    vi.mocked(getSitemapProducts).mockRejectedValue(new Error("private provider failure"))
+    vi.mocked(getAgentCatalog).mockRejectedValue(new Error("private provider failure"))
     const response = await GET()
     expect(response.status).toBe(503)
     expect(response.headers.get("Cache-Control")).toBe("no-store")
@@ -59,6 +72,10 @@ describe("llms.txt", () => {
     const response = await GET()
     expect(response.status).toBe(404)
     expect(response.headers.get("X-Robots-Tag")).toBe("noindex")
-    expect(getSitemapProducts).not.toHaveBeenCalled()
+    expect(getAgentCatalog).not.toHaveBeenCalled()
+    config.indexable = true
+    config.PRINTIFY_PUBLISHING_ENABLED = false
+    expect((await GET()).status).toBe(404)
+    expect(getAgentCatalog).not.toHaveBeenCalled()
   })
 })

@@ -390,7 +390,14 @@ describe.skipIf(!databaseUrl)("durable Printify publishing", () => {
     })
     const after = (await pool.query("select * from commerce.printify_products where product_id=$1", [event.productId]))
       .rows[0]
-    expect(after).toEqual({ ...before, revision: "2", snapshot: { ...snapshot, images }, updated_at: expect.any(Date) })
+    expect(after).toEqual({
+      ...before,
+      revision: "2",
+      snapshot: { ...snapshot, images },
+      updated_at: expect.any(Date),
+      content_updated_at: expect.any(Date),
+    })
+    expect(after.content_updated_at.getTime()).toBeGreaterThanOrEqual(before.content_updated_at.getTime())
     expect(
       (await pool.query("select * from commerce.printify_publish_jobs where event_id=$1", [event.id])).rows
     ).toEqual(jobs)
@@ -423,6 +430,7 @@ describe.skipIf(!databaseUrl)("durable Printify publishing", () => {
     const copy = googleCopyFor(snapshot)
     const before = (await pool.query("select * from commerce.printify_products where product_id=$1", [event.productId]))
       .rows[0]
+    expect(before.content_updated_at).toBeInstanceOf(Date)
     expect(await second.updateGoogleMerchantCopy(event.productId, "1", copy)).toEqual({ newRevision: "2" })
     expect(await second.updateGoogleMerchantCopy(event.productId, "1", null)).toBeNull()
     const after = (await pool.query("select * from commerce.printify_products where product_id=$1", [event.productId]))
@@ -835,7 +843,14 @@ describe.skipIf(!databaseUrl)("durable Printify publishing", () => {
     const updatedSnapshot = { ...snapshot, storefront_artwork: backfillArtwork, storefront_artwork_enabled: true }
     const after = (await pool.query("select * from commerce.printify_products where product_id=$1", [event.productId]))
       .rows[0]
-    expect(after).toEqual({ ...before, revision: "2", snapshot: updatedSnapshot, updated_at: expect.any(Date) })
+    expect(after).toEqual({
+      ...before,
+      revision: "2",
+      snapshot: updatedSnapshot,
+      updated_at: expect.any(Date),
+      content_updated_at: expect.any(Date),
+    })
+    expect(after.content_updated_at.getTime()).toBeGreaterThanOrEqual(before.content_updated_at.getTime())
     expect(
       (await pool.query("select * from commerce.printify_publish_jobs where event_id=$1", [event.id])).rows
     ).toEqual(jobs)
@@ -1990,7 +2005,7 @@ describe.skipIf(!databaseUrl)("durable Printify publishing", () => {
         arrived,
       ])
       const published = await first.readRevealableProduct(event.productId)
-      expect(published).toMatchObject({ addedToShopAt: arrived, updatedAt: expect.any(String) })
+      expect(published).toMatchObject({ addedToShopAt: arrived, contentUpdatedAt: expect.any(String) })
 
       const republish = { ...event, id: randomUUID(), createdAt: new Date(Date.now() + 1000).toISOString() }
       await first.enqueue(republish)
@@ -2001,7 +2016,7 @@ describe.skipIf(!databaseUrl)("durable Printify publishing", () => {
       const republished = await first.readRevealableProduct(event.productId)
       expect(republished?.snapshot.title).toBe("Toast, second slice")
       expect(republished?.addedToShopAt).toBe(arrived)
-      expect(Date.parse(republished!.updatedAt!)).toBeGreaterThan(Date.parse(published!.updatedAt!))
+      expect(Date.parse(republished!.contentUpdatedAt!)).toBeGreaterThan(Date.parse(published!.contentUpdatedAt!))
     })
 
     // Hiding keeps the arrival, so the undo runbook's raw `hidden_at = null` puts a tee back where it
@@ -2499,6 +2514,8 @@ describe.skipIf(!databaseUrl)("durable Printify publishing", () => {
       expect(await first.readProduct(hidden)).toBeNull()
       expect(await first.readProduct(shown)).not.toBeNull()
       expect((await first.readRevealableProduct(hidden))?.revealAt).toBe(liveAt)
+      // Scheduling updates the operational timestamp, but cannot invent a public content date.
+      expect((await first.readRevealableProduct(hidden))?.contentUpdatedAt).toBeNull()
       expect(await first.productSchedule.remove(hidden)).toMatchObject({
         outcome: "removed",
         entries: [],
@@ -2513,6 +2530,10 @@ describe.skipIf(!databaseUrl)("durable Printify publishing", () => {
       expect(await first.readProduct(hidden)).toBeNull()
       expect((await visibility(hidden)).reveal_at).toBeNull()
       expect(await first.readProduct(shown)).not.toBeNull()
+      expect(
+        (await pool.query("select content_updated_at from commerce.printify_products where product_id=$1", [hidden]))
+          .rows[0].content_updated_at
+      ).toBeNull()
     })
 
     it("refuses an unpublished or incomplete member without partially scheduling the batch", async () => {
