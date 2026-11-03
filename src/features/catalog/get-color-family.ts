@@ -10,7 +10,7 @@ const families = [
   { name: "Black", hex: "#242529", shades: /\bblack\b/i },
   { name: "Gray", hex: "#919291", shades: /\b(gray|grey|charcoal|heavy metal|silver|silk)\b/i },
   { name: "Brown", hex: "#785a43", shades: /\b(brown|espresso|chocolate|tan)\b/i },
-  { name: "Red", hex: "#c43d45", shades: /\b(red|cardinal|maroon|burgundy)\b/i },
+  { name: "Red", hex: "#c43d45", shades: /\b(red|cardinal|maroon|burgundy|smoked paprika)\b/i },
   { name: "Pink", hex: "#cc8293", shades: /\b(pink|mauve|rose)\b/i },
   { name: "Orange", hex: "#e99d36", shades: /\borange\b/i },
   { name: "Green", hex: "#528360", shades: /\b(green|mint|olive)\b/i },

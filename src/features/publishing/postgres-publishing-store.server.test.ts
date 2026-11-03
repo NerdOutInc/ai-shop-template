@@ -2465,6 +2465,37 @@ describe.skipIf(!databaseUrl)("durable Printify publishing", () => {
       }
     )
 
+    it("requires explicit current-week selection to reveal a replacement and preserves its next feature", async () => {
+      const current = randomUUID()
+      const replacement = randomUUID()
+      const next = future()
+      const liveAt = new Date(Date.now() - 1000).toISOString()
+      await insertProduct("123", current)
+      await insertProduct("123", replacement, true, { hiddenAt })
+      await pool.query(
+        "insert into commerce.product_week_schedule (shop_id,product_id,live_at,featured_by) values ('123',$1,$2,$3)",
+        [current, liveAt, featuredBy]
+      )
+      await schedule([replacement], next)
+      expect(await schedule([replacement], liveAt)).toMatchObject({ status: "past" })
+      const join = (date: string) =>
+        first.productSchedule.schedule({ productIds: [replacement], liveAt: date, featuredBy, currentWeek: true })
+      expect(await join(new Date(Date.parse(liveAt) - 1000).toISOString())).toMatchObject({ status: "past" })
+      expect(await first.readProduct(replacement)).toBeNull()
+      const addedAfter = await pool.query<{ now: Date }>("select clock_timestamp() as now")
+      const saved = await join(liveAt)
+      expect(saved).toMatchObject({
+        status: "saved",
+        entries: expect.arrayContaining([
+          expect.objectContaining({ liveAt }),
+          expect.objectContaining({ liveAt: next }),
+        ]),
+      })
+      const revealed = await first.readRevealableProduct(replacement)
+      expect(Date.parse(revealed!.revealAt!)).toBeGreaterThanOrEqual(addedAfter.rows[0]!.now.getTime())
+      expect(await first.readProduct(replacement)).not.toBeNull()
+    })
+
     it("queues multiple products together without hiding one already in the shop", async () => {
       const hidden = randomUUID()
       const shown = randomUUID()

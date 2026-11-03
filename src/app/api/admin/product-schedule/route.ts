@@ -1,6 +1,7 @@
 import { z } from "zod"
 
 import { getAdminActor } from "@/features/admin/get-admin-actor.server"
+import { resolveProductWeek } from "@/features/publishing/resolve-product-week"
 import { listCadenceSlots } from "@/features/publishing/list-cadence-slots"
 import { refreshStorefront } from "@/features/design-of-the-week/refresh-storefront.server"
 import { getPublishingStore } from "@/features/publishing/get-publishing-store.server"
@@ -26,16 +27,27 @@ export async function PUT(request: Request) {
   const actor = await getAdminActor()
   if (!actor) return respond({ error: "Sign in as an administrator." }, 401)
   const input = z
-    .object({ productIds: z.array(productId).min(1).max(100), liveAt: z.iso.datetime() })
+    .object({
+      productIds: z.array(productId).min(1).max(100),
+      liveAt: z.iso.datetime(),
+      currentWeek: z.boolean().optional(),
+    })
     .strict()
     .safeParse(await request.json().catch(() => null))
   if (!input.success || new Set(input.data.productIds).size !== input.data.productIds.length)
     return respond({ error: "Choose published products and a week for their feature." }, 400)
-  if (
-    !listCadenceSlots({ from: new Date(), count: 6 }).some((slot) => slot.getTime() === Date.parse(input.data.liveAt))
-  )
-    return respond({ error: "Choose one of the next six weeks. Refresh the page if a date has passed." }, 400)
   try {
+    const now = Date.now()
+    const allowed = input.data.currentWeek
+      ? resolveProductWeek(await getPublishingStore().productSchedule.list(), now)?.liveAt === input.data.liveAt
+      : listCadenceSlots({ from: new Date(now), count: 6 }).some(
+          (slot) => slot.getTime() === Date.parse(input.data.liveAt)
+        )
+    if (!allowed)
+      return respond(
+        { error: "Choose this week or one of the next six weeks. Refresh the page if a date has passed." },
+        400
+      )
     const result = await getPublishingStore().productSchedule.schedule({ ...input.data, featuredBy: actor.userId })
     if (result.status === "missing")
       return respond(

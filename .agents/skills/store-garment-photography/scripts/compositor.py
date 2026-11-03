@@ -74,12 +74,12 @@ def curve_field(points, width, amplitude, kind, xx, yy, envelope):
 
 
 def sample(field, x, y):
-    x = np.clip(x, 0, 1199)
-    y = np.clip(y, 0, 1499)
+    x = np.clip(x, 0, field.shape[1] - 1)
+    y = np.clip(y, 0, field.shape[0] - 1)
     x0 = int(x)
     y0 = int(y)
-    x1 = min(x0 + 1, 1199)
-    y1 = min(y0 + 1, 1499)
+    x1 = min(x0 + 1, field.shape[1] - 1)
+    y1 = min(y0 + 1, field.shape[0] - 1)
     fx = x - x0
     fy = y - y0
     return (field[y0, x0] * (1 - fx) + field[y0, x1] * fx) * (1 - fy) + (
@@ -87,7 +87,7 @@ def sample(field, x, y):
     ) * fy
 
 
-def projection_bounds(art, quad, inverse, surface):
+def projection_bounds(art, quad, inverse, surface, output_size):
     if not surface:
         return np.asarray(quad)
     # Sampling changes source v by at most this amplitude. Any visible source
@@ -109,11 +109,11 @@ def projection_bounds(art, quad, inverse, surface):
     if not (np.all(denominator > 1e-9) or np.all(denominator < -1e-9)):
         # An extended perspective region crosses the horizon: conservatively
         # cover the full frame instead of truncating to misleading finite bounds.
-        return np.array([[0, 0], OUT])
+        return np.array([[0, 0], output_size])
     return projected[:, :2] / denominator[:, None]
 
 
-def project(art, quad, surface=None, dx=None, dy=None):
+def project(art, quad, surface=None, dx=None, dy=None, *, output_size=OUT):
     inv = inverse_perspective(quad, art)
     a, b, c, d, e, f, g, h = inv
 
@@ -137,11 +137,11 @@ def project(art, quad, surface=None, dx=None, dy=None):
             )
         return u, v
 
-    q = projection_bounds(art, quad, inv, surface)
+    q = projection_bounds(art, quad, inv, surface, output_size)
     lo = np.floor((q.min(axis=0) - 40) * 2 / 12).astype(int) * 12
     hi = np.ceil((q.max(axis=0) + 40) * 2 / 12).astype(int) * 12
     lo = np.maximum(lo, [0, 0])
-    hi = np.minimum(hi, [2400, 3000])
+    hi = np.minimum(hi, [output_size[0] * 2, output_size[1] * 2])
     mesh = []
     for y in range(lo[1], hi[1], 12):
         for x in range(lo[0], hi[0], 12):
@@ -153,9 +153,9 @@ def project(art, quad, surface=None, dx=None, dy=None):
                     sum((uv(px, py) for px, py in ((x, y), (x, y1), (x1, y1), (x1, y))), ()),
                 )
             )
-    return art.transform((2400, 3000), Image.Transform.MESH, mesh, Image.Resampling.BICUBIC).resize(
-        OUT, Image.Resampling.LANCZOS
-    )
+    return art.transform(
+        (output_size[0] * 2, output_size[1] * 2), Image.Transform.MESH, mesh, Image.Resampling.BICUBIC
+    ).resize(output_size, Image.Resampling.LANCZOS)
 
 
 def sampled_texture(path, u, v, slow_noise):
@@ -174,19 +174,21 @@ def sampled_texture(path, u, v, slow_noise):
     return (tile[yi, xi] - 128) / 35
 
 
-def render(record, root):
+def render(record, root, *, output_size=OUT):
     art = load_image(root / "sources" / ("approved-" + record["design"] + ".png"), "RGBA")
     name = record["id"]
     guides = record.get("foldGuides", [])
-    base = load_image(root / record["source"]).crop(record["sourceCropBox"]).resize(OUT, Image.Resampling.LANCZOS)
+    base = (
+        load_image(root / record["source"]).crop(record["sourceCropBox"]).resize(output_size, Image.Resampling.LANCZOS)
+    )
     base_array = np.asarray(base)
     cloth = base_array.astype(np.float32)
     lum = cloth.mean(2)
     quad = record["outputQuadTL_TR_BR_BL"]
     surface = record.get("surfaceBend")
     path = root / "full" / f"{name}.png"
-    initial = project(art, quad, surface)
-    visibility = np.ones((OUT[1], OUT[0]), dtype=np.float32)
+    initial = project(art, quad, surface, output_size=output_size)
+    visibility = np.ones((output_size[1], output_size[0]), dtype=np.float32)
     if record.get("visibilityMask"):
         visibility = np.asarray(Image.open(root / record["visibilityMask"]).convert("L"), dtype=np.float32) / 255
     mask = (np.asarray(initial)[:, :, 3] > 0.8 * 255) & (visibility > 0.99)
@@ -270,7 +272,7 @@ def render(record, root):
     if not (max_displacement < 12 and minimum_jacobian > 0.20):
         raise ValueError("Fold deformation exceeds the displacement or Jacobian safety bounds")
 
-    projected = project(art, quad, surface, dx, dy)
+    projected = project(art, quad, surface, dx, dy, output_size=output_size)
     ink = np.asarray(projected, dtype=np.float32)
     valley = np.clip(-fold_signal / 12, 0, 1)
     alpha = ink[:, :, 3] / 255 * np.clip(coverage - 0.012 * valley, 0.20, 1) * visibility
