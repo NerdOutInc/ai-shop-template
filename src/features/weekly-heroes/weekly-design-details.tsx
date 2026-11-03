@@ -67,11 +67,11 @@ export function WeeklyDesignDetails({
               "@type": "ListItem",
               position: index + 1,
               item: {
-                "@type": "ProductGroup",
-                "@id": new URL(`/shop/${encodeURIComponent(product.id)}#product`, siteUrl).href,
+                // ProductGroup markup needs variant offers; the complete data lives on each product page.
+                "@type": "WebPage",
+                "@id": new URL(`/shop/${encodeURIComponent(product.id)}`, siteUrl).href,
                 name: product.title,
                 url: new URL(product.href, siteUrl).href,
-                ...(product.color ? { color: displayColorName(product.color) } : {}),
                 ...(product.image ? { image: product.image.src } : {}),
               },
             })),
