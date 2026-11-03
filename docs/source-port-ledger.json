@@ -5,10 +5,10 @@
   "templateAssessmentCommit": "a62c838283a8bbfd740a23b3e206c9d628fb22d0",
   "coverage": {
     "afterSourceCommit": "b32ab30dd7c74f3d17cb88b9dbf4111224cafe54",
-    "reviewedThroughSourceCommit": "b139ef004378c223829676799c1b924a6e845055",
-    "firstParentCommitCount": 58,
+    "reviewedThroughSourceCommit": "9f577107e6b0b9612146db59bc521daf963c8fa0",
+    "firstParentCommitCount": 59,
     "reviewedAt": "2026-11-03",
-    "boundary": "This contiguous review covers the 58 first-parent changes through original-store #232. Receiving PRs identify proposed ports. A non-null templateCommit records a merged implementation.",
+    "boundary": "This contiguous review covers the 59 first-parent changes through original-store #226. Receiving PRs identify proposed ports. A non-null templateCommit records a merged implementation.",
     "additionalReviewedSourceCommits": []
   },
   "dispositions": [
@@ -1203,6 +1203,22 @@
       "followUp": "Template maintainer to review #89 and record its merge or final disposition.",
       "assessedAgainstTemplateCommit": "a62c838283a8bbfd740a23b3e206c9d628fb22d0",
       "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/89"
+    },
+    {
+      "sourceCommit": "9f577107e6b0b9612146db59bc521daf963c8fa0",
+      "parentCommit": "b139ef004378c223829676799c1b924a6e845055",
+      "disposition": "accepted",
+      "classification": "garment-compositing-authorization",
+      "paths": [
+        ".agents/skills/store-garment-photography/SKILL.md",
+        ".agents/skills/store-garment-photography/references/garment-backgrounds.md"
+      ],
+      "reason": "The source adapted the guidance from template draft #82 for its pinned photography skill. That draft already covers the reusable changes to cutouts, masking, compositing and background replacement.",
+      "evidence": "Compared both instruction changes with template draft 98a66b7d3f4eb8005d75e76b520592a88f3b81a8 and verified both upstream pointers in the source copy receipt. Template #82 passed Required checks.",
+      "templateCommit": null,
+      "followUp": "Review the existing template draft #82 and record its merge or final disposition here.",
+      "assessedAgainstTemplateCommit": "a62c838283a8bbfd740a23b3e206c9d628fb22d0",
+      "templatePullRequest": "https://github.com/NerdOutInc/ai-shop-template/pull/82"
     }
   ],
   "outboundPorts": [],
