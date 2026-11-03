@@ -22,7 +22,7 @@ export type SitemapProduct = {
 
 /** Every product a crawler may list: the sitemap, llms.txt and the shop ItemList share this membership. */
 function lastModified(product: { addedToShopAt: string | null }, snapshot: Record<string, unknown>) {
-  const stamps = [product.addedToShopAt, snapshot.storefront_updated_at]
+  const stamps = [product.addedToShopAt, snapshot.storefront_content_updated_at]
     .filter((value): value is string => typeof value === "string")
     .map((value) => Date.parse(value))
     .filter((value) => Number.isFinite(value))

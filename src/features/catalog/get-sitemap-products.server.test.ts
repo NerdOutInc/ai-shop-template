@@ -48,10 +48,16 @@ describe("sitemap publication membership", () => {
       snapshot(
         id,
         id === "republished"
-          ? { storefront_added_to_shop_at: "2026-09-01T12:00:00.000Z", storefront_updated_at: "2026-09-20T08:00:00Z" }
+          ? {
+              storefront_added_to_shop_at: "2026-09-01T12:00:00.000Z",
+              storefront_content_updated_at: "2026-09-20T08:00:00Z",
+            }
           : id === "revealed"
-            ? { storefront_added_to_shop_at: "2026-09-25T17:30:00.000Z", storefront_updated_at: "2026-09-20T08:00:00Z" }
-            : { storefront_updated_at: "not a date" }
+            ? {
+                storefront_added_to_shop_at: "2026-09-25T17:30:00.000Z",
+                storefront_content_updated_at: "2026-09-20T08:00:00Z",
+              }
+            : { storefront_content_updated_at: "not a date" }
       )
     )
     expect((await getSitemapProducts()).map((product) => [product.id, product.lastModified])).toEqual([

@@ -395,7 +395,8 @@ export class PostgresPublishingStore implements PublishingStore {
           )
           const updated = await client.query<{ revision: string; snapshot: Record<string, unknown> }>(
             `update commerce.printify_products product
-             set snapshot=jsonb_set(snapshot,'{images}',$4::jsonb),revision=revision+1,updated_at=now()
+             set snapshot=jsonb_set(snapshot,'{images}',$4::jsonb),revision=revision+1,updated_at=now(),
+               content_updated_at=case when snapshot->'images' is distinct from $4::jsonb then now() else content_updated_at end
              where shop_id=$1 and product_id=$2 and revision=$3 and active
              and not exists (select 1 from commerce.printify_publish_jobs job
                where job.shop_id=product.shop_id and job.product_id=product.product_id
@@ -428,7 +429,9 @@ export class PostgresPublishingStore implements PublishingStore {
           const updated = await client.query<{ revision: string; snapshot: Record<string, unknown> }>(
             `update commerce.printify_products product
              set snapshot=jsonb_set(jsonb_set(snapshot,'{storefront_artwork}',$4::jsonb),'{storefront_artwork_enabled}','true'::jsonb),
-               revision=revision+1,updated_at=now()
+               revision=revision+1,updated_at=now(),
+               content_updated_at=case when snapshot->'storefront_artwork' is distinct from $4::jsonb
+                 or snapshot->'storefront_artwork_enabled' is distinct from 'true'::jsonb then now() else content_updated_at end
              where shop_id=$1 and product_id=$2 and revision=$3 and active
              and not exists (select 1 from commerce.printify_publish_jobs job
                where job.shop_id=product.shop_id and job.product_id=product.product_id
@@ -453,7 +456,10 @@ export class PostgresPublishingStore implements PublishingStore {
         this.mutateCurrent(client, productId, event, async () => {
           // Publication and its pending callback become durable together; callbacks never roll this back.
           const updated = await client.query<{ revision: string }>(
-            "update commerce.printify_products set snapshot=$3::jsonb,active=$4,revision=revision+1,updated_at=now() where shop_id=$1 and product_id=$2 returning revision",
+            `update commerce.printify_products set snapshot=$3::jsonb,active=$4,revision=revision+1,updated_at=now(),
+               content_updated_at=case when (snapshot - 'google_merchant_copy') is distinct from ($3::jsonb - 'google_merchant_copy')
+                 or active is distinct from $4 then now() else content_updated_at end
+             where shop_id=$1 and product_id=$2 returning revision`,
             [
               ...scope,
               snapshot === null ? null : JSON.stringify(snapshot),
@@ -585,10 +591,10 @@ export class PostgresPublishingStore implements PublishingStore {
   async readRevealableProduct(productId: string) {
     const row = (
       await queryGalleryDisplay<
-        GalleryDisplayRow & { reveal_at: Date | null; added_to_shop_at: Date | null; updated_at: Date }
+        GalleryDisplayRow & { reveal_at: Date | null; added_to_shop_at: Date | null; content_updated_at: Date | null }
       >(
         this.pool,
-        "snapshot,revision::text,reveal_at,added_to_shop_at,updated_at",
+        "snapshot,revision::text,reveal_at,added_to_shop_at,content_updated_at",
         `where shop_id=$1 and product_id=$2 and ${productVisibilitySql.revealable}`,
         [this.shopId, productId]
       )
@@ -598,8 +604,7 @@ export class PostgresPublishingStore implements PublishingStore {
           snapshot: applyGalleryDisplay(row).snapshot,
           revealAt: isoOrNull(row.reveal_at),
           addedToShopAt: isoOrNull(row.added_to_shop_at),
-          // Every publication, image replacement, gallery activation or visibility write stamps this: the content date.
-          updatedAt: isoOrNull(row.updated_at),
+          contentUpdatedAt: isoOrNull(row.content_updated_at),
         }
       : null
   }
