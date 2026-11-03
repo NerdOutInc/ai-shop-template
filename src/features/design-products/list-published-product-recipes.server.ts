@@ -6,6 +6,7 @@ import { listPublishedProducts } from "@/features/publishing/list-published-prod
 
 import { readGarmentDescription } from "./read-garment-description"
 import { readProductArtworkImages } from "./read-product-artwork-images"
+import type { DesignDraftRecipe } from "./design-draft-types"
 
 const option = z.object({
   name: z.string(),
@@ -39,7 +40,7 @@ export type PublishedProductRecipe = {
   productIds: string[]
   titles: string[]
   variants: { id: number; price: number; color: string | null; size: string | null }[]
-  placement: { position: "front"; x: number; y: number; scale: number; angle: number } | null
+  placement: DesignDraftRecipe["placement"] | null
   /** The published product whose single front placement is copied. */
   placementDonorProductId: string | null
   placementDonorTitle: string | null
@@ -173,7 +174,7 @@ function readPlacement(raw: unknown) {
   const [first, ...rest] = controls.front
   if (!first) return null
   const placement = {
-    position: "front" as const,
+    position: first.position,
     x: first.x,
     y: first.y,
     scale: first.scale,
@@ -184,12 +185,14 @@ function readPlacement(raw: unknown) {
 }
 
 function isCompletePlacement(value: {
+  position: string
   x?: number
   y?: number
   scale?: number
   angle?: number
-}): value is { position: "front"; x: number; y: number; scale: number; angle: number } {
+}): value is DesignDraftRecipe["placement"] {
   return (
+    (value.position === "front" || value.position === "front_dtg") &&
     typeof value.x === "number" &&
     value.x >= 0 &&
     value.x <= 1 &&
@@ -205,9 +208,10 @@ function isCompletePlacement(value: {
   )
 }
 
-function samePlacement(a: { x: number; y: number; scale: number; angle: number }, b: Record<string, unknown>) {
+function samePlacement(a: DesignDraftRecipe["placement"], b: Record<string, unknown>) {
   const rounded = (value: unknown) => (typeof value === "number" ? Math.round(value * 1_000_000) / 1_000_000 : null)
   return (
+    a.position === b.position &&
     rounded(a.x) === rounded(b.x) &&
     rounded(a.y) === rounded(b.y) &&
     rounded(a.scale) === rounded(b.scale) &&

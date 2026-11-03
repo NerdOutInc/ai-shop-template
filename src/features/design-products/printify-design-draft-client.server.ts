@@ -37,6 +37,7 @@ export class PrintifyDesignDraftClient implements DesignDraftClient {
           Authorization: `Bearer ${this.token}`,
           "User-Agent": "Store-Design-Drafts/1.0",
           Accept: "application/json",
+          ...(!body ? { "Cache-Control": "no-cache" } : {}),
           ...(body ? { "Content-Type": "application/json" } : {}),
         },
         body: body ? JSON.stringify(body) : undefined,
@@ -71,11 +72,23 @@ export class PrintifyDesignDraftClient implements DesignDraftClient {
     }
   }
   async listProducts() {
+    try {
+      return await this.readInventory(50)
+    } catch (error) {
+      if (!(error instanceof DesignDraftError) || error.code !== "PROVIDER_UNAVAILABLE") throw error
+      // A new page boundary avoids reusing an inconsistent set of cached provider pages.
+      // The second scan must independently pass every completeness and identity check.
+      return this.readInventory(25)
+    }
+  }
+  private async readInventory(pageSize: number) {
     const products: Record<string, unknown>[] = []
     let lastPage = 1,
       total: number | undefined
     for (let page = 1; page <= lastPage; page++) {
-      const parsed = pagination.safeParse(await this.json(`shops/${this.shopId}/products.json?limit=50&page=${page}`))
+      const parsed = pagination.safeParse(
+        await this.json(`shops/${this.shopId}/products.json?limit=${pageSize}&page=${page}`)
+      )
       if (
         !parsed.success ||
         parsed.data.current_page !== page ||
@@ -92,14 +105,20 @@ export class PrintifyDesignDraftClient implements DesignDraftClient {
       if (lastPage > 10000)
         throw new DesignDraftError("PROVIDER_UNAVAILABLE", "Printify inventory pagination needs operator review")
     }
-    if (
-      products.some((value) => typeof value.id !== "string" || !value.id || String(value.shop_id) !== this.shopId) ||
-      products.length !== total ||
-      new Set(products.map((value) => value.id)).size !== products.length
-    )
+    const uniqueProducts = new Set(products.map((value) => value.id)).size
+    const inventoryProblem = products.some((value) => typeof value.id !== "string" || !value.id)
+      ? "a product identity is missing"
+      : products.some((value) => String(value.shop_id) !== this.shopId)
+        ? "a product does not identify the requested shop"
+        : products.length !== total
+          ? `received ${products.length} products but the provider reported ${total}`
+          : uniqueProducts !== products.length
+            ? `received ${products.length} products with only ${uniqueProducts} unique identities`
+            : null
+    if (inventoryProblem)
       throw new DesignDraftError(
         "PROVIDER_UNAVAILABLE",
-        "Printify inventory pagination was incomplete; reconcile again"
+        `Printify inventory could not be verified: ${inventoryProblem}; reconcile again`
       )
     return products
   }
@@ -129,7 +148,11 @@ export class PrintifyDesignDraftClient implements DesignDraftClient {
     return parsed.data.variants
   }
   /** Every garment the provider lists for a model, so a recipe can be built from names rather than ids. */
-  async listCatalogVariants(input: { blueprintId: number; printProviderId: number; position: "front" }) {
+  async listCatalogVariants(input: {
+    blueprintId: number
+    printProviderId: number
+    position: DesignDraftRecipe["placement"]["position"]
+  }) {
     return (await this.catalogVariants(input.blueprintId, input.printProviderId)).flatMap(
       (variant): DesignCatalogVariant[] =>
         variant.options.color && variant.options.size
