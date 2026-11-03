@@ -20,7 +20,6 @@ export type SitemapProduct = {
   image: string | null
 }
 
-/** Every product a crawler may list: the sitemap, llms.txt and the shop ItemList share this membership. */
 function lastModified(product: { addedToShopAt: string | null }, snapshot: Record<string, unknown>) {
   const stamps = [product.addedToShopAt, snapshot.storefront_content_updated_at]
     .filter((value): value is string => typeof value === "string")
@@ -29,6 +28,7 @@ function lastModified(product: { addedToShopAt: string | null }, snapshot: Recor
   return stamps.length ? new Date(Math.max(...stamps)).toISOString() : null
 }
 
+/** The sitemap follows public product pages. Agent discovery also requires stock-checked, listable variants. */
 export async function getSitemapProducts(): Promise<SitemapProduct[]> {
   if (!env.PRINTIFY_PUBLISHING_ENABLED) throw new Error("Published catalog is not enabled")
   const ids = await listStorefrontProductIds()
