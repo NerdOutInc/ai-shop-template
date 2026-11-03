@@ -298,7 +298,10 @@ test("swipes the mobile gallery through photos and artwork while preserving vert
   await swipe("right", true)
   await expect(artwork).toHaveAttribute("aria-pressed", "true")
   await expectSettled()
-  await page.getByRole("button", { name: "Black", exact: true }).tap()
+  const black = page.getByRole("button", { name: "Black", exact: true })
+  await black.tap()
+  // The old gallery also has artwork selected. Wait for the new color to commit before swiping it.
+  await expect(black).toHaveAttribute("aria-pressed", "true")
   await expect(artwork).toHaveAttribute("aria-pressed", "true")
   await expectSettled()
   await swipe("left")
