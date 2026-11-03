@@ -135,6 +135,7 @@ describe("private artwork delivery", () => {
     expect(new Uint8Array(await result.arrayBuffer())).toEqual(bytes)
     expect(result.headers.get("content-disposition")).toContain("attachment;")
     expect(result.headers.get("content-disposition")).toContain("Design%20%23149")
+    expect(result.headers.get("x-content-bytes")).toBe(String(asset.bytes))
     expect(result.headers.get("x-content-sha256")).toBe(asset.sha256)
     expect(result.headers.get("content-type")).toBe("image/png")
     expect(result.headers.get("cdn-cache-control")).toBe("no-store")

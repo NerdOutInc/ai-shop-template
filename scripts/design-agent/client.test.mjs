@@ -180,7 +180,7 @@ test("downloads atomically with private permissions, protects existing output an
       fetcher: async () =>
         new Response("verifiedbytes", {
           headers: {
-            "content-length": "13",
+            "x-content-bytes": "13",
             "x-content-sha256": createHash("sha256").update("verifiedbytes").digest("hex"),
           },
         }),
@@ -201,12 +201,43 @@ test("downloads atomically with private permissions, protects existing output an
   }
 })
 
+test("supports earlier servers that only send Content-Length with the digest", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "design-agent-"))
+  try {
+    const client = await createDesignAgentClient({
+      environment,
+      fetcher: async () =>
+        new Response("legacy", {
+          headers: {
+            "content-length": "6",
+            "x-content-sha256": createHash("sha256").update("legacy").digest("hex"),
+          },
+        }),
+    })
+    const output = join(directory, "master.png")
+    await client.downloadAsset({ assetId: randomUUID(), output })
+    assert.equal(await readFile(output, "utf8"), "legacy")
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
 test("never exposes a downloaded file with missing metadata, truncated bytes, or a different hash", async () => {
   const directory = await mkdtemp(join(tmpdir(), "design-agent-")),
     output = join(directory, "art.png")
   try {
     for (const headers of [
       {},
+      {
+        "x-content-bytes": "13.0000000000000001",
+        "content-length": "13",
+        "x-content-sha256": createHash("sha256").update("verifiedbytes").digest("hex"),
+      },
+      {
+        "x-content-bytes": "14",
+        "content-length": "13",
+        "x-content-sha256": createHash("sha256").update("verifiedbytes").digest("hex"),
+      },
       { "content-length": "14", "x-content-sha256": createHash("sha256").update("verifiedbytes").digest("hex") },
       { "content-length": "13", "x-content-sha256": "0".repeat(64) },
     ]) {
